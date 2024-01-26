@@ -7,6 +7,7 @@
 "exploration_tool/algo/a121/examples/touchless_button.rst" "removed.rst"
 "exploration_tool/algo/a121/bilateration.rst" "exploration_tool/algo/a121/examples/bilateration.rst"
 "exploration_tool/algo/a121/examples/breathing.rst" "exploration_tool/algo/a121/breathing.rst"
+"exploration_tool/algo/a121/examples/obstacle_bilateration.rst" "removed.rst"
 "exploration_tool/algo/a121/breathing.rst" "removed.rst"
 "exploration_tool/algo/a121/phase_tracking.rst" "exploration_tool/algo/a121/examples/phase_tracking.rst"
 "exploration_tool/algo/a121/surface_velocity.rst" "exploration_tool/algo/a121/examples/surface_velocity.rst"

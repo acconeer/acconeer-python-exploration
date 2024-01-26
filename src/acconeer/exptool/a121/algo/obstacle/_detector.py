@@ -35,10 +35,6 @@ from acconeer.exptool.a121.algo.touchless_button import (
     ProcessorConfig as TouchlessbuttonProcessorConfig,
 )
 
-from ._bilaterator import (
-    Bilaterator,
-    BilateratorResult,
-)
 from ._processors import (
     Processor,
     ProcessorConfig,
@@ -135,12 +131,6 @@ class DetectorConfig(AlgoConfigBase):
     """Specify the sensitivity of the Kalman filter. A higher value yields a more responsive
     filter. A lower value yields a more robust filter."""
 
-    enable_bilateration: bool = attrs.field(default=False)
-    """Enable two-sensor bilateration."""
-
-    bilateration_sensor_spacing_m: float = attrs.field(default=0.05)
-    """The sensor spacing in meters."""
-
     def _collect_validation_results(self) -> list[a121.ValidationResult]:
         validation_results: list[a121.ValidationResult] = []
 
@@ -177,7 +167,6 @@ class DetectorConfig(AlgoConfigBase):
 class DetectorResult:
     current_velocity: float = attrs.field(default=None)
     processor_results: Dict[int, ProcessorResult] = attrs.field(default=None)
-    bilateration_result: Optional[BilateratorResult] = attrs.field(default=None)
     close_proximity_trig: Optional[Dict[int, bool]] = attrs.field(default=None)
 
 
@@ -237,11 +226,6 @@ class Detector:
                 detector_state=DetailedStatus.OK,
                 ready_to_start=True,
             )
-
-        if self.detector_config.enable_bilateration:
-            if len(sensor_ids) != 2:
-                raise ValueError("Bilateration requires two, and only two, sensors.")
-            self.bilaterator = Bilaterator(detector_config.bilateration_sensor_spacing_m)
 
         # Unless updated, assume that robot moves at max speed
         self.v_current = self.detector_config.max_robot_speed
@@ -410,22 +394,9 @@ class Detector:
             sens_id = list(r.keys())[0]  # get the only sensor-id in that dict.
             obstacle_proc_results[sens_id] = self.processors[sens_id].process(r[sens_id])
 
-        if self.detector_config.enable_bilateration:
-            target_list_1 = obstacle_proc_results[self.sensor_ids[0]].targets
-            target_list_2 = obstacle_proc_results[self.sensor_ids[1]].targets
-            time_offset = (
-                results[1][self.sensor_ids[1]].tick_time - results[0][self.sensor_ids[0]].tick_time
-            )
-            bilateration_result = self.bilaterator.process(
-                target_list_1, target_list_2, time_offset
-            )
-        else:
-            bilateration_result = None
-
         return DetectorResult(
             current_velocity=self.v_current,
             processor_results=obstacle_proc_results,
-            bilateration_result=bilateration_result,
             close_proximity_trig=close_proximity_results,
         )
 

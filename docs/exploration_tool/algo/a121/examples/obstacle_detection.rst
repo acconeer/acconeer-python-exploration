@@ -54,7 +54,7 @@ By utilizing subsweeps, the application scanning range can be split up in a rang
 The surrounding temperature impacts the amplitude of the measured signal and noise. With the temperature sensor integrated in the radar, the thresholds can be adjusted when the temperature changes to keep the false alarm rate of the application low and sensitivity high.
 
 **4. Better distance performance:**
-The A121 Obstacle detection example application uses data supplied by the Sparse IQ service which has improved distance accuracy compared to the A111 IQ data service. This improved distance accuracy enables the use of bilateration with two radar sensors mounted only a few centimeters apart. Bilateration provides even more angular information. Please see the Example application :doc:`Obstacle bilateration</exploration_tool/algo/a121/examples/obstacle_bilateration>` for an example.
+The A121 Obstacle detection example application uses data supplied by the Sparse IQ service which has improved distance accuracy compared to the A111 IQ data service.
 
 
 Limitations
@@ -62,7 +62,7 @@ Limitations
 
 - Angle estimation only works for static objects. The angle to a moving pet, human or other robot will be incorrect.
 - Angle estimation is only possible if the radar is moving and the correct velocity is supplied to detection algorithm. An error in the robot velocity will lead to an error in the estimated angle.
-- The angle supplied by the algorithm is the angle between the direction of motion of the radar and the direction from the radar to the object. If, for example, an object is found at 30 degrees, it can be 30 degrees to the left or right, and even 30 degrees up or down. One approach to circumvent this limitation is to use two radar sensors and bilateration processing, see :doc:`Obstacle bilateration</exploration_tool/algo/a121/examples/obstacle_bilateration>`.
+- The angle supplied by the algorithm is the angle between the direction of motion of the radar and the direction from the radar to the object. If, for example, an object is found at 30 degrees, it can be 30 degrees to the left or right, and even 30 degrees up or down.
 
 Calibration and Threshold
 -------------------------
