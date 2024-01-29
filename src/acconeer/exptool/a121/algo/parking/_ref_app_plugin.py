@@ -649,12 +649,12 @@ class ViewPlugin(A121ViewPluginBase):
                     decimals=2,
                 ),
                 "queue_length_n": pidgets.IntPidgetFactory(
-                    name_label_text="Length of sample queue:",
+                    name_label_text="Queue length:",
                     name_label_tooltip=get_attribute_docstring(RefAppConfig, "queue_length_n"),
                     limits=(1, 200),
                 ),
                 "amplitude_threshold": pidgets.FloatSliderPidgetFactory(
-                    name_label_text="Amplitude threshold level:",
+                    name_label_text="Amplitude threshold:",
                     name_label_tooltip=get_attribute_docstring(
                         RefAppConfig, "amplitude_threshold"
                     ),
@@ -662,7 +662,7 @@ class ViewPlugin(A121ViewPluginBase):
                     decimals=1,
                 ),
                 "weighted_distance_threshold_m": pidgets.FloatPidgetFactory(
-                    name_label_text="Similarity distance:",
+                    name_label_text="Weighted distance threshold:",
                     name_label_tooltip=get_attribute_docstring(
                         RefAppConfig, "weighted_distance_threshold_m"
                     ),
@@ -671,7 +671,7 @@ class ViewPlugin(A121ViewPluginBase):
                     decimals=2,
                 ),
                 "signature_similarity_threshold": pidgets.FloatSliderPidgetFactory(
-                    name_label_text="Trigger percentage:",
+                    name_label_text="Signature similarity threshold:",
                     name_label_tooltip=get_attribute_docstring(
                         RefAppConfig, "signature_similarity_threshold"
                     ),
