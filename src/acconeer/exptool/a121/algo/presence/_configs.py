@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from acconeer.exptool import a121
@@ -6,11 +6,20 @@ from acconeer.exptool import a121
 from ._detector import DetectorConfig
 
 
+"""
+Some of the config parameters will not be applied,
+since they are overridden by automatic_subsweeps.
+They are still left in to allow for a simple disabling.
+"""
+
+
 def get_short_range_config() -> DetectorConfig:
     return DetectorConfig(
         start_m=0.06,
         end_m=1.0,
         frame_rate=10,
+        automatic_subsweeps=True,
+        signal_quality=30.0,
         sweeps_per_frame=16,
         hwaas=16,
         inter_frame_idle_state=a121.IdleState.DEEP_SLEEP,
@@ -34,6 +43,8 @@ def get_medium_range_config() -> DetectorConfig:
         start_m=0.3,
         end_m=2.5,
         frame_rate=12,
+        automatic_subsweeps=True,
+        signal_quality=20.0,
         sweeps_per_frame=16,
         hwaas=32,
         inter_frame_idle_state=a121.IdleState.DEEP_SLEEP,
@@ -57,7 +68,9 @@ def get_long_range_config() -> DetectorConfig:
         start_m=5,
         end_m=7.5,
         frame_rate=12,
-        sweeps_per_frame=32,
+        automatic_subsweeps=True,
+        signal_quality=10.0,
+        sweeps_per_frame=16,
         hwaas=128,
         inter_frame_idle_state=a121.IdleState.DEEP_SLEEP,
         intra_enable=True,
@@ -80,6 +93,8 @@ def get_low_power_config() -> DetectorConfig:
         start_m=0.725,
         end_m=1.505,
         frame_rate=1,
+        automatic_subsweeps=True,
+        signal_quality=20.0,
         sweeps_per_frame=16,
         hwaas=8,
         inter_frame_idle_state=a121.IdleState.DEEP_SLEEP,

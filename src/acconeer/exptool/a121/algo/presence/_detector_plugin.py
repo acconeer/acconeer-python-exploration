@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -43,8 +43,10 @@ from acconeer.exptool.app.new import (
     pidgets,
     visual_policies,
 )
-from acconeer.exptool.app.new.ui.components import GotoResourceTabButton
-from acconeer.exptool.app.new.ui.components.a121 import RangeHelpView
+from acconeer.exptool.app.new.ui.components import CollapsibleWidget, GotoResourceTabButton
+from acconeer.exptool.app.new.ui.components.a121 import (
+    SensorConfigEditor,
+)
 from acconeer.exptool.app.new.ui.components.json_save_load_buttons import PresentationType
 
 from . import _pidget_mapping
@@ -114,7 +116,7 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
 
     @is_task
     def restore_defaults(self) -> None:
-        self.shared_state = SharedState()
+        self.shared_state = SharedState(config=get_medium_range_config())
         self.broadcast()
 
     @is_task
@@ -478,8 +480,6 @@ class ViewPlugin(A121ViewPluginBase):
         self.sensor_id_pidget.sig_update.connect(self._on_sensor_id_update)
         sensor_selection_group.layout().addWidget(self.sensor_id_pidget)
 
-        self.range_helper = RangeHelpView()
-
         self.config_editor = AttrsConfigEditor(
             title="Detector parameters",
             factory_mapping=self._get_pidget_mapping(),
@@ -504,10 +504,16 @@ class ViewPlugin(A121ViewPluginBase):
         scrolly_layout = QVBoxLayout()
         scrolly_layout.setContentsMargins(0, 0, 0, 0)
 
+        self.sensor_config_status = SensorConfigEditor()
+        self.sensor_config_status.set_read_only(True)
+        collapsible_widget = CollapsibleWidget(
+            "Current sensor settings", self.sensor_config_status, self.scrolly_widget
+        )
+
         scrolly_layout.addWidget(goto_resource_tab_button)
         scrolly_layout.addWidget(self.misc_error_view)
         scrolly_layout.addWidget(sensor_selection_group)
-        scrolly_layout.addWidget(self.range_helper)
+        scrolly_layout.addWidget(collapsible_widget)
         scrolly_layout.addWidget(self.config_editor)
 
         self.sticky_widget.setLayout(sticky_layout)
@@ -520,7 +526,7 @@ class ViewPlugin(A121ViewPluginBase):
     def on_backend_state_update(self, state: Optional[SharedState]) -> None:
         if state is None:
             self.config_editor.set_data(None)
-            self.range_helper.set_data(None)
+            self.sensor_config_status.set_data(None)
         else:
             self.config_editor.set_data(state.config)
             self.sensor_id_pidget.set_data(state.sensor_id)
@@ -533,7 +539,10 @@ class ViewPlugin(A121ViewPluginBase):
 
             assert not_handled == []
 
-            self.range_helper.set_data(Detector._get_sensor_config(state.config).subsweep)
+            if len(results) == 0:
+                sensor_config = Detector._get_sensor_config(state.config)
+
+                self.sensor_config_status.set_data(sensor_config)
 
     def on_app_model_update(self, app_model: AppModel) -> None:
         self.sensor_id_pidget.set_selectable_sensors(app_model.connected_sensors)

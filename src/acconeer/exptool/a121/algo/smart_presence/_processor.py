@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -51,7 +51,9 @@ class Processor:
         session_config: a121.SessionConfig,
         detector_metadata: DetectorMetadata,
     ):
-        num_points = session_config.sensor_config.num_points
+        num_points = sum(
+            [subsweep.num_points for subsweep in session_config.sensor_config.subsweeps]
+        )
         self.num_zones = np.minimum(processor_config.num_zones, num_points)
         self.distances = np.linspace(
             detector_metadata.start_m,

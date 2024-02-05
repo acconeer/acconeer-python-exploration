@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -18,15 +18,21 @@ from acconeer.exptool.a121._core.entities.configs.config_enums import IdleState,
 from acconeer.exptool.a121._core.utils import is_divisor_of, is_multiple_of
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo import (
+    APPROX_BASE_STEP_LENGTH_M,
     ENVELOPE_FWHM_M,
     AlgoBase,
     AlgoConfigBase,
     Controller,
     select_prf,
 )
-from acconeer.exptool.a121.algo._utils import estimate_frame_rate
+from acconeer.exptool.a121.algo._utils import (
+    estimate_frame_rate,
+    get_max_profile_without_direct_leakage,
+    get_max_step_length,
+)
 
 from ._processors import Processor, ProcessorConfig, ProcessorContext, ProcessorExtraResult
+from ._subsweep_utils import get_subsweep_configs
 
 
 SPARSE_IQ_PPC = 24
@@ -67,6 +73,12 @@ class DetectorConfig(AlgoConfigBase):
 
     sweeps_per_frame: int = attrs.field(default=16)
     """Number of sweeps per frame."""
+
+    automatic_subsweeps: bool = attrs.field(default=False)
+    """Automatically select subsweeps and configure HWAAS."""
+
+    signal_quality: float = attrs.field(default=15.0)
+    """Signal quality measurement (higher = better signal, lower = less power consumption)."""
 
     hwaas: int = attrs.field(default=32)
     """Number of HWAAS."""
@@ -128,6 +140,24 @@ class DetectorConfig(AlgoConfigBase):
     def _collect_validation_results(self) -> list[a121.ValidationResult]:
         validation_results: list[a121.ValidationResult] = []
 
+        if self.sweeps_per_frame <= Processor.NOISE_ESTIMATION_DIFF_ORDER:
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "sweeps_per_frame",
+                    f"Must be greater than {Processor.NOISE_ESTIMATION_DIFF_ORDER}",
+                )
+            )
+
+        if self.start_m > self.end_m:
+            validation_results.append(
+                a121.ValidationError(
+                    self, "end_m", "End point must be further or equal to start point"
+                )
+            )
+            # Return to avoid calling get_sensor_config with bad config.
+            return validation_results
+
         for res in Detector._get_sensor_config(self)._collect_validation_results():
             res.source = self
 
@@ -148,15 +178,6 @@ class DetectorConfig(AlgoConfigBase):
                 )
             else:
                 validation_results.append(res)
-
-        if self.sweeps_per_frame <= Processor.NOISE_ESTIMATION_DIFF_ORDER:
-            validation_results.append(
-                a121.ValidationError(
-                    self,
-                    "sweeps_per_frame",
-                    f"Must be greater than {Processor.NOISE_ESTIMATION_DIFF_ORDER}",
-                )
-            )
 
         return validation_results
 
@@ -264,11 +285,16 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
 
         processor_config = self._get_processor_config(self.config)
 
+        start_m = sensor_config.subsweeps[0].start_point * APPROX_BASE_STEP_LENGTH_M
+        step_length_m = metadata.base_step_length_m * sensor_config.subsweeps[0].step_length
+        num_points = sum([subsweep.num_points for subsweep in sensor_config.subsweeps])
+        profile = sensor_config.subsweeps[0].profile
+
         self.detector_metadata = DetectorMetadata(
-            start_m=sensor_config.start_point * Processor.APPROX_BASE_STEP_LENGTH_M,
-            step_length_m=metadata.base_step_length_m * sensor_config.step_length,
-            num_points=sensor_config.num_points,
-            profile=sensor_config.profile,
+            start_m=start_m,
+            step_length_m=step_length_m,
+            num_points=num_points,
+            profile=profile,
         )
 
         self.processor = Processor(
@@ -300,45 +326,46 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
 
     @classmethod
     def _get_sensor_config(cls, config: DetectorConfig) -> a121.SensorConfig:
-        start_point = int(np.floor(config.start_m / Processor.APPROX_BASE_STEP_LENGTH_M))
-        if config.profile is not None:
-            profile = config.profile
-        else:
-            viable_profiles = [
-                k for k, v in cls.MIN_DIST_M.items() if v is None or v <= config.start_m
-            ]
-            profile = viable_profiles[-1]
-
-        if config.step_length is not None:
-            step_length = config.step_length
-        else:
-            # Calculate biggest possible step length based on the fwhm of the set profile
-            # Achieve detection on the complete range with minimum number of sampling points
-            fwhm_p = Processor.ENVELOPE_FWHM_M[profile] / Processor.APPROX_BASE_STEP_LENGTH_M
-            if fwhm_p < SPARSE_IQ_PPC:
-                step_length = SPARSE_IQ_PPC // int(np.ceil(SPARSE_IQ_PPC / fwhm_p))
-            else:
-                step_length = int((fwhm_p // SPARSE_IQ_PPC) * SPARSE_IQ_PPC)
-
-        num_point = int(
-            np.ceil(
-                (config.end_m - config.start_m)
-                / (step_length * Processor.APPROX_BASE_STEP_LENGTH_M)
+        if config.automatic_subsweeps:
+            subsweep_config = get_subsweep_configs(
+                config.start_m, config.end_m, config.signal_quality
             )
-            + 1
-        )
-        end_point = start_point + (num_point - 1) * step_length
-        return a121.SensorConfig(
-            profile=profile,
-            start_point=start_point,
-            num_points=num_point,
-            step_length=step_length,
-            prf=select_prf(end_point, profile),
-            hwaas=config.hwaas,
-            sweeps_per_frame=config.sweeps_per_frame,
-            frame_rate=config.frame_rate,
-            inter_frame_idle_state=config.inter_frame_idle_state,
-        )
+            sensor_config = a121.SensorConfig(
+                subsweeps=subsweep_config,
+                sweeps_per_frame=config.sweeps_per_frame,
+                frame_rate=config.frame_rate,
+                inter_frame_idle_state=config.inter_frame_idle_state,
+            )
+        else:
+            if config.profile is not None:
+                profile = config.profile
+            else:
+                profile = get_max_profile_without_direct_leakage(config.start_m)
+            if config.step_length is not None:
+                step_length = config.step_length
+            else:
+                step_length = get_max_step_length(profile)
+
+            start_point = int(np.floor(config.start_m / APPROX_BASE_STEP_LENGTH_M))
+            num_point = int(
+                np.ceil(
+                    (config.end_m - config.start_m) / (step_length * APPROX_BASE_STEP_LENGTH_M)
+                )
+                + 1
+            )
+            end_point = start_point + (num_point - 1) * step_length
+            sensor_config = a121.SensorConfig(
+                profile=profile,
+                start_point=start_point,
+                num_points=num_point,
+                step_length=step_length,
+                prf=select_prf(end_point, profile),
+                hwaas=config.hwaas,
+                sweeps_per_frame=config.sweeps_per_frame,
+                frame_rate=config.frame_rate,
+                inter_frame_idle_state=config.inter_frame_idle_state,
+            )
+        return sensor_config
 
     @classmethod
     def _get_processor_config(cls, config: DetectorConfig) -> ProcessorConfig:

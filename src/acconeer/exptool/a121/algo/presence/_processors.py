@@ -95,16 +95,7 @@ class Processor(ProcessorBase[ProcessorResult]):
     # tc: time constant [s]
     # sf: smoothing factor [dimensionless]
 
-    ENVELOPE_FWHM_M = {
-        a121.Profile.PROFILE_1: 0.04,
-        a121.Profile.PROFILE_2: 0.07,
-        a121.Profile.PROFILE_3: 0.14,
-        a121.Profile.PROFILE_4: 0.19,
-        a121.Profile.PROFILE_5: 0.32,
-    }
-
-    APPROX_BASE_STEP_LENGTH_M = 2.5e-3
-    MAX_AMPLITUDE_WEIGHT = 15
+    MAX_AMPLITUDE_WEIGHT = 5
     NOISE_ESTIMATION_DIFF_ORDER = 3
 
     def __init__(
@@ -141,12 +132,6 @@ class Processor(ProcessorBase[ProcessorResult]):
             self.f = context.estimated_frame_rate
         else:
             self.f = self.sensor_config.frame_rate
-
-        points_per_pulse = self.ENVELOPE_FWHM_M[sensor_config.profile] / (
-            self.APPROX_BASE_STEP_LENGTH_M * sensor_config.step_length
-        )
-        self.depth_filter_length = max(int(round(points_per_pulse)), 1)
-        self.depth_filter_length = min(self.depth_filter_length, self.num_distances)
 
         # Fixed parameters
         self.noise_est_diff_order = self.NOISE_ESTIMATION_DIFF_ORDER
@@ -253,14 +238,6 @@ class Processor(ProcessorBase[ProcessorResult]):
         return np.mean(np.abs(a), axis=axis) * sqrt(n / (n - ddof))  # type: ignore[no-any-return]
 
     @staticmethod
-    def _depth_filter(
-        a: npt.NDArray[np.float_], depth_filter_length: int
-    ) -> npt.NDArray[np.float_]:
-        b = np.ones(depth_filter_length) / depth_filter_length
-
-        return np.correlate(a, b, mode="same")
-
-    @staticmethod
     def _calculate_phase_shift(
         a: npt.NDArray[np.complex_], b: npt.NDArray[np.float_]
     ) -> npt.NDArray[np.float_]:
@@ -358,14 +335,12 @@ class Processor(ProcessorBase[ProcessorResult]):
         sf = self._dynamic_sf(self.intra_sf, self.update_index)
         self.lp_intra_dev = sf * self.lp_intra_dev + (1.0 - sf) * sweep_dev
 
-        norm_lp_intra_dev = np.divide(
+        intra = np.divide(
             self.lp_intra_dev,
             self.lp_noise,
             out=np.zeros(self.num_distances),
             where=(self.lp_noise > 1.0),
         )
-
-        intra = self._depth_filter(norm_lp_intra_dev, self.depth_filter_length)
 
         intra_presence_distance_index = int(np.argmax(intra))
         intra_presence_distance = self.distances[intra_presence_distance_index]
@@ -390,16 +365,14 @@ class Processor(ProcessorBase[ProcessorResult]):
         sf = self._dynamic_sf(self.inter_dev_sf, self.update_index)
         self.lp_inter_dev = sf * self.lp_inter_dev + (1.0 - sf) * inter_dev
 
-        norm_lp_dev = np.divide(
+        inter = np.divide(
             self.lp_inter_dev,
             self.lp_noise,
             out=np.zeros_like(self.lp_inter_dev),
             where=(self.lp_noise > 1.0),
         )
 
-        norm_lp_dev *= np.sqrt(self.sweeps_per_frame)
-
-        inter = self._depth_filter(norm_lp_dev, self.depth_filter_length)
+        inter *= np.sqrt(self.sweeps_per_frame)
 
         # Phase and amplitude weighting of inter-frame part
 

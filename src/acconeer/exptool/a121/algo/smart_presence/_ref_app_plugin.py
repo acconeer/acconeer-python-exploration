@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -47,7 +47,10 @@ from acconeer.exptool.app.new import (
     pidgets,
     visual_policies,
 )
-from acconeer.exptool.app.new.ui.components.a121 import RangeHelpView
+from acconeer.exptool.app.new.ui.components import CollapsibleWidget
+from acconeer.exptool.app.new.ui.components.a121 import (
+    SensorConfigEditor,
+)
 
 from ._configs import (
     get_ceiling_config,
@@ -184,7 +187,7 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
         distances = np.linspace(
             self.shared_state.config.nominal_config.start_m,
             self.shared_state.config.nominal_config.end_m,
-            nominal_sensor_config.num_points,
+            sum([subsweep.num_points for subsweep in nominal_sensor_config.subsweeps]),
         )
         nominal_zone_limits = self._ref_app_instance.ref_app_processor.create_zones(
             distances, self.shared_state.config.nominal_config.num_zones
@@ -669,9 +672,15 @@ class ViewPlugin(A121ViewPluginBase):
         self.config_editor.sig_update.connect(self._on_config_update)
         scrolly_layout.addWidget(self.config_editor)
 
-        self.range_helper_wake_up = RangeHelpView()
-        self.range_helper_wake_up.setTitle("Wake up config, approx. selected range")
-        scrolly_layout.addWidget(self.range_helper_wake_up)
+        self.subsweep_status_wake_up = SensorConfigEditor()
+        self.subsweep_status_wake_up.set_read_only(True)
+        wake_up_status_widget = CollapsibleWidget(
+            "Wake up subsweep settings",
+            self.subsweep_status_wake_up.subsweep_group_box,
+            self.scrolly_widget,
+        )
+
+        scrolly_layout.addWidget(wake_up_status_widget)
 
         self.wake_up_config_editor = AttrsConfigEditor(
             title="Wake up config parameters",
@@ -682,10 +691,15 @@ class ViewPlugin(A121ViewPluginBase):
         self.wake_up_config_editor.sig_update.connect(self._on_wake_up_config_update)
         scrolly_layout.addWidget(self.wake_up_config_editor)
 
-        self.range_helper_nominal = RangeHelpView()
-        self.range_helper_nominal.setTitle("Nominal config, approx. selected range")
-        scrolly_layout.addWidget(self.range_helper_nominal)
+        self.subsweep_status_nominal = SensorConfigEditor()
+        self.subsweep_status_nominal.set_read_only(True)
+        nominal_status_widget = CollapsibleWidget(
+            "Nominal subsweep settings",
+            self.subsweep_status_nominal.subsweep_group_box,
+            self.scrolly_widget,
+        )
 
+        scrolly_layout.addWidget(nominal_status_widget)
         self.nominal_config_editor = AttrsConfigEditor(
             title="Nominal config parameters",
             factory_mapping=self._get_presence_zone_pidget_mapping(),
@@ -738,25 +752,25 @@ class ViewPlugin(A121ViewPluginBase):
         if state is None:
             self.config_editor.set_data(None)
             self.nominal_config_editor.set_data(None)
-            self.range_helper_nominal.set_data(None)
+            self.subsweep_status_nominal.set_data(None)
             self.wake_up_config_editor.set_data(None)
-            self.range_helper_wake_up.set_data(None)
+            self.subsweep_status_wake_up.set_data(None)
         else:
             self.sensor_id_pidget.set_data(state.sensor_id)
             self.config_editor.set_data(state.config)
 
             self.nominal_config_editor.set_data(state.config.nominal_config)
-            self.range_helper_nominal.set_data(
-                Detector._get_sensor_config(state.config.nominal_config).subsweep
+
+            self.subsweep_status_nominal.set_data(
+                Detector._get_sensor_config(state.config.nominal_config)
             )
 
             self.wake_up_config_editor.setHidden(not state.config.wake_up_mode)
-            self.range_helper_wake_up.setHidden(not state.config.wake_up_mode)
 
             if state.config.wake_up_config is not None:
                 self.wake_up_config_editor.set_data(state.config.wake_up_config)
-                self.range_helper_wake_up.set_data(
-                    Detector._get_sensor_config(state.config.wake_up_config).subsweep
+                self.subsweep_status_wake_up.set_data(
+                    Detector._get_sensor_config(state.config.wake_up_config)
                 )
 
             results = state.config._collect_validation_results()

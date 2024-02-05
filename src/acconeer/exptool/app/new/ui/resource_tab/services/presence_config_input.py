@@ -12,7 +12,7 @@ from PySide6.QtWidgets import QVBoxLayout
 from acconeer.exptool import a121
 from acconeer.exptool.a121.algo.presence import _configs as presence_configs
 from acconeer.exptool.a121.algo.presence._detector import Detector, DetectorConfig
-from acconeer.exptool.a121.algo.presence._pidget_mapping import get_pidget_mapping
+from acconeer.exptool.a121.algo.presence._pidget_mapping import get_pidget_mapping_for_rc
 from acconeer.exptool.a121.model import power
 from acconeer.exptool.app.new.ui.components import AttrsConfigEditor, GroupBox, pidgets
 from acconeer.exptool.app.new.ui.resource_tab.event_system import ChangeIdEvent, EventBroker
@@ -65,7 +65,7 @@ class PresenceConfigInput(ScrollAreaDecorator):
 
         self.editor = AttrsConfigEditor(
             title="Presence config",
-            factory_mapping=get_pidget_mapping(),
+            factory_mapping=get_pidget_mapping_for_rc(),
             config_type=DetectorConfig,
         )
         self.editor.set_data(initial_config)
