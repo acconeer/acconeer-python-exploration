@@ -140,7 +140,7 @@ class TableConverter:
 
     @staticmethod
     def format_cell_value(v: t.Any) -> str:
-        if np.imag(v):
+        if isinstance(v, complex):
             return f"{np.real(v):0}{np.imag(v):+}j"
         else:
             return str(v)
