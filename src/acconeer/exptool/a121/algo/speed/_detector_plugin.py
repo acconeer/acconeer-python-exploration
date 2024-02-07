@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -272,7 +272,7 @@ class PlotPlugin(PgPlotPlugin):
         for i in range(self.n_depths):
             raw_fft_curve = self.raw_fft_plot.plot(pen=et.utils.pg_pen_cycler(i), name="Fft")
             threshold_curve = self.raw_fft_plot.plot(
-                pen=et.utils.pg_pen_cycler(i), name="Threshold"
+                pen=et.utils.pg_pen_cycler(i, style="--"), name="Threshold"
             )
             self.raw_fft_curves.append(raw_fft_curve)
             self.raw_thresholds_curves.append(threshold_curve)
