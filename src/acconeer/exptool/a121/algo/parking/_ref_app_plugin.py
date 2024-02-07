@@ -679,12 +679,6 @@ class ViewPlugin(A121ViewPluginBase):
                     limits=(0, 100.0),
                     decimals=1,
                 ),
-                "frame_noise_estimation": pidgets.CheckboxPidgetFactory(
-                    name_label_text="Enable framewise noise estimation",
-                    name_label_tooltip=get_attribute_docstring(
-                        RefAppConfig, "frame_noise_estimation"
-                    ),
-                ),
                 "obstruction_detection": pidgets.CheckboxPidgetFactory(
                     name_label_text="Enable obstruction detection",
                     name_label_tooltip=get_attribute_docstring(

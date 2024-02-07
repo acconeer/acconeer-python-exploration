@@ -102,9 +102,6 @@ class RefAppConfig(AlgoConfigBase):
     obstruction_end_m: float = attrs.field(default=0.05)
     """End of obstruction detection range."""
 
-    frame_noise_estimation: bool = attrs.field(default=False)
-    """Active noise estimation every frame. Replaces calibration at cost of frame size."""
-
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> RefAppConfig:
         return cls(**d)
@@ -209,7 +206,6 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         self.processor_config = ProcessorConfig(
             queue_length=ref_app_config.queue_length_n,
             amplitude_threshold=ref_app_config.amplitude_threshold,
-            frame_noise_estimation=ref_app_config.frame_noise_estimation,
             weighted_distance_threshold_m=ref_app_config.weighted_distance_threshold_m,
             signature_similarity_threshold=signature_similarity_threshold,
         )
@@ -298,7 +294,6 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         obstruction_detection = self.ref_app_config.obstruction_detection
 
         temp_config = copy.deepcopy(self.ref_app_config)
-        temp_config.frame_noise_estimation = False
         sensor_configs = get_sensor_configs(temp_config)
         sensor_config = sensor_configs["full_config"]
 
@@ -444,7 +439,6 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
     def get_ref_app_status(
         cls, ref_app_config: RefAppConfig, context: RefAppContext
     ) -> RefAppStatus:
-        using_calibration = not ref_app_config.frame_noise_estimation
         calibration_done = context.calibration_done
 
         sensor_settings = get_sensor_configs(ref_app_config)
@@ -459,24 +453,16 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         else:
             obstruction_ready = True
 
-        if using_calibration:
-            if not calibration_done:
-                ret = RefAppStatus(
-                    ready_to_start=False,
-                    ref_app_state=DetailedStatus.CALIBRATION_MISSING,
-                )
-            elif not config_match:
-                ret = RefAppStatus(
-                    ready_to_start=False,
-                    ref_app_state=DetailedStatus.CONFIG_MISMATCH,
-                )
-            elif not obstruction_ready:
-                ret = RefAppStatus(
-                    ready_to_start=False,
-                    ref_app_state=DetailedStatus.OBSTRUCTION_CALIBRATION_MISSING,
-                )
-            else:
-                ret = RefAppStatus(ready_to_start=True, ref_app_state=DetailedStatus.OK)
+        if not calibration_done:
+            ret = RefAppStatus(
+                ready_to_start=False,
+                ref_app_state=DetailedStatus.CALIBRATION_MISSING,
+            )
+        elif not config_match:
+            ret = RefAppStatus(
+                ready_to_start=False,
+                ref_app_state=DetailedStatus.CONFIG_MISMATCH,
+            )
         elif not obstruction_ready:
             ret = RefAppStatus(
                 ready_to_start=False,
@@ -534,7 +520,7 @@ def get_obstruction_sensor_config(ref_app_config: RefAppConfig) -> a121.SensorCo
         step_length=step_length,
         profile=a121.Profile.PROFILE_1,
         hwaas=16,
-        sweeps_per_frame=16,
+        sweeps_per_frame=1,
     )
     return conf_obstruction
 
@@ -576,22 +562,12 @@ def get_sensor_configs(ref_app_config: RefAppConfig) -> Dict[str, a121.SensorCon
     ret["base_config"] = a121.SensorConfig(subsweeps=[conf_base])
 
     subsweeps.append(conf_base)
-    if ref_app_config.frame_noise_estimation:
-        conf_noise = a121.SubsweepConfig(
-            start_point=start_point,
-            num_points=num_points,
-            step_length=step_length,
-            profile=profile,
-            enable_tx=False,
-            hwaas=hwaas,
-        )
-        subsweeps.append(conf_noise)
 
     if ref_app_config.obstruction_detection:
         conf_obstruction = get_obstruction_sensor_config(ref_app_config)
         ret["obstruction_config"] = conf_obstruction
 
-    conf = a121.SensorConfig(subsweeps=subsweeps, sweeps_per_frame=3)
+    conf = a121.SensorConfig(subsweeps=subsweeps, sweeps_per_frame=1)
     ret["full_config"] = conf
 
     return ret

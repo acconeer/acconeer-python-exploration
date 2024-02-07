@@ -100,8 +100,8 @@ class ObstructionProcessor(object):
         frame: npt.NDArray[np.complex128], noise_level: float, distances: npt.NDArray[np.float_]
     ) -> Tuple[npt.NDArray[np.float_], npt.NDArray[np.float_]]:
         # Returns signature for a frame without temperature adjustment
-        mean_frame = np.mean(frame, axis=0)
-        abs_frame = abs(mean_frame)
+
+        abs_frame = np.squeeze(abs(frame))
         noise_adjusted_frame = abs_frame - noise_level
         total_energy = np.sum(noise_adjusted_frame)
         avg_energy = total_energy / len(distances)
@@ -163,9 +163,6 @@ class ProcessorConfig:
     signature_similarity_threshold: float = attrs.field(default=0.6)
     """How large fraction of the signature history that has to be similar in order to retain detection."""
 
-    frame_noise_estimation: bool = attrs.field(default=False)
-    """Perform noise estimation each frame."""
-
     def _collect_validation_results(self) -> list[a121.ValidationResult]:
         validation_results: list[a121.ValidationResult] = []
         return validation_results
@@ -202,18 +199,12 @@ class Processor(object):
         noise_estimate: float = 1.0,
         noise_estimate_temperature: float = 0.0,
     ):
-        self.framewise_noise_estimate = processor_config.frame_noise_estimation
-
-        if self.framewise_noise_estimate:
-            self.profile = sensor_config.subsweeps[0].profile
-            self.distances = get_distances_m(sensor_config.subsweeps[0], metadata)
-        else:
-            self.profile = sensor_config.profile
-            self.distances = get_distances_m(sensor_config, metadata)
-            if noise_estimate == 0.0:
-                noise_estimate = 1.0
-            self.noise_estimate = noise_estimate
-            self.noise_estimate_temperature = noise_estimate_temperature
+        self.profile = sensor_config.profile
+        self.distances = get_distances_m(sensor_config, metadata)
+        if noise_estimate == 0.0:
+            noise_estimate = 1.0
+        self.noise_estimate = noise_estimate
+        self.noise_estimate_temperature = noise_estimate_temperature
 
         self.norm_distances = self.distances / self.distances[0]
 
@@ -295,23 +286,16 @@ class Processor(object):
 
         base_frame = result.subframes[0]
 
-        if self.framewise_noise_estimate:
-            noise_frame = result.subframes[1]
-            noise_level = self.process_noise_frame(noise_frame)
-            noise_level_adjusted = noise_level
-            if noise_level_adjusted == 0.0:
-                noise_level_adjusted = 1.0
-        else:
-            temperature = result.temperature
-            temperature_diff = temperature - self.noise_estimate_temperature
-            signal_adjustment_factor, _ = get_temperature_adjustment_factors(
-                temperature_diff=temperature_diff,
-                profile=self.profile,
-            )
-            # self.noise_estimate is never 0.0
-            noise_level_adjusted = self.noise_estimate / signal_adjustment_factor
+        temperature = result.temperature
+        temperature_diff = temperature - self.noise_estimate_temperature
+        signal_adjustment_factor, _ = get_temperature_adjustment_factors(
+            temperature_diff=temperature_diff,
+            profile=self.profile,
+        )
+        # self.noise_estimate is never 0.0
+        noise_level_adjusted = self.noise_estimate / signal_adjustment_factor
 
-        data = np.mean(base_frame, axis=0)
+        data = np.squeeze(base_frame, axis=0)  # remove sweep dimension
 
         # Div by zero avoided by tests elsewhere
         amp = np.squeeze(abs(data)) / noise_level_adjusted

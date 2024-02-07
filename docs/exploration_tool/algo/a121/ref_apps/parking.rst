@@ -86,10 +86,7 @@ The :attr:`~acconeer.exptool.a121.algo.parking._ref_app.RefAppConfig.profile` de
 
 Calibration
 ------------
-Estimation of the underlying noise level is an important factor for the performance of the algorithm. There are two options available to do this. Either a calibration at start up or continuously adding extra sweeps for noise estimation.
-The first alternative is more battery efficient but more prone to "drifting" errors due to the underlying noise level changing, for instance due to temperature change. The processing has an internal model to account for temperature changes during execution.
-
-The framewise noise evaluation can be activated using the :attr:`~acconeer.exptool.a121.algo.parking._ref_app.RefAppConfig.frame_noise_estimation`. If the noise level is estimated framewise, the temperature model is not necessary and is ignored. The best performance is obtained using the framewise estimation, but both methods are viable.
+Estimation of the underlying noise level is an important factor for the performance of the algorithm. This is done at start up with an empty channel. The purpose of this is to get a noise estimate in the current temperature. If the obstruction detection is activated, we also get the signature for the unobstructed close range. The processing has an internal model to account for temperature changes during execution. However, for large temperature fluctuations, there is still a risk that the obstruction detection performance deteriorates.
 
 Temperature
 ^^^^^^^^^^^
