@@ -18,36 +18,12 @@ import numpy.typing as npt
 import pandas as pd
 
 import acconeer.exptool as et
+import acconeer.exptool.a121.algo.breathing as breathing
+import acconeer.exptool.a121.algo.presence as presence
+import acconeer.exptool.a121.algo.surface_velocity as surface_velocity
 from acconeer.exptool import a121
 from acconeer.exptool.a121 import H5Record, _core, algo
 from acconeer.exptool.a121._core_ext._replaying_client import _ReplayingClient
-from acconeer.exptool.a121.algo.breathing import (
-    RefApp as RefAppBreathing,
-)
-from acconeer.exptool.a121.algo.breathing import (
-    RefAppResult as RefAppResultBreathing,
-)
-from acconeer.exptool.a121.algo.breathing._ref_app import (
-    _load_algo_data as _load_algo_data_breathing,
-)
-from acconeer.exptool.a121.algo.presence import (
-    Detector as PresenceDetector,
-)
-from acconeer.exptool.a121.algo.presence import (
-    DetectorResult as PresenceDetectorResult,
-)
-from acconeer.exptool.a121.algo.presence._detector import (
-    _load_algo_data as _load_algo_data_presence,
-)
-from acconeer.exptool.a121.algo.surface_velocity import (
-    ExampleApp as ExampleApp_surface_velocity,
-)
-from acconeer.exptool.a121.algo.surface_velocity import (
-    ExampleAppResult,
-)
-from acconeer.exptool.a121.algo.surface_velocity._example_app import (
-    _load_algo_data as _load_algo_data_surface_velocity,
-)
 
 
 try:
@@ -475,6 +451,7 @@ def get_default_sensor_id_or_index(namespace: argparse.Namespace, generation: st
 
 
 def configs_as_dataframe(session_config: a121.SessionConfig) -> pd.DataFrame:
+    # Create DataFrames from session configurations
     df_config = pd.DataFrame()
     sensor_config = session_config.sensor_config
     update_rate = "Max" if session_config.update_rate is None else session_config.update_rate
@@ -506,31 +483,39 @@ def configs_as_dataframe(session_config: a121.SessionConfig) -> pd.DataFrame:
     return df_config
 
 
-def get_processed_data(h5_file: h5py.File) -> pd.DataFrame:
+def get_processed_data(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
     app_key = h5_file["algo/key"][()].decode()
     supported_apps = ["breathing", "presence_detector", "surface_velocity"]
 
+    df_app_config = pd.DataFrame()
     load_algo_and_client = {
         "breathing": get_processed_data_breathing,
         "presence_detector": get_processed_data_presence,
         "surface_velocity": get_processed_data_surface_velocity,
     }
     if app_key in supported_apps:
-        df_processed_data = load_algo_and_client[app_key](h5_file)
+        df_processed_data, df_app_config = load_algo_and_client[app_key](h5_file)
     else:
         df_processed_data = pd.DataFrame()
-    return df_processed_data
+    return df_processed_data, df_app_config
 
 
-def get_processed_data_breathing(h5_file: h5py.File) -> pd.DataFrame:
+def get_processed_data_breathing(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
     processed_data_list = []
-    sensor_id, ref_app_config = _load_algo_data_breathing(h5_file["algo"])
+    sensor_id, ref_app_config = breathing._ref_app._load_algo_data(h5_file["algo"])
+
+    # Create DataFrames from dictionaries
+    df_sensor_id = pd.DataFrame(({"sensor_id": sensor_id}).items())
+    df_config = pd.DataFrame([[k, v] for k, v in ref_app_config.to_dict().items()])
+
+    # Concatenate along columns
+    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
 
     # Client preparation
     record = H5Record(h5_file)
     client = _ReplayingClient(record, realtime_replay=False)
     num_frames = record.num_frames
-    ref_app = RefAppBreathing(client=client, sensor_id=sensor_id, ref_app_config=ref_app_config)
+    ref_app = breathing.RefApp(client=client, sensor_id=sensor_id, ref_app_config=ref_app_config)
     ref_app.start()
 
     try:
@@ -560,19 +545,26 @@ def get_processed_data_breathing(h5_file: h5py.File) -> pd.DataFrame:
     print("Disconnecting...")
 
     df_processed_data = pd.DataFrame(processed_data_as_dataframe)
-    return df_processed_data
+    return df_processed_data, df_algo_data
 
 
-def get_processed_data_surface_velocity(h5_file: h5py.File) -> pd.DataFrame:
+def get_processed_data_surface_velocity(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
     processed_data_list = []
-    sensor_id, ExampleAppConfig = _load_algo_data_surface_velocity(h5_file["algo"])
+    sensor_id, ExampleAppConfig = surface_velocity._example_app._load_algo_data(h5_file["algo"])
+
+    # Create DataFrames from dictionaries
+    df_sensor_id = pd.DataFrame(({"sensor_id": sensor_id}).items())
+    df_config = pd.DataFrame([[k, v] for k, v in ExampleAppConfig.to_dict().items()])
+
+    # Concatenate along columns
+    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
 
     # Client preparation
     record = H5Record(h5_file)
     client = _ReplayingClient(record, realtime_replay=False)
     num_frames = record.num_frames
 
-    example_app = ExampleApp_surface_velocity(
+    example_app = surface_velocity.ExampleApp(
         client=client,
         sensor_id=int(sensor_id),
         example_app_config=ExampleAppConfig,
@@ -606,18 +598,27 @@ def get_processed_data_surface_velocity(h5_file: h5py.File) -> pd.DataFrame:
     }
 
     df_processed_data = pd.DataFrame(processed_data_as_dataframe)
-    return df_processed_data
+    return df_processed_data, df_algo_data
 
 
-def get_processed_data_presence(h5_file: h5py.File) -> pd.DataFrame:
+def get_processed_data_presence(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
     processed_data_list = []
-    sensor_id, detector_config, detector_context = _load_algo_data_presence(h5_file["algo"])
+    sensor_id, detector_config, detector_context = presence._detector._load_algo_data(
+        h5_file["algo"]
+    )
+
+    # Create DataFrames from dictionaries
+    df_sensor_id = pd.DataFrame(({"sensor_id": sensor_id}).items())
+    df_config = pd.DataFrame([[k, v] for k, v in detector_config.to_dict().items()])
+
+    # Concatenate along columns
+    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
 
     # Client preparation
     record = H5Record(h5_file)
     client = _ReplayingClient(record, realtime_replay=False)
     num_frames = record.num_frames
-    detector = PresenceDetector(
+    detector = presence.Detector(
         client=client,
         sensor_id=int(sensor_id),
         detector_config=detector_config,
@@ -659,10 +660,10 @@ def get_processed_data_presence(h5_file: h5py.File) -> pd.DataFrame:
 
     df_processed_data = pd.DataFrame(processed_data_as_dataframe)
 
-    return df_processed_data
+    return df_processed_data, df_algo_data
 
 
-def breathing_result_as_row(processed_data: RefAppResultBreathing) -> list[t.Any]:
+def breathing_result_as_row(processed_data: breathing.RefAppResult) -> list[t.Any]:
     no_result = "None"
     rate = (
         no_result
@@ -684,14 +685,16 @@ def breathing_result_as_row(processed_data: RefAppResultBreathing) -> list[t.Any
     return [rate, motion, presence_dist]
 
 
-def surface_velocity_result_as_row(processed_data: ExampleAppResult) -> list[t.Any]:
+def surface_velocity_result_as_row(
+    processed_data: surface_velocity.ExampleAppResult
+) -> list[t.Any]:
     velocity = f"{processed_data.velocity :.3f}"
     distance_m = f"{processed_data.distance_m :.3f} m"
 
     return [velocity, distance_m]
 
 
-def presence_result_as_row(processed_data: PresenceDetectorResult) -> list[t.Any]:
+def presence_result_as_row(processed_data: presence.DetectorResult) -> list[t.Any]:
     presence_detected = "Presence!" if processed_data.presence_detected else "None"
     intra_presence_score = f"{processed_data.intra_presence_score:.3f}"
     inter_presence_score = f"{processed_data.inter_presence_score:.3f}"
@@ -742,7 +745,8 @@ def main() -> None:
 
     # Create a Pandas DataFrame from processed data
     h5_file = h5py.File(str(input_file))
-    df_processed_data = get_processed_data(h5_file)
+    df_processed_data, df_app_config = get_processed_data(h5_file)
+    dict_excel_file["Application configurations"] = df_app_config
     dict_excel_file["Processed data"] = df_processed_data
 
     h5_file.close()
