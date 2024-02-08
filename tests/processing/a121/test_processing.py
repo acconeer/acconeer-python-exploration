@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ from . import (
     breathing_test,
     data_files,
     distance_test,
+    parking_test,
     presence_test,
     smart_presence_test,
     surface_velocity_test,
@@ -51,6 +52,16 @@ def input_path(resource_name: str) -> Path:
         "resource_name",
     ),
     [
+        (
+            parking_test.parking_default,
+            t.List[parking_test.ResultSlice],
+            "input-parking_ground_default.h5",
+        ),
+        (
+            parking_test.parking_default,
+            t.List[parking_test.ResultSlice],
+            "input-parking_pole.h5",
+        ),
         (
             presence_test.presence_default,
             t.List[presence_test.ProcessorResultSlice],
