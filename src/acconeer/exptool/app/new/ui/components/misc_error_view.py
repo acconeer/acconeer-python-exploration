@@ -1,12 +1,11 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
 
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
-from acconeer.exptool import a121
-from acconeer.exptool.a121._core.entities import Criticality
+from acconeer.exptool._core.entities.validation_result import Criticality, ValidationResult
 
 
 class MiscErrorView(QWidget):
@@ -17,8 +16,8 @@ class MiscErrorView(QWidget):
         self.layout().setContentsMargins(0, 0, 0, 0)
 
     def handle_validation_results(
-        self, validation_results: list[a121.ValidationResult]
-    ) -> list[a121.ValidationResult]:
+        self, validation_results: list[ValidationResult]
+    ) -> list[ValidationResult]:
         COLOR_MAP = {
             Criticality.ERROR: "#E6635A",
             Criticality.WARNING: "#FCC842",

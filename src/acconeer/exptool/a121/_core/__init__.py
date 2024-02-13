@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from acconeer.exptool._core.communication.client import ClientError, ServerError
@@ -13,7 +13,6 @@ from .communication import (
 )
 from .entities import (
     PRF,
-    Criticality,
     IdleState,
     Metadata,
     PersistentRecord,
@@ -27,9 +26,6 @@ from .entities import (
     SessionConfig,
     StackedResults,
     SubsweepConfig,
-    ValidationError,
-    ValidationResult,
-    ValidationWarning,
 )
 from .recording import (
     _H5PY_STR_DTYPE,

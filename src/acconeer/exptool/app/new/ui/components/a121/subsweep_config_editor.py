@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from acconeer.exptool import a121
 from acconeer.exptool._core.docstrings import get_attribute_docstring
-from acconeer.exptool.a121._core import Criticality
+from acconeer.exptool._core.entities.validation_result import Criticality
 from acconeer.exptool.app.new.ui.components import pidgets
 from acconeer.exptool.app.new.ui.components.a121 import RangeHelpView
 from acconeer.exptool.app.new.ui.components.collapsible_widget import CollapsibleWidget

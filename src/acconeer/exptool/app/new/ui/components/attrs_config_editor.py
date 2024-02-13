@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -12,8 +12,7 @@ import attrs
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
-from acconeer.exptool import a121
-from acconeer.exptool.a121._core import Criticality
+from acconeer.exptool._core.entities.validation_result import Criticality, ValidationResult
 
 from .data_editor import DataEditor
 from .group_box import GroupBox
@@ -139,14 +138,12 @@ class AttrsConfigEditor(DataEditor[Optional[T]]):
     def get_data(self) -> Optional[T]:
         return copy.deepcopy(self._config)
 
-    def handle_validation_results(
-        self, results: list[a121.ValidationResult]
-    ) -> list[a121.ValidationResult]:
+    def handle_validation_results(self, results: list[ValidationResult]) -> list[ValidationResult]:
         for aspect, pidget in self._pidget_mapping.items():
             if aspect not in self._erroneous_aspects:
                 pidget.set_note_text("")
 
-        unhandled_results: list[a121.ValidationResult] = []
+        unhandled_results: list[ValidationResult] = []
 
         for result in results:
             if not self._handle_validation_result(result):
@@ -158,7 +155,7 @@ class AttrsConfigEditor(DataEditor[Optional[T]]):
     def is_ready(self) -> bool:
         return self._erroneous_aspects == set()
 
-    def _handle_validation_result(self, result: a121.ValidationResult) -> bool:
+    def _handle_validation_result(self, result: ValidationResult) -> bool:
         if result.aspect is None:
             return False
 

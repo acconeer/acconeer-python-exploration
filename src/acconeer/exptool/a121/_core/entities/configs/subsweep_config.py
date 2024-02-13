@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -11,6 +11,11 @@ import attrs
 from attributes_doc import attributes_doc
 
 from acconeer.exptool._core.class_creation.formatting import pretty_dict_line_strs
+from acconeer.exptool._core.entities.validation_result import (
+    ValidationError,
+    ValidationResult,
+    ValidationWarning,
+)
 from acconeer.exptool.a121._core.utils import (
     EntityJSONEncoder,
     convert_value,
@@ -19,7 +24,6 @@ from acconeer.exptool.a121._core.utils import (
 )
 
 from .config_enums import PRF, Profile
-from .validation_error import ValidationError, ValidationResult, ValidationWarning
 
 
 SPARSE_IQ_PPC = 24

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from acconeer.exptool._core.int_16_complex import (
@@ -9,15 +9,11 @@ from acconeer.exptool._core.int_16_complex import (
 
 from .configs import (
     PRF,
-    Criticality,
     IdleState,
     Profile,
     SensorConfig,
     SessionConfig,
     SubsweepConfig,
-    ValidationError,
-    ValidationResult,
-    ValidationWarning,
 )
 from .containers import (
     Metadata,

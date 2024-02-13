@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QTabWidget, QToolButton, QVBoxLayout, QWidget
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121._core import Criticality
+from acconeer.exptool._core.entities.validation_result import Criticality
 from acconeer.exptool.app.new.ui.components import pidgets
 from acconeer.exptool.app.new.ui.components.data_editor import DataEditor
 from acconeer.exptool.app.new.ui.components.group_box import GroupBox

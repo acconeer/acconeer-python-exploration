@@ -11,11 +11,15 @@ import numpy as np
 
 from acconeer.exptool._core.class_creation.descriptors import Descriptor, delegate_field
 from acconeer.exptool._core.class_creation.formatting import pretty_dict_line_strs
+from acconeer.exptool._core.entities.validation_result import (
+    ValidationError,
+    ValidationResult,
+    ValidationWarning,
+)
 from acconeer.exptool.a121._core import utils
 
 from .config_enums import PRF, IdleState, Profile
 from .subsweep_config import SubsweepConfig
-from .validation_error import ValidationError, ValidationResult, ValidationWarning
 
 
 T = TypeVar("T")
