@@ -1,5 +1,22 @@
 # Changelog
 
+## v7.8.0
+
+### Added
+- Waste level example app
+
+### Changed
+- Parking: Some labels in the GUI now better reflect
+  fields in the config object.
+- Speed: Change threshold line from solid to dotted
+  to make it easier to distinguish
+
+### Fixed
+- Parking: Add missing documentation
+
+### Removed
+- The Obstacle Bilateration example app
+
 ## v7.7.4
 
 ### Added
