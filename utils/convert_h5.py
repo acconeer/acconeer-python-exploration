@@ -10,7 +10,7 @@ import json
 import os
 import typing as t
 from pathlib import Path
-from typing import Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union
 
 import h5py
 import numpy as np
@@ -451,36 +451,48 @@ def get_default_sensor_id_or_index(namespace: argparse.Namespace, generation: st
 
 
 def configs_as_dataframe(session_config: a121.SessionConfig) -> pd.DataFrame:
-    # Create DataFrames from session configurations
-    df_config = pd.DataFrame()
-    sensor_config = session_config.sensor_config
+    group_configs = {}
+    subsweep_config_with_index: Dict[str, t.Any] = {}
+    sensor_config_with_index: Dict[str, t.Any] = {}
+
+    # Create DataFrames from configurations
+    for group_id, sensor_id, sensor_config in _core.utils.iterate_extended_structure(
+        session_config.groups
+    ):
+        sensor_config_with_index[f"group_id [{group_id}] sensor_id [{sensor_id}]"] = None
+        frame_rate = "Max" if sensor_config.frame_rate is None else sensor_config.frame_rate
+        sweep_rate = "Max" if sensor_config.sweep_rate is None else sensor_config.sweep_rate
+        group_configs = {
+            "sweep_rate": sweep_rate,
+            "frame_rate": frame_rate,
+        }
+        for key, value in sensor_config.to_dict().items():
+            if key == "subsweeps":
+                continue  # subsweeps are extended below
+            else:
+                sensor_config_with_index[f"{key} [{group_id}] [{sensor_id}]"] = value
+
+        for idx, subsweep in enumerate(sensor_config.subsweeps):
+            subsweep_config_with_index[f"SUBSWEEP INDEX [{idx}]"] = None
+            # Later will be converted to multiple subsweeps producing multiple rows in excel
+            for key, value in subsweep.to_dict().items():
+                if key != "subsweeps":
+                    subsweep_config_with_index[f"{key} [{idx}]"] = value
+
     update_rate = "Max" if session_config.update_rate is None else session_config.update_rate
-    frame_rate = "Max" if sensor_config.frame_rate is None else sensor_config.frame_rate
-    sweep_rate = "Max" if sensor_config.sweep_rate is None else sensor_config.sweep_rate
     configs = {
         "extended": session_config.extended,
         "update_rate": update_rate,
-        "sweep_rate": sweep_rate,
-        "frame_rate": frame_rate,
-        "sensor_id": session_config.sensor_id,
-        "continuous_sweep_mode": sensor_config.continuous_sweep_mode,
-        "double_buffering": sensor_config.double_buffering,
-        "inter_frame_idle_state": sensor_config.inter_frame_idle_state,
-        "inter_sweep_idle_state": sensor_config.inter_sweep_idle_state,
-        "sweeps_per_frame": sensor_config.sweeps_per_frame,
-        "start_point": sensor_config.subsweep.start_point,
-        "num_points": sensor_config.subsweep.num_points,
-        "step_length": sensor_config.subsweep.step_length,
-        "profile": sensor_config.subsweep.profile,
-        "hwaas": sensor_config.subsweep.hwaas,
-        "receiver_gain": sensor_config.subsweep.receiver_gain,
-        "enable_tx": sensor_config.subsweep.enable_tx,
-        "enable_loopback": sensor_config.subsweep.enable_loopback,
-        "phase_enhancement": sensor_config.subsweep.phase_enhancement,
-        "prf": sensor_config.subsweep.prf,
     }
-    df_config = pd.DataFrame(configs.items())
-    return df_config
+
+    return pd.DataFrame(
+        {
+            **configs,
+            **group_configs,
+            **sensor_config_with_index,
+            **subsweep_config_with_index,
+        }.items()
+    )
 
 
 def get_processed_data(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
