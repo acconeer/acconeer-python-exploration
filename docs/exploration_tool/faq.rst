@@ -4,6 +4,19 @@ Common Issues
 Python related
 --------------
 
+#) Newly updated ET shows an error at startup
+
+   ET caches your last configuration for each application you use. Sometimes
+   we make changes to the applications in ET, which makes the cache invalid.
+
+   If you face any issues, you can run the command
+
+   .. code-block::
+
+      python -m acconeer.exptool.app --purge-config
+
+   to remove the invalid cache.
+
 #) Import errors with NumPy on Linux
 
    The solution is to remove all duplicates of NumPy and reinstall using pip::
