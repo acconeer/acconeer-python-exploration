@@ -186,7 +186,7 @@ def copyright_exists_docs(file_content):
     file_content - The content of the source file as a list where every entry is a line
     """
 
-    return match_copyright_pattern(file_content, copyright_pattern_docs("\d+(-\d+)?"))
+    return match_copyright_pattern(file_content, copyright_pattern_docs(r"\d+(-\d+)?"))
 
 
 def copyright_check_year_docs(file_content, line_nbr, current_year):

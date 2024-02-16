@@ -25,7 +25,7 @@ Running this version is strongly recommended, as we continuously fix bugs and ad
 
 There is a portable version of the Acconeer Exploration Tool for Windows:
 
-* [Download](https://developer.acconeer.com/download/portable_exploration_tool-zip/) the zip file and extract
+* [Download](https://developer.acconeer.com/download/portable_exploration_tool/) the zip file and extract
 * Double click the `update.bat` file and wait for the installation to finish, which might take a couple of minutes
 * Double click the `run_app.bat`
 

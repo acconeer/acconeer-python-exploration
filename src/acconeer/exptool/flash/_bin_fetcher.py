@@ -123,10 +123,14 @@ def download(
 ) -> Tuple[str, str]:
     device = device.lower()
 
+    page_device_map = {"xc120": "xe121"}
+
+    page_device = page_device_map.get(device, device)
+
     response = session.get(url=A121_SW_URL)
 
     soup = BeautifulSoup(response.content, "html.parser")
-    link = soup.findAll("a", {"href": lambda l: l and device in l})
+    link = soup.findAll("a", {"href": lambda l: l and page_device in l})
 
     if not link:
         raise Exception(f"No download found for device '{device}'")

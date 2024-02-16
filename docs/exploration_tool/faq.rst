@@ -55,6 +55,10 @@ Python related
    When running nox tests for Python 3.12, the error "AttributeError: module ‘pkgutil’ has no attribute ‘ImpImporter’. Did you mean: ‘zipimporter’?" might occur.
    To fix this run ``python -m virtualenv --upgrade-embed-wheels`` to upgrade virtualenv's packages.
 
+#) Problems with downloading latest binary when flashing
+
+   Downloading the latest binary depends on the Acconeer developer site. Update to latest version of Exploration Tool.
+
 Sensor related
 --------------
 
