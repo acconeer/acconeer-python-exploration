@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -25,6 +25,7 @@ COOKIE_FILEPATH = COOKIE_DIR / "developer_page.pickle"
 REQUEST_URL = "https://developer.acconeer.com/log-in/"
 REFERER_URL = "https://developer.acconeer.com"
 ACC_DEV_AJAX_URL = "https://developer.acconeer.com/wp-admin/admin-ajax.php"
+A121_SW_URL = "https://developer.acconeer.com/home/a121-docs-software/"
 
 BIN_FETCH_PROMPT = (
     "To fetch the latest image you need to log into your Acconeer Developer account.\n\n"
@@ -122,29 +123,33 @@ def download(
 ) -> Tuple[str, str]:
     device = device.lower()
 
-    # Get correct device slug
-    slugs = {"xc120": "xe121", "xm125": "xm125_sw", "xm126": "xm126"}
-    slug = slugs.get(device, device)
-
-    data = f"action=ajax_file_tabs&slug={slug}"
-    headers = {"Content-Type": "application/x-www-form-urlencoded"}
-    response = session.post(url=ACC_DEV_AJAX_URL, data=data, cookies=cookies, headers=headers)
+    response = session.get(url=A121_SW_URL)
 
     soup = BeautifulSoup(response.content, "html.parser")
-    form = soup.select_one('form[action*="{}"]'.format("exploration_server"))
-    if form is None:
+    link = soup.findAll("a", {"href": lambda l: l and device in l})
+
+    if not link:
+        raise Exception(f"No download found for device '{device}'")
+
+    response = session.get(url=link[0]["href"])
+    soup = BeautifulSoup(response.content, "html.parser")
+
+    zip_url = soup.findAll(
+        "a", {"href": lambda l: l and device in l and "exploration_server" in l}
+    )
+    if not zip_url:
         raise Exception(f"No image found for device '{device}'")
-    zip_url = form.get("action")
+    zip_url = zip_url[0]["href"]
 
     log.debug("File to download: {}".format(zip_url))
 
-    tc = "tc_accepted=1"
+    tc = "tc_accepted=1&tc_submit=Download"
     headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
     r = session.post(zip_url, data=tc, allow_redirects=False, cookies=cookies, headers=headers)
 
     _, params = cgi.parse_header(r.headers["Content-Disposition"])
-    filename = params["filename"]
+    filename = params["filename*"].split("'")[-1]
 
     version = _get_version(filename)
 
