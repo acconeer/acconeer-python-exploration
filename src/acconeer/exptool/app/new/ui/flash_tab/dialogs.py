@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -358,6 +358,7 @@ class LicenseAgreementDialog(QDialog):
     def set_license_text(self, license: DevLicense) -> None:
         self.setWindowTitle(license.get_header())
 
+        self.license_text.clear()
         self.license_text.insertHtml(license.get_subheader_element())
 
         content = license.get_content_elements()

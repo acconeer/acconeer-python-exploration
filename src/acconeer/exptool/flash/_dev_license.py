@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ log = logging.getLogger(__name__)
 
 
 class DevLicense:
-    """Acconeer developer license abstration"""
+    """Acconeer developer license abstraction"""
 
     def __init__(self, license_url: str = DEV_LICENSE_URL) -> None:
         self.license_url = license_url
@@ -121,7 +121,7 @@ class DevLicense:
         paragraphs = []
 
         if self.html is not None:
-            paragraphs = [str(p) for p in self.html.select("p")]
+            paragraphs = [str(p) for p in self.html.select("p") if "class=" not in str(p)]
         else:
             paragraphs.append("<p></p>")
             paragraphs.append(DEV_LICENSE_DEFAULT_CONFIRMATION_MSG)
