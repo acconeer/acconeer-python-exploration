@@ -1,5 +1,10 @@
 # Changelog
 
+## v7.8.1
+
+### Fixed
+- Flashing latest binary after website update
+
 ## v7.8.0
 
 ### Added
