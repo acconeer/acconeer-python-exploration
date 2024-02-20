@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -196,7 +196,7 @@ class ResetResponse:
             raise McuMgrFlashException(f"Seq number mismatch: {header}")
 
         if len(data) > ResetRequestHeader.size:
-            dec_msg: Dict[str, Any] = cbor2.loads(data[ResetRequestHeader.size :])  # type: ignore[assignment]
+            dec_msg: Dict[str, Any] = cbor2.loads(data[ResetRequestHeader.size :])
         else:
             raise McuMgrFlashException(f"Complete header w/o payload: {header}")
 
@@ -294,7 +294,7 @@ class ImageUploadResponse:
             raise McuMgrFlashException(f"Seq number mismatch: {header}")
 
         if len(data) > ImageRequestHeader.size:
-            dec_msg: Dict[str, Any] = cbor2.loads(data[ImageRequestHeader.size :])  # type: ignore[assignment]
+            dec_msg: Dict[str, Any] = cbor2.loads(data[ImageRequestHeader.size :])
         else:
             raise McuMgrFlashException(f"Complete header w/o payload: {header}")
 
