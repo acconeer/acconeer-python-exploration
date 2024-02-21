@@ -497,18 +497,20 @@ def configs_as_dataframe(session_config: a121.SessionConfig) -> pd.DataFrame:
 
 def get_processed_data(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
     app_key = h5_file["algo/key"][()].decode()
-    supported_apps = ["breathing", "presence_detector", "surface_velocity"]
-
     df_app_config = pd.DataFrame()
-    load_algo_and_client = {
+    df_processed_data = pd.DataFrame()
+
+    load_algo_and_client: Dict[str, t.Callable[[h5py.File], Tuple[pd.DataFrame, pd.DataFrame]]] = {
         "breathing": get_processed_data_breathing,
         "presence_detector": get_processed_data_presence,
         "surface_velocity": get_processed_data_surface_velocity,
     }
-    if app_key in supported_apps:
-        df_processed_data, df_app_config = load_algo_and_client[app_key](h5_file)
-    else:
-        df_processed_data = pd.DataFrame()
+
+    for key, func in load_algo_and_client.items():
+        if key == app_key:
+            df_processed_data, df_app_config = func(h5_file)
+            break
+
     return df_processed_data, df_app_config
 
 
@@ -546,17 +548,15 @@ def get_processed_data_breathing(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.D
     else:
         print("Processing data is finished. . .")
 
-    transposed_processed_data_list = [list(row) for row in zip(*processed_data_list)]
-    processed_data_as_dataframe = {
-        "rate": transposed_processed_data_list[0],
-        "motion": transposed_processed_data_list[1],
-        "presence_dist": transposed_processed_data_list[2],
-    }
     ref_app.stop()
     client.close()
     print("Disconnecting...")
 
-    df_processed_data = pd.DataFrame(processed_data_as_dataframe)
+    # Creates DataFrames from processed data and keys
+    keys = ["rate", "motion", "presence_dist"]
+    df_processed_data = pd.DataFrame(
+        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
+    )
     return df_processed_data, df_algo_data
 
 
@@ -603,13 +603,11 @@ def get_processed_data_surface_velocity(h5_file: h5py.File) -> Tuple[pd.DataFram
     client.close()
     print("Disconnecting...")
 
-    transposed_processed_data_list = [list(row) for row in zip(*processed_data_list)]
-    processed_data_as_dataframe = {
-        "estimated_velocity": transposed_processed_data_list[0],
-        "distance": transposed_processed_data_list[1],
-    }
-
-    df_processed_data = pd.DataFrame(processed_data_as_dataframe)
+    # Creates DataFrames from processed data and keys
+    keys = ["estimated_velocity", "distance"]
+    df_processed_data = pd.DataFrame(
+        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
+    )
     return df_processed_data, df_algo_data
 
 
@@ -658,19 +656,16 @@ def get_processed_data_presence(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.Da
     client.close()
     print("Disconnecting...")
 
-    transposed_processed_data_list = [list(row) for row in zip(*processed_data_list)]
-    processed_data_as_dataframe = {
-        "Presence": transposed_processed_data_list[0],
-        f"Intra_presence_score_(threshold_{detector_config.intra_detection_threshold:.1f})": transposed_processed_data_list[
-            1
-        ],
-        f"Inter_presence_score_(threshold_{detector_config.inter_detection_threshold:.1f})": transposed_processed_data_list[
-            2
-        ],
-        "Presence_distance": transposed_processed_data_list[3],
-    }
-
-    df_processed_data = pd.DataFrame(processed_data_as_dataframe)
+    # Creates DataFrames from processed data and keys
+    keys = [
+        "Presence",
+        f"Intra_presence_score_(threshold_{detector_config.intra_detection_threshold:.1f})",
+        f"Inter_presence_score_(threshold_{detector_config.inter_detection_threshold:.1f})",
+        "Presence_distance",
+    ]
+    df_processed_data = pd.DataFrame(
+        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
+    )
 
     return df_processed_data, df_algo_data
 
