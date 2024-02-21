@@ -21,6 +21,7 @@ import acconeer.exptool as et
 import acconeer.exptool.a121.algo.breathing as breathing
 import acconeer.exptool.a121.algo.presence as presence
 import acconeer.exptool.a121.algo.surface_velocity as surface_velocity
+import acconeer.exptool.a121.algo.waste_level as waste_level
 from acconeer.exptool import a121
 from acconeer.exptool.a121 import H5Record, _core, algo
 from acconeer.exptool.a121._core_ext._replaying_client import _ReplayingClient
@@ -504,6 +505,7 @@ def get_processed_data(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
         "breathing": get_processed_data_breathing,
         "presence_detector": get_processed_data_presence,
         "surface_velocity": get_processed_data_surface_velocity,
+        "waste_level": get_processed_data_waste_level,
     }
 
     for key, func in load_algo_and_client.items():
@@ -514,11 +516,57 @@ def get_processed_data(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
     return df_processed_data, df_app_config
 
 
+def get_processed_data_waste_level(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    record = H5Record(h5_file)
+    processed_data_list = []
+    processor_config = waste_level._processor._load_algo_data(h5_file["algo"])
+
+    # Create DataFrames from configurations and sensor id
+    df_sensor_id = pd.DataFrame({"sensor_id": record.sensor_id}.items())
+    df_config = pd.DataFrame([[k, v] for k, v in processor_config.to_dict().items()])
+    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
+
+    # Record file extraction
+    num_frames = record.num_frames
+    sensor_config = record.session_config.sensor_config
+    metadata = record.metadata
+
+    processor = waste_level.Processor(
+        sensor_config=sensor_config,
+        metadata=metadata,
+        processor_config=processor_config,
+    )
+    try:
+        for idx, result in enumerate(record.results):
+            processed_data = processor.process(result)
+
+            # Put the result in row
+            processed_data_row = waste_level_as_row(processed_data=processed_data)
+            processed_data_list.append(processed_data_row)
+
+            # Print progressing time every 5%
+            print(f"... {idx / num_frames:.0%}") if (idx % int(0.05 * num_frames)) == 0 else None
+
+    except KeyboardInterrupt:
+        print("Conversion aborted")
+    else:
+        print("Processing data is finished. . .")
+
+    print("Disconnecting...")
+
+    # Creates DataFrames from processed data and keys
+    keys = ["level_percent", "level_m"]
+    df_processed_data = pd.DataFrame(
+        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
+    )
+    return df_processed_data, df_algo_data
+
+
 def get_processed_data_breathing(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
     processed_data_list = []
     sensor_id, ref_app_config = breathing._ref_app._load_algo_data(h5_file["algo"])
 
-    # Create DataFrames from dictionaries
+    # Create DataFrames from configurations and sensor id
     df_sensor_id = pd.DataFrame(({"sensor_id": sensor_id}).items())
     df_config = pd.DataFrame([[k, v] for k, v in ref_app_config.to_dict().items()])
 
@@ -564,7 +612,7 @@ def get_processed_data_surface_velocity(h5_file: h5py.File) -> Tuple[pd.DataFram
     processed_data_list = []
     sensor_id, ExampleAppConfig = surface_velocity._example_app._load_algo_data(h5_file["algo"])
 
-    # Create DataFrames from dictionaries
+    # Create DataFrames from configurations and sensor id
     df_sensor_id = pd.DataFrame(({"sensor_id": sensor_id}).items())
     df_config = pd.DataFrame([[k, v] for k, v in ExampleAppConfig.to_dict().items()])
 
@@ -617,7 +665,7 @@ def get_processed_data_presence(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.Da
         h5_file["algo"]
     )
 
-    # Create DataFrames from dictionaries
+    # Create DataFrames from configurations, sensor id, and detector context
     df_sensor_id = pd.DataFrame(({"sensor_id": sensor_id}).items())
     df_config = pd.DataFrame([[k, v] for k, v in detector_config.to_dict().items()])
 
@@ -708,6 +756,13 @@ def presence_result_as_row(processed_data: presence.DetectorResult) -> list[t.An
     presence_dist = f"{processed_data.presence_distance:.3f} m"
 
     return [presence_detected, intra_presence_score, inter_presence_score, presence_dist]
+
+
+def waste_level_as_row(processed_data: waste_level.ProcessorResult) -> list[t.Any]:
+    level_percent = f"{processed_data.level_percent}"
+    level_m = f"{processed_data.level_m} m"
+
+    return [level_percent, level_m]
 
 
 def main() -> None:
