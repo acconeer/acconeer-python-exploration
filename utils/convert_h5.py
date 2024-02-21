@@ -266,37 +266,37 @@ class A121RecordTableConverter(TableConverter):
                 unique_sensor_configs.append(sensor_config)
         return unique_sensor_configs
 
-    def _convert_single_sensor_config(
+    def _get_sparse_iq(
         self,
         sensor: int,
     ) -> npt.NDArray[t.Any]:
         """This function handles the case where the sensor at "sensor ID" is configured
-        with a single unique `SensorConfig`, possibly in multiple groups.
+        with a single/multiple `SensorConfig(s)`, possibly in multiple groups.
 
         :param sensor: The sensor ID.
         :returns: 2D NDArray of cell values.
         """
-        return np.array(
-            [
-                [self.format_cell_value(v) for v in result.frame.flatten()]
-                for result in self._results_of_sensor_id(sensor)
-            ]
-        )
 
-    def _convert_multiple_sensor_config(self, sensor: int) -> npt.NDArray[t.Any]:
-        """
-        This function handles the case where the sensor at "sensor ID" is configured
-        with a multiple unique `SensorConfig` across groups.
+        # Sensor results as a concatenate results of multiple or single configs
+        sensor_results = self._results_of_sensor_id(sensor)
+        num_sensor_configs = len(self._unique_sensor_configs_of_sensor_id(sensor))
+        rows = []
+        row_values = []
 
-        :param sensor: The sensor ID.
-        :returns: 2D NDArray of cell values.
-        """
-        raise NotImplementedError(
-            "This record contains data where a single sensor has multiple configuration through\n"
-            + "the use of groups. Exporting this kind of record is not possible at the moment.\n"
-            + "\n"
-            + "If this is a feature that you are interested in, please get in contact with us!"
-        )
+        # Append 2nd, 3rd, ... configs to the same rows or array with 1st frame
+        for index, result in enumerate(sensor_results):
+            # Flatten the frame and format each value
+            frame_values = result.frame.flatten()
+            for v in frame_values:
+                formatted_value = self.format_cell_value(v)
+                row_values.append(formatted_value)
+
+            # Append the row based on the number of configurations
+            if not (index + 1) % num_sensor_configs:
+                rows.append(row_values)
+                row_values = []
+
+        return np.array(rows)
 
     def convert(self, sensor: int) -> npt.NDArray[t.Any]:
         """Converts data of a single sensor
@@ -304,15 +304,7 @@ class A121RecordTableConverter(TableConverter):
         :param sensor: The sensor index
         :returns: 2D NDArray of cell values.
         """
-        unique_sensor_configs = self._unique_sensor_configs_of_sensor_id(sensor)
-
-        if len(unique_sensor_configs) == 1:
-            return self._convert_single_sensor_config(sensor)
-
-        if len(unique_sensor_configs) > 1:
-            return self._convert_multiple_sensor_config(sensor)
-
-        raise ValueError(f"This record contains no data of sensor with id = {sensor}")
+        return self._get_sparse_iq(sensor)
 
     def _get_metadata_rows_single_sensor_config(self, sensor: int) -> list[npt.NDArray[t.Any]]:
         (sensor_config,) = self._unique_sensor_configs_of_sensor_id(sensor)
@@ -782,7 +774,7 @@ def main() -> None:
     sensor = get_default_sensor_id_or_index(args, generation)
     table_converter = TableConverter.from_record(record)
     try:
-        data_table = table_converter.convert(sensor=sensor)
+        sparse_iq_data = table_converter.convert(sensor=sensor)
     except Exception as e:
         print(e)
         exit(1)
@@ -791,10 +783,10 @@ def main() -> None:
     print()
 
     if args.sweep_as_column:
-        data_table = data_table.T
+        sparse_iq_data = sparse_iq_data.T
 
     # Create a Pandas DataFrame from the data
-    dict_excel_file = {"Sparse IQ data": pd.DataFrame(data_table)}
+    dict_excel_file = {"Sparse IQ data": pd.DataFrame(sparse_iq_data)}
 
     # Create a Pandas DataFrame from the environtment
     record_environtment = get_environment(record)
