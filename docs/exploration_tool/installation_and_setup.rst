@@ -91,7 +91,7 @@ with the following content::
     SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a42d", MODE:="0666"
     SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a449", MODE:="0666"
 
-This method is confirmed to work for ***Ubuntu 20.04**.
+This method is confirmed to work for ***Ubuntu 22.04**.
 
 SPI permissions
 ^^^^^^^^^^^^^^^
@@ -104,15 +104,15 @@ with the following content::
 
     SUBSYSTEM=="usb", ATTRS{idVendor}=="0403", ATTRS{idProduct}=="601c", MODE:="0666"
 
-This method is confirmed to work for ***Ubuntu 20.04**.
+This method is confirmed to work for ***Ubuntu 22.04**.
 
-Ubuntu 20.04
+Ubuntu 22.04
 ^^^^^^^^^^^^
 
-To run the application on Ubuntu 20.04, ``libxcb-xinerama0-dev`` and ``libusb-1.0-0`` needs to be installed::
+To run the application on Ubuntu 20.04, ``libxcb-xinerama0-dev``, ``libusb-1.0-0`` and ``libxcb-cursor0`` needs to be installed::
 
     sudo apt update
-    sudo apt install -y libxcb-xinerama0-dev libusb-1.0-0
+    sudo apt install -y libxcb-xinerama0-dev libusb-1.0-0 libxcb-cursor0
 
 Udev needs to be informed that rules have changed if changes have been made in ``/etc/udev/rules/``::
 

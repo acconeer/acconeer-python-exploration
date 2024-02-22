@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -9,7 +9,7 @@ from .linux import Linux
 
 
 @PlatformInstall.register
-class Ubuntu_20_04(Linux):
+class Ubuntu_22_04(Linux):
     def __init__(self) -> None:
         super().__init__()
         self.add_steps(
@@ -19,7 +19,7 @@ class Ubuntu_20_04(Linux):
                 SetupGroup(
                     ShellCommandStep("sudo apt update".split()),
                     ShellCommandStep(
-                        "sudo apt install -y libxcb-xinerama0-dev libusb-1.0-0".split()
+                        "sudo apt install -y libxcb-xinerama0-dev libusb-1.0-0 libxcb-cursor0".split()
                     ),
                 ),
             ),
@@ -34,4 +34,4 @@ class Ubuntu_20_04(Linux):
 
     @classmethod
     def get_key(cls) -> str:
-        return "Ubuntu_20.04"
+        return "Ubuntu_22.04"
