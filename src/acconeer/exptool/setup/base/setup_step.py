@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -65,7 +65,8 @@ class RequireFileContentStep(ShellCommandStep):
     def report(self) -> None:
         print(f"Will make sure that {self.file_path} contains this content:")
         print()
-        print(f"    {self.required_content!r}")
+        for line in filter(lambda s: s != "", self.required_content.split("\n")):
+            print(f"    {line}")
         print()
 
     def run(self) -> bool:
