@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -334,13 +334,13 @@ def sanitize_instance(instance: t.Any, type_tree: Node) -> None:
     """
     current_type = type_tree.data
 
-    if is_class(current_type):
+    if is_ndarray(current_type):
+        return
+    elif is_class(current_type):
         if isinstance(instance, current_type):
             return
         else:
             raise TypeMissmatchError(instance, type_tree, current_type)
-    elif is_ndarray(current_type):
-        return
     elif is_generic(current_type):
         origin, *type_args = unwrap_generic(current_type)
         if origin is list:
