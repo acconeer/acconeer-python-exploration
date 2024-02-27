@@ -12,7 +12,7 @@ import pytest
 
 from acconeer.exptool import a121, opser
 
-from . import (
+from .a121 import (
     breathing_test,
     data_files,
     distance_test,
@@ -29,13 +29,17 @@ from . import (
 AlgorithmFactory = t.Callable[[a121.H5Record], t.Any]
 
 
-@pytest.fixture
-def output_path(input_path: Path, algorithm_factory: AlgorithmFactory) -> Path:
-    """Returns the output path, that is based on the input path."""
-    output_file_name = f"{input_path.stem}-{algorithm_factory.__name__}-output.h5"
+def get_output_path(input_path: Path, algorithm_name: str) -> Path:
+    output_file_name = f"{input_path.stem}-{algorithm_name}-output.h5"
     data_files_dir = input_path.parent / ".."
 
     return data_files_dir / "expected_output" / output_file_name
+
+
+@pytest.fixture
+def output_path(input_path: Path, algorithm_factory: AlgorithmFactory) -> Path:
+    """Returns the output path, that is based on the input path."""
+    return get_output_path(input_path, algorithm_factory.__name__)
 
 
 @pytest.fixture
