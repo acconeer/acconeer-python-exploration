@@ -21,6 +21,7 @@ import acconeer.exptool as et
 import acconeer.exptool.a121.algo.breathing as breathing
 import acconeer.exptool.a121.algo.presence as presence
 import acconeer.exptool.a121.algo.surface_velocity as surface_velocity
+import acconeer.exptool.a121.algo.tank_level as tank_level
 import acconeer.exptool.a121.algo.waste_level as waste_level
 from acconeer.exptool import a121
 from acconeer.exptool.a121 import H5Record, _core, algo
@@ -498,6 +499,7 @@ def get_processed_data(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
         "presence_detector": get_processed_data_presence,
         "surface_velocity": get_processed_data_surface_velocity,
         "waste_level": get_processed_data_waste_level,
+        "tank_level": get_processed_data_tank_level,
     }
 
     for key, func in load_algo_and_client.items():
@@ -594,6 +596,55 @@ def get_processed_data_breathing(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.D
 
     # Creates DataFrames from processed data and keys
     keys = ["rate", "motion", "presence_dist"]
+    df_processed_data = pd.DataFrame(
+        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
+    )
+    return df_processed_data, df_algo_data
+
+
+def get_processed_data_tank_level(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    processed_data_list = []
+    sensor_id, config, tank_level_context = tank_level._ref_app._load_algo_data(h5_file["algo"])
+
+    # Create DataFrames from configurations and sensor id
+    df_sensor_id = pd.DataFrame(({"sensor_id": sensor_id}).items())
+    df_config = pd.DataFrame([[k, v] for k, v in config.to_dict().items()])
+
+    # Concatenate along columns
+    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
+
+    # Client preparation
+    record = H5Record(h5_file)
+    client = _ReplayingClient(record, realtime_replay=False)
+    num_frames = record.num_frames
+    ref_app = tank_level._ref_app.RefApp(
+        client=client, sensor_id=sensor_id, config=config, context=tank_level_context
+    )
+    ref_app.start()
+
+    try:
+        for idx in range(record.num_frames):
+            processed_data = ref_app.get_next()
+
+            # Put the result in row
+            if processed_data.level is not None:
+                processed_data_row = tank_level_as_row(processed_data=processed_data)
+                processed_data_list.append(processed_data_row)
+
+            # Print progressing time every 5%
+            print(f"... {idx / num_frames:.0%}") if (idx % int(0.05 * num_frames)) == 0 else None
+
+    except KeyboardInterrupt:
+        print("Conversion aborted")
+    else:
+        print("Processing data is finished. . .")
+
+    ref_app.stop()
+    client.close()
+    print("Disconnecting...")
+
+    # Creates DataFrames from processed data and keys
+    keys = ["level", "peak_detected", "peak_status"]
     df_processed_data = pd.DataFrame(
         {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
     )
@@ -755,6 +806,14 @@ def waste_level_as_row(processed_data: waste_level.ProcessorResult) -> list[t.An
     level_m = f"{processed_data.level_m} m"
 
     return [level_percent, level_m]
+
+
+def tank_level_as_row(processed_data: tank_level._ref_app.RefAppResult) -> list[t.Any]:
+    level = processed_data.level
+    peak_detected = processed_data.peak_detected
+    peak_status = processed_data.peak_status
+
+    return [level, peak_detected, peak_status]
 
 
 def main() -> None:
