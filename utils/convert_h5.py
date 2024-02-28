@@ -267,6 +267,20 @@ class A121RecordTableConverter(TableConverter):
                 unique_sensor_configs.append(sensor_config)
         return unique_sensor_configs
 
+    def _unique_metadatas_of_sensor_id(
+        self, sensor_id: int
+    ) -> list[a121._core.entities.containers.metadata.Metadata]:
+        extended = self._record.session_config.extended
+        metadatas = [
+            metadata
+            for _, sid, metadata in _core.utils.iterate_extended_structure(
+                self._record.extended_metadata
+            )
+            if sid == sensor_id
+        ]
+        unique_metadatas = metadatas if extended else [self._record.metadata]
+        return unique_metadatas
+
     def _get_sparse_iq(
         self,
         sensor: int,
@@ -307,38 +321,22 @@ class A121RecordTableConverter(TableConverter):
         """
         return self._get_sparse_iq(sensor)
 
-    def _get_metadata_rows_single_sensor_config(self, sensor: int) -> list[npt.NDArray[t.Any]]:
-        (sensor_config,) = self._unique_sensor_configs_of_sensor_id(sensor)
-        (metadata,) = (
-            meta
-            for _, sid, meta in _core.utils.iterate_extended_structure(
-                self._record.extended_metadata
-            )
-            if sid == sensor
-        )
-        depths, _ = algo.get_distances_m(sensor_config, metadata)
+    def get_metadata_rows(self, sensor: int) -> list[t.Any]:
+        sensor_configs = self._unique_sensor_configs_of_sensor_id(sensor)
+        metadatas = self._unique_metadatas_of_sensor_id(sensor)
 
-        sweep_numbers = np.repeat(
-            range(sensor_config.sweeps_per_frame), repeats=sensor_config.num_points
-        ).astype(int)
-        depths_header = np.tile(depths, sensor_config.sweeps_per_frame)
-        return [sweep_numbers, depths_header]
-
-    def _get_metadata_rows_multiple_sensor_config(self, sensor: int) -> list[npt.NDArray[t.Any]]:
-        raise NotImplementedError(
-            "This record contains data where a single sensor has multiple configuration through\n"
-            + "the use of groups. Exporting this kind of record is not possible at the moment.\n"
-            + "\n"
-            + "If this is a feature that you are interested in, please get in contact with us!"
-        )
-
-    def get_metadata_rows(self, sensor: int) -> list[npt.NDArray[t.Any]]:
-        unique_sensor_configs = self._unique_sensor_configs_of_sensor_id(sensor)
-
-        if len(unique_sensor_configs) == 1:
-            return self._get_metadata_rows_single_sensor_config(sensor)
-        else:
-            return self._get_metadata_rows_multiple_sensor_config(sensor)
+        sweeps_numbers = []
+        depths_headers = []
+        for metadata, sensor_config in zip(metadatas, sensor_configs):
+            depths = algo.get_distances_m(sensor_config, metadata)
+            depths_header = np.tile(depths, sensor_config.sweeps_per_frame)
+            depths_headers.append(depths_header)
+            for subsweep in sensor_config.subsweeps:
+                sweeps_number = np.repeat(
+                    range(sensor_config.sweeps_per_frame), repeats=subsweep.num_points
+                ).astype(int)
+                sweeps_numbers.append(sweeps_number)
+        return [sweeps_numbers, depths_headers]
 
     def print_information(self, verbose: bool = False) -> None:
         extended = self._record.session_config.extended
