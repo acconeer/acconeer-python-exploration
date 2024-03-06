@@ -25,6 +25,7 @@ import acconeer.exptool.a121.algo.presence as presence
 import acconeer.exptool.a121.algo.speed as speed
 import acconeer.exptool.a121.algo.surface_velocity as surface_velocity
 import acconeer.exptool.a121.algo.tank_level as tank_level
+import acconeer.exptool.a121.algo.vibration as vibration
 import acconeer.exptool.a121.algo.waste_level as waste_level
 from acconeer.exptool import a121
 from acconeer.exptool.a121 import H5Record, _core, algo
@@ -504,6 +505,7 @@ def get_processed_data(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
         "surface_velocity": get_processed_data_surface_velocity,
         "waste_level": get_processed_data_waste_level,
         "tank_level": get_processed_data_tank_level,
+        "vibration": get_processed_data_vibration,
     }
 
     for key, func in load_algo_and_client.items():
@@ -765,6 +767,52 @@ def get_processed_data_presence(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.Da
     return df_processed_data, df_algo_data
 
 
+def get_processed_data_vibration(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    record = H5Record(h5_file)
+    processed_data_list = []
+    processor_config = vibration._load_algo_data(h5_file["algo"])
+
+    # Create DataFrames from configurations and sensor id
+    df_sensor_id = pd.DataFrame({"sensor_id": record.sensor_id}.items())
+    df_config = pd.DataFrame([[k, v] for k, v in processor_config.to_dict().items()])
+    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
+
+    # Record file extraction
+    num_frames = record.num_frames
+    sensor_config = record.session_config.sensor_config
+    metadata = record.metadata
+
+    processor = vibration.Processor(
+        sensor_config=sensor_config,
+        metadata=metadata,
+        processor_config=processor_config,
+    )
+    try:
+        for idx, result in enumerate(record.results):
+            processed_data = processor.process(result)
+
+            # Put the result in row
+            processed_data_row = vibration_as_row(processed_data=processed_data)
+            processed_data_list.append(processed_data_row)
+
+            # Print progressing time every 5%
+            print(f"... {idx / num_frames:.0%}") if (idx % int(0.05 * num_frames)) == 0 else None
+
+    except KeyboardInterrupt:
+        print("Conversion aborted")
+    else:
+        print("Processing data is finished. . .")
+
+    print("Disconnecting...")
+
+    # Creates DataFrames from processed data and keys
+    keys = ["max_displacement", "max_sweep_amplitude", "max_displacement_freq"]
+    df_processed_data = pd.DataFrame(
+        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
+    )
+    return df_processed_data, df_algo_data
+
+
 def get_processed_data_distance(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
     processed_data_list = []
     sensor_ids, detector_config, detector_context = distance._detector._load_algo_data(
@@ -1008,6 +1056,14 @@ def tank_level_as_row(processed_data: tank_level._ref_app.RefAppResult) -> list[
     peak_status = processed_data.peak_status
 
     return [level, peak_detected, peak_status]
+
+
+def vibration_as_row(processed_data: vibration.ProcessorResult) -> list[t.Any]:
+    max_displacement = processed_data.max_displacement
+    max_sweep_amplitude = processed_data.max_sweep_amplitude
+    max_displacement_freq = processed_data.max_displacement_freq
+
+    return [max_displacement, max_sweep_amplitude, max_displacement_freq]
 
 
 def main() -> None:
