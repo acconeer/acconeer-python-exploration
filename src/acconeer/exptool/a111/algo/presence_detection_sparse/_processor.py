@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import numpy as np
@@ -297,7 +297,10 @@ class Processor:
     @staticmethod
     def normalize_noise_base(noise_base):
         norm = np.sqrt(np.sum(np.square(noise_base), axis=1, keepdims=True))
-        return noise_base / norm
+        if np.any(norm == 0):
+            return None
+        else:
+            return noise_base / norm
 
     def process(self, data, data_info):
         frame = data
@@ -374,14 +377,15 @@ class Processor:
             noise_base_update = noise_coeffs @ noise_diff
             noise_base_update = self.normalize_noise_base(noise_base_update)
 
-            sf = self.dynamic_sf(self.noise_sf)
-            self.noise_base = sf * self.noise_base + (1.0 - sf) * noise_base_update
-            for i in range(len(self.noise_base)):
-                for j in range(i):
-                    self.noise_base[i] -= self.noise_base[j] * np.dot(
-                        self.noise_base[j], self.noise_base[i]
-                    )
-                self.noise_base[i] /= np.sqrt(np.sum(np.square(self.noise_base[i])))
+            if noise_base_update is not None:
+                sf = self.dynamic_sf(self.noise_sf)
+                self.noise_base = sf * self.noise_base + (1.0 - sf) * noise_base_update
+                for i in range(len(self.noise_base)):
+                    for j in range(i):
+                        self.noise_base[i] -= self.noise_base[j] * np.dot(
+                            self.noise_base[j], self.noise_base[i]
+                        )
+                    self.noise_base[i] /= np.sqrt(np.sum(np.square(self.noise_base[i])))
 
         # Detector output
 
