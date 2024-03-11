@@ -122,7 +122,7 @@ class ObstructionProcessor(object):
         # Do temperature adjustment
         temperature = result.temperature
         temperature_diff = temperature - self.calibration_temperature
-        signal_adjustment_factor, noise_adjustment_factor = get_temperature_adjustment_factors(
+        signal_adjustment_factor, _ = get_temperature_adjustment_factors(
             temperature_diff=temperature_diff,
             profile=self.profile,
         )

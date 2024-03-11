@@ -34,7 +34,7 @@ SIGNAL_TEMPERATURE_MODEL_PARAMETER = {
 # Largest measurable distance per PRF.
 MAX_MEASURABLE_DIST_M = {prf: prf.mmd for prf in set(a121.PRF)}
 # Slope and interception of linear noise temperature model.
-NOISE_TEMPERATURE_MODEL_PARAMETER = [-0.00275, 0.98536]
+DEVIATION_TEMPERATURE_MODEL_PARAMETER = [-0.00275, 0.98536]
 
 SPEED_OF_LIGHT = 299792458
 RADIO_FREQUENCY = 60.5e9
@@ -290,17 +290,17 @@ def get_temperature_adjustment_factors(
     model_parameter reflects the temperature difference relative the reference temperature,
     required for the amplitude to double/halve.
 
-    The noise adjustment is a linear function of the temperature difference, calibrated using
+    The deviation adjustment is a linear function of the temperature difference, calibrated using
     noise-normalized data, generalizing to different sensor configurations.
     """
     signal_adjustment_factor = 2 ** (
         temperature_diff / SIGNAL_TEMPERATURE_MODEL_PARAMETER[profile]
     )
-    noise_adjustment_factor = (
-        NOISE_TEMPERATURE_MODEL_PARAMETER[0] * temperature_diff
-        + NOISE_TEMPERATURE_MODEL_PARAMETER[1]
+    deviation_adjustment_factor = (
+        DEVIATION_TEMPERATURE_MODEL_PARAMETER[0] * temperature_diff
+        + DEVIATION_TEMPERATURE_MODEL_PARAMETER[1]
     )
-    return (signal_adjustment_factor, noise_adjustment_factor)
+    return (signal_adjustment_factor, deviation_adjustment_factor)
 
 
 def get_distance_filter_coeffs(profile: a121.Profile, step_length: int) -> Any:

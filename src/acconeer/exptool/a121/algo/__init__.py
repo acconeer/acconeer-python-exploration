@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from ._base import (
@@ -14,10 +14,8 @@ from ._base import (
 from ._utils import (
     APPROX_BASE_STEP_LENGTH_M,
     ENVELOPE_FWHM_M,
-    NOISE_TEMPERATURE_MODEL_PARAMETER,
     PERCEIVED_WAVELENGTH,
     RLG_PER_HWAAS_MAP,
-    SIGNAL_TEMPERATURE_MODEL_PARAMETER,
     PeakSortingMethod,
     ReflectorShape,
     _convert_amplitude_to_strength,
