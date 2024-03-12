@@ -173,7 +173,7 @@ def get_module_version(module: ModuleType) -> str:
 
 
 def color_cycler(i=0):
-    category10 = [
+    category12 = [
         "#1f77b4",
         "#ff7f0e",
         "#2ca02c",
@@ -184,9 +184,11 @@ def color_cycler(i=0):
         "#7f7f7f",
         "#bcbd22",
         "#17becf",
+        "#e6ab02",
+        "#f516bd",
     ]
 
-    return category10[i % len(category10)]
+    return category12[i % len(category12)]
 
 
 def pg_pen_cycler(i=0, style=None, width=2):
