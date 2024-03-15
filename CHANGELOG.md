@@ -1,5 +1,10 @@
 # Changelog
 
+## v7.8.2
+
+### Fixed
+- A111 Presence: Avoid division by 0 for saturated data when using PCA
+
 ## v7.8.1
 
 ### Fixed
