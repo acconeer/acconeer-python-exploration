@@ -330,7 +330,7 @@ def _validate_groups_structure(groups: list[dict[int, SensorConfig]]) -> None:
             raise ValueError
 
         for sensor_id, entry in group.items():
-            if not isinstance(sensor_id, (int, np.int64)):
+            if not isinstance(sensor_id, (int, np.int64, np.int32)):
                 raise ValueError(f"{type(sensor_id)} not int")
 
             if not isinstance(entry, SensorConfig):
