@@ -126,10 +126,15 @@ class ObstructionProcessor(object):
             profile=self.profile,
         )
 
-        adjusted_frame = frame * signal_adjustment_factor
+        # We could recalculate the level of the calibration frame as well.
+        # That would be done by calibration_frame * signal_adjustment_factor
+        temp_adjusted_frame = frame / signal_adjustment_factor
+
         noise_level = self.calibration_noise_mean * deviation_adjustment_factor
 
-        signature, amp_adjusted = self.get_signature(adjusted_frame, noise_level, self.distances)
+        signature, amp_adjusted = self.get_signature(
+            temp_adjusted_frame, noise_level, self.distances
+        )
 
         # low pass filtering to amend the noise jitter
         self.lp_signature = self.lp_signature * self.lp_const + (1.0 - self.lp_const) * signature
