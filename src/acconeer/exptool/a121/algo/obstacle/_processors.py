@@ -188,10 +188,15 @@ class SubsweepProcessor:
         abs_fftframe = np.abs(fftframe)
         abs_fftframe_extra = np.copy(abs_fftframe)  # Copy for plotting
 
-        temp_diff = temperature - self.proc_context.reference_temperature
         sig_factor, noise_factor = get_temperature_adjustment_factors(
-            temp_diff, self.sensor_config.profile
+            reference_temperature=self.proc_context.reference_temperature,
+            current_temperature=temperature,
+            profile=self.sensor_config.profile,
         )
+
+        sig_factor = (
+            1 / sig_factor
+        )  # After get_temperature_adjustment_factors updated, this inverted.
 
         fft_map_threshold = np.tile(
             noise_factor

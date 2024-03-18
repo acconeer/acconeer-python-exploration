@@ -575,7 +575,8 @@ class Processor(ProcessorBase[ProcessorResult]):
                 signal_adjustment_factor,
                 noise_adjustment_factor,
             ) = get_temperature_adjustment_factors(
-                temperature_diff=temperature - self.context.reference_temperature,
+                reference_temperature=self.context.reference_temperature,
+                current_temperature=temperature,
                 profile=self.profile,
             )
             return self._update_recorded_threshold(
@@ -611,7 +612,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         assert context.recorded_threshold_noise_std is not None
         assert context.bg_noise_std is not None
 
-        threshold = copy.deepcopy(context.recorded_threshold_mean_sweep) / signal_adjustment_factor
+        threshold = copy.deepcopy(context.recorded_threshold_mean_sweep) * signal_adjustment_factor
 
         for idx, (std_tx_off, std_recorded_threshold) in enumerate(
             zip(context.bg_noise_std, context.recorded_threshold_noise_std)

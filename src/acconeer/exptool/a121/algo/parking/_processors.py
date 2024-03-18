@@ -120,16 +120,16 @@ class ObstructionProcessor(object):
         frame = result.frame
 
         # Do temperature adjustment
-        temperature = result.temperature
-        temperature_diff = temperature - self.calibration_temperature
-        signal_adjustment_factor, _ = get_temperature_adjustment_factors(
-            temperature_diff=temperature_diff,
+        signal_adjustment_factor, deviation_adjustment_factor = get_temperature_adjustment_factors(
+            reference_temperature=self.calibration_temperature,
+            current_temperature=result.temperature,
             profile=self.profile,
         )
 
-        noise_level = self.calibration_noise_mean * signal_adjustment_factor
+        adjusted_frame = frame * signal_adjustment_factor
+        noise_level = self.calibration_noise_mean * deviation_adjustment_factor
 
-        signature, amp_adjusted = self.get_signature(frame, noise_level, self.distances)
+        signature, amp_adjusted = self.get_signature(adjusted_frame, noise_level, self.distances)
 
         # low pass filtering to amend the noise jitter
         self.lp_signature = self.lp_signature * self.lp_const + (1.0 - self.lp_const) * signature
@@ -286,14 +286,13 @@ class Processor(object):
 
         base_frame = result.subframes[0]
 
-        temperature = result.temperature
-        temperature_diff = temperature - self.noise_estimate_temperature
-        signal_adjustment_factor, _ = get_temperature_adjustment_factors(
-            temperature_diff=temperature_diff,
+        _, deviation_adjustment_factor = get_temperature_adjustment_factors(
+            reference_temperature=self.noise_estimate_temperature,
+            current_temperature=result.temperature,
             profile=self.profile,
         )
-        # self.noise_estimate is never 0.0
-        noise_level_adjusted = self.noise_estimate / signal_adjustment_factor
+
+        noise_level_adjusted = self.noise_estimate * deviation_adjustment_factor
 
         data = np.squeeze(base_frame, axis=0)  # remove sweep dimension
 

@@ -281,20 +281,49 @@ def find_peaks(abs_sweep: npt.NDArray[np.float_], threshold: npt.NDArray[np.floa
 
 
 def get_temperature_adjustment_factors(
-    temperature_diff: float, profile: a121.Profile
+    reference_temperature: float, current_temperature: float, profile: a121.Profile
 ) -> Tuple[float, float]:
     """Calculate temperature compensation for mean sweep and background noise(tx off) standard
     deviation.
+
+    The signal adjustment models how the amplitude level fluctuates with temperature.
+    If the same object is measured against while the temperature changes,
+    the amplitude level should be multiplied with this factor.
+    The temperature difference should be calculated by subtracting
+    the (calibration) recorded temperature from the measured.
+
+    Example of usage:
+    reference_temperature (recorded temperature during calibration)
+    reference_amplitude (recorded amplitude during calibration)
+
+    measurement_temperature (temperature at measurement time)
+
+    signal_adjustment_factor, deviation_adjustment_factor =
+    get_temperature_adjustment_factors(reference_temperature, measurement_temperature, profile)
+
+    reference_amplitude_new = reference_amplitude * signal_adjustment_factor
+
+    The reference_amplitude_new is an approximation of what the calibrated amplitude
+    would be at the new temperature.
+
+    Eg. When the temperature falls 60 degrees, the amplitude (roughly) doubles.
+    This yields a signal_adjustment_factor of (about) 2.
 
     The signal adjustment model is follows 2 ** (temperature_diff / model_parameter), where
     model_parameter reflects the temperature difference relative the reference temperature,
     required for the amplitude to double/halve.
 
-    The deviation adjustment is a linear function of the temperature difference, calibrated using
-    noise-normalized data, generalizing to different sensor configurations.
+    The deviation_adjustment_factor works the same way, but is applied to a measurement
+    taken with the Tx off. So if instead of measurement_amplitude, we have a measurement of tx_off.
+    The procedure for calculating this is to take the same configuration as
+    the application will use, but turning off the Tx.
+    This calibration value is multiplied with the deviation_adjustment_factor.
     """
+
+    temperature_diff = current_temperature - reference_temperature
+
     signal_adjustment_factor = 2 ** (
-        temperature_diff / SIGNAL_TEMPERATURE_MODEL_PARAMETER[profile]
+        (temperature_diff / SIGNAL_TEMPERATURE_MODEL_PARAMETER[profile]) * -1
     )
     deviation_adjustment_factor = (
         DEVIATION_TEMPERATURE_MODEL_PARAMETER[0] * temperature_diff
