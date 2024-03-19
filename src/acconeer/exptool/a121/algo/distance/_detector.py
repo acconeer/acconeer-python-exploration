@@ -1597,14 +1597,14 @@ def _record_algo_data(
 
 def _load_algo_data(
     algo_group: h5py.Group,
-) -> Tuple[int, DetectorConfig, DetectorContext]:
-    sensor_id = algo_group["sensor_ids"][()]
+) -> Tuple[list[int], DetectorConfig, DetectorContext]:
+    sensor_ids = algo_group["sensor_ids"][()].tolist()
     config = DetectorConfig.from_json(algo_group["detector_config"][()])
 
     context_group = algo_group["context"]
     context = DetectorContext.from_h5(context_group)
 
-    return sensor_id, config, context
+    return sensor_ids, config, context
 
 
 def _get_group_items(group: h5py.Group) -> list[npt.NDArray[Any]]:
