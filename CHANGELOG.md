@@ -1,5 +1,10 @@
 # Changelog
 
+## v7.8.3
+
+### Changed
+- Bump SDK version for A111 and A121
+
 ## v7.8.2
 
 ### Fixed
