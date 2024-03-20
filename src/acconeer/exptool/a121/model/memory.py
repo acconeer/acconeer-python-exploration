@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -39,7 +39,7 @@ SIZE_OF_FLOAT = 4
 
 PRESENCE_HEAP_OVERHEAD = 256
 
-DISTANCE_HEAP_OVERHEAD = 708
+DISTANCE_HEAP_OVERHEAD = 1028
 DISTANCE_HEAP_PER_PROCESSOR = 224
 
 
