@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -7,6 +7,7 @@ import enum
 from typing import List, Optional, TypeVar
 
 import attrs
+import h5py
 import numpy as np
 import numpy.typing as npt
 from attributes_doc import attributes_doc
@@ -491,3 +492,8 @@ class Processor(ProcessorBase[ProcessorResult]):
         keep_detection = curr_detection and nonsig_count <= patience
         detection = new_detection or keep_detection
         return bool(detection)
+
+
+def _load_algo_data(algo_group: h5py.Group) -> ProcessorConfig:
+    processor_config = ProcessorConfig.from_json(algo_group["processor_config"][()])
+    return processor_config
