@@ -25,11 +25,25 @@ How to use
 ----------
 
 Tuning the sensor parameters
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-First, the range of detection needs to be determined. Based on the start range,
-:attr:`~acconeer.exptool.a121.algo.presence._detector.DetectorConfig.start_m`,
-a best fit for the profile is calculated.
-The profile is set to the biggest profile with no direct leakage in the chosen range. This is to maximize SNR.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+A large part of the presence detector consists of automatic configuration of the sensor parameters. This can of course be overridden, but it is recommended to use the automatic configuration for best performance.
+
+Detection Range
+^^^^^^^^^^^^^^^
+The most important parameter that the user needs to adjust is the range: :attr:`~acconeer.exptool.a121.algo.presence._detector.DetectorConfig.start_m`
+and :attr:`~acconeer.exptool.a121.algo.presence._detector.DetectorConfig.end_m`. The start parameter has a major effect on the automatic configuration, it is therefore important to adjust the start point to be as far from the sensor as possible, while still fulfilling the requirements for the use case. Avoid adding range close to the sensor without justification, since this will have negative impact on both power consumption and performance. The :attr:`~acconeer.exptool.a121.algo.presence._detector.DetectorConfig.end_m` parameter should also not be further away from the sensor than the use case requires. A common pitfall is to have an unnecessarily long range, which can have unexpected effects, for example detections from static objects and walls in the background.
+When a person moves around, a wall might suddenly "appear" after being blocked by the person. This will have the effect that the wall then appears to be moving and be detected by the presence detector.
+
+Automatic Subsweep Selection
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+If the :attr:`~acconeer.exptool.a121.algo.presence._detector.DetectorConfig.automatic_subsweeps` is set to True, the sensor will automatically be configured with several subsweeps with different :attr:`~acconeer.exptool.a121.SubsweepConfig.hwaas` and possibly different :attr:`~acconeer.exptool.a121.SubsweepConfig.profile` for each subsweep. This is the recommended way to configure the detector, since it minimizes power consumption as well as smoothing out detection levels over distances.
+
+When using the automatic subsweep selection, we still need to set the :attr:`~acconeer.exptool.a121.algo.presence._detector.DetectorConfig.signal_quality` parameter. The higher signal quality, the higher power consumption. It is recommended to set the value so that the highest HWAAS is different for the furthest subsweeps, i.e. if both subsweep 3 and 4 have maximized HWAAS to 511, this means that the signal quality is better for subsweep 3 than for subsweep 4.
+
+
+Configuring the sensor manually
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+If the automatic subsweep selection is not activated, a single subsweep will instead be used. This means that the same :attr:`~acconeer.exptool.a121.algo.presence._detector.DetectorConfig.profile` and :attr:`~acconeer.exptool.a121.algo.presence._detector.DetectorConfig.hwaas` will be used for the whole range. The limiting factor will be the :attr:`~acconeer.exptool.a121.algo.presence._detector.DetectorConfig.start_m`, which determines which profile can be used. The profile is set to the biggest profile with no direct leakage in the chosen range. This is to maximize SNR.
 The shortest start range needed for the different profiles can be found in :numref:`tab_a121_profile_start_range`:
 
 .. _tab_a121_profile_start_range:
@@ -139,7 +153,7 @@ Intra-frame detection basis
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 For very fast motions and fast detection we have the intra-frame presence detection.
-The idea is simple -- for every frame we depthwise take the deviation from the sweep mean and low pass (smoothing) filter it.
+The idea is simple -- for every frame we depth-wise take the deviation from the sweep mean and low pass (smoothing) filter it.
 
 Let :math:`N_s` denote the number of sweeps, and let the deviation from the mean be:
 
@@ -173,7 +187,7 @@ Let the *absolute mean sweep* be denoted as
 .. math::
    y(f, d) = |\frac{1}{N_s} \sum_s x(f, s, d)|
 
-We take the mean sweep :math:`y` and depthwise run it though two `exponential smoothing` filters (first order IIR low pass filters).
+We take the mean sweep :math:`y` and depth-wise run it though two `exponential smoothing` filters (first order IIR low pass filters).
 One slower filter with a larger smoothing factor, and one faster filter with a smaller smoothing factor.
 Let :math:`\alpha_\text{fast}` and :math:`\alpha_\text{slow}` be the smoothing factors and :math:`\bar{y}_\text{fast}` and :math:`\bar{y}_\text{slow}` be the filtered sweep means.
 For every depth :math:`d` in every new frame :math:`f`:
@@ -191,7 +205,7 @@ From the fast and slow filtered absolute sweep means, a deviation metric :math:`
    s_\text{inter_dev}(f, d) = \sqrt{N_s} \cdot |\bar{y}_\text{fast}(f, d) - \bar{y}_\text{slow}(f, d)|
 
 Where :math:`\sqrt{N_s}` is a normalization constant.
-In other words, :math:`s_\text{inter_dev}` relates to the instantaneous power of a bandpass filtered version of :math:`y`. This metric is then filtered again with a smoothing factor, :math:`\alpha_\text{inter_dev}`, set through the
+In other words, :math:`s_\text{inter_dev}` relates to the instantaneous power of a band-pass filtered version of :math:`y`. This metric is then filtered again with a smoothing factor, :math:`\alpha_\text{inter_dev}`, set through the
 :attr:`~acconeer.exptool.a121.algo.presence._detector.DetectorConfig.inter_frame_deviation_time_const`
 parameter,
 to get a more stable metric:
@@ -237,7 +251,7 @@ The amplitude is noise normalized(see next section) and truncated to reduce unwa
 .. math::
    A(f, d) = \max(A(f, d), 15)
 
-Before the final output is generated, the depthwise inter-frame presence score is multiplied with the phase and amplitude weight:
+Before the final output is generated, the depth-wise inter-frame presence score is multiplied with the phase and amplitude weight:
 
 .. math::
    \bar{s}_\text{inter_dev}(f, d) = \bar{s}_\text{inter_dev}(f, d) \cdot \phi(f, d) \cdot A(f, d)
@@ -421,6 +435,27 @@ The lower the cutoff frequency, the slower the filter. The expression is obtaine
 Read more:
 `time constants <https://en.wikipedia.org/wiki/Exponential_smoothing#Time_Constant>`_,
 `cutoff frequencies <https://www.dsprelated.com/showarticle/182.php>`_.
+
+Hints and Recommendations
+-------------------------
+This section contains some practical considerations for how to configure the presence detector optimally.
+
+Range settings
+^^^^^^^^^^^^^^
+Start by estimating the range settings for your use-case. A common pitfall is to let the range be too extensive, which can lead to the detector triggering from movement in unexpected locations. In a similar manner, setting the range too close to the sensor can cause the automatic configuration to dedicate unnecessary resources to search in ranges where there won't be any movement. So aim to let the range cover the range where the movement is expected to occur, but not beyond that.
+
+When the range settings have been selected, it is recommended to use the subsweep selection to set the appropriate values for HWAAS and profile.
+
+An interesting phenomenon that occurs when the range is longer than necessary is indirect detections from movement. If an object blocking the sensor is removed, this might cause an object further away (like a wall) to suddenly appear after being blocked. This will be interpreted as movement, since the object moved into view.
+
+Adjusting Threshold
+^^^^^^^^^^^^^^^^^^^
+The threshold is very dependent on the use case, the most natural way to adjust this is by testing relevant scenarios. A too low threshold will cause false positives from unwanted movement. Setting the threshold too high will cause missed detections instead. A good starting point is to estimate roughly what the noise level is for your use case. This is done by measuring an empty channel and observing the highest presence score during the measurement, any threshold below this value will be completely useless, since it will constantly trigger false detections.
+
+Smoothing filter and latency
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+When the threshold and range settings are deemed satisfactory, the smoothing filters can be addressed. The smoothing filters have a direct impact on the latency of the detector. The trade-off is between latency and retention, a long filter will take more time to detect a movement, but retain detection and avoid "flickering" behavior. A short filter will drop detection more frequently, but also gain detection faster. This is a general behavioral aspect of the detector, which should be adjusted according to the use case. For some applications, it might be relevant to have retention built into an application on top of the detector instead of using the built in filters.
+
 
 Configuration parameters
 ------------------------
