@@ -20,6 +20,7 @@ import pandas as pd
 import acconeer.exptool as et
 import acconeer.exptool.a121.algo.breathing as breathing
 import acconeer.exptool.a121.algo.presence as presence
+import acconeer.exptool.a121.algo.speed as speed
 import acconeer.exptool.a121.algo.surface_velocity as surface_velocity
 import acconeer.exptool.a121.algo.tank_level as tank_level
 import acconeer.exptool.a121.algo.waste_level as waste_level
@@ -495,6 +496,7 @@ def get_processed_data(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
     load_algo_and_client: Dict[str, t.Callable[[h5py.File], Tuple[pd.DataFrame, pd.DataFrame]]] = {
         "breathing": get_processed_data_breathing,
         "presence_detector": get_processed_data_presence,
+        "speed_detector": get_processed_data_speed,
         "surface_velocity": get_processed_data_surface_velocity,
         "waste_level": get_processed_data_waste_level,
         "tank_level": get_processed_data_tank_level,
@@ -759,6 +761,57 @@ def get_processed_data_presence(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.Da
     return df_processed_data, df_algo_data
 
 
+def get_processed_data_speed(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    processed_data_list = []
+    sensor_id, detector_config = speed._detector._load_algo_data(h5_file["algo"])
+
+    # Create DataFrames from configurations, sensor id, and detector context
+    df_sensor_id = pd.DataFrame(({"sensor_id": sensor_id}).items())
+    df_config = pd.DataFrame([[k, v] for k, v in detector_config.to_dict().items()])
+
+    # Concatenate along columns
+    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
+
+    # Client preparation
+    record = H5Record(h5_file)
+    client = _ReplayingClient(record, realtime_replay=False)
+    num_frames = record.num_frames
+    detector = speed.Detector(
+        client=client,
+        sensor_id=int(sensor_id),
+        detector_config=detector_config,
+    )
+    detector.start()
+
+    try:
+        for idx in range(record.num_frames):
+            processed_data = detector.get_next()
+
+            # Put the result in row
+            processed_data_row = speed_result_as_row(processed_data=processed_data)
+            processed_data_list.append(processed_data_row)
+
+            # Print progressing time every 5%
+            print(f"... {idx / num_frames:.0%}") if (idx % int(0.05 * num_frames)) == 0 else None
+
+    except KeyboardInterrupt:
+        print("Conversion aborted")
+    else:
+        print("Processing data is finished. . .")
+
+    detector.stop()
+    client.close()
+    print("Disconnecting...")
+
+    # Creates DataFrames from processed data and keys
+    keys = ["speed_per_depth", "max_speed"]
+    df_processed_data = pd.DataFrame(
+        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
+    )
+
+    return df_processed_data, df_algo_data
+
+
 def breathing_result_as_row(processed_data: breathing.RefAppResult) -> list[t.Any]:
     no_result = "None"
     rate = (
@@ -804,6 +857,13 @@ def waste_level_as_row(processed_data: waste_level.ProcessorResult) -> list[t.An
     level_m = f"{processed_data.level_m} m"
 
     return [level_percent, level_m]
+
+
+def speed_result_as_row(processed_data: speed._detector.DetectorResult) -> list[t.Any]:
+    speed_per_depth = processed_data.speed_per_depth
+    max_speed = processed_data.max_speed
+
+    return [speed_per_depth, max_speed]
 
 
 def tank_level_as_row(processed_data: tank_level._ref_app.RefAppResult) -> list[t.Any]:
