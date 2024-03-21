@@ -26,6 +26,7 @@ import acconeer.exptool.a121.algo.presence as presence
 import acconeer.exptool.a121.algo.speed as speed
 import acconeer.exptool.a121.algo.surface_velocity as surface_velocity
 import acconeer.exptool.a121.algo.tank_level as tank_level
+import acconeer.exptool.a121.algo.touchless_button as touchless_button
 import acconeer.exptool.a121.algo.vibration as vibration
 import acconeer.exptool.a121.algo.waste_level as waste_level
 from acconeer.exptool import a121
@@ -507,6 +508,7 @@ def get_processed_data(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
         "surface_velocity": get_processed_data_surface_velocity,
         "waste_level": get_processed_data_waste_level,
         "tank_level": get_processed_data_tank_level,
+        "touchless_button": get_processed_data_touchless_button,
         "vibration": get_processed_data_vibration,
     }
 
@@ -824,6 +826,54 @@ def get_processed_data_presence(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.Da
     return df_processed_data, df_algo_data
 
 
+def get_processed_data_touchless_button(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    processed_data_list = []
+    record = H5Record(h5_file)
+    processor_config = touchless_button._processor._load_algo_data(h5_file["algo"])
+
+    # Create DataFrames from configurations, sensor id, and detector context
+    df_sensor_id = pd.DataFrame({"sensor_id": record.sensor_id}.items())
+    df_config = pd.DataFrame([[k, v] for k, v in processor_config.to_dict().items()])
+    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
+
+    # Record file extraction
+    num_frames = record.num_frames
+    sensor_config = record.session_config.sensor_config
+    metadata = record.metadata
+
+    processor = touchless_button.Processor(
+        sensor_config=sensor_config,
+        metadata=metadata,
+        processor_config=processor_config,
+    )
+
+    try:
+        for idx, result in enumerate(record.results):
+            processed_data = processor.process(result)
+
+            # Put the result in row
+            processed_data_row = touchless_button_as_row(processed_data=processed_data)
+            processed_data_list.append(processed_data_row)
+
+            # Print progressing time every 5%
+            if (idx % int(0.05 * num_frames)) == 0:
+                print(f"... {idx / num_frames:.0%}")
+
+    except KeyboardInterrupt:
+        print("Conversion aborted")
+    else:
+        print("Processing data is finished. . .")
+
+    print("Disconnecting...")
+
+    # Creates DataFrames from processed data and keys
+    keys = ["close_result", "far_result"]
+    df_processed_data = pd.DataFrame(
+        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
+    )
+    return df_processed_data, df_algo_data
+
+
 def get_processed_data_vibration(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
     record = H5Record(h5_file)
     processed_data_list = []
@@ -1085,6 +1135,13 @@ def waste_level_as_row(processed_data: waste_level.ProcessorResult) -> list[t.An
     level_m = f"{processed_data.level_m} m"
 
     return [level_percent, level_m]
+
+
+def touchless_button_as_row(processed_data: touchless_button.ProcessorResult) -> list[t.Any]:
+    close_result = False if processed_data.close is None else processed_data.close.detection
+    far_result = False if processed_data.far is None else processed_data.far.detection
+
+    return [close_result, far_result]
 
 
 def distance_result_as_row(
