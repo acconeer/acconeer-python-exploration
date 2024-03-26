@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLayout,
+    QLineEdit,
     QSlider,
     QSpinBox,
     QStackedWidget,
@@ -172,6 +173,34 @@ class IntPidget(Pidget):
 
     def __on_changed(self) -> None:
         self.sig_update.emit(self._spin_box.value())
+
+
+@attrs.frozen(kw_only=True, slots=False)
+class StrPidgetFactory(PidgetFactory):
+    def create(self, parent: QWidget) -> StrPidget:
+        return StrPidget(self, parent)
+
+
+class StrPidget(Pidget):
+    def __init__(self, factory: StrPidgetFactory, parent: QWidget) -> None:
+        super().__init__(factory, parent)
+
+        self._line_edit = QLineEdit(self._body_widget)
+        self._line_edit.setMaximumWidth(WIDGET_WIDTH)
+        self._line_edit.editingFinished.connect(self.__on_changed)
+        self._body_layout.addWidget(self._line_edit)
+
+    def set_data(self, value: Any) -> None:
+        assert isinstance(value, str)
+
+        with QtCore.QSignalBlocker(self):
+            self._line_edit.setText(value)
+
+    def get_data(self) -> str:
+        return str(self._line_edit.text())
+
+    def __on_changed(self) -> None:
+        self.sig_update.emit(self.get_data())
 
 
 @attrs.frozen(kw_only=True, slots=False)

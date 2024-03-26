@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from . import hooks
@@ -31,4 +31,6 @@ from .pidgets import (
     PidgetHook,
     SensorIdPidget,
     SensorIdPidgetFactory,
+    StrPidget,
+    StrPidgetFactory,
 )
