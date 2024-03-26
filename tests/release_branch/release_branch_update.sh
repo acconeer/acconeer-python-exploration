@@ -123,7 +123,7 @@ for release_branch in ${release_branches[@]}; do
 
     if [ ${push_branch} -eq 1 ]; then
         echo "[INFO] Pushing updated release branch to Gerrit for verification"
-        git push --verbose origin HEAD:refs/for/${release_branch}%remove-private
+        git push --verbose origin HEAD:refs/for/${release_branch}%ready
         handle_exit_status $? "push-refs-for"
     else
         echo "[WARN] The release branch will not be pushed to origin"
