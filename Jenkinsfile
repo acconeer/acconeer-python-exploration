@@ -367,7 +367,7 @@ try {
 
                 buildDocker(path: 'docker').inside(dockerArgs(env)) {
                     withCredentials([gitUsernamePassword(credentialsId: '1bef2b16-6cd9-4836-a014-421199e7fb0f'),
-                                     string(variable: 'RELEASE_BRANCHES', credentialsId: 'release_branch_update_branches')]) {
+                                     string(variable: 'RELEASE_BRANCHES', credentialsId: 'et_update_release_branches')]) {
                         if (buildScope == BuildScope.NIGHTLY) {
                             sh '''#!/bin/bash
 
