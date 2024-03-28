@@ -83,7 +83,8 @@ def presence_external_heap_memory(config: PresenceConfig) -> int:
     sensor_cfg = PresenceDetector._get_sensor_config(config)
 
     session_ext_heap = session_external_heap_memory(SessionConfig(sensor_cfg))
-    prec_ext_heap = sensor_cfg.num_points * 2 * SIZE_OF_FLOAT
+    num_points = sum([subsweep.num_points for subsweep in sensor_cfg.subsweeps])
+    prec_ext_heap = num_points * 2 * SIZE_OF_FLOAT
 
     return session_ext_heap + prec_ext_heap
 
@@ -93,7 +94,8 @@ def presence_rss_heap_memory(config: PresenceConfig) -> int:
 
     PREC_FILTER_PARAMS = 13
 
-    prec_rss_heap = sensor_cfg.num_points * PREC_FILTER_PARAMS * SIZE_OF_FLOAT
+    num_points = sum([subsweep.num_points for subsweep in sensor_cfg.subsweeps])
+    prec_rss_heap = num_points * PREC_FILTER_PARAMS * SIZE_OF_FLOAT
 
     return (
         PRESENCE_HEAP_OVERHEAD

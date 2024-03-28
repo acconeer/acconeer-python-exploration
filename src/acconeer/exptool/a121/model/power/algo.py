@@ -104,7 +104,8 @@ class Presence(Algorithm):
         module: Module,
     ) -> t.Iterable[domain.EnergyRegion]:
         (sensor_config,) = config.groups[0].values()
-        points_measured = sensor_config.num_points * sensor_config.sweeps_per_frame
+        num_points = sum([subsweep.num_points for subsweep in sensor_config.subsweeps])
+        points_measured = num_points * sensor_config.sweeps_per_frame
         process_duration = points_measured * self._PROCESSING_SECONDS_PER_POINT
 
         yield from SparseIq().decide_control(
