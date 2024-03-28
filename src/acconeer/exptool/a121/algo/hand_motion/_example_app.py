@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -288,7 +288,7 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
                     processor_config=self._get_processor_config(example_app_config),
                     context=ProcessorContext(estimated_frame_rate=example_app_config.frame_rate),
                     metadata=metadata,
-                    subsweep_index=subsweep_index,
+                    subsweep_indexes=[subsweep_index],
                 )
             )
 

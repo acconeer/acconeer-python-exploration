@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -37,15 +37,6 @@ class ProcessorConfig(AlgoProcessorConfigBase):
         self, config: a121.SessionConfig
     ) -> list[a121.ValidationResult]:
         validation_results: list[a121.ValidationResult] = []
-
-        if len(config.sensor_config.subsweeps) > 1:
-            validation_results.append(
-                a121.ValidationError(
-                    config.sensor_config,
-                    "subsweeps",
-                    "Multiple subsweeps are not supported",
-                )
-            )
 
         if config.sensor_config.frame_rate is None:
             validation_results.append(
@@ -122,11 +113,14 @@ class Processor(ProcessorBase[ProcessorResult]):
         sensor_config: a121.SensorConfig,
         metadata: a121.Metadata,
         processor_config: ProcessorConfig,
-        subsweep_index: Optional[int] = None,
+        subsweep_indexes: Optional[list[int]] = None,
         context: Optional[ProcessorContext] = None,
     ) -> None:
-        if subsweep_index is None:
-            subsweep_index = 0
+        # Subsweep indexes contains a list of subsweep indexes for which to run the presence detector.
+        # If None is supplied, use all possible.
+        if subsweep_indexes is None:
+            subsweep_indexes = list(range(sensor_config.num_subsweeps))
+        self.subsweep_indexes = subsweep_indexes
 
         if context is None:
             context = ProcessorContext()
@@ -134,7 +128,6 @@ class Processor(ProcessorBase[ProcessorResult]):
         self.sensor_config = sensor_config
         self.metadata = metadata
         self.processor_config = processor_config
-        self.subsweep_index = subsweep_index
 
         self.processor_config.validate(self.sensor_config)
 
@@ -345,7 +338,8 @@ class Processor(ProcessorBase[ProcessorResult]):
         self.mean_sweep_sf = self._tc_to_sf(self.mean_sweep_tc / scaling_factor, self.f)
 
     def process(self, result: a121.Result) -> ProcessorResult:
-        frame = result.subframes[self.subsweep_index]
+        range_subframes = [result.subframes[i] for i in self.subsweep_indexes]
+        frame = np.concatenate(range_subframes, axis=1)
 
         # Noise estimation
 
