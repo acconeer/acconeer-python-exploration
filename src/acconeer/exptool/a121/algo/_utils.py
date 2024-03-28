@@ -51,6 +51,8 @@ RLG_PER_HWAAS_MAP = {
     a121.Profile.PROFILE_5: 21.6,
 }
 
+SPARSE_IQ_PPC = 24
+
 
 class ReflectorShape(AlgoParamEnum):
     """Reflector shape.
@@ -441,6 +443,32 @@ def select_prf(breakpoint: int, profile: a121.Profile) -> a121.PRF:
     breakpoint_m = breakpoint * APPROX_BASE_STEP_LENGTH_M
     viable_prfs = [prf for prf, max_dist_m in max_meas_dist_m.items() if breakpoint_m < max_dist_m]
     return sorted(viable_prfs, key=lambda prf: prf.frequency)[-1]
+
+
+def get_max_profile_without_direct_leakage(start_m: float) -> a121.Profile:
+    """
+    Returns the highest possible profile such that
+    the direct leakage for that profile doesn't include the start_m distance.
+    If all direct leakages is inside the distance, return profile_1.
+    """
+    envelope_fwhm_m_reversed = dict(reversed(list(ENVELOPE_FWHM_M.items())))
+    for profile, fwhm in envelope_fwhm_m_reversed.items():
+        if fwhm * 2.0 <= start_m:
+            return profile
+    return a121.Profile.PROFILE_1
+
+
+def get_max_step_length(profile: a121.Profile) -> int:
+    """
+    Calculate biggest possible step length based on the fwhm of the set profile.
+    Achieve detection on the complete range with minimum number of sampling points.
+    """
+    fwhm_p = ENVELOPE_FWHM_M[profile] / APPROX_BASE_STEP_LENGTH_M
+    if fwhm_p < SPARSE_IQ_PPC:
+        step_length = SPARSE_IQ_PPC // int(np.ceil(SPARSE_IQ_PPC / fwhm_p))
+    else:
+        step_length = int((fwhm_p // SPARSE_IQ_PPC) * SPARSE_IQ_PPC)
+    return step_length
 
 
 def estimate_frame_rate(client: a121.Client, session_config: a121.SessionConfig) -> float:
