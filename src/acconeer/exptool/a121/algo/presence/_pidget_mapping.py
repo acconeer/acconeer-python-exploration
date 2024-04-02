@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -83,7 +83,7 @@ def get_pidget_mapping() -> PidgetGroupFactoryMapping:
                 DetectorConfig, "intra_detection_threshold"
             ),
             decimals=2,
-            limits=(0, 5),
+            limits=(0, 100),
         ),
         "intra_frame_time_const": pidgets.FloatSliderPidgetFactory(
             name_label_text="Intra time constant:",
@@ -112,7 +112,7 @@ def get_pidget_mapping() -> PidgetGroupFactoryMapping:
                 DetectorConfig, "inter_detection_threshold"
             ),
             decimals=2,
-            limits=(0, 5),
+            limits=(0, 100),
         ),
         "inter_frame_fast_cutoff": pidgets.FloatSliderPidgetFactory(
             name_label_text="Inter fast cutoff freq.:",
