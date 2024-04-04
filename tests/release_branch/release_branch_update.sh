@@ -1,20 +1,50 @@
 #!/bin/bash
 
 usage() {
-    echo "Usage: release_branch_update.sh [OPTION] source_branch_1:desitnation_branch_1 [source_branch_2:desitnation_branch_2, ...]"
+    echo "Usage: release_branch_update.sh [OPTION] source_branch_1:destination_branch_1 [source_branch_2:destination_branch_2, ...]"
     echo
     echo "Options:"
+    echo "    -b    current branch"
     echo "    -p    push updated branch to remote origin"
 }
 
+OPTSTRING=":pb:"
+push_branch=0
 
-# Option parsing
-getopts ":p" arg && push_branch=1 || push_branch=0
+while getopts ${OPTSTRING} opt; do
+    case ${opt} in
+        p)
+            push_branch=1
+            ;;
+        b)
+            current_branch=${OPTARG}
+            ;;
+        :)
+            echo "Option -${OPTARG} requires an arguemnt."
+            echo
+            usage
+            exit 1
+            ;;
+        ?)
+            echo "Invalid option: -${OPTARG}."
+            echo
+            usage
+            exit 1
+            ;;
+    esac
+done
+
+if [ -z "$current_branch" ]; then
+    echo "Need to specify current branch."
+    echo
+    usage
+    exit 1
+fi
 
 positional_args=${@:$OPTIND:$#}
 
 if [ -z "$positional_args" ]; then
-    echo "Need to specify at least one branch."
+    echo "Need to specify at least one source_branch:destination_branch."
     echo
     usage
     exit 1
@@ -22,9 +52,6 @@ fi
 
 # Include helpers.
 source tests/release_branch/release_branch_utils.sh
-
-current_branch=$(git branch --show-current)
-
 
 # List of branches to update.
 src_dest_branches=$positional_args
@@ -64,7 +91,7 @@ for src_dest_branch in ${src_dest_branches[@]}; do
     source_branch=${branches[0]}
     release_branch=${branches[1]}
 
-    echo "${current_branch} vs. ${source_branch}"
+    echo "Comparing current branch: ${current_branch} with source branch: ${source_branch}"
 
     if [[ ( -n "$source_branch" && -n "$release_branch" && "$source_branch" == "$current_branch" ) ]]; then
         echo "[INFO] Trying to update release branch \"${release_branch}\" from \"${source_branch}\""

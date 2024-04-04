@@ -369,13 +369,9 @@ try {
                     withCredentials([gitUsernamePassword(credentialsId: '1bef2b16-6cd9-4836-a014-421199e7fb0f'),
                                      string(variable: 'RELEASE_BRANCHES', credentialsId: 'et_update_release_branches')]) {
                         if (buildScope == BuildScope.NIGHTLY) {
-                            sh '''#!/bin/bash
-
-                                git config user.name 'Jenkins Builder'
-                                git config user.email 'ai@acconeer.com'
-
-                                tests/release_branch/release_branch_update.sh -p $RELEASE_BRANCHES
-                            '''
+                            sh "git config user.name 'Jenkins Builder'"
+                            sh "git config user.email 'ai@acconeer.com'"
+                            sh "tests/release_branch/release_branch_update.sh -b ${env.BRANCH_NAME} -p ${RELEASE_BRANCHES}"
                         } else if (buildScope == BuildScope.SANITY && currentBuild.currentResult == 'SUCCESS') {
                             sh 'tests/release_branch/release_branch_push.sh'
                         }
