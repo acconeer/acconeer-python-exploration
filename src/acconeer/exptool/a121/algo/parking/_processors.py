@@ -53,7 +53,8 @@ class ObstructionProcessorResult:
     """Extra information for plotting."""
 
 
-class ObstructionProcessor(object):
+class ObstructionProcessor:
+    # Cannot be ProcessorBase since the processor takes a frame instead of result
     def __init__(
         self,
         sensor_config: a121.SensorConfig,
@@ -116,13 +117,13 @@ class ObstructionProcessor(object):
         noise_level = float(np.mean(abs_frame))
         return noise_level
 
-    def process(self, result: a121.Result) -> ObstructionProcessorResult:
-        frame = result.frame
-
+    def process(
+        self, frame: npt.NDArray[np.complex_], temperature: float
+    ) -> ObstructionProcessorResult:
         # Do temperature adjustment
         signal_adjustment_factor, deviation_adjustment_factor = get_temperature_adjustment_factors(
             reference_temperature=self.calibration_temperature,
-            current_temperature=result.temperature,
+            current_temperature=temperature,
             profile=self.profile,
         )
 
@@ -194,7 +195,8 @@ class ProcessorResult:
     """Extra information for plotting."""
 
 
-class Processor(object):
+class Processor:
+    # Cannot be ProcessorBase since the processor takes a frame instead of result
     def __init__(
         self,
         *,
@@ -286,20 +288,18 @@ class Processor(object):
 
         return ret
 
-    def process(self, result: a121.Result) -> ProcessorResult:
+    def process(self, frame: npt.NDArray[np.complex_], temperature: float) -> ProcessorResult:
         self.frame_ind += 1
-
-        base_frame = result.subframes[0]
 
         _, deviation_adjustment_factor = get_temperature_adjustment_factors(
             reference_temperature=self.noise_estimate_temperature,
-            current_temperature=result.temperature,
+            current_temperature=temperature,
             profile=self.profile,
         )
 
         noise_level_adjusted = self.noise_estimate * deviation_adjustment_factor
 
-        data = np.squeeze(base_frame, axis=0)  # remove sweep dimension
+        data = np.squeeze(frame, axis=0)  # remove sweep dimension
 
         # Div by zero avoided by tests elsewhere
         amp = np.squeeze(abs(data)) / noise_level_adjusted

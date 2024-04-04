@@ -191,11 +191,13 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         self.sensor_id = sensor_id
         self.n_samples_to_calibrate = 3  # number of samples used for calibration.
 
-        groups = [{sensor_id: self.sensor_config}]
         if ref_app_config.obstruction_detection:
             self.obstruction_config = self.all_sensor_configs["obstruction_config"]
-            groups.append({sensor_id: self.obstruction_config})
-        self.session_config = a121.SessionConfig(groups, update_rate=ref_app_config.update_rate)
+
+        self.session_config = a121.SessionConfig(
+            self.sensor_config,
+            update_rate=ref_app_config.update_rate,
+        )
 
         if ref_app_config.signature_similarity_threshold is not None:
             # input is a percentage, divide to get useful value
@@ -232,15 +234,8 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         if self.started:
             raise RuntimeError("Already started")
 
-        self.all_metadata = self.client.setup_session(self.session_config)
-
-        if self.ref_app_config.obstruction_detection:
-            assert isinstance(self.all_metadata, list)
-            self.metadata = self.all_metadata[0][self.sensor_id]
-            self.obs_metadata = self.all_metadata[1][self.sensor_id]
-        else:
-            assert isinstance(self.all_metadata, a121.Metadata)
-            self.metadata = self.all_metadata
+        self.metadata = self.client.setup_session(self.session_config)
+        assert isinstance(self.metadata, a121.Metadata)
 
         if recorder is not None:
             if isinstance(recorder, a121.H5Recorder):
@@ -259,6 +254,7 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
             self.client.attach_recorder(recorder)
 
         base_sensor_config = self.all_sensor_configs["full_config"]
+        base_sensor_config = a121.SensorConfig(subsweeps=[base_sensor_config.subsweeps[0]])
 
         self.base_processor = Processor(
             sensor_config=base_sensor_config,
@@ -274,7 +270,7 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
             obstruction_processor_config = ObstructionProcessorConfig(
                 distance_threshold=obstruction_distance_threshold
             )
-            self.obs_distances = get_distances_m(obstruction_sensor_config, self.obs_metadata)
+            self.obs_distances = get_distances_m(obstruction_sensor_config, self.metadata)
 
             self.obstruction_processor = ObstructionProcessor(
                 sensor_config=obstruction_sensor_config,
@@ -293,35 +289,41 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
     def calibrate_ref_app(self) -> None:
         obstruction_detection = self.ref_app_config.obstruction_detection
 
-        temp_config = copy.deepcopy(self.ref_app_config)
-        sensor_configs = get_sensor_configs(temp_config)
+        sensor_configs = get_sensor_configs(self.ref_app_config)
         sensor_config = sensor_configs["full_config"]
 
-        sensor_config.enable_tx = False
+        # Turn off tx in all
+        for subsweep in sensor_config.subsweeps:
+            subsweep.enable_tx = False
 
         if obstruction_detection:
-            # We need two calibration values, one to determine the signature and one to determine the noise level.
-            obstruction_config = sensor_configs["obstruction_config"]
-            obstruction_config_tx_off = copy.deepcopy(obstruction_config)
-            obstruction_config_tx_off.enable_tx = False
-            assert isinstance(obstruction_config, a121.SensorConfig)
+            # We need two calibration values for obstruction, one to determine the signature and one to determine the noise level.
+
+            obstruction_config = copy.deepcopy(sensor_config)
+            obstruction_config.subsweeps[1].enable_tx = True
+
             groups = [
-                {self.sensor_id: sensor_config},
-                {self.sensor_id: obstruction_config},
-                {self.sensor_id: obstruction_config_tx_off},
+                {self.sensor_id: sensor_config},  # This is for parking noise
+                {self.sensor_id: sensor_config},  # This is for obstruction noise
+                {self.sensor_id: obstruction_config},  # This is for obstruction center
             ]
-            session_config = a121.SessionConfig(groups, update_rate=self.n_samples_to_calibrate)
+            session_config = a121.SessionConfig(
+                groups,
+                update_rate=self.n_samples_to_calibrate,
+            )
         else:
             session_config = a121.SessionConfig(
-                {self.sensor_id: sensor_config}, update_rate=self.n_samples_to_calibrate
+                sensor_config,
+                update_rate=self.n_samples_to_calibrate,
             )
 
         metadata = self.client.setup_session(session_config)
 
         if obstruction_detection:
             assert isinstance(metadata, list)
-            obs_metadata = metadata[1][self.sensor_id]
-            obs_distances = get_distances_m(obstruction_config, obs_metadata)
+            obstruction_config = sensor_configs["obstruction_config"]
+            obstruction_metadata = metadata[2][self.sensor_id]
+            obs_distances = get_distances_m(obstruction_config, obstruction_metadata)
 
         noise_levels = []
         obs_noise_levels = []
@@ -330,27 +332,27 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
 
         self.client.start_session()
         for i in range(self.n_samples_to_calibrate):
-            main_result = self.client.get_next()
+            base_result = self.client.get_next()
             if obstruction_detection:
-                assert isinstance(main_result, list)
-                result = main_result[0][self.sensor_id]
-                obs_result = main_result[1][self.sensor_id]
-                obs_tx_off_result = main_result[2][self.sensor_id]
-                noise_level = ObstructionProcessor.get_noise_level(obs_tx_off_result.frame)
-                obs_noise_levels.append(noise_level)
+                assert isinstance(base_result, list)
+                main_result = base_result[0][self.sensor_id]
+                main_frame = main_result.subframes[0]
+                obs_tx_off_frame = base_result[1][self.sensor_id].subframes[1]
+                obs_frame = base_result[2][self.sensor_id].subframes[1]
+                obs_noise_level = ObstructionProcessor.get_noise_level(obs_tx_off_frame)
+                obs_noise_levels.append(obs_noise_level)
                 signature, _ = ObstructionProcessor.get_signature(
-                    obs_result.frame, noise_level, obs_distances
+                    obs_frame, obs_noise_level, obs_distances
                 )
                 signatures.append(signature)
             else:
-                assert isinstance(main_result, a121.Result)
-                result = main_result
-
-            temperature = result.temperature
+                assert isinstance(base_result, a121.Result)
+                main_result = base_result
+                main_frame = main_result.frame
+            temperature = main_result.temperature
             temperatures.append(temperature)
 
-            noise_frame = result.frame
-            noise_level = Processor.process_noise_frame(noise_frame)
+            noise_level = Processor.process_noise_frame(main_frame)
             noise_levels.append(noise_level)
 
         if obstruction_detection:
@@ -368,7 +370,8 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         self.noise_level = float(np.mean(noise_levels))
 
         # Update the context
-        sensor_config.enable_tx = True
+        for subsweep in sensor_config.subsweeps:
+            subsweep.enable_tx = True
         self.context.noise_level = self.noise_level
         self.context.calibration_temperature = self.calibration_temperature
         self.context.calibration_sensor_config = sensor_config
@@ -380,18 +383,19 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
 
         result = self.client.get_next()
 
+        assert isinstance(result, a121.Result)
         if self.ref_app_config.obstruction_detection:
-            assert isinstance(result, list)
-            base_res = result[0][self.sensor_id]
-            obs_res = result[1][self.sensor_id]
+            base_frame = result.subframes[0]
+            obs_frame = result.subframes[1]
         else:
-            assert isinstance(result, a121.Result)
-            base_res = result
+            base_frame = result.subframes[0]
 
-        processor_result = self.base_processor.process(base_res)
+        temperature = result.temperature
+
+        processor_result = self.base_processor.process(base_frame, temperature)
 
         if self.ref_app_config.obstruction_detection:
-            obstruction_result = self.obstruction_processor.process(obs_res)
+            obstruction_result = self.obstruction_processor.process(obs_frame, temperature)
 
             obstruction_found = obstruction_result.obstruction_found
 
@@ -441,13 +445,13 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
     ) -> RefAppStatus:
         calibration_done = context.calibration_done
 
-        sensor_settings = get_sensor_configs(ref_app_config)
-        sensor_conf = sensor_settings["full_config"]
+        sensor_configs = get_sensor_configs(ref_app_config)
+        sensor_config = sensor_configs["full_config"]
 
-        config_match = context.calibration_sensor_config == sensor_conf
+        config_match = context.calibration_sensor_config == sensor_config
 
         if ref_app_config.obstruction_detection:
-            obstruction_conf = sensor_settings["obstruction_config"]
+            obstruction_conf = sensor_configs["obstruction_config"]
             obstruction_config_match = obstruction_conf == context.obstruction_sensor_config
             obstruction_ready = context.obstruction_calibration_done and obstruction_config_match
         else:
@@ -502,7 +506,7 @@ def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, RefAppConfig, RefAppCo
     return sensor_id, config, context
 
 
-def get_obstruction_sensor_config(ref_app_config: RefAppConfig) -> a121.SensorConfig:
+def get_obstruction_subsweep_config(ref_app_config: RefAppConfig) -> a121.SubsweepConfig:
     step_length = 2  # Typically not very important, we just want a few points close to the sensor.
 
     start_point = int(round(ref_app_config.obstruction_start_m / APPROX_BASE_STEP_LENGTH_M))
@@ -514,18 +518,24 @@ def get_obstruction_sensor_config(ref_app_config: RefAppConfig) -> a121.SensorCo
             )
         )
     )
-    conf_obstruction = a121.SensorConfig(
+    conf_obstruction = a121.SubsweepConfig(
         start_point=start_point,
         num_points=num_points,
         step_length=step_length,
         profile=a121.Profile.PROFILE_1,
         hwaas=16,
-        sweeps_per_frame=1,
     )
     return conf_obstruction
 
 
 def get_sensor_configs(ref_app_config: RefAppConfig) -> Dict[str, a121.SensorConfig]:
+    """
+    Returns a dict with sensor configs for the main functionality as well as for obstruction (if applicable)
+    Even if the configs will be subsweeps, the function returns separate SensorConfig Objects.
+    The intended usage is to be able to easily lift the obstruction functionality.
+    In addition, some functions (get_distances) require the SensorConfig to be supplied.
+    """
+
     start_point = int(round(ref_app_config.range_start_m / APPROX_BASE_STEP_LENGTH_M))
     profile = a121.Profile(ref_app_config.profile)
 
@@ -564,8 +574,11 @@ def get_sensor_configs(ref_app_config: RefAppConfig) -> Dict[str, a121.SensorCon
     subsweeps.append(conf_base)
 
     if ref_app_config.obstruction_detection:
-        conf_obstruction = get_obstruction_sensor_config(ref_app_config)
-        ret["obstruction_config"] = conf_obstruction
+        conf_obstruction = get_obstruction_subsweep_config(ref_app_config)
+        ret["obstruction_config"] = a121.SensorConfig(
+            subsweeps=[conf_obstruction], sweeps_per_frame=1
+        )
+        subsweeps.append(conf_obstruction)
 
     conf = a121.SensorConfig(subsweeps=subsweeps, sweeps_per_frame=1)
     ret["full_config"] = conf
