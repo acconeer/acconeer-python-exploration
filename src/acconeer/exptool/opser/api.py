@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ def serialize(
     """
     type_tree = core.create_type_tree(override_type or type(instance))
     core.sanitize_instance(instance, type_tree)
-    RegistryPersistor(group, "/", type_tree).save(instance)
+    RegistryPersistor(group, "./", type_tree).save(instance)
 
 
 def deserialize(group: h5py.Group, typ: t.Type[_T]) -> _T:
@@ -29,7 +29,7 @@ def deserialize(group: h5py.Group, typ: t.Type[_T]) -> _T:
     Try to load and deserialize an object of type 'typ' from the specified group
     """
     type_tree = core.create_type_tree(typ)
-    loaded = RegistryPersistor(group, "/", type_tree).load()
+    loaded = RegistryPersistor(group, "./", type_tree).load()
     core.sanitize_instance(loaded, type_tree)
 
     return loaded  # type: ignore[no-any-return]
