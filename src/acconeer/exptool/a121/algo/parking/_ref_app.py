@@ -6,7 +6,7 @@ from __future__ import annotations
 import copy
 import enum
 import warnings
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import attrs
 import h5py
@@ -15,6 +15,7 @@ import numpy.typing as npt
 from attributes_doc import attributes_doc
 
 from acconeer.exptool import a121, opser
+from acconeer.exptool._core.class_creation.attrs import attrs_optional_ndarray_isclose
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo import (
     APPROX_BASE_STEP_LENGTH_M,
@@ -49,15 +50,30 @@ class RefAppStatus:
 
 
 @attrs.mutable(kw_only=True)
+class CalibrationData(AlgoBase):
+    noise_frames: Optional[npt.NDArray[np.complex_]] = attrs.field(
+        default=None, eq=attrs_optional_ndarray_isclose
+    )
+    obs_tx_off_frames: Optional[npt.NDArray[np.complex_]] = attrs.field(
+        default=None, eq=attrs_optional_ndarray_isclose
+    )
+    obs_frames: Optional[npt.NDArray[np.complex_]] = attrs.field(
+        default=None, eq=attrs_optional_ndarray_isclose
+    )
+    temperatures: Optional[List[int]] = attrs.field(default=None)
+
+
+@attrs.mutable(kw_only=True)
 class RefAppContext(AlgoBase):
     noise_level: float = attrs.field(default=1.0)
     obstruction_center: npt.NDArray[np.float_] = attrs.field(default=np.array([0.0, 0.0]))
     calibration_temperature: float = attrs.field(default=0.0)
     calibration_done: bool = attrs.field(default=False)
-    calibration_sensor_config: a121.SensorConfig = attrs.field(default=a121.SensorConfig())
+    calibration_sensor_config: a121.SensorConfig = attrs.field(factory=a121.SensorConfig)
     obstruction_calibration_done: bool = attrs.field(default=False)
     obstruction_noise_level: float = attrs.field(default=0.0)
-    obstruction_sensor_config: a121.SensorConfig = attrs.field(default=a121.SensorConfig())
+    obstruction_sensor_config: a121.SensorConfig = attrs.field(factory=a121.SensorConfig)
+    calibration_data: CalibrationData = attrs.field(factory=CalibrationData)
 
 
 @attributes_doc
@@ -330,6 +346,10 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         signatures = []
         temperatures = []
 
+        noise_frames = []
+        obs_tx_off_frames = []
+        obs_frames = []
+
         self.client.start_session()
         for i in range(self.n_samples_to_calibrate):
             base_result = self.client.get_next()
@@ -345,6 +365,9 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
                     obs_frame, obs_noise_level, obs_distances
                 )
                 signatures.append(signature)
+
+                obs_tx_off_frames.append(obs_tx_off_frame)
+                obs_frames.append(obs_frame)
             else:
                 assert isinstance(base_result, a121.Result)
                 main_result = base_result
@@ -354,6 +377,7 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
 
             noise_level = Processor.process_noise_frame(main_frame)
             noise_levels.append(noise_level)
+            noise_frames.append(main_frame)
 
         if obstruction_detection:
             self.obstruction_center = np.mean(signatures, axis=0)
@@ -376,6 +400,11 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         self.context.calibration_temperature = self.calibration_temperature
         self.context.calibration_sensor_config = sensor_config
         self.context.calibration_done = True
+
+        self.context.calibration_data.noise_frames = np.array(noise_frames)
+        self.context.calibration_data.obs_tx_off_frames = np.array(obs_tx_off_frames)
+        self.context.calibration_data.obs_frames = np.array(obs_frames)
+        self.context.calibration_data.temperatures = temperatures
 
     def get_next(self) -> RefAppResult:
         if not self.started:
