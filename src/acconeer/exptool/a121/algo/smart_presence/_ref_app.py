@@ -209,13 +209,14 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         if self.started:
             raise RuntimeError("Already started")
 
-        self.nominal_detector_config = self._get_detector_config(self.config.nominal_config)
+        self.nominal_detector_config = self.config.nominal_config
 
         sensor_config = Detector._get_sensor_config(self.nominal_detector_config)
         session_config = a121.SessionConfig(
             {self.sensor_id: sensor_config},
             extended=False,
         )
+        detector_config: DetectorConfig
 
         if self.ref_app_context.nominal_detector_context is None:
             self.nominal_detector_context = DetectorContext(
@@ -244,7 +245,7 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
             self._mode = _Mode.WAKE_UP_CONFIG
             assert self.config.wake_up_config is not None
 
-            self.wake_up_detector_config = self._get_detector_config(self.config.wake_up_config)
+            self.wake_up_detector_config = self.config.wake_up_config
 
             sensor_config = Detector._get_sensor_config(self.wake_up_detector_config)
             session_config = a121.SessionConfig(
@@ -331,31 +332,6 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         )
 
         self.started = True
-
-    @classmethod
-    def _get_detector_config(cls, presence_zone_config: PresenceZoneConfig) -> DetectorConfig:
-        return DetectorConfig(
-            start_m=presence_zone_config.start_m,
-            end_m=presence_zone_config.end_m,
-            profile=presence_zone_config.profile,
-            step_length=presence_zone_config.step_length,
-            frame_rate=presence_zone_config.frame_rate,
-            sweeps_per_frame=presence_zone_config.sweeps_per_frame,
-            hwaas=presence_zone_config.hwaas,
-            inter_frame_idle_state=presence_zone_config.inter_frame_idle_state,
-            intra_enable=presence_zone_config.intra_enable,
-            intra_detection_threshold=presence_zone_config.intra_detection_threshold,
-            intra_frame_time_const=presence_zone_config.intra_frame_time_const,
-            intra_output_time_const=presence_zone_config.intra_output_time_const,
-            inter_enable=presence_zone_config.inter_enable,
-            inter_detection_threshold=presence_zone_config.inter_detection_threshold,
-            inter_frame_fast_cutoff=presence_zone_config.inter_frame_fast_cutoff,
-            inter_frame_slow_cutoff=presence_zone_config.inter_frame_slow_cutoff,
-            inter_frame_deviation_time_const=presence_zone_config.inter_frame_deviation_time_const,
-            inter_output_time_const=presence_zone_config.inter_output_time_const,
-            inter_phase_boost=presence_zone_config.inter_phase_boost,
-            inter_frame_presence_timeout=presence_zone_config.inter_frame_presence_timeout,
-        )
 
     def get_next(self) -> RefAppResult:
         if not self.started:
