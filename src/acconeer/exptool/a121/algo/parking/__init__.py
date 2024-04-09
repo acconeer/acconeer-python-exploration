@@ -3,7 +3,7 @@
 
 from ._configs import (
     get_ground_config,
-    get_ground_le_config,
+    get_ground_lp_config,
     get_pole_config,
 )
 from ._processors import (

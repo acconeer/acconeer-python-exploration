@@ -23,7 +23,7 @@ def get_ground_config() -> RefAppConfig:
     return ret
 
 
-def get_ground_le_config() -> RefAppConfig:
+def get_ground_lp_config() -> RefAppConfig:
     ret = RefAppConfig(
         range_start_m=0.3,
         range_end_m=0.5,
