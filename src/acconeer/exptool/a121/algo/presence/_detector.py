@@ -192,14 +192,17 @@ class DetectorMetadata:
     start_m: float = attrs.field()
     """Actual start point of measurement in meters"""
 
-    step_length_m: float = attrs.field()
-    """Actual step length between each data point of the measurement in meters"""
+    end_m: float = attrs.field()
+    """Actual end point of measurement in meters"""
+
+    step_length_m: Optional[float] = attrs.field()
+    """Actual step length between each data point of the measurement in meters. (Only valid if automatic_subsweeps is False)"""
 
     num_points: int = attrs.field()
     """The number of data points in the measurement"""
 
-    profile: a121.Profile = attrs.field()
-    """Profile used for measurement"""
+    profile: Optional[a121.Profile] = attrs.field()
+    """Profile used for measurement. (Only valid if automatic_subsweeps is False)"""
 
 
 @attrs.frozen(kw_only=True)
@@ -286,15 +289,21 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
         processor_config = self._get_processor_config(self.config)
 
         start_m = sensor_config.subsweeps[0].start_point * APPROX_BASE_STEP_LENGTH_M
+        end_m = (
+            sensor_config.subsweeps[-1].start_point
+            + (sensor_config.subsweeps[-1].num_points - 1)
+            * sensor_config.subsweeps[-1].step_length
+        ) * APPROX_BASE_STEP_LENGTH_M
         step_length_m = metadata.base_step_length_m * sensor_config.subsweeps[0].step_length
         num_points = sum([subsweep.num_points for subsweep in sensor_config.subsweeps])
         profile = sensor_config.subsweeps[0].profile
 
         self.detector_metadata = DetectorMetadata(
             start_m=start_m,
-            step_length_m=step_length_m,
+            end_m=end_m,
+            step_length_m=step_length_m if sensor_config.num_subsweeps == 1 else None,
             num_points=num_points,
-            profile=profile,
+            profile=profile if sensor_config.num_subsweeps == 1 else None,
         )
 
         self.processor = Processor(

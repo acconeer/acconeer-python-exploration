@@ -57,7 +57,7 @@ class Processor:
         self.num_zones = np.minimum(processor_config.num_zones, num_points)
         self.distances = np.linspace(
             detector_metadata.start_m,
-            detector_metadata.start_m + (num_points - 1) * detector_metadata.step_length_m,
+            detector_metadata.end_m,
             num_points,
         )
         self.zone_limits = self.create_zones(self.distances, self.num_zones)
