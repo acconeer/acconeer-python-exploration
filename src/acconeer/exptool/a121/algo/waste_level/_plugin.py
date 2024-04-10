@@ -49,12 +49,12 @@ log = logging.getLogger(__name__)
 
 
 class PluginPresetId(Enum):
-    DEFAULT = auto()
+    PLASTIC_WASTE_BIN = auto()
 
 
 class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, ProcessorResult]):
     PLUGIN_PRESETS = {
-        PluginPresetId.DEFAULT.value: lambda: ProcessorPluginPreset(
+        PluginPresetId.PLASTIC_WASTE_BIN.value: lambda: ProcessorPluginPreset(
             session_config=a121.SessionConfig(get_sensor_config()),
             processor_config=get_processor_config(),
         ),
@@ -532,7 +532,11 @@ WASTE_LEVEL_PLUGIN = PluginSpec(
     description="Detect waste level in a bin.",
     family=PluginFamily.EXAMPLE_APP,
     presets=[
-        PluginPresetBase(name="Default", preset_id=PluginPresetId.DEFAULT),
+        PluginPresetBase(
+            name="Plastic waste bin",
+            description="Settings for measuring waste level in a plastic waste bin (240 liter)",
+            preset_id=PluginPresetId.PLASTIC_WASTE_BIN,
+        ),
     ],
-    default_preset_id=PluginPresetId.DEFAULT,
+    default_preset_id=PluginPresetId.PLASTIC_WASTE_BIN,
 )
