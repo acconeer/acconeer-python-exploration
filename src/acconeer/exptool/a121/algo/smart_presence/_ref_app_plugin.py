@@ -77,7 +77,7 @@ log = logging.getLogger(__name__)
 @attrs.mutable(kw_only=True)
 class SharedState:
     sensor_id: int = attrs.field(default=1)
-    config: RefAppConfig = attrs.field(factory=RefAppConfig)
+    config: RefAppConfig = attrs.field(factory=get_medium_range_config)
     ref_app_context: Optional[RefAppContext] = attrs.field(default=None)
 
 
