@@ -67,11 +67,6 @@ def input_path(resource_name: str) -> Path:
             "input-parking_pole.h5",
         ),
         (
-            parking_test.parking_default,
-            t.List[parking_test.ResultSlice],
-            "input-parking_ground_lp.h5",
-        ),
-        (
             presence_test.presence_default,
             t.List[presence_test.ProcessorResultSlice],
             "input-frame_rate_10Hz-sweeps_per_frame_4.h5",

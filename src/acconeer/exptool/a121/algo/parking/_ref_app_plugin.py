@@ -28,7 +28,6 @@ from acconeer.exptool.a121.algo._utils import get_distances_m
 from acconeer.exptool.a121.algo.parking import (
     ObstructionProcessor,
     get_ground_config,
-    get_ground_lp_config,
     get_pole_config,
 )
 from acconeer.exptool.app.new import (
@@ -79,7 +78,6 @@ class SharedState:
 
 class PluginPresetId(Enum):
     GROUND = auto()
-    GROUND_LOW_POWER = auto()
     POLE = auto()
 
 
@@ -96,7 +94,6 @@ class SetupMessage(GeneralMessage):
 class BackendPlugin(A121BackendPluginBase[SharedState]):
     PLUGIN_PRESETS: Mapping[int, Callable[[], RefAppConfig]] = {
         PluginPresetId.GROUND.value: lambda: get_ground_config(),
-        PluginPresetId.GROUND_LOW_POWER.value: lambda: get_ground_lp_config(),
         PluginPresetId.POLE.value: lambda: get_pole_config(),
     }
 
@@ -828,11 +825,6 @@ PARKING_PLUGIN = PluginSpec(
             name="Ground",
             description="Ground mounted",
             preset_id=PluginPresetId.GROUND,
-        ),
-        PluginPresetBase(
-            name="Ground Low Power",
-            description="Ground mounted low power",
-            preset_id=PluginPresetId.GROUND_LOW_POWER,
         ),
         PluginPresetBase(
             name="Pole",

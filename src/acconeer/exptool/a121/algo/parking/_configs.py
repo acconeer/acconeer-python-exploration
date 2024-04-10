@@ -23,21 +23,6 @@ def get_ground_config() -> RefAppConfig:
     return ret
 
 
-def get_ground_lp_config() -> RefAppConfig:
-    ret = RefAppConfig(
-        range_start_m=0.3,
-        range_end_m=0.5,
-        hwaas=16,
-        profile=a121.Profile.PROFILE_1,
-        queue_length_n=3,
-        amplitude_threshold=8.0,
-        weighted_distance_threshold_m=0.1,
-        update_rate=0.2,
-        obstruction_detection=False,
-    )
-    return ret
-
-
 def get_pole_config() -> RefAppConfig:
     ret = RefAppConfig(
         range_start_m=0.2,
