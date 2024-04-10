@@ -13,7 +13,12 @@ import numpy.typing as npt
 from attributes_doc import attributes_doc
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo import AlgoProcessorConfigBase, ProcessorBase, get_distances_m
+from acconeer.exptool.a121.algo import (
+    APPROX_BASE_STEP_LENGTH_M,
+    AlgoProcessorConfigBase,
+    ProcessorBase,
+    get_distances_m,
+)
 
 
 @attributes_doc
@@ -52,6 +57,23 @@ class ProcessorConfig(AlgoProcessorConfigBase):
                     "Sweeps per frame must be > 3.",
                 )
             )
+
+        min_measured_point = min(ss.start_point for ss in config.sensor_config.subsweeps)
+        max_measured_point = max(
+            ss.start_point + (ss.num_points - 1) * ss.step_length
+            for ss in config.sensor_config.subsweeps
+        )
+        min_measured_distance_m = min_measured_point * APPROX_BASE_STEP_LENGTH_M
+        max_measured_distance_m = max_measured_point * APPROX_BASE_STEP_LENGTH_M
+        measured_range_str = f"{min_measured_distance_m:.2f}-{max_measured_distance_m:.2f}m"
+
+        if not min_measured_distance_m <= self.bin_start_m <= max_measured_distance_m:
+            bin_msg = f"Bin start is outside measured range ({measured_range_str})"
+            validation_results += [a121.ValidationError(self, "bin_start_m", bin_msg)]
+
+        if not min_measured_distance_m <= self.bin_end_m <= max_measured_distance_m:
+            bin_msg = f"Bin end is outside measured range ({measured_range_str})"
+            validation_results += [a121.ValidationError(self, "bin_end_m", bin_msg)]
 
         for (subssweep_a_idx, subsweep_a), (subssweep_b_idx, subsweep_b) in itertools.combinations(
             enumerate(config.sensor_config.subsweeps, start=1), 2
