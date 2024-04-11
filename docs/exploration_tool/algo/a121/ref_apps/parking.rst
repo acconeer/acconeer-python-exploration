@@ -12,6 +12,23 @@ The measurement used for this algorithm is similar in nature to the measurement 
 
 The signatures are calculated from the mean sweep over a frame. For all sweeps, we only use the amplitude measurements for each depth, denoted with :math:`A(d)` (which is obtained by taking the absolute value of the sparseIQ data). The phase information is not used in this reference application. See :ref:`handbook-a121-spf` for more information about frames and sweeps.
 
+Integration Notes
+-----------------
+This use case is highly dependent on the integration, both for the obstruction detection and the primary parking detection. All notes here should be taken as general guidelines.
+
+In the pole mounted case (when the sensor looks at the car from the side) there are a few issues found in testing. Since a car hood often consists of large flat surfaces which can deflect the signal instead of reflecting it, there is a risk that a car can appear "invisible" to the sensor. The most natural way to mitigate this issue is to tilt the sensor slightly downwards, which often catches the front of the car, which more often than the hood has reflective surfaces more perpendicular to the sensor. All pole mounted tests were performed with the sensor angled slightly downwards, see :numref:`pole_mounted` and :numref:`angle_pole_mounted`.
+
+.. _angle_pole_mounted:
+.. figure:: /_static/processing/a121_parking_pole_angle.png
+    :align: center
+
+    Illustration of the sensor mount with angle used in testing the pole mounted case.
+
+For the ground mounted case, the sensor should be looking straight up and be placed as central (under the car) as possible. A common issue is that the casing creates some reflections within the closer parts of the detection range, which in turn can cause false detects.
+This can be mitigated by either adjusting the start of the range (recommended) or adjusting the :attr:`~acconeer.exptool.a121.algo.parking._ref_app.RefAppConfig.amplitude_threshold`. Adjusting the amplitude_threshold can impact detection performance.
+
+Another caveat is to set the range too far from the sensor, so that the start of the range is inside the car. This can cause the object to be missed, since the signal will reflect on the bottom of the car and travel too far in the allotted time. So the start of the range should be kept as low as possible while not encountering problems with the integration. The best way to achieve this is by testing using Exploration Tool.
+
 Signature
 ^^^^^^^^^
 The signature concept mentioned here and used in the algorithm is a 2D measure on the amplitude data of the whole sweep. It differs slightly between the obstruction detection and the normal parking detector by taking the average amplitude over the whole sweep in the obstruction case while taking the max amplitude in the parking detection case. Here WD denotes "Weighted Distance".
@@ -39,7 +56,7 @@ For the parking case, the measurement is not necessarily continuous. But in prac
 
 Obstruction Detection
 ---------------------
-In addition to the parking detection, the algorithm also has a component called "Obstruction detection". This system measures a few points very close to the sensor, well within the so called "direct leakage". An obstruction of the sensor will result in a change of the received direct leakage and/or returned signal, causing the signature of the data to change. The obstruction detection allows the user to configure the sensitivity as well as the range of the processing. Since the amplitude is sensitive to temperature fluctuations, it is recommended to test the threshold in appropriate conditions for the use case.
+In addition to the parking detection, the algorithm also has a component called "Obstruction detection". This system measures a few points very close to the sensor, well within the so called "direct leakage". An obstruction of the sensor will result in a change of the received direct leakage and/or returned signal, causing the signature of the data to change. The obstruction detection allows the user to configure the sensitivity as well as the range of the processing. Since the amplitude is sensitive to temperature fluctuations, it is recommended to test the threshold in appropriate conditions for the use case. If the obstruction detection feature is used, it is important that the range of the obstruction detection does not overlap with the range of the parked car detection.
 
 Measurement Range and Presets
 ------------------------------
@@ -87,6 +104,10 @@ The :attr:`~acconeer.exptool.a121.algo.parking._ref_app.RefAppConfig.profile` de
 Calibration
 ------------
 Estimation of the underlying noise level is an important factor for the performance of the algorithm. This is done at start up with an empty channel. The purpose of this is to get a noise estimate in the current temperature. If the obstruction detection is activated, we also get the signature for the unobstructed close range. The processing has an internal model to account for temperature changes during execution. However, for large temperature fluctuations, there is still a risk that the obstruction detection performance deteriorates.
+
+Note that the calibration of the obstruction detection must be done with the sensor unobstructed in the intended casing, since the calibration takes a snapshot of the radar signal in the obstruction detection range.
+
+In general, it is better to calibrate the sensor as close as possible to operating temperatures.
 
 Temperature
 ^^^^^^^^^^^
@@ -147,21 +168,6 @@ Temperature
 ^^^^^^^^^^^
 All tests have been performed outside in southern Swedish winter conditions (around 0 degrees Celsius ambient temperature) while the sensor was calibrated in indoor conditions. So a temperature difference slightly below 20 degrees was experienced without issue.
 
-Integration Notes
------------------
-This use case is highly dependent on the integration, both for the obstruction detection and the primary parking detection. All notes here should be taken as general guidelines.
-
-In the pole mounted case (when the sensor looks at the car from the side) there are a few issues found in testing. Since a car hood often consists of large flat surfaces which can deflect the signal instead of reflecting it, there is a risk that a car can appear "invisible" to the sensor. The most natural way to mitigate this issue is to tilt the sensor slightly downwards, which often catches the front of the car, which more often than the hood has reflective surfaces more perpendicular to the sensor. All pole mounted tests were performed with the sensor angled slightly downwards, see :numref:`pole_mounted` and :numref:`angle_pole_mounted`.
-
-.. _angle_pole_mounted:
-.. figure:: /_static/processing/a121_parking_pole_angle.png
-    :align: center
-
-    Illustration of the sensor mount with angle used in testing the pole mounted case.
-
-
-
-For the ground mounted case, the sensor should be looking straight up and be placed as central (under the car) as possible.
 
 Ref App Configuration
 --------------------------
