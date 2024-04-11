@@ -7,11 +7,11 @@ from acconeer.exptool.a121.algo.parking._ref_app import RefAppConfig
 
 def get_ground_config() -> RefAppConfig:
     ret = RefAppConfig(
-        range_start_m=0.18,
-        range_end_m=0.5,
+        range_start_m=0.1,
+        range_end_m=0.4,
         hwaas=24,
         profile=a121.Profile.PROFILE_1,
-        update_rate=0.5,
+        update_rate=0.1,
         queue_length_n=3,
         amplitude_threshold=8.0,
         weighted_distance_threshold_m=0.1,
