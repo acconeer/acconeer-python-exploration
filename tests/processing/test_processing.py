@@ -23,6 +23,7 @@ from .a121 import (
     tank_level_test,
     touchless_button_test,
     vibration_test,
+    waste_level_test,
 )
 
 
@@ -200,6 +201,26 @@ def input_path(resource_name: str) -> Path:
             vibration_test.vibration_controller,
             t.List[vibration_test.ResultSlice],
             "vibration.h5",
+        ),
+        (
+            waste_level_test.waste_level_processor,
+            t.List[waste_level_test.ResultSlice],
+            "input-waste-level-empty.h5",
+        ),
+        (
+            waste_level_test.waste_level_processor,
+            t.List[waste_level_test.ResultSlice],
+            "input-waste-level-25-percent.h5",
+        ),
+        (
+            waste_level_test.waste_level_processor,
+            t.List[waste_level_test.ResultSlice],
+            "input-waste-level-75-percent.h5",
+        ),
+        (
+            waste_level_test.waste_level_processor,
+            t.List[waste_level_test.ResultSlice],
+            "input-waste-level-full.h5",
         ),
     ],
 )
