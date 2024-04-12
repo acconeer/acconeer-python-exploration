@@ -18,5 +18,7 @@ if [ ${jenkins_merge} -eq 1 ]; then
 
         git push --force origin HEAD:refs/heads/${release_branch}
         handle_exit_status $? "push-refs-heads"
+
+        tests/release_branch/release_branch_update.sh -b ${release_branch} $@
     fi
 fi

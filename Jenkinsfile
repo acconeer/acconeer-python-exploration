@@ -373,7 +373,7 @@ try {
                             sh "git config user.email 'ai@acconeer.com'"
                             sh "tests/release_branch/release_branch_update.sh -b ${env.BRANCH_NAME} -p ${RELEASE_BRANCHES}"
                         } else if (buildScope == BuildScope.SANITY && currentBuild.currentResult == 'SUCCESS') {
-                            sh 'tests/release_branch/release_branch_push.sh'
+                            sh "tests/release_branch/release_branch_push.sh -p ${RELEASE_BRANCHES}"
                         }
                     }
                 }
