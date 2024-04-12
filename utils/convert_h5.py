@@ -10,7 +10,7 @@ import json
 import os
 import typing as t
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Union
+from typing import Dict, Optional, Tuple, Union, cast
 
 import h5py
 import numpy as np
@@ -19,6 +19,7 @@ import pandas as pd
 
 import acconeer.exptool as et
 import acconeer.exptool.a121.algo.breathing as breathing
+import acconeer.exptool.a121.algo.distance as distance
 import acconeer.exptool.a121.algo.presence as presence
 import acconeer.exptool.a121.algo.speed as speed
 import acconeer.exptool.a121.algo.surface_velocity as surface_velocity
@@ -495,6 +496,7 @@ def get_processed_data(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
 
     load_algo_and_client: Dict[str, t.Callable[[h5py.File], Tuple[pd.DataFrame, pd.DataFrame]]] = {
         "breathing": get_processed_data_breathing,
+        "distance_detector": get_processed_data_distance,
         "presence_detector": get_processed_data_presence,
         "speed_detector": get_processed_data_speed,
         "surface_velocity": get_processed_data_surface_velocity,
@@ -761,6 +763,62 @@ def get_processed_data_presence(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.Da
     return df_processed_data, df_algo_data
 
 
+def get_processed_data_distance(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    processed_data_list = []
+    sensor_ids, detector_config, detector_context = distance._detector._load_algo_data(
+        h5_file["algo"]
+    )
+
+    # Create DataFrames from configurations, sensor id, and detector context
+    df_sensor_id = pd.DataFrame(({"sensor_id": sensor_ids}).items())
+    df_config = pd.DataFrame([[k, v] for k, v in detector_config.to_dict().items()])
+
+    # Concatenate along columns
+    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
+
+    # Client preparation
+    record = H5Record(h5_file)
+    client = _ReplayingClient(record, realtime_replay=False)
+    num_frames = record.num_frames
+    detector = distance.Detector(
+        client=client,
+        sensor_ids=sensor_ids,
+        detector_config=detector_config,
+        context=detector_context,
+    )
+    detector.start()
+
+    try:
+        for idx in range(record.num_frames):
+            processed_data = detector.get_next()
+
+            # Put the result in row
+            processed_data_row = distance_result_as_row(
+                processed_data=processed_data, sensor_ids=sensor_ids
+            )
+            processed_data_list.append(processed_data_row)
+
+            # Print progressing time every 5%
+            print(f"... {idx / num_frames:.0%}") if (idx % int(0.05 * num_frames)) == 0 else None
+
+    except KeyboardInterrupt:
+        print("Conversion aborted")
+    else:
+        print("Processing data is finished. . .")
+
+    detector.stop()
+    client.close()
+    print("Disconnecting...")
+
+    # Creates DataFrames from processed data and keys
+    keys = ["distances", "strengths"]
+    df_processed_data = pd.DataFrame(
+        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
+    )
+
+    return df_processed_data, df_algo_data
+
+
 def get_processed_data_speed(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
     processed_data_list = []
     sensor_id, detector_config = speed._detector._load_algo_data(h5_file["algo"])
@@ -857,6 +915,26 @@ def waste_level_as_row(processed_data: waste_level.ProcessorResult) -> list[t.An
     level_m = f"{processed_data.level_m} m"
 
     return [level_percent, level_m]
+
+
+def distance_result_as_row(
+    processed_data: Dict[int, distance._detector.DetectorResult], sensor_ids: list[int]
+) -> list[t.Any]:
+    distances = []
+    strengths = []
+
+    for sensor_id in sensor_ids:
+        # Explicitly inform the type checker that distances is not None here
+        # This will pass mypy checker
+        non_null_distances = cast(npt.NDArray[np.float_], processed_data[sensor_id].distances)
+        for distance_result in non_null_distances:
+            distances.append(distance_result)
+        # Explicitly inform the type checker that strengths is not None here
+        non_null_strengths = cast(npt.NDArray[np.float_], processed_data[sensor_id].strengths)
+        for strength_result in non_null_strengths:
+            strengths.append(strength_result)
+
+    return [distances, strengths]
 
 
 def speed_result_as_row(processed_data: speed._detector.DetectorResult) -> list[t.Any]:
