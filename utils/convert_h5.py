@@ -20,6 +20,7 @@ import pandas as pd
 import acconeer.exptool as et
 import acconeer.exptool.a121.algo.breathing as breathing
 import acconeer.exptool.a121.algo.distance as distance
+import acconeer.exptool.a121.algo.phase_tracking as phase_tracking
 import acconeer.exptool.a121.algo.presence as presence
 import acconeer.exptool.a121.algo.speed as speed
 import acconeer.exptool.a121.algo.surface_velocity as surface_velocity
@@ -497,6 +498,7 @@ def get_processed_data(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
     load_algo_and_client: Dict[str, t.Callable[[h5py.File], Tuple[pd.DataFrame, pd.DataFrame]]] = {
         "breathing": get_processed_data_breathing,
         "distance_detector": get_processed_data_distance,
+        "phase_tracking": get_processed_data_phase_tracking,
         "presence_detector": get_processed_data_presence,
         "speed_detector": get_processed_data_speed,
         "surface_velocity": get_processed_data_surface_velocity,
@@ -819,6 +821,54 @@ def get_processed_data_distance(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.Da
     return df_processed_data, df_algo_data
 
 
+def get_processed_data_phase_tracking(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    record = H5Record(h5_file)
+    processed_data_list = []
+    json_string_config = json.loads(h5_file["algo/processor_config"][()].decode())
+    processor_config = phase_tracking.ProcessorConfig(threshold=json_string_config["threshold"])
+
+    # Create DataFrames from configurations and sensor id
+    df_sensor_id = pd.DataFrame({"sensor_id": record.sensor_id}.items())
+    df_config = pd.DataFrame([[k, v] for k, v in processor_config.to_dict().items()])
+    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
+
+    # Record file extraction
+    num_frames = record.num_frames
+    sensor_config = record.session_config.sensor_config
+    metadata = record.metadata
+
+    processor = phase_tracking.Processor(
+        sensor_config=sensor_config,
+        metadata=metadata,
+        processor_config=processor_config,
+        context=phase_tracking.ProcessorContext(),
+    )
+    try:
+        for idx, result in enumerate(record.results):
+            processed_data = processor.process(result)
+
+            # Put the result in row
+            processed_data_row = phase_tracking_as_row(processed_data=processed_data)
+            processed_data_list.append(processed_data_row)
+
+            # Print progressing time every 5%
+            print(f"... {idx / num_frames:.0%}") if (idx % int(0.05 * num_frames)) == 0 else None
+
+    except KeyboardInterrupt:
+        print("Conversion aborted")
+    else:
+        print("Processing data is finished. . .")
+
+    print("Disconnecting...")
+
+    # Creates DataFrames from processed data and keys
+    keys = ["peak_loc_m", "real_iq_history", "imag_iq_history"]
+    df_processed_data = pd.DataFrame(
+        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
+    )
+    return df_processed_data, df_algo_data
+
+
 def get_processed_data_speed(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
     processed_data_list = []
     sensor_id, detector_config = speed._detector._load_algo_data(h5_file["algo"])
@@ -890,6 +940,14 @@ def breathing_result_as_row(processed_data: breathing.RefAppResult) -> list[t.An
     )
 
     return [rate, motion, presence_dist]
+
+
+def phase_tracking_as_row(processed_data: phase_tracking.ProcessorResult) -> list[t.Any]:
+    peak_loc_m = processed_data.peak_loc_m
+    real_iq_history = np.real(processed_data.iq_history[0])
+    imag_iq_history = np.imag(processed_data.iq_history[0])
+
+    return [peak_loc_m, real_iq_history, imag_iq_history]
 
 
 def surface_velocity_result_as_row(
