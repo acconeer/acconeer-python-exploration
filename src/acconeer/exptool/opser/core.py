@@ -41,8 +41,9 @@ class LoadErrorGroup(LoadError, eg.ExceptionGroup[Exception]):
 
 
 class MissingH5ObjectError(LoadError):
-    def __init__(self, parent: h5py.Group, name: str) -> None:
-        super().__init__(
+    @classmethod
+    def create(cls, parent: h5py.Group, name: str) -> te.Self:
+        return cls(
             f"Expected group {parent} to contain child {name!r}, "
             + f"but it only contains {list(parent.keys())}"
         )
@@ -142,7 +143,7 @@ class Persistor(abc.ABC):
         if isinstance(obj, h5py.Group):
             return obj
         elif obj is None:
-            raise MissingH5ObjectError(self.parent_group, self.name)
+            raise MissingH5ObjectError.create(self.parent_group, self.name)
         else:
             raise WrongH5ObjectError(self.parent_group, obj, expected_type=h5py.Group)
 
@@ -153,7 +154,7 @@ class Persistor(abc.ABC):
         if isinstance(obj, h5py.Dataset):
             return self.parent_group[self.name]
         elif obj is None:
-            raise MissingH5ObjectError(self.parent_group, self.name)
+            raise MissingH5ObjectError.create(self.parent_group, self.name)
         else:
             raise WrongH5ObjectError(self.parent_group, obj, expected_type=h5py.Dataset)
 
