@@ -113,7 +113,15 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
 
     def _load_from_cache(self, file: h5py.File) -> None:
         self.shared_state.config = RefAppConfig.from_json(file["config"][()])
-        self.shared_state.context = opser.deserialize(file["context"], RefAppContext)
+
+        context = opser.try_deserialize(file["context"], RefAppContext)
+        if context is None:
+            self.send_status_message(
+                "Could not load cached context. Falling back to empty context"
+            )
+            context = RefAppContext()
+
+        self.shared_state.context = context
 
     @is_task
     def restore_defaults(self) -> None:
