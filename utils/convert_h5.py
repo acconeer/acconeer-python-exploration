@@ -20,6 +20,7 @@ import pandas as pd
 import acconeer.exptool as et
 import acconeer.exptool.a121.algo.breathing as breathing
 import acconeer.exptool.a121.algo.distance as distance
+import acconeer.exptool.a121.algo.parking as parking
 import acconeer.exptool.a121.algo.phase_tracking as phase_tracking
 import acconeer.exptool.a121.algo.presence as presence
 import acconeer.exptool.a121.algo.speed as speed
@@ -499,6 +500,7 @@ def get_processed_data(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
     load_algo_and_client: Dict[str, t.Callable[[h5py.File], Tuple[pd.DataFrame, pd.DataFrame]]] = {
         "breathing": get_processed_data_breathing,
         "distance_detector": get_processed_data_distance,
+        "parking": get_processed_data_parking,
         "phase_tracking": get_processed_data_phase_tracking,
         "presence_detector": get_processed_data_presence,
         "speed_detector": get_processed_data_speed,
@@ -514,6 +516,61 @@ def get_processed_data(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
             break
 
     return df_processed_data, df_app_config
+
+
+def get_processed_data_parking(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    processed_data_list = []
+
+    # Record file extraction
+    record = H5Record(h5_file)
+    num_frames = record.num_frames
+    sensor_id, RefAppConfig, RefAppContext = parking._ref_app._load_algo_data(h5_file["algo"])
+
+    # Create DataFrames from configurations and sensor id
+    df_sensor_id = pd.DataFrame({"sensor_id": sensor_id}.items())
+    df_config = pd.DataFrame([[k, v] for k, v in RefAppConfig.to_dict().items()])
+    df_context = pd.DataFrame([[k, v] for k, v in RefAppContext.to_dict().items()])
+    df_algo_data = pd.concat([df_sensor_id, df_config, df_context], axis=0, ignore_index=True)
+
+    # Client and aggregator preparation
+    client = _ReplayingClient(record, realtime_replay=False)
+    ref_app = parking._ref_app.RefApp(
+        client=client,
+        sensor_id=sensor_id,
+        ref_app_config=RefAppConfig,
+        context=RefAppContext,
+    )
+
+    ref_app.start()
+
+    try:
+        for idx in range(record.num_frames):
+            processed_data = ref_app.get_next()
+
+            # Put the result in row
+            processed_data_row = parking_result_as_row(processed_data=processed_data)
+            processed_data_list.append(processed_data_row)
+
+            # Print progressing time every 5%
+            if (idx % int(0.05 * num_frames)) == 0:
+                print(f"... {idx / num_frames:.0%}")
+
+    except KeyboardInterrupt:
+        print("Conversion aborted")
+    else:
+        print("Processing data is finished. . .")
+
+    ref_app.stop()
+    client.close()
+
+    print("Disconnecting...")
+
+    # Creates DataFrames from processed data and keys
+    keys = ["car_detected", "obstruction_detected"]
+    df_processed_data = pd.DataFrame(
+        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
+    )
+    return df_processed_data, df_algo_data
 
 
 def get_processed_data_waste_level(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
@@ -988,6 +1045,13 @@ def breathing_result_as_row(processed_data: breathing.RefAppResult) -> list[t.An
     )
 
     return [rate, motion, presence_dist]
+
+
+def parking_result_as_row(processed_data: parking.RefAppResult) -> list[t.Any]:
+    car_detected = processed_data.car_detected
+    obstruction_detected = processed_data.obstruction_detected
+
+    return [car_detected, obstruction_detected]
 
 
 def phase_tracking_as_row(processed_data: phase_tracking.ProcessorResult) -> list[t.Any]:
