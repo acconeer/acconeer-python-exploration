@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import collections
 import itertools
 from typing import Optional
 
@@ -145,62 +146,42 @@ class Processor(ProcessorBase[ProcessorResult]):
 
         assert self.bin_start_m < self.bin_end_m
 
-        self.distance_history = np.full(self.median_filter_length, np.nan)
+        self.distance_history: collections.deque[float] = collections.deque(
+            [], maxlen=self.median_filter_length
+        )
 
         self.distances_m = get_distances_m(sensor_config, metadata)
 
-    def find_distance_m(self, phase_stds: npt.NDArray[np.float_]) -> Optional[float]:
-        distance_idxs = np.argwhere(phase_stds < self.threshold)
+    def find_distance_m(self, phase_stds: npt.NDArray[np.float_]) -> float:
         stable_phases = phase_stds < self.threshold
 
-        distance_found = False
-        distance_m = np.nan
-        i = 0
-        while not distance_found and i < (distance_idxs.shape[0] - self.distance_sequence_n - 1):
-            idx = distance_idxs[i][0]
-            if np.all(stable_phases[idx : idx + self.distance_sequence_n]):
-                distance_found = True
-                distance_m = float(self.distances_m[idx])
-            i += 1
+        potential_distances = (
+            float(self.distances_m[idx])
+            for idx in range(len(stable_phases))
+            if stable_phases[idx : idx + self.distance_sequence_n].all()
+        )
 
-        return distance_m
+        return next(potential_distances, np.nan)
 
     def process(self, result: a121.Result) -> ProcessorResult:
         # center the phase distribution around zero
         sweep_sums = np.sum(result.frame, axis=0)
-
-        if np.all(sweep_sums) > 0:  # check to not set all phases zero
-            phases = np.angle(result.frame * np.conj(sweep_sums))
-        else:
-            phases = np.zeros_like(result.frame)
-            for distance, sweep_sum in enumerate(sweep_sums):
-                if sweep_sum == 0:
-                    sweep_phases = np.angle(result.frame[:, distance])
-                else:
-                    sweep_phases = np.angle(result.frame[:, distance] * np.conj(sweep_sum))
-                phases[:, distance] = sweep_phases
+        phases = np.angle(result.frame * np.conj(sweep_sums))
 
         # calculate standard deviation of the phase at each distance over multiple sweeps
         phase_std = np.std(phases, axis=0)
+        distance_m = self.find_distance_m(phase_std)
 
-        if np.any(phase_std < self.threshold):
-            distance_m = self.find_distance_m(phase_std)
-        else:
-            distance_m = np.nan
+        self.distance_history.append(distance_m)
 
-        self.distance_history = np.roll(self.distance_history, -1)
-        self.distance_history[-1] = distance_m
-
-        if np.all(np.isnan(self.distance_history)):
+        if np.all(np.isnan(list(self.distance_history))):
             level_m = None
             level_percent = None
             filtered_distance = None
         else:
-            filtered_distance = np.nanmedian(self.distance_history)
+            filtered_distance = float(np.nanmedian(list(self.distance_history)))
             level_m = self.bin_end_m - filtered_distance
-            level_percent = int(
-                np.maximum(np.around(level_m / (self.bin_end_m - self.bin_start_m) * 100), 0)
-            )
+            level_percent = int(round(level_m / (self.bin_end_m - self.bin_start_m) * 100, 0))
 
         extra_result = ProcessorExtraResult(phase_std=phase_std, distance_m=filtered_distance)
 
