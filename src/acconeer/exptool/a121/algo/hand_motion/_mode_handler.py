@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -9,8 +9,7 @@ from typing import Any, Optional, Tuple, Union
 import attrs
 import h5py
 
-from acconeer.exptool import a121
-from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
+from acconeer.exptool import a121, opser
 from acconeer.exptool.a121.algo import (
     AlgoConfigBase,
     Controller,
@@ -64,6 +63,9 @@ class ModeHandlerConfig(AlgoConfigBase):
         if example_app_dict is not None:
             d["example_app_config"] = ExampleAppConfig.from_dict(example_app_dict)
         return cls(**d)
+
+
+opser.register_json_presentable(ModeHandlerConfig)
 
 
 @attrs.frozen(kw_only=True)
@@ -278,10 +280,12 @@ def _record_algo_data(
         data=sensor_id,
         track_times=False,
     )
-    _create_h5_string_dataset(algo_group, "mode_handler_config", config.to_json())
+
+    handle_config_group = algo_group.create_group("mode_handler_config")
+    opser.serialize(config, handle_config_group)
 
 
 def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, ModeHandlerConfig]:
     sensor_id = int(algo_group["sensor_id"][()])
-    config = ModeHandlerConfig.from_json(algo_group["mode_handler_config"][()])
+    config = opser.deserialize(algo_group["mode_handler_config"], ModeHandlerConfig)
     return sensor_id, config

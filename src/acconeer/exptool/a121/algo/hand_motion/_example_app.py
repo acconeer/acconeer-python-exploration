@@ -11,8 +11,7 @@ import h5py
 import numpy as np
 import numpy.typing as npt
 
-from acconeer.exptool import a121
-from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
+from acconeer.exptool import a121, opser
 from acconeer.exptool.a121.algo import (
     APPROX_BASE_STEP_LENGTH_M,
     ENVELOPE_FWHM_M,
@@ -92,6 +91,9 @@ class ExampleAppConfig(AlgoConfigBase):
         validation_results: list[a121.ValidationResult] = []
 
         return validation_results
+
+
+opser.register_json_presentable(ExampleAppConfig)
 
 
 @attrs.frozen(kw_only=True)
@@ -354,10 +356,11 @@ def _record_algo_data(
         data=sensor_id,
         track_times=False,
     )
-    _create_h5_string_dataset(algo_group, "example_app_config", config.to_json())
+    app_config_group = algo_group.create_group("example_app_config")
+    opser.serialize(config, app_config_group)
 
 
 def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, ExampleAppConfig]:
     sensor_id = int(algo_group["sensor_id"][()])
-    config = ExampleAppConfig.from_json(algo_group["example_app_config"][()])
+    config = opser.deserialize(algo_group["example_app_config"], ExampleAppConfig)
     return sensor_id, config

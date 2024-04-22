@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -16,8 +16,7 @@ from PySide6.QtWidgets import QPushButton, QVBoxLayout
 import pyqtgraph as pg
 
 import acconeer.exptool as et
-from acconeer.exptool import a121
-from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
+from acconeer.exptool import a121, opser
 from acconeer.exptool.a121.algo._plugins import (
     A121BackendPluginBase,
     A121ViewPluginBase,
@@ -60,6 +59,9 @@ from ._mode_handler import (
 )
 
 
+opser.register_json_presentable(ModeHandlerConfig)
+
+
 log = logging.getLogger(__name__)
 
 
@@ -97,7 +99,7 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
         self.restore_defaults()
 
     def _load_from_cache(self, file: h5py.File) -> None:
-        self.shared_state.config = ModeHandlerConfig.from_json(file["config"][()])
+        self.shared_state.config = opser.deserialize(file["config"], ModeHandlerConfig)
 
     @is_task
     def restore_defaults(self) -> None:
@@ -122,7 +124,8 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
         self.broadcast()
 
     def save_to_cache(self, file: h5py.File) -> None:
-        _create_h5_string_dataset(file, "config", self.shared_state.config.to_json())
+        cfg_group = file.create_group("config")
+        opser.serialize(self.shared_state.config, cfg_group)
 
     @is_task
     def set_preset(self, preset_id: int) -> None:
