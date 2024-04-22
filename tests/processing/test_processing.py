@@ -88,6 +88,11 @@ def input_path(resource_name: str) -> Path:
             "input-presence-long_range.h5",
         ),
         (
+            presence_test.presence_low_power,
+            t.List[presence_test.ProcessorResultSlice],
+            "input-presence-low_power.h5",
+        ),
+        (
             presence_test.presence_medium_range_phase_boost_no_timeout,
             t.List[presence_test.ProcessorResultSlice],
             "input-presence-medium_range_phase_boost_no_timeout.h5",
@@ -131,6 +136,11 @@ def input_path(resource_name: str) -> Path:
             smart_presence_test.smart_presence_controller,
             t.List[smart_presence_test.RefAppResultSlice],
             "smart_presence.h5",
+        ),
+        (
+            smart_presence_test.smart_presence_controller,
+            t.List[smart_presence_test.RefAppResultSlice],
+            "smart_presence-low_power.h5",
         ),
         (
             tank_level_test.tank_level_controller,

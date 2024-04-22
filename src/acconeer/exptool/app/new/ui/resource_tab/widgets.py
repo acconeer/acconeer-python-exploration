@@ -57,7 +57,7 @@ _ALLOWED_DOCK_AREA = Qt.DockWidgetArea.BottomDockWidgetArea
 
 _DATA_IS_APPROXIMATE_DESCRIPTION = "<br><br>".join(
     [
-        "All data and numbers presented in this tab are approximations based on RSS A121-v1.5.1, <b>not measurements</b>.",
+        "All data and numbers presented in this tab are approximations based on RSS A121-v1.6.0, <b>not measurements</b>.",
         "The goal is to let you experiment with configurations and do comparisons.",
         "Use this tool as a way to quickly narrow down which configuration could satisfy your "
         + "constraints before you do measurements to get real numbers.",

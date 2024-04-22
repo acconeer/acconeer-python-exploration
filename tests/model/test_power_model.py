@@ -190,14 +190,6 @@ def test_lower_idle_state_limits(
     assert avg_current == pytest.approx(expected_current, abs=absolute_tolerance)
 
 
-medium_config = presence_configs.get_medium_range_config()
-medium_config.automatic_subsweeps = False  # This requires a c implementation
-short_config = presence_configs.get_short_range_config()
-short_config.automatic_subsweeps = False  # This requires a c implementation
-low_power_config = presence_configs.get_low_power_config()
-low_power_config.automatic_subsweeps = False  # This requires a c implementation
-
-
 @pytest.mark.parametrize(
     ("limit_name", "session_config", "lower_idle_state", "algorithm"),
     [
@@ -254,7 +246,7 @@ low_power_config.automatic_subsweeps = False  # This requires a c implementation
         (
             "Presence, Medium range (12Hz)",
             a121.SessionConfig(
-                presence.Detector._get_sensor_config(medium_config),
+                presence.Detector._get_sensor_config(presence_configs.get_medium_range_config()),
             ),
             power.Sensor.IdleState.HIBERNATE,
             power.algo.Presence(),
@@ -262,7 +254,7 @@ low_power_config.automatic_subsweeps = False  # This requires a c implementation
         (
             "Presence, Short range (10Hz)",
             a121.SessionConfig(
-                presence.Detector._get_sensor_config(short_config),
+                presence.Detector._get_sensor_config(presence_configs.get_short_range_config()),
             ),
             power.Sensor.IdleState.HIBERNATE,
             power.algo.Presence(),
@@ -270,7 +262,7 @@ low_power_config.automatic_subsweeps = False  # This requires a c implementation
         (
             "Presence, Low Power Wakeup (1Hz)",
             a121.SessionConfig(
-                presence.Detector._get_sensor_config(low_power_config),
+                presence.Detector._get_sensor_config(presence_configs.get_low_power_config()),
             ),
             power.Sensor.IdleState.HIBERNATE,
             power.algo.Presence(),

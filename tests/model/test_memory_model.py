@@ -89,27 +89,19 @@ def test_service_memory_model(config, application, test_case):
         assert math.isclose(mem_usage["app_heap"], session_external_heap_mem, rel_tol=0.05)
 
 
-short_config = PresenceConfigs.get_short_range_config()
-short_config.automatic_subsweeps = False  # This requires a c implementation
-medium_config = PresenceConfigs.get_medium_range_config()
-medium_config.automatic_subsweeps = False  # This requires a c implementation
-long_config = PresenceConfigs.get_long_range_config()
-long_config.automatic_subsweeps = False  # This requires a c implementation
-
-
 @pytest.mark.parametrize(
     "config,test_case",
     [
         pytest.param(
-            short_config,
+            PresenceConfigs.get_short_range_config(),
             "short_range",
         ),
         pytest.param(
-            medium_config,
+            PresenceConfigs.get_medium_range_config(),
             "default",
         ),
         pytest.param(
-            long_config,
+            PresenceConfigs.get_long_range_config(),
             "long_range",
         ),
     ],

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import typing as t
@@ -14,6 +14,7 @@ from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121.algo import presence
 from acconeer.exptool.a121.algo.presence._configs import (
     get_long_range_config,
+    get_low_power_config,
     get_medium_range_config,
     get_short_range_config,
 )
@@ -76,6 +77,16 @@ def presence_long_range(record: a121.H5Record) -> ProcessorWrapper:
         presence.Processor(
             sensor_config=record.session_config.sensor_config,
             processor_config=presence.Detector._get_processor_config(get_long_range_config()),
+            metadata=utils.unextend(record.extended_metadata),
+        )
+    )
+
+
+def presence_low_power(record: a121.H5Record) -> ProcessorWrapper:
+    return ProcessorWrapper(
+        presence.Processor(
+            sensor_config=record.session_config.sensor_config,
+            processor_config=presence.Detector._get_processor_config(get_low_power_config()),
             metadata=utils.unextend(record.extended_metadata),
         )
     )
