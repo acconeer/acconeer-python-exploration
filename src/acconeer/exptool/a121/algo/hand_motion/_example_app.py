@@ -123,7 +123,7 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
     :param example_app_config: Hand motion detection configuration
     """
 
-    processors: list[Processor]
+    processor: Processor
     HISTORY_LENGTH_S = 10.0
 
     def __init__(
@@ -160,8 +160,11 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
         metadata = self.client.setup_session(self.session_config)
         assert isinstance(metadata, a121.Metadata)
 
-        self.processors = self._create_processors(
-            sensor_config=sensor_config, example_app_config=self.config, metadata=metadata
+        self.processor = Processor(
+            sensor_config=sensor_config,
+            processor_config=self._get_processor_config(self.config),
+            context=ProcessorContext(estimated_frame_rate=self.config.frame_rate),
+            metadata=metadata,
         )
 
         if _algo_group is None and isinstance(recorder, a121.H5Recorder):
@@ -191,26 +194,20 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
         result = self.client.get_next()
         assert isinstance(result, a121.Result)
 
-        assert self.processors is not None
-        processor_result = [processor.process(result) for processor in self.processors]
+        assert self.processor is not None
+        processor_result = self.processor.process(result)
 
         return self._process_processor_result(processor_result, self.config)
 
     def _process_processor_result(
-        self, results: list[ProcessorResult], config: ExampleAppConfig
+        self, result: ProcessorResult, config: ExampleAppConfig
     ) -> ExampleAppResult:
         # Determine max presence score and if presence has been detected.
         presence_detected = False
-        max_presence_scrore = results[0].inter_presence_score
-        for result in results:
-            if max_presence_scrore < result.inter_presence_score:
-                max_presence_scrore = result.inter_presence_score
+        max_presence_score = max(result.inter_presence_score, result.intra_presence_score)
 
-            if max_presence_scrore < result.intra_presence_score:
-                max_presence_scrore = result.intra_presence_score
-
-            if result.presence_detected:
-                presence_detected = True
+        if result.presence_detected:
+            presence_detected = True
 
         # Determine detections state.
         detection_state = DetectionState.NO_DETECTION
@@ -230,7 +227,7 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
 
         # Prepare extra result(used for plotting).
         self.history = np.roll(self.history, shift=-1, axis=0)
-        self.history[-1] = max_presence_scrore
+        self.history[-1] = max_presence_score
         extra_result = ExtraResult(
             history=self.history,
             history_time=self.history_time,
@@ -264,35 +261,6 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
         recorder_result = self.stop_recorder()
 
         return recorder_result
-
-    def _create_processors(
-        self,
-        sensor_config: a121.SensorConfig,
-        example_app_config: ExampleAppConfig,
-        metadata: a121.Metadata,
-    ) -> list[Processor]:
-        processors = []
-        for subsweep_index, subsweep_config in enumerate(sensor_config.subsweeps):
-            processor_sensor_config = a121.SensorConfig(
-                start_point=subsweep_config.start_point,
-                num_points=subsweep_config.num_points,
-                step_length=subsweep_config.step_length,
-                profile=subsweep_config.profile,
-                frame_rate=sensor_config.frame_rate,
-                sweeps_per_frame=sensor_config.sweeps_per_frame,
-            )
-
-            processors.append(
-                Processor(
-                    sensor_config=processor_sensor_config,
-                    processor_config=self._get_processor_config(example_app_config),
-                    context=ProcessorContext(estimated_frame_rate=example_app_config.frame_rate),
-                    metadata=metadata,
-                    subsweep_indexes=[subsweep_index],
-                )
-            )
-
-        return processors
 
     @classmethod
     def _get_sensor_config(cls, config: ExampleAppConfig) -> a121.SensorConfig:
