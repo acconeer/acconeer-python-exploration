@@ -1,5 +1,13 @@
 # Changelog
 
+## v7.10.0
+
+### Changed
+- Update Parking to use subsweeps
+- Update presence detector to support automatic
+  subsweeps configuration
+- Update low power wake up preset
+
 ## v7.9.0
 
 ### Added
