@@ -144,21 +144,20 @@ class ModeHandler(Controller[ModeHandlerConfig, ModeHandlerResult]):
         if _algo_group is not None:
             _record_algo_data(_algo_group, self.sensor_id, self.config)
 
-        self.presence_detector = Detector(
-            client=self.client,
-            sensor_id=self.sensor_id,
-            detector_config=self.presence_config,
-            detector_context=self.presence_detector_context,
-        )
-        self.hand_motion_app = ExampleApp(
-            client=self.client,
-            sensor_id=self.sensor_id,
-            example_app_config=self.example_app_config,
-        )
-
         if self.use_presence_detection:
+            self.presence_detector = Detector(
+                client=self.client,
+                sensor_id=self.sensor_id,
+                detector_config=self.presence_config,
+                detector_context=self.presence_detector_context,
+            )
             self.presence_detector.start()
         else:
+            self.hand_motion_app = ExampleApp(
+                client=self.client,
+                sensor_id=self.sensor_id,
+                example_app_config=self.example_app_config,
+            )
             self.hand_motion_app.start()
 
         self.started = True
@@ -209,14 +208,15 @@ class ModeHandler(Controller[ModeHandlerConfig, ModeHandlerResult]):
             result = ModeHandlerResult(app_mode=current_app_mode, presence_result=app_result)
         elif self.app_mode == AppMode.HANDMOTION:
             assert isinstance(app_result, ExampleAppResult)
-            if app_result.detection_state is not DetectionState.NO_DETECTION:
-                # detection -> reset timer
-                self.hand_motion_timer = 0
-            elif self.hand_motion_timeout_duration < self.hand_motion_timer:
-                # timer has expired -> switch mode
-                self.app_mode = AppMode.PRESENCE
-            else:
-                self.hand_motion_timer += 1
+            if self.use_presence_detection:
+                if app_result.detection_state is not DetectionState.NO_DETECTION:
+                    # detection -> reset timer
+                    self.hand_motion_timer = 0
+                elif self.hand_motion_timeout_duration < self.hand_motion_timer:
+                    # timer has expired -> switch mode
+                    self.app_mode = AppMode.PRESENCE
+                else:
+                    self.hand_motion_timer += 1
             result = ModeHandlerResult(
                 app_mode=self.app_mode,
                 detection_state=app_result.detection_state,
