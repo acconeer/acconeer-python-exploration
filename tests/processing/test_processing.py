@@ -222,6 +222,11 @@ def input_path(resource_name: str) -> Path:
             t.List[waste_level_test.ResultSlice],
             "input-waste-level-full.h5",
         ),
+        (
+            waste_level_test.waste_level_processor,
+            t.List[waste_level_test.ResultSlice],
+            "input-waste-level-missing-level.h5",
+        ),
     ],
 )
 def test_input_output(
