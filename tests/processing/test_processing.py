@@ -125,6 +125,11 @@ def input_path(resource_name: str) -> Path:
         (
             distance_test.distance_detector,
             t.List[distance_test.ResultSlice],
+            "input-distance-detector-5_to_200_cm_p1_close_range_cancellation_disabled.h5",
+        ),
+        (
+            distance_test.distance_detector,
+            t.List[distance_test.ResultSlice],
             "corner-reflector.h5",
         ),
         (

@@ -1240,10 +1240,22 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         Divide the measurement range from the shortest leakage free distance of max_profile to
         the end point into equidistance segments and assign HWAAS according to the radar equation
         to maintain SNR throughout the sweep.
+
+        Note, special case when max profile is set to 1 and close range leakage cancellation is not
+        used. In this cas, the start of the subsweep is set to the user defined starting point. For
+        other max profiles, this is handled in _get_transition_group_plans.
         """
 
-        if min_dist_m[config.max_profile] < config.end_m:
-            subsweep_start_m = max([config.start_m, min_dist_m[config.max_profile]])
+        if min_dist_m[config.max_profile] < config.end_m or (
+            config.max_profile == a121.Profile.PROFILE_1
+        ):
+            if not config.close_range_leakage_cancellation and (
+                config.max_profile == a121.Profile.PROFILE_1
+            ):
+                subsweep_start_m = config.start_m
+            else:
+                subsweep_start_m = max([config.start_m, min_dist_m[config.max_profile]])
+
             breakpoints_m = np.linspace(
                 subsweep_start_m,
                 config.end_m,
