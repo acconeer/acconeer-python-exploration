@@ -140,7 +140,7 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
         self.config = example_app_config
 
         self.detection_retention_duration = int(
-            example_app_config.detection_retention_duration * example_app_config.frame_rate
+            round(example_app_config.detection_retention_duration * example_app_config.frame_rate)
         )
 
         self.started = False
@@ -282,8 +282,14 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
         if ENVELOPE_FWHM_M[profile] < (config.sensor_to_water_distance - water_jet_half_width):
             subsweep_config = a121.SubsweepConfig()
             subsweep_config.start_point = int(
-                (config.sensor_to_water_distance - ENVELOPE_FWHM_M[profile] - water_jet_half_width)
-                / APPROX_BASE_STEP_LENGTH_M
+                round(
+                    (
+                        config.sensor_to_water_distance
+                        - ENVELOPE_FWHM_M[profile]
+                        - water_jet_half_width
+                    )
+                    / APPROX_BASE_STEP_LENGTH_M
+                )
             )
             subsweep_config.num_points = 1
             subsweep_config.step_length = step_length
@@ -300,12 +306,14 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
             start_m = (
                 config.sensor_to_water_distance + water_jet_half_width + ENVELOPE_FWHM_M[profile]
             )
-            start_point = int(start_m / APPROX_BASE_STEP_LENGTH_M)
+            start_point = int(round(start_m / APPROX_BASE_STEP_LENGTH_M))
             num_points = max(
                 1,
                 int(
-                    (config.measurement_range_end - start_m)
-                    / (step_length * APPROX_BASE_STEP_LENGTH_M)
+                    round(
+                        (config.measurement_range_end - start_m)
+                        / (step_length * APPROX_BASE_STEP_LENGTH_M)
+                    )
                 ),
             )
 

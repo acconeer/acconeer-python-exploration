@@ -117,7 +117,7 @@ class ModeHandler(Controller[ModeHandlerConfig, ModeHandlerResult]):
         assert mode_handler_config.hand_detection_timeout is not None
         # Convert timeout from seconds to frames.
         self.hand_motion_timeout_duration = int(
-            mode_handler_config.hand_detection_timeout * self.example_app_config.frame_rate
+            round(mode_handler_config.hand_detection_timeout * self.example_app_config.frame_rate)
         )
         self.use_presence_detection = mode_handler_config.use_presence_detection
 
