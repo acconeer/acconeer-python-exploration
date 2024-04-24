@@ -211,7 +211,7 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
             self.obstruction_config = self.all_sensor_configs["obstruction_config"]
 
         self.session_config = a121.SessionConfig(
-            self.sensor_config,
+            {self.sensor_id: self.sensor_config},
             update_rate=ref_app_config.update_rate,
         )
 
