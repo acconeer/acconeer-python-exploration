@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import collections
-import itertools
 from typing import Optional
 
 import attrs
@@ -76,27 +75,27 @@ class ProcessorConfig(AlgoProcessorConfigBase):
             bin_msg = f"Bin end is outside measured range ({measured_range_str})"
             validation_results += [a121.ValidationError(self, "bin_end_m", bin_msg)]
 
-        for (subssweep_a_idx, subsweep_a), (subssweep_b_idx, subsweep_b) in itertools.combinations(
-            enumerate(config.sensor_config.subsweeps, start=1), 2
+        for (prev_num, prev), (curr_num, curr) in zip(
+            enumerate(config.sensor_config.subsweeps, start=1),
+            enumerate(config.sensor_config.subsweeps[1:], start=2),
         ):
-            if (
-                subsweep_a.start_point + subsweep_a.step_length * (subsweep_a.num_points - 1)
-                > subsweep_b.start_point
-            ):
-                validation_results.append(
-                    a121.ValidationError(
-                        subsweep_a,
-                        "num_points",
-                        f"Range overlap between subsweeps is not supported. Overlaps with subsweep {subssweep_b_idx}.",
-                    )
+            if not prev.start_point < curr.start_point:
+                msg = (
+                    "Start point needs to be larger than the "
+                    + f"previous subsweep's start point (at least {prev.start_point + 1})"
                 )
-                validation_results.append(
-                    a121.ValidationError(
-                        subsweep_b,
-                        "start_point",
-                        f"Range overlap between subsweep is not supported. Overlaps with subsweep {subssweep_a_idx}.",
-                    )
-                )
+                validation_results += [a121.ValidationError(curr, "start_point", msg)]
+
+            prev_end_point = prev.start_point + prev.step_length * (prev.num_points - 1)
+            if not prev_end_point < curr.start_point:
+                msg = f"Subsweeps {prev_num} and {curr_num} overlap."
+                prev_msg = f"{msg} Adjust end point."
+                curr_msg = f"{msg} Adjust start point."
+                validation_results += [
+                    a121.ValidationError(prev, "num_points", prev_msg),
+                    a121.ValidationError(prev, "step_length", prev_msg),
+                    a121.ValidationError(curr, "start_point", curr_msg),
+                ]
 
         return validation_results
 
