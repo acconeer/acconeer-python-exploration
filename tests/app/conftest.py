@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import functools
 import queue
 import typing as t
 from pathlib import Path
+from time import time
 from unittest.mock import Mock
 
 import dirty_equals as de
@@ -105,6 +106,7 @@ def assert_messages() -> t.Callable[..., None]:
         not_received: t.Iterable[t.Union[Message, ClosedTask]] = tuple(),
         max_num_messages: int = 10,
         recv_timeout: float = 2.0,
+        timeout: float = 10.0,
     ) -> None:
         """
         Utility function that asserts that
@@ -117,6 +119,7 @@ def assert_messages() -> t.Callable[..., None]:
         not_yet_seen_messages = copy.deepcopy(received)
         received_messages: list[t.Union[Message, ClosedTask]] = []
         message_generator = (backend.recv(recv_timeout) for _ in range(max_num_messages))
+        start_time = time()
         while not_yet_seen_messages != []:
             try:
                 received_message = next(message_generator)
@@ -131,6 +134,9 @@ def assert_messages() -> t.Callable[..., None]:
                     + "\n".join(f"- {m}" for m in received_messages)
                     + "\n"
                 )
+
+            if time() - start_time > timeout:
+                raise TimeoutError(f"Did not find the message within time {timeout}s")
 
             if received_message in not_received:
                 raise AssertionError(f"Found message {received_message}")
