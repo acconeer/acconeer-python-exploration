@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from acconeer.exptool import a121
@@ -14,8 +14,6 @@ client = a121.Client.open(
     # or
     # mock=True,
 )
-
-# Establishes a connection to the server running on the sensor.
 
 # Once the client is connected, information about the server can be accessed.
 print("Server Info:")
