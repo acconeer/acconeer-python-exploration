@@ -211,7 +211,7 @@ class Node:
 
 def is_class(__type: TypeLike) -> te.TypeGuard[type]:
     """Return True if '__type' is a class"""
-    return isinstance(__type, type)
+    return not core.is_ndarray(__type) and isinstance(__type, type)
 
 
 def is_subclass(__type: TypeLike, superclass: t.Union[type, t.Tuple[type, ...]]) -> bool:
