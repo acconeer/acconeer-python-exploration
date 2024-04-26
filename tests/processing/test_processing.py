@@ -16,6 +16,7 @@ from .a121 import (
     breathing_test,
     data_files,
     distance_test,
+    hand_motion_test,
     parking_test,
     presence_test,
     smart_presence_test,
@@ -241,6 +242,16 @@ def input_path(resource_name: str) -> Path:
             waste_level_test.waste_level_processor,
             t.List[waste_level_test.ResultSlice],
             "input-waste-level-missing-level.h5",
+        ),
+        (
+            hand_motion_test.hand_motion_app,
+            t.List[hand_motion_test.ResultSlice],
+            "hand-motion-default.h5",
+        ),
+        (
+            hand_motion_test.hand_motion_app,
+            t.List[hand_motion_test.ResultSlice],
+            "hand-motion-no-presence.h5",
         ),
     ],
 )
