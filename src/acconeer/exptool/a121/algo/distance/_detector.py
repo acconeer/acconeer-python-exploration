@@ -1506,7 +1506,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         start_point = int(bpts_m[0] / APPROX_BASE_STEP_LENGTH_M)
         num_steps = (bpts_m[-1] - bpts_m[0]) / (APPROX_BASE_STEP_LENGTH_M)
         bpts = num_steps / (bpts_m[-1] - bpts_m[0]) * (bpts_m - bpts_m[0]) + start_point
-        return [(bpt // step_length) * step_length for bpt in bpts]
+        return [(round(bpt) // step_length) * step_length for bpt in bpts]
 
     @classmethod
     def _update_processor_mode(
