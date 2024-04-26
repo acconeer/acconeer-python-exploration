@@ -204,17 +204,12 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
     def _process_processor_result(
         self, result: ProcessorResult, config: ExampleAppConfig
     ) -> ExampleAppResult:
-        # Determine max presence score and if presence has been detected.
-        presence_detected = False
         max_presence_score = max(result.inter_presence_score, result.intra_presence_score)
-
-        if result.presence_detected:
-            presence_detected = True
 
         # Determine detections state.
         detection_state = DetectionState.NO_DETECTION
 
-        if presence_detected:
+        if result.presence_detected:
             self.has_detected = True
             self.update_index_at_detection = self.update_index
             detection_state = DetectionState.DETECTION
