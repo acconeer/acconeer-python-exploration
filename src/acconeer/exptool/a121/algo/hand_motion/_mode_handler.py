@@ -218,7 +218,7 @@ class ModeHandler(Controller[ModeHandlerConfig, ModeHandlerResult]):
                 else:
                     self.hand_motion_timer += 1
             result = ModeHandlerResult(
-                app_mode=self.app_mode,
+                app_mode=current_app_mode,
                 detection_state=app_result.detection_state,
                 example_app_result=app_result,
             )
