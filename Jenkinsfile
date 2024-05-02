@@ -380,16 +380,6 @@ try {
             }
         }
     }
-
-    stage('Report to gerrit') {
-        if (currentBuild.currentResult == 'SUCCESS') {
-            echo "Reporting OK to Gerrit"
-            gerritReview labels: [Verified: 1], message: "Success: ${env.BUILD_URL}, Duration: ${currentBuild.durationString - ' and counting'}"
-        } else {
-            echo "Reporting Fail to Gerrit"
-            gerritReview labels: [Verified: -1], message: "Failed: ${env.BUILD_URL}, Duration: ${currentBuild.durationString - ' and counting'}"
-        }
-    }
 } catch (exception) {
     currentBuild.result = 'FAILURE'
 }
