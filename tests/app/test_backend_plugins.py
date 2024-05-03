@@ -9,13 +9,15 @@ import pytest
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121.algo.bilateration._plugin import BILATERATION_PLUGIN
-from acconeer.exptool.a121.algo.obstacle._detector_plugin import OBSTACLE_DETECTOR_PLUGIN
-from acconeer.exptool.a121.algo.presence._detector_plugin import PRESENCE_DETECTOR_PLUGIN
-from acconeer.exptool.a121.algo.smart_presence._ref_app_plugin import SMART_PRESENCE_PLUGIN
 from acconeer.exptool.a121.algo.speed._detector_plugin import SPEED_DETECTOR_PLUGIN
 from acconeer.exptool.app.new import PluginGeneration, PluginState
 from acconeer.exptool.app.new.app_model import PluginSpec
-from acconeer.exptool.app.new.backend import Backend, GeneralMessage, PluginStateMessage, Task
+from acconeer.exptool.app.new.backend import (
+    Backend,
+    GeneralMessage,
+    PluginStateMessage,
+    Task,
+)
 from acconeer.exptool.app.new.backend._backend import FromBackendQueueItem
 from acconeer.exptool.app.new.plugin_loader import load_default_plugins
 
@@ -144,12 +146,7 @@ class TestBackendPlugins:
             # the session is stopped
             pass
 
-        if plugin in [
-            OBSTACLE_DETECTOR_PLUGIN,
-            PRESENCE_DETECTOR_PLUGIN,
-            SMART_PRESENCE_PLUGIN,
-            SPEED_DETECTOR_PLUGIN,
-        ]:
+        if plugin in [SPEED_DETECTOR_PLUGIN]:
             pytest.xfail(
                 "Presence- & presence-based algorithms have an "
                 + "untestable 'load_from_file' task because of 'estimated_frame_rate'. "
@@ -166,5 +163,6 @@ class TestBackendPlugins:
                     PluginStateMessage(state=PluginState.LOADED_IDLE),
                     tasks.SUCCESSFULLY_CLOSED_TASK,
                 ],
+                not_received=[tasks.FAILED_CLOSED_TASK],
                 max_num_messages=1000,
             )
