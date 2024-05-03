@@ -102,32 +102,6 @@ new = "python -m acconeer.exptool.app.new"
 old = "python -m acconeer.exptool.app.old"
 
 
-[tool.hatch.envs.lint]
-detached = true
-dependencies = [
-    "ruff==0.1.6",
-    "packaging",
-    'tomli; python_version < "3.11"',
-]
-
-[tool.hatch.envs.lint.scripts]
-check = [
-    "python tools/check_permissions.py",
-    "python tools/check_whitespace.py",
-    "python tools/check_line_length.py",
-    "python tools/check_sdk_mentions.py",
-    "python tools/check_changelog.py",
-    "python tools/check_copyright.py",
-    "python -m ruff format --diff .",
-    "python -m ruff .",
-]
-reformat = [
-    "python tools/check_copyright.py --update-year",
-    "python -m ruff format .",
-    "python -m ruff --fix .",
-]
-
-
 [tool.hatch.envs.mypy]
 features = ["app"]
 dependencies = [
@@ -186,6 +160,36 @@ latexpdf = 'python -m sphinx -M latexpdf docs docs/_build'
 rediraffe-write = 'python -m sphinx -b rediraffewritediff docs docs/_build'
 rediraffe-check = 'python -m sphinx -b rediraffecheckdiff docs docs/_build'
 
+[tool.hatch.envs.hatch-static-analysis]
+# This is the environment for "hatch fmt"
+config-path = "none"
+dependencies = [
+    "ruff==0.1.6",
+    "packaging",
+    'tomli; python_version < "3.11"',
+]
+
+[tool.hatch.envs.hatch-static-analysis.scripts]
+format-check = [
+    "python -m ruff format --diff .",
+]
+format-fix = [
+    "python -m ruff format .",
+]
+lint-check = [
+    "python tools/check_permissions.py",
+    "python tools/check_whitespace.py",
+    "python tools/check_line_length.py",
+    "python tools/check_sdk_mentions.py",
+    "python tools/check_changelog.py",
+    "python tools/check_copyright.py",
+    "python -m ruff .",
+]
+lint-fix = [
+    "python tools/check_copyright.py --update-year",
+    "python -m ruff --fix .",
+    "lint-check"
+]
 
 [tool.ruff]
 line-length = 99

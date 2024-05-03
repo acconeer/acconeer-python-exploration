@@ -121,7 +121,7 @@ try {
 
                 buildDocker(path: 'docker').inside(dockerArgs(env)) {
                     sh 'python3 -V'
-                    sh 'hatch run lint:check'
+                    sh 'hatch fmt --check'
                 }
             }
         }

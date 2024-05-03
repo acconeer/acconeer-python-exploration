@@ -6,12 +6,12 @@ import nox
 
 @nox.session
 def lint(session):
-    session.error("Use 'hatch run lint:check' instead")
+    session.error("Use 'hatch fmt --check' instead")
 
 
 @nox.session
 def reformat(session):
-    session.error("Use 'hatch run lint:reformat' instead")
+    session.error("Use 'hatch fmt' instead")
 
 
 @nox.session
