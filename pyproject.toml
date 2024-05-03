@@ -116,7 +116,7 @@ dependencies = [
 python = ["3.8"]
 
 [tool.hatch.envs.mypy.scripts]
-check = "python -m mypy"
+check = "python -m mypy {args}"
 
 
 [tool.hatch.envs.hatch-test]
@@ -273,7 +273,7 @@ no_implicit_optional = true
 warn_return_any = true
 warn_unused_ignores = true
 
-no_incremental = true
+incremental = true
 show_error_codes = true
 
 [[tool.mypy.overrides]]

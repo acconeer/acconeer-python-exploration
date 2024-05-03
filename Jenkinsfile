@@ -158,7 +158,7 @@ try {
                     printNodeInfo()
                     checkoutAndCleanup()
                     buildDocker(path: 'docker').inside(dockerArgs(env)) {
-                        sh 'hatch run mypy:check'
+                        sh 'hatch run mypy:check --no-incremental'
                     }
                 }
             }
