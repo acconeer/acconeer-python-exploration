@@ -184,7 +184,7 @@ try {
                     }
                     stage("Model Regression Tests (rss=${modelTestA121RssVersion})") {
                         buildDocker(path: 'docker').inside(dockerArgs(env)) {
-                            sh 'hatch run +py=3.8 test:model'
+                            sh 'hatch test -py=3.8 tests/model'
                         }
                     }
                 }
@@ -201,10 +201,8 @@ try {
 
                     buildDocker(path: 'docker').inside(dockerArgs(env)) {
                         isolatedTestPythonVersions.each { v -> sh "python${v} -V" }
-                        String versionSelection = "+py=" + isolatedTestPythonVersions.join(",")
-                        ["unit", "processing", "doctest", "app"].each {
-                            testScript -> sh "hatch run ${versionSelection} test:${testScript}"
-                        }
+                        String versionSelection = "-py=" + isolatedTestPythonVersions.join(",")
+                        sh "hatch test ${versionSelection} --parallel tests/unit tests/processing tests/app src/acconeer/exptool"
                     }
                 }
             }
@@ -239,8 +237,8 @@ try {
                     }
                     stage("Run integration tests (py=${integrationTestPythonVersions}, rss=${rssVersionName})") {
                         buildDocker(path: 'docker').inside(dockerArgs(env)) {
-                            String versionSelection = "+py=" + integrationTestPythonVersions.join(",")
-                            sh "hatch run ${versionSelection} test:integration-a121"
+                            String versionSelection = "-py=" + integrationTestPythonVersions.join(",")
+                            sh "hatch test ${versionSelection} tests/integration/a121"
                         }
                     }
                 }
@@ -270,8 +268,8 @@ try {
                     stage("Run integration tests (py=${integrationTestPythonVersions}, rss=${rssVersionName})") {
                         buildDocker(path: 'docker').inside(dockerArgs(env)) {
                             integrationTestPythonVersions.each { v -> sh "python${v} -V" }
-                            String versionSelection = "+py=" + integrationTestPythonVersions.join(",")
-                            sh "hatch run ${versionSelection} test:integration-a111"
+                            String versionSelection = "-py=" + integrationTestPythonVersions.join(",")
+                            sh "hatch test ${versionSelection} tests/integration/a111"
                         }
                     }
                 }
@@ -311,7 +309,9 @@ try {
                         dockerImg.inside(dockerArgs(env) + " --net=host --privileged") {
                             integrationTestPythonVersions.each { pythonVersion ->
                                 stage("Run integration tests (py=${pythonVersion}, rss=${rssVersionName})") {
-                                    sh "hatch run +py=${pythonVersion} test:integration-xm112"
+                                    // E.g. hatch-test.py3.10
+                                    def hatchEnvName = "hatch-test.py${pythonVersion}"
+                                    sh "hatch run ${hatchEnvName}:integration-xm112"
                                 }
                             }
                         }

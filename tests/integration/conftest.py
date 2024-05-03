@@ -26,7 +26,7 @@ def worker_tcp_port(worker_id: str) -> int:
         raise ValueError(f"Unexpected {worker_id=}")
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def a121_exploration_server(worker_tcp_port: int) -> t.Iterator[None]:
     assert server_path("a121").exists(), "Could not find a121 mock exploration server"
 
@@ -41,7 +41,7 @@ def a121_exploration_server(worker_tcp_port: int) -> t.Iterator[None]:
         server.terminate()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def a111_exploration_server(worker_tcp_port: int) -> t.Iterator[None]:
     assert server_path("a111").exists(), "Could not find a111 mock exploration server"
 

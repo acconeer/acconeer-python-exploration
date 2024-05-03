@@ -8,23 +8,18 @@ import queue
 import typing as t
 from pathlib import Path
 from time import time
-from unittest.mock import Mock
 
 import dirty_equals as de
 import pytest
 
 from acconeer.exptool import a121
+from acconeer.exptool.a121.algo.sparse_iq._plugin import SPARSE_IQ_PLUGIN
 from acconeer.exptool.app.new._enums import PluginGeneration
 from acconeer.exptool.app.new.app_model import PluginSpec
 from acconeer.exptool.app.new.backend import Backend, ClosedTask, Message, Task
 
 
-def _mock_plugin_factory(*args: t.Any, **kwargs: t.Any) -> t.Any:
-    return Mock()
-
-
-def always_return_none(*args: t.Any, **kwargs: t.Any) -> t.Any:
-    return None
+ALWAYS_RETURNS_NONE: t.Callable[[t.Any], None] = {}.get
 
 
 class Tasks:
@@ -33,7 +28,7 @@ class Tasks:
             "connect_client",
             dict(
                 client_factory=functools.partial(a121.Client.open, mock=True),
-                get_connection_warning=always_return_none,
+                get_connection_warning=ALWAYS_RETURNS_NONE,
             ),
         ),
     }
@@ -42,14 +37,14 @@ class Tasks:
             "connect_client",
             dict(
                 client_factory=functools.partial(a121.Client.open, ip_address="some_ip"),
-                get_connection_warning=always_return_none,
+                get_connection_warning=ALWAYS_RETURNS_NONE,
             ),
         ),
     }
     DISCONNECT_CLIENT_TASK: Task = ("disconnect_client", {})
     LOAD_PLUGIN_TASK: Task = (
         "load_plugin",
-        dict(plugin_factory=_mock_plugin_factory, key="key"),
+        dict(plugin_factory=SPARSE_IQ_PLUGIN.create_backend_plugin, key="key"),
     )
     UNLOAD_PLUGIN_TASK: Task = ("unload_plugin", {})
     START_SESSION_TASK: Task = ("start_session", dict(with_recorder=True))

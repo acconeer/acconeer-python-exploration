@@ -4,40 +4,59 @@
 import nox
 
 
+INSTALL_HATCH = """
+Hatch can be installed by running
+
+    pipx install hatch
+
+or
+
+    pip3 install --user hatch
+"""
+
+
 @nox.session
 def lint(session):
-    session.error("Use 'hatch fmt --check' instead")
+    print("Use 'hatch fmt --check' instead")
+    print(INSTALL_HATCH)
+    session.error()
 
 
 @nox.session
 def reformat(session):
-    session.error("Use 'hatch fmt' instead")
+    print("Use 'hatch fmt' instead")
+    print(INSTALL_HATCH)
+    session.error()
 
 
 @nox.session
 def mypy(session):
-    session.error("Use 'hatch run mypy:check' instead")
+    print("Use 'hatch run mypy:check' instead")
+    print(INSTALL_HATCH)
+    session.error()
 
 
 @nox.session
 def docs(session):
-    session.error(
-        "Use any of these instead",
-        "hatch run docs:html",
-        "hatch run docs:latexpdf",
-        "hatch run docs:rediraffe-check",
-        "hatch run docs:rediraffe-write",
-    )
+    print("Use any of these instead")
+    print(" - hatch run docs:html")
+    print(" - hatch run docs:latexpdf")
+    print(" - hatch run docs:rediraffe-check")
+    print(" - hatch run docs:rediraffe-write")
+    print(INSTALL_HATCH)
+    session.error()
 
 
 @nox.session
 def docs_autobuild(session):
-    session.error("Use 'hatch run docs:autobuild' instead")
+    print("Use 'hatch run docs:autobuild' instead")
+    print(INSTALL_HATCH)
+    session.error()
 
 
 @nox.session
 def test(session):
-    session.error(
-        "Use a script in environments 'test' instead",
-        "See all available by running 'hatch env show'",
-    )
+    print("Use 'hatch test' instead.")
+    print("It passes (most of) its arguments straight to pytest!")
+    print(INSTALL_HATCH)
+    session.error()

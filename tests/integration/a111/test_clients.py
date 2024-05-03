@@ -17,11 +17,15 @@ def exploration_server_setup(request, worker_tcp_port: int, a111_exploration_ser
     if args := request.config.getoption("--socket"):
         (ip, sensor) = args
         client = SocketClient(ip, port=worker_tcp_port)
-        client.connect()
-        yield (client, int(sensor))
-        client.disconnect()
+        sensor = int(sensor)
     else:
-        pytest.skip("--socket was not specified.")
+        # If nothing is specified through the CLI, assume socket on localhost
+        client = SocketClient("localhost", port=worker_tcp_port)
+        sensor = 1
+
+    client.connect()
+    yield (client, sensor)
+    client.disconnect()
 
 
 @pytest.fixture(scope="module")

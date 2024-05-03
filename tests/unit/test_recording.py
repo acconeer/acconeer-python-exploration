@@ -1,6 +1,7 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
+import warnings
 from pathlib import Path
 
 import attr
@@ -73,7 +74,7 @@ def test_unknown_mode(mocker):
     packed = a111.recording.pack(record)
     assert "mode" in packed
 
-    with pytest.warns(None) as captured_warnings:
+    with warnings.catch_warnings(record=True) as captured_warnings:
         a111.recording.unpack(packed)
 
     assert len(captured_warnings) == 0
