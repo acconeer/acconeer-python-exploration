@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ from acconeer.exptool._core.class_creation.attrs import (
 )
 from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121.algo import vibration
-from acconeer.exptool.a121.algo.vibration._processor import _load_algo_data
+from acconeer.exptool.a121.algo.vibration._example_app import ExampleApp, _load_algo_data
 
 
 @attrs.frozen
@@ -31,7 +31,7 @@ class ResultSlice:
     time_series_std: Optional[float] = attrs.field()
 
     @classmethod
-    def from_processor_result(cls, result: vibration.ProcessorResult) -> te.Self:
+    def from_processor_result(cls, result: vibration.ExampleAppResult) -> te.Self:
         return cls(
             max_displacement=result.max_displacement,
             max_displacement_freq=result.max_displacement_freq,
@@ -42,43 +42,29 @@ class ResultSlice:
         )
 
     def __eq__(self, other):
-        if isinstance(other, self.__class__):
-            if other.max_displacement is None:
-                # Handle NoneType values
-                equality = math.isclose(
-                    self.max_sweep_amplitude, other.max_sweep_amplitude, rel_tol=self._REL_TOL
-                ) and math.isclose(
-                    self.time_series_std, other.time_series_std, rel_tol=self._REL_TOL
-                )
-            else:
-                equality = (
-                    math.isclose(
-                        self.max_sweep_amplitude, other.max_sweep_amplitude, rel_tol=self._REL_TOL
-                    )
-                    and math.isclose(
-                        self.max_displacement, other.max_displacement, rel_tol=self._REL_TOL
-                    )
-                    and math.isclose(
-                        self.max_displacement_freq,
-                        other.max_displacement_freq,
-                        rel_tol=self._REL_TOL,
-                    )
-                    and math.isclose(
-                        self.time_series_std, other.time_series_std, rel_tol=self._REL_TOL
-                    )
-                    and np.allclose(
-                        self.lp_displacements, other.lp_displacements, rtol=self._REL_TOL
-                    )
-                    and np.allclose(
-                        self.lp_displacements_freqs,
-                        other.lp_displacements_freqs,
-                        rtol=self._REL_TOL,
-                    )
-                )
-
-            return equality
-        else:
+        if not isinstance(other, self.__class__):
             return False
+
+        if other.max_displacement is None:
+            # Handle NoneType values
+            return math.isclose(
+                self.max_sweep_amplitude, other.max_sweep_amplitude, rel_tol=self._REL_TOL
+            ) and math.isclose(self.time_series_std, other.time_series_std, rel_tol=self._REL_TOL)
+
+        return (
+            math.isclose(
+                self.max_sweep_amplitude, other.max_sweep_amplitude, rel_tol=self._REL_TOL
+            )
+            and math.isclose(self.max_displacement, other.max_displacement, rel_tol=self._REL_TOL)
+            and math.isclose(
+                self.max_displacement_freq, other.max_displacement_freq, rel_tol=self._REL_TOL
+            )
+            and math.isclose(self.time_series_std, other.time_series_std, rel_tol=self._REL_TOL)
+            and np.allclose(self.lp_displacements, other.lp_displacements, rtol=self._REL_TOL)
+            and np.allclose(
+                self.lp_displacements_freqs, other.lp_displacements_freqs, rtol=self._REL_TOL
+            )
+        )
 
 
 @attrs.mutable
@@ -94,7 +80,8 @@ class ProcessorWrapper:
 
 def vibration_controller(record: a121.H5Record) -> ProcessorWrapper:
     algo_group = record.get_algo_group("vibration")
-    processor_config = _load_algo_data(algo_group)
+    _, config = _load_algo_data(algo_group)
+    processor_config = ExampleApp._get_processor_config(config)
     return ProcessorWrapper(
         vibration.Processor(
             sensor_config=record.session_config.sensor_config,

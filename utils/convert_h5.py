@@ -889,26 +889,30 @@ def get_processed_data_touchless_button(h5_file: h5py.File) -> Tuple[pd.DataFram
 def get_processed_data_vibration(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
     record = H5Record(h5_file)
     processed_data_list = []
-    processor_config = vibration._load_algo_data(h5_file["algo"])
+    sensor_id, example_app_config = vibration._load_algo_data(h5_file["algo"])
 
     # Create DataFrames from configurations and sensor id
-    df_sensor_id = pd.DataFrame({"sensor_id": record.sensor_id}.items())
-    df_config = pd.DataFrame([[k, v] for k, v in processor_config.to_dict().items()])
+    df_sensor_id = pd.DataFrame(({"sensor_id": sensor_id}).items())
+    df_config = pd.DataFrame([[k, v] for k, v in example_app_config.to_dict().items()])
+
+    # Concatenate along columns
     df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
 
-    # Record file extraction
+    # Client preparation
+    record = H5Record(h5_file)
+    client = _ReplayingClient(record, realtime_replay=False)
     num_frames = record.num_frames
-    sensor_config = record.session_config.sensor_config
-    metadata = record.metadata
 
-    processor = vibration.Processor(
-        sensor_config=sensor_config,
-        metadata=metadata,
-        processor_config=processor_config,
+    example_app = vibration.ExampleApp(
+        client=client,
+        sensor_id=int(sensor_id),
+        example_app_config=example_app_config,
     )
+    example_app.start()
+
     try:
-        for idx, result in enumerate(record.results):
-            processed_data = processor.process(result)
+        for idx in range(record.num_frames):
+            processed_data = example_app.get_next()
 
             # Put the result in row
             processed_data_row = vibration_as_row(processed_data=processed_data)
@@ -922,6 +926,8 @@ def get_processed_data_vibration(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.D
     else:
         print("Processing data is finished. . .")
 
+    example_app.stop()
+    client.close()
     print("Disconnecting...")
 
     # Creates DataFrames from processed data and keys
@@ -1191,7 +1197,7 @@ def tank_level_as_row(processed_data: tank_level._ref_app.RefAppResult) -> list[
     return [level, peak_detected, peak_status]
 
 
-def vibration_as_row(processed_data: vibration.ProcessorResult) -> list[t.Any]:
+def vibration_as_row(processed_data: vibration.ExampleAppResult) -> list[t.Any]:
     max_displacement = processed_data.max_displacement
     max_sweep_amplitude = processed_data.max_sweep_amplitude
     max_displacement_freq = processed_data.max_displacement_freq

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -7,7 +7,6 @@ import enum
 from typing import Optional
 
 import attrs
-import h5py
 import numpy as np
 import numpy.typing as npt
 
@@ -16,6 +15,7 @@ from acconeer.exptool._core.class_creation.attrs import (
     attrs_ndarray_isclose,
     attrs_optional_ndarray_isclose,
 )
+from acconeer.exptool._core.int_16_complex import complex_array_to_int16_complex
 from acconeer.exptool.a121.algo import (
     PERCEIVED_WAVELENGTH,
     AlgoParamEnum,
@@ -24,6 +24,10 @@ from acconeer.exptool.a121.algo import (
     double_buffering_frame_filter,
 )
 from acconeer.exptool.utils import is_power_of_2
+
+
+RANGE_SUBSWEEP = 0
+LOOPBACK_SUBSWEEP = 1
 
 
 class ReportedDisplacement(AlgoParamEnum):
@@ -56,6 +60,9 @@ class ProcessorConfig(AlgoProcessorConfigBase):
     )
     """Selects whether to report the amplitude or peak to peak of the estimated frequency."""
 
+    low_frequency_enhancement: bool = attrs.field(default=False)
+    """Adds a loopback subsweep for phase correction to enhance low frequency detection."""
+
     def _collect_validation_results(
         self, config: a121.SessionConfig
     ) -> list[a121.ValidationResult]:
@@ -79,14 +86,41 @@ class ProcessorConfig(AlgoProcessorConfigBase):
                 )
             )
 
-        if config.sensor_config.num_points != 1:
+        if config.sensor_config.subsweeps[0].num_points != 1:
             validation_results.append(
                 a121.ValidationError(
-                    config.sensor_config.subsweep,
+                    config.sensor_config.subsweeps[0],
                     "num_points",
-                    "Must be set to 1",
+                    "Num points must be set to 1 for the first subsweep",
                 )
             )
+
+        if config.sensor_config.num_subsweeps > 2:
+            validation_results.append(
+                a121.ValidationError(
+                    config.sensor_config,
+                    "num_subsweeps",
+                    "Num subsweeps must not be more than 2",
+                )
+            )
+
+        if config.sensor_config.num_subsweeps == 2:
+            if config.sensor_config.subsweeps[1].num_points != 1:
+                validation_results.append(
+                    a121.ValidationError(
+                        config.sensor_config.subsweeps[1],
+                        "num_points",
+                        "Num points must be set to 1 for the second subsweep",
+                    )
+                )
+            if not self.low_frequency_enhancement:
+                validation_results.append(
+                    a121.ValidationError(
+                        self.low_frequency_enhancement,
+                        "low_frequency_enhancement",
+                        "Low frequency enhancement must be enabled when there are two subsweeps",
+                    )
+                )
 
         if (
             config.sensor_config.continuous_sweep_mode
@@ -99,6 +133,26 @@ class ProcessorConfig(AlgoProcessorConfigBase):
                     "Continuous sweep mode requires double buffering to be enabled",
                 )
             )
+
+        if self.low_frequency_enhancement:
+            if config.sensor_config.num_subsweeps != 2:
+                a121.ValidationError(
+                    self.low_frequency_enhancement,
+                    "low_frequency_enhancement",
+                    "Low frequency enhancement requires a loopback subsweep",
+                )
+            if config.sensor_config.subsweeps[RANGE_SUBSWEEP].enable_loopback:
+                a121.ValidationError(
+                    self.low_frequency_enhancement,
+                    "low_frequency_enhancement",
+                    "The first subsweep must not have loopback enabled",
+                )
+            if not config.sensor_config.subsweeps[LOOPBACK_SUBSWEEP].enable_loopback:
+                a121.ValidationError(
+                    self.low_frequency_enhancement,
+                    "low_frequency_enhancement",
+                    "Low frequency enhancement requires that loopback is enabled for the second subsweep",
+                )
 
         return validation_results
 
@@ -181,6 +235,8 @@ class Processor(ProcessorBase[ProcessorResult]):
         self.amplitude_threshold = processor_config.amplitude_threshold
         self.spf = sensor_config.sweeps_per_frame
         self.reported_displacement_mode = processor_config.reported_displacement_mode
+        self.low_frequency_enhancement = processor_config.low_frequency_enhancement
+        self.sensor_config = sensor_config
 
         if self.continuous_data_acquisition:
             self.psd_to_radians_conversion_factor = 2.0 / float(self.time_series_length)
@@ -201,8 +257,16 @@ class Processor(ProcessorBase[ProcessorResult]):
         self.has_init = False
 
     def process(self, result: a121.Result) -> ProcessorResult:
+        # Extract loopback frame
+        if not self.low_frequency_enhancement:
+            frame = result.subframes[RANGE_SUBSWEEP]
+        else:
+            measured_frame = result.subframes[RANGE_SUBSWEEP]
+            loopback_frame = result.subframes[LOOPBACK_SUBSWEEP]
+            frame = measured_frame * np.exp(-1j * np.angle(loopback_frame))
+
         # Determine if an object is in front of the sensor
-        max_sweep_amplitude = float(np.max(np.abs(result.frame)))
+        max_sweep_amplitude = float(np.max(np.abs(frame)))
 
         if max_sweep_amplitude < self.amplitude_threshold:
             self.has_init = False
@@ -217,16 +281,13 @@ class Processor(ProcessorBase[ProcessorResult]):
 
         # Handle frame based on whether or not continuous sweep mode is used
         if self.continuous_data_acquisition:
-            filter_output = double_buffering_frame_filter(result._frame)
-            if filter_output is None:
-                frame = result.frame
-            else:
+            filter_output = double_buffering_frame_filter(complex_array_to_int16_complex(frame))
+            if filter_output is not None:
                 frame = filter_output
             self.time_series = np.roll(self.time_series, -self.spf)
             self.time_series[-self.spf :] = np.angle(frame.squeeze(axis=1))
             self.time_series = np.unwrap(self.time_series)
         else:
-            frame = result.frame
             self.time_series = np.unwrap(np.angle(frame.squeeze(axis=1)))
 
         # Calculate zero mean time series
@@ -351,8 +412,3 @@ class Processor(ProcessorBase[ProcessorResult]):
             filt_psd[:length_after_filtering] + filt_psd[-length_after_filtering:]
         ) / 2 + sensitivity
         return threshold
-
-
-def _load_algo_data(algo_group: h5py.Group) -> ProcessorConfig:
-    processor_config = ProcessorConfig.from_json(algo_group["processor_config"][()])
-    return processor_config
