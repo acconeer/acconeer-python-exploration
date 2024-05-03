@@ -167,8 +167,12 @@ unit = "xdist tests/unit {args}"
 processing = "xdist tests/processing -n auto {args}"
 doctest = "xdist --doctest-modules src/acconeer/exptool"
 model = "xdist tests/model {args}"
-integration-a111 = "pytest tests/integration/a111 {args}"
-integration-a121 = "pytest tests/integration/a121 {args}"
+integration-a111 = "xdist tests/integration/a111 --socket localhost 1 {args}"
+integration-a121 = "xdist tests/integration/a121 {args}"
+integration-xm112 = [
+    "pytest tests/integration/a111 -m xm112 --uart auto {args}",
+    "pytest tests/integration/a111 -m xm112 --spi {args}",
+]
 
 
 [tool.hatch.envs.docs]
@@ -295,7 +299,8 @@ module = [
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-addopts = "--ignore=src/acconeer/exptool/_winusbcdc --ignore=src/acconeer/exptool/a111"
+markers = ["xm112"]
+addopts = "--ignore=src/acconeer/exptool/_winusbcdc --ignore=src/acconeer/exptool/a111 --ignore=tests/gui -m 'not xm112'"
 doctest_optionflags = [
     "ELLIPSIS",
     "NORMALIZE_WHITESPACE",

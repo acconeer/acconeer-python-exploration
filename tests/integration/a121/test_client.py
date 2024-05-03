@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -15,9 +15,11 @@ CLIENT_PARAMETRIZE = [
 
 
 @pytest.fixture(params=CLIENT_PARAMETRIZE, ids=str)
-def client_kwargs(request, port_from_cli):
+def client_kwargs(
+    request: pytest.FixtureRequest, worker_tcp_port: int, a121_exploration_server: None
+):
     if "ip_address" in request.param:
-        request.param["tcp_port"] = port_from_cli
+        request.param["tcp_port"] = worker_tcp_port
 
     return request.param
 

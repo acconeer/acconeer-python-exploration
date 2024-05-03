@@ -1,5 +1,8 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
+from __future__ import annotations
+
+import typing as t
 
 import numpy as np
 import pytest
@@ -9,8 +12,8 @@ from acconeer.exptool.a121._core import utils
 
 
 @pytest.fixture
-def client_kwargs(port_from_cli):
-    return dict(ip_address="localhost", tcp_port=port_from_cli)
+def client_kwargs(worker_tcp_port: int, a121_exploration_server: None) -> dict[str, t.Any]:
+    return dict(ip_address="localhost", tcp_port=worker_tcp_port)
 
 
 def test_can_connect(client_kwargs):
@@ -61,7 +64,7 @@ class TestMockExplorationServerDataParsing:
                     np.testing.assert_equal(sweep, expected_sweep)
 
 
-@pytest.mark.parametrize("prf", set(a121.PRF))
+@pytest.mark.parametrize("prf", list(a121.PRF))
 def test_setup_with_all_prfs(prf: a121.PRF, client_kwargs) -> None:
     with a121.Client.open(**client_kwargs) as client:
         client.setup_session(a121.SensorConfig(prf=prf, profile=a121.Profile.PROFILE_1))

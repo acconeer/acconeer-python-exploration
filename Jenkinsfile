@@ -201,10 +201,10 @@ try {
 
                     buildDocker(path: 'docker').inside(dockerArgs(env)) {
                         isolatedTestPythonVersions.each { v -> sh "python${v} -V" }
-                        List<String> doitTasks = isolatedTestPythonVersions
-                                                    .collect { v -> "test:${v}" }
-
-                        sh "doit -f dodo.py -n ${doitTasks.size()} " + doitTasks.join(' ')
+                        String versionSelection = "+py=" + isolatedTestPythonVersions.join(",")
+                        ["unit", "processing", "doctest", "app"].each {
+                            testScript -> sh "hatch run ${versionSelection} test:${testScript}"
+                        }
                     }
                 }
             }
@@ -239,12 +239,8 @@ try {
                     }
                     stage("Run integration tests (py=${integrationTestPythonVersions}, rss=${rssVersionName})") {
                         buildDocker(path: 'docker').inside(dockerArgs(env)) {
-                            integrationTestPythonVersions.each { v -> sh "python${v} -V" }
-
-                            List<String> doitTasks = integrationTestPythonVersions
-                                                            .collect { v -> "integration_test:${v}-a121" }
-
-                            sh "doit -f dodo.py port_strategy=unique -n ${doitTasks.size()} " + doitTasks.join(' ')
+                            String versionSelection = "+py=" + integrationTestPythonVersions.join(",")
+                            sh "hatch run ${versionSelection} test:integration-a121"
                         }
                     }
                 }
@@ -274,11 +270,8 @@ try {
                     stage("Run integration tests (py=${integrationTestPythonVersions}, rss=${rssVersionName})") {
                         buildDocker(path: 'docker').inside(dockerArgs(env)) {
                             integrationTestPythonVersions.each { v -> sh "python${v} -V" }
-
-                            List<String> doitTasks = integrationTestPythonVersions
-                                                            .collect { v -> "integration_test:${v}-a111" }
-
-                            sh "doit -f dodo.py port_strategy=unique -n ${doitTasks.size()} " + doitTasks.join(' ')
+                            String versionSelection = "+py=" + integrationTestPythonVersions.join(",")
+                            sh "hatch run ${versionSelection} test:integration-a111"
                         }
                     }
                 }
@@ -318,7 +311,7 @@ try {
                         dockerImg.inside(dockerArgs(env) + " --net=host --privileged") {
                             integrationTestPythonVersions.each { pythonVersion ->
                                 stage("Run integration tests (py=${pythonVersion}, rss=${rssVersionName})") {
-                                    sh "tests/run-a111-xm112-integration-tests.sh ${pythonVersion}"
+                                    sh "hatch run +py=${pythonVersion} test:integration-xm112"
                                 }
                             }
                         }

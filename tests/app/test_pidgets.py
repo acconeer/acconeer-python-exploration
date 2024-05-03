@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -14,17 +14,17 @@ def _class_is_ABC(c: type) -> bool:
     return bool(getattr(c, "__abstractmethods__", False))
 
 
-def _all_subclasses(root: type) -> set[type]:
+def _all_subclasses(root: type) -> list[type]:
     """
     Finds (recurively) all subclasses of the superclass 'root'.
     (T.y. unutbu@SO, https://stackoverflow.com/a/3862957)
     """
-    direct_subclasses = set(root.__subclasses__())
-    return direct_subclasses.union(
+    direct_subclasses = list(root.__subclasses__())
+    return direct_subclasses + [
         indirect_subclass
         for direct_subclass in direct_subclasses
         for indirect_subclass in _all_subclasses(direct_subclass)
-    )
+    ]
 
 
 def _mock_hook(*args: t.Any, **kwargs: t.Any) -> None:
