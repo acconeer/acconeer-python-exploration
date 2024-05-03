@@ -250,20 +250,22 @@ class A121RecordTableConverter(TableConverter):
     def __init__(self, record: a121.Record) -> None:
         self._record = record
 
-    def _results_of_sensor_id(self, sensor_id: int) -> list[a121.Result]:
+    def _results_of_sensor_id(self, sensor_id: int, session_index: int = 0) -> list[a121.Result]:
         return [
             ext_result[sensor_id]
-            for ext_result_group in self._record.extended_results
+            for ext_result_group in self._record.session(session_index).extended_results
             for ext_result in ext_result_group
             if sensor_id in ext_result
         ]
 
-    def _unique_sensor_configs_of_sensor_id(self, sensor_id: int) -> list[a121.SensorConfig]:
+    def _unique_sensor_configs_of_sensor_id(
+        self, sensor_id: int, session_index: int = 0
+    ) -> list[a121.SensorConfig]:
         # FIXME: this is not a `set` as SensorConfig is not hash-able
         sensor_configs = [
             sensor_config
             for _, sid, sensor_config in _core.utils.iterate_extended_structure(
-                self._record.session_config.groups
+                self._record.session(session_index).session_config.groups
             )
             if sid == sensor_id
         ]
@@ -274,23 +276,22 @@ class A121RecordTableConverter(TableConverter):
         return unique_sensor_configs
 
     def _unique_metadatas_of_sensor_id(
-        self, sensor_id: int
+        self, sensor_id: int, session_index: int = 0
     ) -> list[a121._core.entities.containers.metadata.Metadata]:
-        extended = self._record.session_config.extended
+        extended = self._record.session(session_index).session_config.extended
         metadatas = [
             metadata
             for _, sid, metadata in _core.utils.iterate_extended_structure(
-                self._record.extended_metadata
+                self._record.session(session_index).extended_metadata
             )
             if sid == sensor_id
         ]
-        unique_metadatas = metadatas if extended else [self._record.metadata]
+        unique_metadatas = (
+            metadatas if extended else [self._record.session(session_index).metadata]
+        )
         return unique_metadatas
 
-    def _get_sparse_iq(
-        self,
-        sensor: int,
-    ) -> npt.NDArray[t.Any]:
+    def _get_sparse_iq(self, sensor: int, session_index: int = 0) -> npt.NDArray[t.Any]:
         """This function handles the case where the sensor at "sensor ID" is configured
         with a single/multiple `SensorConfig(s)`, possibly in multiple groups.
 
@@ -299,8 +300,10 @@ class A121RecordTableConverter(TableConverter):
         """
 
         # Sensor results as a concatenate results of multiple or single configs
-        sensor_results = self._results_of_sensor_id(sensor)
-        num_sensor_configs = len(self._unique_sensor_configs_of_sensor_id(sensor))
+        sensor_results = self._results_of_sensor_id(sensor, session_index=session_index)
+        num_sensor_configs = len(
+            self._unique_sensor_configs_of_sensor_id(sensor, session_index=session_index)
+        )
         rows = []
         row_values = []
 
@@ -345,28 +348,33 @@ class A121RecordTableConverter(TableConverter):
         return [sweeps_numbers, depths_headers]
 
     def print_information(self, verbose: bool = False) -> None:
-        extended = self._record.session_config.extended
-
-        print("=== Session config " + "=" * 41)
-        print(self._record.session_config)
-
-        if not verbose:
-            print("=" * 60)
-            return
-
-        print("=== Meta data " + "=" * 46)
-        pprint(self._record.extended_metadata if extended else self._record.metadata)
         print("=== Server info " + "=" * 44)
         pprint(self._record.server_info)
         print("=== Client info " + "=" * 44)
         pprint(self._record.client_info)
+        for session_index in range(self._record.num_sessions):
+            extended = self._record.session(session_index).session_config.extended
 
-        environtment_a121 = get_environment(self._record)
+            print("=== Session config " + "=" * 41)
+            print(self._record.session(session_index).session_config)
 
-        for k, v in environtment_a121.items():
-            print("{:.<37} {}".format(k + " ", v))
+            if not verbose:
+                print("=" * 60)
+                return
 
-        print("=" * 60)
+            print("=== Meta data " + "=" * 46)
+            pprint(
+                self._record.session(session_index).extended_metadata
+                if extended
+                else self._record.metadata
+            )
+
+            environtment_a121 = get_environment(self._record)
+
+            for k, v in environtment_a121.items():
+                print("{:.<37} {}".format(k + " ", v))
+
+            print("=" * 60)
 
 
 def get_environment(
@@ -384,10 +392,14 @@ def get_environment(
         environment_dict = {
             "RSS version": record.server_info.rss_version,
             "Exptool version": record.lib_version,
-            "Number of frames": str(record.num_frames),
             "Timestamp": record.timestamp,
             "UUID": record.uuid,
         }
+        for session_index in range(record.num_sessions):
+            # Create a Pandas DataFrame from the data
+            environment_dict[f"Number of frames session {session_index}"] = str(
+                record.session(session_index).num_frames
+            )
         return environment_dict
     else:
         raise TypeError(
@@ -1205,27 +1217,30 @@ def main() -> None:
     table_converter = TableConverter.from_record(record)
     try:
         sparse_iq_data = table_converter.convert(sensor=sensor)
+        metadata_rows = table_converter.get_metadata_rows(sensor=sensor)
     except Exception as e:
         print(e)
         exit(1)
 
     table_converter.print_information(verbose=args.verbose)
     print()
-
+    dict_excel_file = {}
     if args.sweep_as_column:
         sparse_iq_data = sparse_iq_data.T
 
     # Create a Pandas DataFrame from the data
     dict_excel_file = {"Sparse IQ data": pd.DataFrame(sparse_iq_data)}
+    dict_excel_file["Metadata"] = pd.DataFrame(metadata_rows)
+
+    if isinstance(record, a121.Record):
+        for session_index in range(record.num_sessions):
+            # Add configurations in excel
+            df_config = configs_as_dataframe(record.session(session_index).session_config)
+            dict_excel_file[f"Configurations session {session_index}"] = df_config
 
     # Create a Pandas DataFrame from the environtment
     record_environtment = get_environment(record)
     dict_excel_file["Environtment"] = pd.DataFrame(record_environtment.items())
-
-    if isinstance(record, a121.Record):
-        # Add configurations in excel
-        df_config = configs_as_dataframe(record.session_config)
-        dict_excel_file["Configurations"] = df_config
 
     # Create a Pandas DataFrame from processed data
     h5_file = h5py.File(str(input_file))
