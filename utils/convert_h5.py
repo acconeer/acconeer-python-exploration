@@ -24,6 +24,7 @@ import acconeer.exptool.a121.algo.hand_motion as hand_motion
 import acconeer.exptool.a121.algo.parking as parking
 import acconeer.exptool.a121.algo.phase_tracking as phase_tracking
 import acconeer.exptool.a121.algo.presence as presence
+import acconeer.exptool.a121.algo.smart_presence as smart_presence
 import acconeer.exptool.a121.algo.speed as speed
 import acconeer.exptool.a121.algo.surface_velocity as surface_velocity
 import acconeer.exptool.a121.algo.tank_level as tank_level
@@ -531,6 +532,7 @@ def get_processed_data(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
         "parking": get_processed_data_parking,
         "phase_tracking": get_processed_data_phase_tracking,
         "presence_detector": get_processed_data_presence,
+        "smart_presence": get_processed_data_smart_presence,
         "speed_detector": get_processed_data_speed,
         "surface_velocity": get_processed_data_surface_velocity,
         "waste_level": get_processed_data_waste_level,
@@ -908,6 +910,70 @@ def get_processed_data_presence(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.Da
     return df_processed_data, df_algo_data
 
 
+def get_processed_data_smart_presence(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    processed_data_list = []
+    num_frames = 0
+    sensor_id, RefAppConfig, RefAppContext = smart_presence._ref_app._load_algo_data(
+        h5_file["algo"]
+    )
+
+    # Create DataFrames from configurations, sensor id, and detector context
+    df_sensor_id = pd.DataFrame(({"sensor_id": sensor_id}).items())
+    df_config = pd.DataFrame([[k, v] for k, v in RefAppConfig.to_dict().items()])
+    df_context = pd.DataFrame([[k, v] for k, v in RefAppContext.to_dict().items()])
+
+    # Concatenate along columns
+    df_algo_data = pd.concat([df_sensor_id, df_config, df_context], axis=0, ignore_index=True)
+
+    # Client preparation
+    record = H5Record(h5_file)
+    client = _ReplayingClient(record, realtime_replay=False)
+    for session_index in range(record.num_sessions):
+        num_frames = num_frames + record.session(session_index).num_frames
+    ref_app = smart_presence._ref_app.RefApp(
+        client=client,
+        sensor_id=sensor_id,
+        ref_app_config=RefAppConfig,
+        ref_app_context=RefAppContext,
+    )
+    ref_app.start()
+
+    print("Press Ctrl-C to end session")
+
+    try:
+        for idx in range(num_frames):
+            processed_data = ref_app.get_next()
+
+            # Put the result in row
+            processed_data_row = smart_presence_result_as_row(processed_data=processed_data)
+            processed_data_list.append(processed_data_row)
+
+            # Print progressing time every 5%
+            print(f"... {idx / num_frames:.0%}") if (idx % int(0.05 * num_frames)) == 0 else None
+
+    except KeyboardInterrupt:
+        print("Conversion aborted")
+    else:
+        print("Processing data is finished. . .")
+
+    ref_app.stop()
+
+    print("Disconnecting...")
+    client.close()
+
+    # Creates DataFrames from processed data and keys
+    keys = [
+        "Presence",
+        "Intra_presence_score",
+        "Inter_presence_score",
+    ]
+    df_processed_data = pd.DataFrame(
+        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
+    )
+
+    return df_processed_data, df_algo_data
+
+
 def get_processed_data_touchless_button(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
     processed_data_list = []
     record = H5Record(h5_file)
@@ -1216,6 +1282,14 @@ def presence_result_as_row(processed_data: presence.DetectorResult) -> list[t.An
     presence_dist = f"{processed_data.presence_distance:.3f} m"
 
     return [presence_detected, intra_presence_score, inter_presence_score, presence_dist]
+
+
+def smart_presence_result_as_row(processed_data: smart_presence.RefAppResult) -> list[t.Any]:
+    presence_detected = "Presence!" if processed_data.presence_detected else "None"
+    intra_presence_score = f"{processed_data.intra_presence_score:.3f}"
+    inter_presence_score = f"{processed_data.inter_presence_score:.3f}"
+
+    return [presence_detected, intra_presence_score, inter_presence_score]
 
 
 def waste_level_as_row(processed_data: waste_level.ProcessorResult) -> list[t.Any]:
