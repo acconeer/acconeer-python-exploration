@@ -142,6 +142,10 @@ run-cov = "coverage run -m pytest{env:HATCH_TEST_ARGS:} {args}"  # default
 cov-combine = "coverage combine"  # default
 cov-report = "coverage report"  # default
 
+[tool.hatch.envs.test]
+# This is a copy of the built-in hatch-test environment above
+# That enables raw use of e.g. pytest with 'hatch run test:pytest -h'
+template = "hatch-test"
 
 [tool.hatch.envs.docs]
 features = ["docs"]

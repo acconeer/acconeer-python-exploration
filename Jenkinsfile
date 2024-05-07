@@ -243,7 +243,9 @@ try {
                     stage("Run integration tests (py=${integrationTestPythonVersions}, rss=${rssVersionName})") {
                         buildDocker(path: 'docker').inside(dockerArgs(env)) {
                             String versionSelection = "-py=" + integrationTestPythonVersions.join(",")
-                            hatchWrap "test ${versionSelection} tests/integration/a121"
+                            hatchWrap """test ${versionSelection} tests/integration/a121 \
+                                --a121-exploration-server-paths stash/out/customer/a121/internal_sanitizer_x86_64/out/acc_exploration_server_a121 \
+                            """
                         }
                     }
                 }
@@ -273,7 +275,9 @@ try {
                     stage("Run integration tests (py=${integrationTestPythonVersions}, rss=${rssVersionName})") {
                         buildDocker(path: 'docker').inside(dockerArgs(env)) {
                             String versionSelection = "-py=" + integrationTestPythonVersions.join(",")
-                            hatchWrap "test ${versionSelection} tests/integration/a111"
+                            hatchWrap """test ${versionSelection} tests/integration/a111 \
+                                --a111-exploration-server-paths stash/out/customer/a111/internal_sanitizer_x86_64/out/acc_exploration_server_a111 \
+                            """
                         }
                     }
                 }

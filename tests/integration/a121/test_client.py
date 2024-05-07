@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 from __future__ import annotations
 
@@ -8,20 +8,14 @@ from acconeer.exptool import a121
 from acconeer.exptool._core.communication import ClientError
 
 
-CLIENT_PARAMETRIZE = [
-    dict(ip_address="localhost"),
-    dict(mock=True),
-]
-
-
-@pytest.fixture(params=CLIENT_PARAMETRIZE, ids=str)
-def client_kwargs(
-    request: pytest.FixtureRequest, worker_tcp_port: int, a121_exploration_server: None
-):
-    if "ip_address" in request.param:
-        request.param["tcp_port"] = worker_tcp_port
-
-    return request.param
+@pytest.fixture(params=["es_kwargs", "mock_kwargs"])
+def client_kwargs(request, worker_tcp_port: int, a121_exploration_server: None):
+    if request.param == "es_kwargs":
+        return {"ip_address": "localhost", "tcp_port": worker_tcp_port}
+    elif request.param == "mock_kwargs":
+        return {"mock": True}
+    else:
+        pytest.fail(f"Unknown kwargs {request.param!r}")
 
 
 @pytest.fixture
