@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2024
 # All rights reserved
 
 from __future__ import annotations
@@ -14,57 +14,58 @@ import acconeer.exptool as et
 from acconeer.exptool import a121
 from acconeer.exptool.a121.algo._utils import APPROX_BASE_STEP_LENGTH_M
 from acconeer.exptool.a121.algo.vibration import (
-    Processor,
-    ProcessorConfig,
-    ProcessorContext,
-    ProcessorResult,
-    get_high_frequency_sensor_config,
+    ExampleApp,
+    ExampleAppConfig,
+    ExampleAppResult,
+    get_high_frequency_config,
 )
+
+
+SENSOR_ID = 1
 
 
 def main():
     args = a121.ExampleArgumentParser().parse_args()
     et.utils.config_logging(args)
 
-    sensor_config = get_high_frequency_sensor_config()
+    example_app_config = get_high_frequency_config()
 
     client = a121.Client.open(**a121.get_client_args(args))
-    metadata = client.setup_session(sensor_config)
 
-    processor = Processor(
-        sensor_config=sensor_config,
-        metadata=metadata,
-        processor_config=ProcessorConfig(),
-        context=ProcessorContext(),
+    example_app = ExampleApp(
+        client=client,
+        sensor_id=SENSOR_ID,
+        example_app_config=example_app_config,
     )
-    pg_updater = PGUpdater(sensor_config)
+
+    pg_updater = PGUpdater(example_app_config)
     pg_process = et.PGProcess(pg_updater)
+
+    example_app.start()
     pg_process.start()
 
-    client.start_session()
     interrupt_handler = et.utils.ExampleInterruptHandler()
     print("Press Ctrl-C to end session")
 
     while not interrupt_handler.got_signal:
-        result = client.get_next()
-        plot_data = processor.process(result)
+        example_app_result = example_app.get_next()
+
         try:
-            pg_process.put_data(plot_data)
+            pg_process.put_data(example_app_result)
         except et.PGProccessDiedException:
             break
 
     print("Disconnecting...")
-    client.close()
+    pg_process.close()
+    example_app.stop()
 
 
 class PGUpdater:
-    def __init__(self, sensor_config):
-        self.meas_dist_m = sensor_config.start_point * APPROX_BASE_STEP_LENGTH_M
-        self.sensor_config = sensor_config
+    def __init__(self, example_app_config: ExampleAppConfig):
+        self.sensor_config = ExampleApp._get_sensor_config(example_app_config)
+        self.meas_dist_m = example_app_config.measured_point * APPROX_BASE_STEP_LENGTH_M
 
     def setup(self, win):
-        self.meas_dist_m = self.sensor_config.start_point * APPROX_BASE_STEP_LENGTH_M
-
         pen_blue = et.utils.pg_pen_cycler(0)
         pen_orange = et.utils.pg_pen_cycler(1)
         brush = et.utils.pg_brush_cycler(0)
@@ -75,7 +76,7 @@ class PGUpdater:
         symbol_dot_kw = dict(symbol="o", symbolSize=10, symbolBrush=brush_dot, symbolPen="k")
 
         # presence plot
-        self.object_detection_plot = win.addPlot()
+        self.object_detection_plot = pg.PlotItem()
         self.object_detection_plot.setMenuEnabled(False)
         self.object_detection_plot.showGrid(x=False, y=True)
         self.object_detection_plot.setLabel("left", "Max amplitude")
@@ -92,7 +93,7 @@ class PGUpdater:
         self.smooth_max_presence = et.utils.SmoothMax(tau_decay=10.0)
 
         # sweep and threshold plot
-        self.time_series_plot = win.addPlot()
+        self.time_series_plot = pg.PlotItem()
         self.time_series_plot.setMenuEnabled(False)
         self.time_series_plot.showGrid(x=True, y=True)
         self.time_series_plot.setLabel("left", "Displacement (<font>&mu;</font>m)")
@@ -138,19 +139,21 @@ class PGUpdater:
 
         self.smooth_max_fft = et.utils.SmoothMax()
 
-    def update(self, processor_result: ProcessorResult) -> None:
+    def update(self, example_app_result: ExampleAppResult) -> None:
         # Extra result
-        time_series = processor_result.extra_result.zm_time_series
-        lp_displacements_threshold = processor_result.extra_result.lp_displacements_threshold
-        amplitude_threshold = processor_result.extra_result.amplitude_threshold
+        time_series = example_app_result.processor_extra_result.zm_time_series
+        lp_displacements_threshold = (
+            example_app_result.processor_extra_result.lp_displacements_threshold
+        )
+        amplitude_threshold = example_app_result.processor_extra_result.amplitude_threshold
 
         # Processor result
-        lp_displacements = processor_result.lp_displacements
-        lp_displacements_freqs = processor_result.lp_displacements_freqs
-        max_amplitude = processor_result.max_sweep_amplitude
-        max_displacement = processor_result.max_displacement
-        max_displacement_freq = processor_result.max_displacement_freq
-        time_series_rms = processor_result.time_series_std
+        lp_displacements = example_app_result.lp_displacements
+        lp_displacements_freqs = example_app_result.lp_displacements_freqs
+        max_amplitude = example_app_result.max_sweep_amplitude
+        max_displacement = example_app_result.max_displacement
+        max_displacement_freq = example_app_result.max_displacement_freq
+        time_series_rms = example_app_result.time_series_std
 
         # Plot object presence metric
         self.presence_curve.setData([self.meas_dist_m], [max_amplitude])

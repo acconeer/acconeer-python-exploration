@@ -151,3 +151,4 @@
 "handbook/physical_integration.rst" "integration/a121/index.rst"
 "handbook/radar_principles.rst" "pcr_tech/radar_principles.rst"
 "handbook/index.rst" "removed.rst"
+"exploration_tool/example_scripts/vibration/examples-a121-algo-vibration-vibration.rst" "removed.rst"
