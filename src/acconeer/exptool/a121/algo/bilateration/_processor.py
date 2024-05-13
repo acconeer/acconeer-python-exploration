@@ -1,17 +1,19 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 from __future__ import annotations
 
 import copy
 import typing as t
+from typing import Tuple
 
 import attrs
+import h5py
 import numpy as np
 import numpy.typing as npt
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121.algo import AlgoProcessorConfigBase
-from acconeer.exptool.a121.algo.distance import DetectorResult
+from acconeer.exptool.a121.algo.distance import DetectorConfig, DetectorResult
 
 
 @attrs.frozen(kw_only=True)
@@ -411,3 +413,10 @@ class _KalmanFilter:
     @staticmethod
     def _sensitivity_to_gain(sensitivity: float) -> float:
         return 0.01 + sensitivity * 20.0
+
+
+def _load_algo_data(algo_group: h5py.Group) -> Tuple[list[int], DetectorConfig, ProcessorConfig]:
+    sensor_ids = algo_group["sensor_ids"][()].tolist()
+    detector_config = DetectorConfig.from_json(algo_group["detector_config"][()])
+    bilateration_config = ProcessorConfig()
+    return sensor_ids, detector_config, bilateration_config
