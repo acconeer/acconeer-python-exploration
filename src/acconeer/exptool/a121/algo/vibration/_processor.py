@@ -43,13 +43,15 @@ class ReportedDisplacement(AlgoParamEnum):
 @attrs.mutable(kw_only=True)
 class ProcessorConfig(AlgoProcessorConfigBase):
     time_series_length: int = attrs.field(default=1024)
-    """Length of time series."""
+    """Length of time series.
+    This value will be overridden by the number of sweeps per frame if continuous sweep mode is not enabled."""
 
     lp_coeff: float = attrs.field(default=0.95)
-    """Specify filter coefficient of exponential filter."""
+    """Specify filter coefficient of the exponential filter for the FFT.
+    A higher value means more filtering, i.e., slower response to changes."""
 
     threshold_margin: float = attrs.field(default=10.0)
-    """Specify threshold margin (micro meter)."""
+    """Specify threshold margin (micrometer)."""
 
     amplitude_threshold: float = attrs.field(default=100.0)
     """Specify minimum amplitude for calculating vibration."""
@@ -175,7 +177,7 @@ class ProcessorExtraResult:
     lp_displacements_threshold: Optional[npt.NDArray[np.float_]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    """Threshold used for detecting significant frequencies."""
+    """CFAR threshold used for detecting significant frequencies in the FFT."""
 
 
 @attrs.frozen(kw_only=True)
@@ -189,19 +191,19 @@ class ProcessorResult:
     lp_displacements: Optional[npt.NDArray[np.float_]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    """Array of estimated displacement (um) per frequency."""
+    """Array of estimated displacement (μm) per frequency."""
 
     lp_displacements_freqs: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
     """Array of frequencies where displacement is estimated (Hz)."""
 
     max_displacement: Optional[float] = attrs.field(default=None)
-    """Largest detected displacement (um)."""
+    """Largest detected displacement (μm)."""
 
     max_displacement_freq: Optional[float] = attrs.field(default=None)
     """Frequency of largest detected displacement (Hz)."""
 
     time_series_std: Optional[float] = attrs.field(default=None)
-    """Time series std(standard deviation)."""
+    """Time series standard deviation."""
 
     extra_result: ProcessorExtraResult
     """Extra result, used for plotting only."""

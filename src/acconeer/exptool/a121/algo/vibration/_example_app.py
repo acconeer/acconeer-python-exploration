@@ -47,13 +47,15 @@ class ExampleAppConfig(AlgoConfigBase):
     """Measured point."""
 
     time_series_length: int = attrs.field(default=1024)
-    """Number of sweeps in the time series."""
+    """Length of time series.
+    This value will be overridden by the number of sweeps per frame if continuous sweep mode is not enabled."""
 
     lp_coeff: float = attrs.field(default=0.95)
-    """Specify filter coefficient of exponential filter."""
+    """Specify filter coefficient of the exponential filter for the FFT.
+    A higher value means more filtering, i.e., slower response to changes."""
 
     threshold_margin: float = attrs.field(default=10.0)
-    """Specify threshold margin (micro meter)."""
+    """Specify threshold margin (micrometer)."""
 
     amplitude_threshold: float = attrs.field(default=100.0)
     """Specify minimum amplitude for calculating vibration."""
@@ -142,19 +144,19 @@ class ExampleAppResult:
     lp_displacements: Optional[npt.NDArray[np.float_]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    """Array of estimated displacement (um) per frequency."""
+    """Array of estimated displacement (μm) per frequency."""
 
     lp_displacements_freqs: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
     """Array of frequencies where displacement is estimated (Hz)."""
 
     max_displacement: Optional[float] = attrs.field(default=None)
-    """Largest detected displacement (um)."""
+    """Largest detected displacement (μm)."""
 
     max_displacement_freq: Optional[float] = attrs.field(default=None)
     """Frequency of largest detected displacement (Hz)."""
 
     time_series_std: Optional[float] = attrs.field(default=None)
-    """Time series std(standard deviation)."""
+    """Time series standard deviation."""
 
     processor_extra_result: ProcessorExtraResult = attrs.field()
     """Processor extra result, used for plotting only."""
