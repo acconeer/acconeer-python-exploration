@@ -42,7 +42,8 @@ def modelTestA121RssVersionForBuildScope = [
 
 String dockerArgs(env_map) {
   return "--hostname ${env_map.NODE_NAME}" +
-         " --mount type=volume,src=cachepip-${env_map.EXECUTOR_NUMBER},dst=/home/jenkins/.cache/pip"
+         " --mount type=volume,src=cachepip-${env_map.EXECUTOR_NUMBER},dst=/home/jenkins/.cache/pip" +
+         " --mount type=volume,src=cacheuv,dst=/home/jenkins/.cache/uv"
 }
 
 def messageOnFailure = true

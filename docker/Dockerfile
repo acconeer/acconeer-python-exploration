@@ -61,5 +61,6 @@ RUN groupadd -g 1000 jenkins \
 USER jenkins
 
 RUN mkdir -p /home/jenkins/.cache/pip
+RUN mkdir -p /home/jenkins/.cache/uv
 
 WORKDIR /home/jenkins
