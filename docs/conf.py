@@ -64,19 +64,16 @@ exclude_patterns = [
 
 pygments_style = None
 
+################
+# HTML Options #
+################
+
+html_theme = "sphinx_book_theme"
+
 html_favicon = "_static/favicon.png"
-
-html_theme = "pydata_sphinx_theme"
-
-html_css_files = ["css/custom.css"]
-
 html_logo = "_static/logo.svg"
-
-html_sidebars = {
-    "index": [],
-    "disclaimer": [],
-    "**": ["sidebar-nav-bs"],
-}
+html_static_path = ["_static"]
+html_css_files = ["custom.css"]
 
 html_theme_options = {
     "external_links": [
@@ -100,25 +97,17 @@ html_theme_options = {
             "icon": "fab fa-instagram",
         },
     ],
-    "navbar_center": [
-        "navbar-nav",
-    ],
-    "navbar_end": [
-        "search-field",
-        "navbar-icon-links",
-    ],
-    "navbar_persistent": [],
-    "navigation_with_keys": True,
-    "search_bar_text": "Search...",
-    "footer_start": ["copyright"],
-    "footer_end": ["last-updated"],
 }
 
 html_last_updated_fmt = "%Y-%m-%d"
 
-html_static_path = ["_static"]
 
 htmlhelp_basename = "acconeer-python-exploration-docs"
+
+
+#################
+# LaTeX Options #
+#################
 
 latex_elements = {
     "papersize": "a4paper",
