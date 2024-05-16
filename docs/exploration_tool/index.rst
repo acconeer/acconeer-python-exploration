@@ -21,9 +21,9 @@ It is freely downloaded and installed from `GitHub <https://github.com/acconeer/
    :caption: Getting started
    :hidden:
 
-   algo/index
    api/index
    file_format_ref/index
    Resource Calculator <resource_calc>
+   adding_your_own_plugin
    changelog
    faq

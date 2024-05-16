@@ -19,7 +19,7 @@ The main use for CSM is to allow reading out data at a slower rate than the swee
 
 Note that in most cases, :ref:`handbook-a121-control-db` must be enabled to allow high rates without delays.
 
-Examples of where CSM is used are the :doc:`Vibration measurement app</exploration_tool/algo/a121/examples/vibration>` and the :doc:`Phase tracking app</exploration_tool/algo/a121/examples/phase_tracking>`.
+Examples of where CSM is used are the :doc:`Vibration measurement app</example_apps/a121/vibration>` and the :doc:`Phase tracking app</example_apps/a121/phase_tracking>`.
 In both cases, it is desirable to have a continuous stream of sweeps at a fixed rate with a configurable frame rate.
 
 CSM is enabled through the sensor configuration parameter :attr:`~acconeer.exptool.a121.SensorConfig.continuous_sweep_mode`.

@@ -133,7 +133,7 @@ Preliminaries
 
 Let :math:`d_{est}(f, d)` be the estimated distance to a target located at distance :math:`d`,
 formed by processing frame :math:`f` in accordance with the steps outline in the
-:doc:`distance detector documentation</exploration_tool/algo/a121/detectors/distance_detection>`.
+:doc:`distance detector documentation</detectors/a121/distance_detection>`.
 :math:`f` is a single frame in a set of frames of size :math:`N_f`.
 
 Next, let :math:`e(f, d)=d_{est}(f, d) - d` be the estimation error of a single frame/measurement.

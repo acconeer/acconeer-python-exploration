@@ -2,8 +2,8 @@ Waste Level
 ===========
 
 This waste level example application uses the A121 radar sensor to measure the fill level in a waste bin.
-Some waste materials are bad reflectors, such as paper and plastic. Hence, the :doc:`Tank Level</exploration_tool/algo/a121/ref_apps/tank_level>` reference application,
-which is built on top of the :doc:`Distance Detector</exploration_tool/algo/a121/detectors/distance_detection>`,
+Some waste materials are bad reflectors, such as paper and plastic. Hence, the :doc:`Tank Level</ref_apps/a121/tank_level>` reference application,
+which is built on top of the :doc:`Distance Detector</detectors/a121/distance_detection>`,
 cannot be used as the received signal in this case does not typically yield a distinct peak.
 Instead, a metric based on the phase stability is utilized.
 

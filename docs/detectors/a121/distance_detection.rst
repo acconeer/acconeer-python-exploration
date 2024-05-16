@@ -223,7 +223,7 @@ The distances and the corresponding strengths are sorted according to the select
 In addition to the distances and strengths, the result also contains the boolean :attr:`~acconeer.exptool.a121.algo.distance._detector.DetectorResult.near_edge_status`.
 It indicates if an object is located close to start of the measurement range, but not resulting in a clear peak, but rather the tail of an envelope.
 The purpose of the boolean is to provide information in the case when an object is present, just outside of the measurement range.
-One example of when this becomes useful is the :doc:`Tank reference application</exploration_tool/algo/a121/ref_apps/tank_level>`, which is built on top of the distance detector.
+One example of when this becomes useful is the :doc:`Tank reference application</ref_apps/a121/tank_level>`, which is built on top of the distance detector.
 If the tank is overflowing, the peak might end up just outside of the measured interval, but the tail end of the envelope would still be observable.
 
 The result also contains the boolean :attr:`~acconeer.exptool.a121.algo.distance._detector.DetectorResult.calibration_needed`.

@@ -19,19 +19,19 @@ There are three main parts of a plugin:
 
 #. **Backend**: Defines functions needed by the backend to be able to send and receive data from the plugin
 
-    .. literalinclude:: ../../../../../examples/app/new/plugins/my_plugin.py
+    .. literalinclude:: ../../examples/app/new/plugins/my_plugin.py
         :language: python
         :lines: 95-123
 
 #. **View**: Defines the configuration view of the plugin
 
-    .. literalinclude:: ../../../../../examples/app/new/plugins/my_plugin.py
+    .. literalinclude:: ../../examples/app/new/plugins/my_plugin.py
         :language: python
         :lines: 126-152
 
 #. **Plot**: Defines what plots should be created and how data should be plotted
 
-    .. literalinclude:: ../../../../../examples/app/new/plugins/my_plugin.py
+    .. literalinclude:: ../../examples/app/new/plugins/my_plugin.py
         :language: python
         :lines: 155-206
 
@@ -39,13 +39,13 @@ To register the plugin in the App, two parts are needed:
 
 #. **PluginSpec**: Specification defining the different parts of the plugin
 
-    .. literalinclude:: ../../../../../examples/app/new/plugins/my_plugin.py
+    .. literalinclude:: ../../examples/app/new/plugins/my_plugin.py
         :language: python
         :lines: 209-232
 
 #. **Register function**: Register the plugin
 
-    .. literalinclude:: ../../../../../examples/app/new/plugins/my_plugin.py
+    .. literalinclude:: ../../examples/app/new/plugins/my_plugin.py
         :language: python
         :lines: 235-236
 
@@ -56,13 +56,13 @@ Plugin implementation is divided into two parts:
 
 #. **Processing**: Process Sparse IQ data to extract relevant information and send to plotting
 
-    .. literalinclude:: ../../../../../examples/app/new/plugins/my_plugin.py
+    .. literalinclude:: ../../examples/app/new/plugins/my_plugin.py
         :language: python
         :lines: 55-92
 
 #. **Plotting**: Plot data produced by the processor
 
-    .. literalinclude:: ../../../../../examples/app/new/plugins/my_plugin.py
+    .. literalinclude:: ../../examples/app/new/plugins/my_plugin.py
         :language: python
         :lines: 200-206
 

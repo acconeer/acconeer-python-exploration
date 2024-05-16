@@ -3,7 +3,12 @@
 
    handbook/index
    getting_started/index
+   use_cases
+   detectors/index
+   ref_apps/index
+   example_apps/index
    exploration_tool/index
+
    a111/index
 
 

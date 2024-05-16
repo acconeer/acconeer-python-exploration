@@ -1,7 +1,7 @@
 .. _a121_algorithms_examples:
 
-A121 Examples
-=============
+A121 Example Applications
+=========================
 
 An example shows what is possible with the A121 sensor and can be used in different use cases.
 New examples are added continuously.
