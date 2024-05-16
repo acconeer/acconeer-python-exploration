@@ -12,7 +12,6 @@ The *Handbook* provides in-depth information on a wide range of topics.
    :maxdepth: 1
    :hidden:
 
-   Overview <self>
    radar_principles
    physical_integration
    a111/index
