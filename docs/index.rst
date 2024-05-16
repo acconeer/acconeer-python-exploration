@@ -4,6 +4,7 @@
    handbook/index
    getting_started/index
    exploration_tool/index
+   a111/index
 
 
 .. figure:: /_static/acconeer_evk.png

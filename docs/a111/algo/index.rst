@@ -1,5 +1,5 @@
-A111 algorithms
-===============
+Algorithms
+==========
 
 .. toctree::
    :glob:

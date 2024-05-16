@@ -1,5 +1,5 @@
-File format reference - A111
-============================
+File format reference
+=====================
 
 This page explains the format of A111 data files saved from Exploration Tool using the GUI or recording module.
 

@@ -1,7 +1,7 @@
 .. _api-ref:
 
-API reference - A111
-====================
+API reference
+=============
 
 This page provides an auto-generated summary of Acconeer Exploration Tool's A111 API.
 
