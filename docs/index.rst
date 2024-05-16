@@ -1,3 +1,10 @@
+.. toctree::
+   :hidden:
+
+   handbook/index
+   exploration_tool/index
+
+
 .. figure:: /_static/acconeer_evk.png
     :align: center
     :width: 100%
@@ -43,12 +50,6 @@ For more inspiration, don't miss our |innovation_lab|, |demo_videos| and |applic
 .. |application_page| raw:: html
 
     <a href="https://www.acconeer.com/applications" target="_blank">application page</a>
-
-.. toctree::
-   :hidden:
-
-   handbook/index
-   exploration_tool/index
 
 .. grid:: 1 1 1 3
    :gutter: 4
