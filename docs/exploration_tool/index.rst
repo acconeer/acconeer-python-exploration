@@ -21,9 +21,6 @@ It is freely downloaded and installed from `GitHub <https://github.com/acconeer/
    :caption: Getting started
    :hidden:
 
-   installation_and_setup
-   running
-   evk_setup/index
    algo/index
    api/index
    file_format_ref/index

@@ -2,6 +2,7 @@
    :hidden:
 
    handbook/index
+   getting_started/index
    exploration_tool/index
 
 
