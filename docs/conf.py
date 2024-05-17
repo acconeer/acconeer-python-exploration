@@ -73,7 +73,7 @@ html_theme = "sphinx_book_theme"
 html_favicon = "_static/favicon.png"
 html_logo = "_static/logo.svg"
 html_static_path = ["_static"]
-html_css_files = ["custom.css"]
+html_css_files = ["css/custom.css"]
 
 html_theme_options = {
     "external_links": [

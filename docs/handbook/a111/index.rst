@@ -2,6 +2,8 @@ A111
 ====
 
 .. toctree::
+   :maxdepth: 1
+
    profiles
    typical_ranges
    config_overview

@@ -66,7 +66,7 @@ For more inspiration, don't miss our |innovation_lab|, |demo_videos| and |applic
 
       .. rst-class:: center
 
-      :octicon:`mortar-board;5em;sd-text-secondary;`
+      :octicon:`mortar-board;5em;sd-text-primary;`
 
       Already up and running and want to learn more?
       The *Handbook* provides in-depth information on a wide range of topics.
@@ -86,7 +86,7 @@ For more inspiration, don't miss our |innovation_lab|, |demo_videos| and |applic
 
       .. rst-class:: center
 
-      :octicon:`tools;5em;sd-text-secondary;`
+      :octicon:`tools;5em;sd-text-primary;`
 
       The *Exploration Tool* page covers information related to that project,
       such as API and file format reference.
@@ -106,7 +106,7 @@ For more inspiration, don't miss our |innovation_lab|, |demo_videos| and |applic
 
       .. rst-class:: center
 
-      :octicon:`archive;5em;sd-text-secondary;`
+      :octicon:`archive;5em;sd-text-primary;`
 
       Looking for software downloads and additional resources?
       Head over to the developer site.
