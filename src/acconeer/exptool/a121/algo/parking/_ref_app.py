@@ -86,13 +86,20 @@ class RefAppConfig(AlgoConfigBase):
     """End of measurement range (m)."""
 
     hwaas: int = attrs.field(default=32)
-    """HWAAS."""
+    """HWAAS. This parameter has an impact on the overall signal to noise ratio (SNR), low values
+    will yield a noisy signal and poorer performance, since the signature will vary more due to
+    noise variations."""
 
     profile: a121.Profile = attrs.field(default=a121.Profile.PROFILE_2, converter=a121.Profile)
-    """Profile."""
+    """Profile. This parameter determines the length of the pulse. If the range is within the so
+    called "direct leakage", the performance of the algorithm will deteriorate.
+    For close ranges (i.e. ground mounted applications), it is recommended to use profile 1 or 2.
+    For longer ranges, higher profiles should be used. The limitations that the range puts on
+    profile choices is implemented in the Exploration tool GUI and can be experimented
+    with there."""
 
     update_rate: float = attrs.field(default=10.0)
-    """Frame rate."""
+    """Update rate."""
 
     queue_length_n: int = attrs.field(default=5)
     """Number of consecutive samples stored."""
@@ -110,13 +117,17 @@ class RefAppConfig(AlgoConfigBase):
     """If obstruction detection should be active. This costs some extra battery power."""
 
     obstruction_distance_threshold: float = attrs.field(default=0.06)
-    """Distance in similarity space of obstruction signature to consider sensor obstructed."""
+    """Determines how large fraction of each dimension the obstruction measurement can vary without
+    considering the sensor obstructed. E.g. if the threshold is set to 0.06 and the range is
+    between 0.02 m and 0.05 m. The weighted distance part of the signature
+    can vary (0.05 m - 0.02 m) * 0.06 = 0.0018 m.
+    """
 
     obstruction_start_m: float = attrs.field(default=0.03)
-    """Start of obstruction detection range."""
+    """Start of obstruction detection range. The detection range should not intersect with the detection range for the main functionality."""
 
     obstruction_end_m: float = attrs.field(default=0.05)
-    """End of obstruction detection range."""
+    """End of obstruction detection range. The detection range should not intersect with the detection range for the main functionality."""
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> RefAppConfig:

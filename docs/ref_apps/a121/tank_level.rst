@@ -1,5 +1,5 @@
-Tank Level
-==========
+Tank Level Reference Application
+================================
 
 The tank level reference application shows the liquid level in a tank with an A121 sensor mounted at the top.
 This reference application is built on top of the distance detector (see :doc:`/detectors/a121/distance_detector`) with some additional configurations specific to the tank level application.

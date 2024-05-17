@@ -71,6 +71,7 @@ intra
 IoT
 iq
 jitter
+kB
 Kalman
 Keras
 kwargs
@@ -122,6 +123,7 @@ Softwares
 spacings
 standalones
 stds
+stdout
 subclassed
 subframe
 subframes

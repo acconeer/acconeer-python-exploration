@@ -1,5 +1,5 @@
-Breathing
-=========
+Breathing Reference Application
+===============================
 
 This reference application shows how the breathing rate of a stationary person can be estimated using the A121 sensor.
 

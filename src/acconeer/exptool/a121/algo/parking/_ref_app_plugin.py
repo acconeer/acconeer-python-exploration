@@ -613,7 +613,7 @@ class ViewPlugin(A121ViewPluginBase):
         return {
             pidgets.FlatPidgetGroup(): {
                 "update_rate": pidgets.FloatPidgetFactory(
-                    name_label_text="Frame rate:",
+                    name_label_text="Update rate:",
                     suffix=" Hz",
                     decimals=1,
                 ),

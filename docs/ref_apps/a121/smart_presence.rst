@@ -1,5 +1,5 @@
-Smart Presence
-==============
+Smart Presence Reference Application
+====================================
 
 Smart presence is based on the presence detector, see :ref:`exploration_tool-a121-presence_detection`.
 The algorithm divides the presence detection range into multiple zones.

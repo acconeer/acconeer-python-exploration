@@ -1,3 +1,5 @@
+.. _setting_up_et:
+
 #######################################
 Setting up and running Exploration Tool
 #######################################

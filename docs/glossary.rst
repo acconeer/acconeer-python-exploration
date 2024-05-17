@@ -4,11 +4,17 @@ Glossary
 
 .. glossary::
 
+   Direct leakage
+      Direct leakage refers to the transmission of the radar signal directly from the transmitter to the receiver without reflecting off a target. The length of the direct leakage varies with the transmitted pulse length. The transmitted pulse length is set using :term:`Profiles<Profile>`.
+
    PCR
       Pulsed Coherent Radar.
 
    PRF
       Pulse repetition frequency. The frequency at which the radar transmits wavelets.
+
+   Profile
+      Profiles are used to set the transmitted pulse length in discreet steps. The higher the Profile, the longer the transmitted pulse length.
 
    SNR
       Abbreviation of *Signal-to-noise ratio*.

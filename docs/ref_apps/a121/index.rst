@@ -15,6 +15,9 @@ Reference Applications
 
 .. toctree::
    :maxdepth: 1
-   :glob:
 
-   *
+   Breathing<breathing>
+   Parking<parking>
+   Smart Presence<smart_presence>
+   Tank Level<tank_level>
+   Touchless Button<touchless_button>
