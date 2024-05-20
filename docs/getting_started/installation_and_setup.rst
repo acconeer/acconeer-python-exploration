@@ -37,7 +37,7 @@ Run the following command in the newly created directory::
 
 Install Windows executable
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
-You can download an executable version of `Exploration Tool for Windows <https://developer.acconeer.com/download/portable_exploration_tool-zip/>`_.
+You can download an executable version of `Exploration Tool for Windows <https://developer.acconeer.com/download/portable_exploration_tool/>`_.
 
 Windows Setup
 -------------
