@@ -13,6 +13,10 @@
    a111/index
 
 
+.. only:: internal
+
+   .. include:: how_to_docs.rst
+
 .. figure:: /_static/acconeer_evk.png
     :align: center
     :width: 100%

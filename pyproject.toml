@@ -147,7 +147,7 @@ features = ["docs"]
 dependencies = ["sphinx_autobuild"]
 
 [tool.hatch.envs.docs.scripts]
-autobuild = 'python -m sphinx_autobuild -b html docs docs/_build --watch src'
+autobuild = 'python -m sphinx_autobuild -t internal -b html docs docs/_build --watch src'
 html = 'python -m sphinx -W -b html docs docs/_build'
 latexpdf = 'python -m sphinx -M latexpdf docs docs/_build'
 rediraffe-write = 'python -m sphinx -b rediraffewritediff docs docs/_build'

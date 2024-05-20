@@ -59,7 +59,7 @@ exclude_patterns = [
     "Thumbs.db",
     ".DS_Store",
     "README.md",
-    "how_to_docs.txt",
+    "how_to_docs.rst",
 ]
 
 pygments_style = None
