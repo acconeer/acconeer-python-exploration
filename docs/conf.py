@@ -5,9 +5,18 @@ project = "acconeer-python-exploration"
 copyright = "2019-2024, Acconeer AB"
 author = "Acconeer AB"
 html_title = "Acconeer docs"
+language = "en"
 
-# version = ""  # The short X.Y version
-# release = ""  # The full version, including alpha/beta/rc tags
+master_doc = "index"
+source_suffix = ".rst"
+
+exclude_patterns = [
+    "_build",
+    "Thumbs.db",
+    ".DS_Store",
+    "README.md",
+    "how_to_docs.rst",
+]
 
 extensions = [
     "sphinx.ext.mathjax",
@@ -24,18 +33,17 @@ suppress_warnings = [
     "ref.python",  # https://github.com/sphinx-doc/sphinx/issues/4961
 ]
 
-autodoc_member_order = "bysource"
+pygments_style = None
 
+
+########################## Extensions' configuration ###########################
+
+# autodoc
+autodoc_member_order = "bysource"
 autodoc_typehints_format = "short"
 python_use_unqualified_type_names = True
 
-graphviz_dot_args = [
-    "-Gfontname=sans-serif",
-    "-Efontname=sans-serif",
-    "-Nfontname=sans-serif",
-]
-graphviz_output_format = "svg"
-
+# extlinks
 extlinks = {
     "github_1a5d2c6": (
         "https://github.com/acconeer/acconeer-python-exploration/tree/"
@@ -44,29 +52,21 @@ extlinks = {
     ),
 }
 
+# graphviz
+graphviz_dot_args = [
+    "-Gfontname=sans-serif",
+    "-Efontname=sans-serif",
+    "-Nfontname=sans-serif",
+]
+graphviz_output_format = "svg"
+
+# rediraffe
 rediraffe_redirects = "redirects.txt"
 rediraffe_branch = "origin/master"
 rediraffe_auto_redirect_perc = 95
 
-source_suffix = ".rst"
 
-master_doc = "index"
-
-language = "en"
-
-exclude_patterns = [
-    "_build",
-    "Thumbs.db",
-    ".DS_Store",
-    "README.md",
-    "how_to_docs.rst",
-]
-
-pygments_style = None
-
-################
-# HTML Options #
-################
+############################# HTML Builder Options #############################
 
 html_theme = "sphinx_book_theme"
 
@@ -105,9 +105,7 @@ html_last_updated_fmt = "%Y-%m-%d"
 htmlhelp_basename = "acconeer-python-exploration-docs"
 
 
-#################
-# LaTeX Options #
-#################
+############################ LaTeX Builder Options #############################
 
 latex_elements = {
     "papersize": "a4paper",
