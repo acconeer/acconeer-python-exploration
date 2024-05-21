@@ -28,7 +28,7 @@ The resolution is determined by the number of samples in the time series, set by
 :attr:`~acconeer.exptool.a121.algo.surface_velocity._example_app.ExampleAppConfig.time_series_length`.
 By default, continuous sweep mode and double buffering are enabled.
 With continuous sweep mode, the interval between the last sweep in one frame and the first sweep in the following frame is the same as
-the interval between the sweeps in the frames, see :ref:`handbook-a121-csm`.
+the interval between the sweeps in the frames, see :ref:`rdac-a121-csm`.
 This makes it possible to create a time series that is longer than the number of sweeps per frame, giving good resolution with a high sweep rate.
 If the continuous sweep mode is not used, the time series length will be set to the number of sweeps per frame.
 

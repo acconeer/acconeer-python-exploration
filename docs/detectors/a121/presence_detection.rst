@@ -146,7 +146,7 @@ Inter-frame timeout
 
 Detailed description
 --------------------
-The sparse IQ service service returns data frames in the form of :math:`N_s` sweeps, each consisting of :math:`N_d` range distance points, see :ref:`handbook-a121-spf`.
+The sparse IQ service service returns data frames in the form of :math:`N_s` sweeps, each consisting of :math:`N_d` range distance points, see :ref:`rdac-a121-sweeps-and-frames`.
 We denote frames captured using the sparse IQ service as :math:`x(f,s,d)`, where :math:`f` denotes the frame index, :math:`s` the sweep index and :math:`d` the range distance index.
 
 Intra-frame detection basis

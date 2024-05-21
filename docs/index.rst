@@ -3,6 +3,7 @@
 
    handbook/index
    getting_started/index
+   radar_data_and_control/index
    use_cases
    detectors/index
    ref_apps/index

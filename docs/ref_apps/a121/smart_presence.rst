@@ -16,7 +16,7 @@ To increase the maximum number of zones without extending the range, the step si
 This will increase the number of sampling points at the cost of increased power consumption.
 To get better distance resolution for the triggered zones, the chosen profile can be decreased. However, it should be remembered that the chosen profile needs to be large enough to get sufficient SNR in the complete range.
 Furthermore, the pulse extends outside the chosen detection range, hence it is possible to detect presence slightly outside of the chosen range.
-The extended detection range is dependent on the profile and is bounded by twice the full width at half maximum envelope power, see :ref:`handbook-a121-fom-radial-resolution`.
+The extended detection range is dependent on the profile and is bounded by twice the full width at half maximum envelope power, see :ref:`rdac-a121-fom-radial-resolution`.
 
 Detection types
 ---------------

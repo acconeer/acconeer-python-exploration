@@ -1,4 +1,4 @@
-.. _handbook-a121-timing:
+.. _rdac-a121-timing:
 
 Timing
 ======
@@ -37,14 +37,14 @@ Overview
    *FO* and *SO* are the fixed overheads on frame and sweep level with duration :math:`C_f` and :math:`C_s` respectively.
    :math:`S_{i,j}` are subsweeps.
 
-.. _handbook-a121-timing-sample-dur:
+.. _rdac-a121-timing-sample-dur:
 
 Sample duration
 ---------------
 
 The time to measure a sample :math:`\tau_\text{sample}` is the *added* time per HWAAS for every single measured point.
 In most cases, this accounts for the largest part of the sensor measurement time.
-The sample duration :math:`\tau_\text{sample}` depends on the configured :ref:`profile <handbook-a121-profiles>` and :class:`PRF <acconeer.exptool.a121.PRF>` according to :numref:`tab_a121_sample_dur` below.
+The sample duration :math:`\tau_\text{sample}` depends on the configured :ref:`profile <rdac-a121-profiles>` and :class:`PRF <acconeer.exptool.a121.PRF>` according to :numref:`tab_a121_sample_dur` below.
 
 .. _tab_a121_sample_dur:
 .. table:: Approximate sample durations :math:`\tau_\text{sample}` for all profile and PRF :math:`f_p` combinations.

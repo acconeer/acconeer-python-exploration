@@ -1,11 +1,11 @@
-.. _handbook-a121-spf:
+.. _rdac-a121-sweeps-and-frames:
 
 Frames, sweeps and subsweeps
 ============================
 
 The sparse IQ service may be configured to perform several *sweeps* at a time in a so-called *frame*.
 Thus, every *frame* received from the sensor consists of a number of *sweeps*.
-Every sweep in turn consists of a number of *points* spanning the configured distance *range* (see :ref:`handbook-a121-range`).
+Every sweep in turn consists of a number of *points* spanning the configured distance *range* (see :ref:`rdac-a121-measurement-range`).
 
 Some examples of suitable applications for multiple sweeps per frame are detecting motions, measuring velocities, and tracking objects.
 

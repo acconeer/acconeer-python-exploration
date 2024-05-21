@@ -1,4 +1,4 @@
-.. _handbook-a121-range:
+.. _rdac-a121-measurement-range:
 
 Measurement range
 =================
@@ -54,7 +54,7 @@ Limitations
 
 The only limitation on the number of points :math:`N_d` itself is related to the available buffer size of 4095 complex numbers.
 The buffer usage is the number of points :math:`N_d` times the number of sweeps per frame :math:`N_s`
-(see :ref:`handbook-a121-spf`).
+(see :ref:`rdac-a121-sweeps-and-frames`).
 In short, :math:`N_d \cdot N_s \leq 4095`.
 
 The step length must be a divisor or multiple of 24.
@@ -98,7 +98,7 @@ The PRF also gives the
 the maximum range at which target can be located at while still guaranteeing that the reflected pulse corresponds to the most recent transmitted pulse.
 Again, the lower PRF, the longer MUR.
 
-See :ref:`handbook-a121-spf` on the PRF for more details.
+See :ref:`rdac-a121-sweeps-and-frames` on the PRF for more details.
 
 Caveats
 -------

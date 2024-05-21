@@ -113,7 +113,7 @@ The reflector strength characterize the reflectiveness of the detected object.
 The detector reports a strength number for each estimated distance.
 
 The strength is estimated using the RLG equation, peak amplitude, noise floor estimate and the sensor base RLG.
-More information on the RLG equation and base RLG can be found :ref:`here<handbook-a121-fom-rlg>`.
+More information on the RLG equation and base RLG can be found :ref:`here<rdac-a121-fom-rlg>`.
 
 The estimated strength is used by the detector when sorting the estimated distances according to their relative strengths.
 It can also be used by the application to infer information about a certain distance estimate.

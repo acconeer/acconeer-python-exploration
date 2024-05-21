@@ -10,7 +10,7 @@ This algorithm has an intended use of determining whether a stationary car is pr
 
 The measurement used for this algorithm is similar in nature to the measurement of the distance detector, which also detects (and reports distance to) static objects. However, this configuration is tailor made for the parking use case and designed with a power constraint in mind.
 
-The signatures are calculated from the mean sweep over a frame. For all sweeps, we only use the amplitude measurements for each depth, denoted with :math:`A(d)` (which is obtained by taking the absolute value of the sparseIQ data). The phase information is not used in this reference application. See :ref:`handbook-a121-spf` for more information about frames and sweeps.
+The signatures are calculated from the mean sweep over a frame. For all sweeps, we only use the amplitude measurements for each depth, denoted with :math:`A(d)` (which is obtained by taking the absolute value of the sparseIQ data). The phase information is not used in this reference application. See :ref:`rdac-a121-sweeps-and-frames` for more information about frames and sweeps.
 
 Integration Notes
 -----------------
@@ -94,7 +94,7 @@ The two last variables determine the range where we can detect obstruction: :att
 
 Sensor Settings
 ^^^^^^^^^^^^^^^
-There are three settings which correspond directly to the SparseIQ counterparts, for detailed description see: :ref:`handbook-a121-spf`. The most significant is the :attr:`~acconeer.exptool.a121.algo.parking._ref_app.RefAppConfig.update_rate`, for a battery driven application, this is the main factor behind the energy consumption.
+There are three settings which correspond directly to the SparseIQ counterparts, for detailed description see: :ref:`rdac-a121-sweeps-and-frames`. The most significant is the :attr:`~acconeer.exptool.a121.algo.parking._ref_app.RefAppConfig.update_rate`, for a battery driven application, this is the main factor behind the energy consumption.
 
 The :attr:`~acconeer.exptool.a121.algo.parking._ref_app.RefAppConfig.hwaas` parameter has an impact on the overall signal to noise ratio (SNR), low values will yield a noisy signal and poorer performance, since the signature will vary more due to noise variations.
 

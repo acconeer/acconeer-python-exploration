@@ -1,11 +1,11 @@
-.. _handbook-a121-fom:
+.. _rdac-a121-fom:
 
 Figure of Merits
 ================
 
 This page describes and defines Figure of Merits (FoM).
 
-.. _handbook-a121-fom-rlg:
+.. _rdac-a121-fom-rlg:
 
 Radar loop gain (RLG)
 ---------------------
@@ -65,10 +65,10 @@ and
 
 .. note::
 
-    Of the configuration parameters, RLG only depends on :ref:`profile <handbook-a121-profiles>` and HWAAS.
+    Of the configuration parameters, RLG only depends on :ref:`profile <rdac-a121-profiles>` and HWAAS.
     Excluding the configuration, RLG may vary on other factors such as per unit variations, temperature, and the hardware integration.
 
-.. _handbook-a121-fom-base-rlg:
+.. _rdac-a121-fom-base-rlg:
 
 Base RLG
 ^^^^^^^^
@@ -92,9 +92,9 @@ To account for it, we define the *radar loop gain per time (RLG/t)*:
     - 10 \log_{10}(\tau_\text{sample})
 
 where
-:math:`(\text{RLG}_\text{dB}\ |\ \text{HWAAS} = 1)` is the :ref:`base RLG<handbook-a121-fom-base-rlg>`,
+:math:`(\text{RLG}_\text{dB}\ |\ \text{HWAAS} = 1)` is the :ref:`base RLG<rdac-a121-fom-base-rlg>`,
 and
-:math:`\tau_\text{sample}` is the :ref:`sample duration<handbook-a121-timing-sample-dur>`.
+:math:`\tau_\text{sample}` is the :ref:`sample duration<rdac-a121-timing-sample-dur>`.
 
 .. note::
 
@@ -102,7 +102,7 @@ and
     Higher PRF:s have higher RLG/t,
     which are generally more efficient.
 
-.. _handbook-a121-fom-radial-resolution:
+.. _rdac-a121-fom-radial-resolution:
 
 Radial resolution
 -----------------

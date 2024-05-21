@@ -1,4 +1,4 @@
-.. _handbook-a121-control:
+.. _rdac-a121-control:
 
 Control
 =======
@@ -68,7 +68,7 @@ illustrated in :numref:`fig_a121_rate_set_delayed` below.
     For context, see :numref:`fig_a121_rate_set`.
 
 
-.. _handbook-a121-control-db:
+.. _rdac-a121-control-db:
 
 Double buffering
 ----------------
@@ -77,7 +77,7 @@ The A121 is capable of operating in a *double buffering* mode
 where two data buffers (A & B) are used to be able to read out data and measure at the same time.
 This feature is enabled by the configuration parameter
 :attr:`~acconeer.exptool.a121.SensorConfig.double_buffering`.
-Commonly used together with :ref:`handbook-a121-csm`.
+Commonly used together with :ref:`rdac-a121-csm`.
 Using this mode changes the control flow slightly,
 in that the sensor will be one frame measurement ahead of the host at all times.
 Other than that, the principles for rate control are the same.
@@ -90,5 +90,5 @@ Other than that, the principles for rate control are the same.
 
 Double buffering is typically used for one of two reasons:
 
-#. Enabling :ref:`handbook-a121-csm`, where the sensor timing is set up to generate a continuous stream of sweeps.
+#. Enabling :ref:`rdac-a121-csm`, where the sensor timing is set up to generate a continuous stream of sweeps.
 #. Giving the host more time to read out the data before a subsequent frame measurement.

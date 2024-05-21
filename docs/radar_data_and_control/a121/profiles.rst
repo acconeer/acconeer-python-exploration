@@ -1,4 +1,4 @@
-.. _handbook-a121-profiles:
+.. _rdac-a121-profiles:
 
 Profiles
 ========
