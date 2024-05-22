@@ -20,6 +20,7 @@ It is freely downloaded and installed from `GitHub <https://github.com/acconeer/
 .. toctree::
    :maxdepth: 1
 
+   example_scripts/index
    api/index
    file_format_ref/index
    Resource Calculator <resource_calc>

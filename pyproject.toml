@@ -167,9 +167,11 @@ dependencies = [
 [tool.hatch.envs.hatch-static-analysis.scripts]
 format-check = [
     "python -m ruff format --diff .",
+    "python docs/generate_example_script_pages.py check",
 ]
 format-fix = [
     "python -m ruff format .",
+    "python docs/generate_example_script_pages.py generate",
 ]
 lint-check = [
     "python tools/check_permissions.py",

@@ -13,7 +13,7 @@ Creating a plugin shell
 -----------------------
 Create a new Python file.
 
-To get started copy or closely follow the example in `my_plugin.py <https://github.com/acconeer/acconeer-python-exploration/tree/master/examples/app/new/plugins/my_plugin.py>`_.
+To get started, copy or closely follow the example in :doc:`my_plugin.py <example_scripts/app/examples-app-new-plugins-my_plugin>`.
 
 There are three main parts of a plugin:
 

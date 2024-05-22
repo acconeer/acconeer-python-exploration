@@ -248,38 +248,11 @@ After that, have a look at the functional overview below for an introduction of 
 Running Example Scripts
 =======================
 
-If you followed **Source Installation** in :ref:`installation-and-setup`,  you can
-view, edit, and run the examples under the ``examples/`` folder.
-If you followed **Python Package (PyPi)** you can download each example directly from `examples/ on GitHub <et_github_examples_>`_.
-
-Some examples are meant to be edited directly and does not support *command line arguments*, but most examples do.
-The majority of the examples can be run against our modules via a common set of command line arguments:
-
-.. tip::
-	The supported command line arguments can be seen in most examples by running::
-
-		python <some_example.py> --help
-
-A121 Examples' Command Line Arguments
--------------------------------------
-The examples in the ``examples/a121/`` folder support the common command line arguments::
-
-   python <some_example.py> --serial-port COMX
-   python <some_example.py> --ip-address <ip-address of, for example, a Raspberry Pi>
-   python <some_example.py> --usb-device
-
-A111 Examples' Command Line Arguments
--------------------------------------
-The examples in the ``examples/a111/`` folder support the common command line arguments::
-
-	python <some_example.py> --uart COMX
-	python <some_example.py> --socket <ip-address of, for example, a Raspberry Pi>
-
+See :ref:`python_api_example_scripts` section on how to get started with Example Scripts and the :doc:`Python API </exploration_tool/api/index>`.
 
 .. _dev_pdf_xe121_getting_started: https://developer.acconeer.com/download/getting-started-guide-a121-evk/?tmstv=1716368189
 .. _dev_pdf_xm125_getting_started: https://developer.acconeer.com/download/getting-started-guide-a121-xe125/?tmstv=1716368160
 .. _dev_pdf_xm126_getting_started: https://developer.acconeer.com/download/getting-started-guide-a121-xe126/?tmstv=1716368093
-.. _et_github_examples: https://github.com/acconeer/acconeer-python-exploration/tree/master/examples
 .. _et_github: https://github.com/acconeer/acconeer-python-exploration
 .. _et_pypi: https://pypi.org/project/acconeer-exptool
 .. _gh_docs_forks: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo
