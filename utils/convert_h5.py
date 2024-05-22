@@ -10,7 +10,7 @@ import json
 import os
 import typing as t
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Union, cast
+from typing import Dict, Tuple, Union, cast
 
 import h5py
 import numpy as np
@@ -111,11 +111,19 @@ class ConvertToCsvArgumentParser(argparse.ArgumentParser):
 
 class TableConverter:
     @abc.abstractmethod
-    def convert(self, sensor: int) -> npt.NDArray[t.Any]:
+    def convert(self, sensor: int) -> Union[npt.NDArray[t.Any], list[npt.NDArray[t.Any]]]:
         pass
 
     @abc.abstractmethod
     def get_metadata_rows(self, sensor: int) -> list[npt.NDArray[t.Any]]:
+        pass
+
+    @abc.abstractmethod
+    def get_environment(self) -> dict[str, t.Any]:
+        pass
+
+    @abc.abstractmethod
+    def get_configs(self, session_index: int) -> dict[str, t.Any]:
         pass
 
     @abc.abstractmethod
@@ -181,10 +189,30 @@ class A111RecordTableConverter(TableConverter):
 
         return np.array(dest_rows)
 
+    def get_environment(self) -> dict[str, t.Any]:
+        environment_dict = {
+            "RSS version": self._record.rss_version,
+            "acconeer.exptool library version": self._record.lib_version,
+            "Timestamp": self._record.timestamp,
+        }
+        return environment_dict
+
+    def get_configs(self, session_index: int = 0) -> dict[str, t.Any]:
+        session_info = self._record.session_info
+        config_dict = self.parse_config_dump(self._record.sensor_config_dump)
+        processing_config_dump = self._record.processing_config_dump or ""
+        processing_config_dict = self.parse_config_dump(processing_config_dump)
+
+        return {
+            **session_info,
+            **config_dict,
+            **processing_config_dict,
+        }
+
     def print_information(self, verbose: bool = False) -> None:
-        config_dump = self.parse_config_dump(self._record.sensor_config_dump)
+        config = self.get_configs()
         print("=== Session info " + "=" * 43)
-        for k, v in config_dump.items():
+        for k, v in config.items():
             print(f"{k:30} {v} ")
         print("=" * 60)
         print()
@@ -231,7 +259,7 @@ class A111RecordTableConverter(TableConverter):
 
         print("\n")
 
-        environtment_a111 = get_environment(record)
+        environtment_a111 = self.get_environment()
 
         for k, v in environtment_a111.items():
             print("{:.<37} {}".format(k + " ", v))
@@ -322,13 +350,73 @@ class A121RecordTableConverter(TableConverter):
 
         return np.array(rows)
 
-    def convert(self, sensor: int) -> npt.NDArray[t.Any]:
+    def get_environment(self) -> dict[str, t.Any]:
+        environment_dict = {
+            "RSS version": self._record.server_info.rss_version,
+            "Exptool version": self._record.lib_version,
+            "Timestamp": self._record.timestamp,
+            "UUID": self._record.uuid,
+        }
+        for session_index in range(self._record.num_sessions):
+            # Create a Pandas DataFrame from the data
+            environment_dict[f"Number of frames session {session_index}"] = str(
+                self._record.session(session_index).num_frames
+            )
+        return environment_dict
+
+    def get_configs(self, session_index: int = 0) -> dict[str, t.Any]:
+        group_configs = {}
+        subsweep_config_with_index: Dict[str, t.Any] = {}
+        sensor_config_with_index: Dict[str, t.Any] = {}
+        session_config = self._record.session(session_index).session_config
+        # Create DataFrames from configurations
+        for group_id, sensor_id, sensor_config in _core.utils.iterate_extended_structure(
+            session_config.groups
+        ):
+            sensor_config_with_index[f"group_id [{group_id}] sensor_id [{sensor_id}]"] = None
+            frame_rate = "Max" if sensor_config.frame_rate is None else sensor_config.frame_rate
+            sweep_rate = "Max" if sensor_config.sweep_rate is None else sensor_config.sweep_rate
+            group_configs = {
+                "sweep_rate": sweep_rate,
+                "frame_rate": frame_rate,
+            }
+            for key, value in sensor_config.to_dict().items():
+                if key == "subsweeps":
+                    continue  # subsweeps are extended below
+                else:
+                    sensor_config_with_index[f"{key} [{group_id}] [{sensor_id}]"] = value
+
+            for idx, subsweep in enumerate(sensor_config.subsweeps):
+                subsweep_config_with_index[f"SUBSWEEP INDEX [{idx}]"] = None
+                # Later will be converted to multiple subsweeps producing multiple rows in excel
+                for key, value in subsweep.to_dict().items():
+                    if key != "subsweeps":
+                        subsweep_config_with_index[f"{key} [{idx}]"] = value
+
+        update_rate = "Max" if session_config.update_rate is None else session_config.update_rate
+        configs = {
+            "extended": session_config.extended,
+            "update_rate": update_rate,
+        }
+        config_dict = {
+            **configs,
+            **group_configs,
+            **sensor_config_with_index,
+            **subsweep_config_with_index,
+        }
+        return config_dict
+
+    def convert(self, sensor: int) -> list[npt.NDArray[t.Any]]:
         """Converts data of a single sensor
 
         :param sensor: The sensor index
-        :returns: 2D NDArray of cell values.
+        :returns: list of 2D NDArray of cell values from every session.
         """
-        return self._get_sparse_iq(sensor)
+        sparse_iq_list = []
+        # Sensor results as a concatenate results of multiple or single configs
+        for session_index in range(self._record.num_sessions):
+            sparse_iq_list.append(self._get_sparse_iq(sensor, session_index=session_index))
+        return sparse_iq_list
 
     def get_metadata_rows(self, sensor: int) -> list[t.Any]:
         sensor_configs = self._unique_sensor_configs_of_sensor_id(sensor)
@@ -366,46 +454,16 @@ class A121RecordTableConverter(TableConverter):
             pprint(
                 self._record.session(session_index).extended_metadata
                 if extended
-                else self._record.metadata
+                else self._record.session(session_index).metadata
             )
 
-            environtment_a121 = get_environment(self._record)
+            environtment_a121 = self.get_environment()
+            print("environtment_a121 " + str(environtment_a121))
 
             for k, v in environtment_a121.items():
                 print("{:.<37} {}".format(k + " ", v))
 
             print("=" * 60)
-
-
-def get_environment(
-    record: Union[et.a111.recording.Record, a121.Record]
-) -> dict[str, Optional[str]]:
-    if isinstance(record, et.a111.recording.Record):
-        environment_dict = {
-            "RSS version": record.rss_version,
-            "acconeer.exptool library version": record.lib_version,
-            "Timestamp": record.timestamp,
-        }
-        return environment_dict
-
-    elif isinstance(record, a121.Record):
-        environment_dict = {
-            "RSS version": record.server_info.rss_version,
-            "Exptool version": record.lib_version,
-            "Timestamp": record.timestamp,
-            "UUID": record.uuid,
-        }
-        for session_index in range(record.num_sessions):
-            # Create a Pandas DataFrame from the data
-            environment_dict[f"Number of frames session {session_index}"] = str(
-                record.session(session_index).num_frames
-            )
-        return environment_dict
-    else:
-        raise TypeError(
-            f"Passed record ({record}) was of unexpected type."
-            f" actual {type(record)}, expected et.a111.recording.Record or a121.Record"
-        )
 
 
 def _check_files(
@@ -458,51 +516,6 @@ def get_default_sensor_id_or_index(namespace: argparse.Namespace, generation: st
         return int(namespace.sensor)
     except AttributeError:
         return 1 if generation == "a121" else 0
-
-
-def configs_as_dataframe(session_config: a121.SessionConfig) -> pd.DataFrame:
-    group_configs = {}
-    subsweep_config_with_index: Dict[str, t.Any] = {}
-    sensor_config_with_index: Dict[str, t.Any] = {}
-
-    # Create DataFrames from configurations
-    for group_id, sensor_id, sensor_config in _core.utils.iterate_extended_structure(
-        session_config.groups
-    ):
-        sensor_config_with_index[f"group_id [{group_id}] sensor_id [{sensor_id}]"] = None
-        frame_rate = "Max" if sensor_config.frame_rate is None else sensor_config.frame_rate
-        sweep_rate = "Max" if sensor_config.sweep_rate is None else sensor_config.sweep_rate
-        group_configs = {
-            "sweep_rate": sweep_rate,
-            "frame_rate": frame_rate,
-        }
-        for key, value in sensor_config.to_dict().items():
-            if key == "subsweeps":
-                continue  # subsweeps are extended below
-            else:
-                sensor_config_with_index[f"{key} [{group_id}] [{sensor_id}]"] = value
-
-        for idx, subsweep in enumerate(sensor_config.subsweeps):
-            subsweep_config_with_index[f"SUBSWEEP INDEX [{idx}]"] = None
-            # Later will be converted to multiple subsweeps producing multiple rows in excel
-            for key, value in subsweep.to_dict().items():
-                if key != "subsweeps":
-                    subsweep_config_with_index[f"{key} [{idx}]"] = value
-
-    update_rate = "Max" if session_config.update_rate is None else session_config.update_rate
-    configs = {
-        "extended": session_config.extended,
-        "update_rate": update_rate,
-    }
-
-    return pd.DataFrame(
-        {
-            **configs,
-            **group_configs,
-            **sensor_config_with_index,
-            **subsweep_config_with_index,
-        }.items()
-    )
 
 
 def get_processed_data(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
@@ -1232,29 +1245,40 @@ def main() -> None:
     print()
     dict_excel_file = {}
     if args.sweep_as_column:
-        sparse_iq_data = sparse_iq_data.T
+        if isinstance(sparse_iq_data, np.ndarray):
+            sparse_iq_data = [sparse_iq_data.T]
+        else:
+            sparse_iq_data = [np.transpose(arr) for arr in sparse_iq_data]
+
+    for index in range(len(sparse_iq_data)):
+        dict_excel_file[f"Sparse IQ data session {index}"] = pd.DataFrame(sparse_iq_data[index])
 
     # Create a Pandas DataFrame from the data
-    dict_excel_file = {"Sparse IQ data": pd.DataFrame(sparse_iq_data)}
     dict_excel_file["Metadata"] = pd.DataFrame(metadata_rows)
 
     if isinstance(record, a121.Record):
         for session_index in range(record.num_sessions):
             # Add configurations in excel
-            df_config = configs_as_dataframe(record.session(session_index).session_config)
-            dict_excel_file[f"Configurations session {session_index}"] = df_config
+            dict_config = table_converter.get_configs(session_index=session_index)
+            dict_excel_file[f"Configurations session {session_index}"] = pd.DataFrame(
+                dict_config.items()
+            )
+    else:
+        # Add configurations in excel
+        dict_config = table_converter.get_configs(session_index=0)
+        dict_excel_file["Configurations"] = pd.DataFrame(dict_config.items())
 
     # Create a Pandas DataFrame from the environtment
-    record_environtment = get_environment(record)
+    record_environtment = table_converter.get_environment()
     dict_excel_file["Environtment"] = pd.DataFrame(record_environtment.items())
 
     # Create a Pandas DataFrame from processed data
-    h5_file = h5py.File(str(input_file))
-    df_processed_data, df_app_config = get_processed_data(h5_file)
-    dict_excel_file["Application configurations"] = df_app_config
-    dict_excel_file["Processed data"] = df_processed_data
-
-    h5_file.close()
+    if isinstance(record, a121.Record):
+        h5_file = h5py.File(str(input_file))
+        df_processed_data, df_app_config = get_processed_data(h5_file)
+        dict_excel_file["Application configurations"] = df_app_config
+        dict_excel_file["Processed data"] = df_processed_data
+        h5_file.close()
     # Save the DataFrame to a CSV or excel file
     if output_suffix == ".xlsx":
         output_file = output_stem.with_suffix(output_suffix)
