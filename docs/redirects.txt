@@ -124,3 +124,5 @@
 "handbook/a121/signal_strength.rst" "radar_data_and_control/a121/signal_strength.rst"
 "handbook/a121/sweeps_and_frames.rst" "radar_data_and_control/a121/sweeps_and_frames.rst"
 "handbook/a121/timing.rst" "radar_data_and_control/a121/timing.rst"
+"getting_started/installation_and_setup.rst" "getting_started/setting_up_and_running_et.rst"
+"getting_started/running.rst" "getting_started/setting_up_and_running_et.rst"

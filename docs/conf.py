@@ -27,6 +27,8 @@ extensions = [
     "myst_parser",
     "sphinxext.rediraffe",
     "notfound.extension",
+    "sphinx_tabs.tabs",
+    "sphinxcontrib.youtube",
 ]
 
 suppress_warnings = [
@@ -64,6 +66,9 @@ graphviz_output_format = "svg"
 rediraffe_redirects = "redirects.txt"
 rediraffe_branch = "origin/master"
 rediraffe_auto_redirect_perc = 95
+
+# sphinx tabs
+sphinx_tabs_disable_tab_closing = True
 
 
 ############################# HTML Builder Options #############################
