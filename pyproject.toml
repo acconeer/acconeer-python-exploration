@@ -100,9 +100,9 @@ version-file = "src/acconeer/exptool/_version.py"
 features = ["app"]
 
 [tool.hatch.envs.app.scripts]
-launcher = "python -m acconeer.exptool.app"
-new = "python -m acconeer.exptool.app.new"
-old = "python -m acconeer.exptool.app.old"
+launcher = "python -m acconeer.exptool.app {args}"
+new = "python -m acconeer.exptool.app.new {args}"
+old = "python -m acconeer.exptool.app.old {args}"
 
 
 [tool.hatch.envs.mypy]
