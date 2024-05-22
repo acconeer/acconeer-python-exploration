@@ -20,6 +20,7 @@ import pandas as pd
 import acconeer.exptool as et
 import acconeer.exptool.a121.algo.breathing as breathing
 import acconeer.exptool.a121.algo.distance as distance
+import acconeer.exptool.a121.algo.hand_motion as hand_motion
 import acconeer.exptool.a121.algo.parking as parking
 import acconeer.exptool.a121.algo.phase_tracking as phase_tracking
 import acconeer.exptool.a121.algo.presence as presence
@@ -526,6 +527,7 @@ def get_processed_data(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
     load_algo_and_client: Dict[str, t.Callable[[h5py.File], Tuple[pd.DataFrame, pd.DataFrame]]] = {
         "breathing": get_processed_data_breathing,
         "distance_detector": get_processed_data_distance,
+        "hand_motion": get_processed_data_hand_motion,
         "parking": get_processed_data_parking,
         "phase_tracking": get_processed_data_phase_tracking,
         "presence_detector": get_processed_data_presence,
@@ -689,6 +691,61 @@ def get_processed_data_breathing(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.D
     df_processed_data = pd.DataFrame(
         {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
     )
+    return df_processed_data, df_algo_data
+
+
+def get_processed_data_hand_motion(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    processed_data_list = []
+    num_frames = 0
+    sensor_id, ModeHandlerConfig = hand_motion._mode_handler._load_algo_data(h5_file["algo"])
+
+    # Create DataFrames from configurations, sensor id, and detector context
+    df_sensor_id = pd.DataFrame(({"sensor_id": sensor_id}).items())
+    df_config = pd.DataFrame([[k, v] for k, v in ModeHandlerConfig.to_dict().items()])
+
+    # Concatenate along columns
+    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
+
+    # Client preparation
+    record = H5Record(h5_file)
+    client = _ReplayingClient(record, realtime_replay=False)
+    for session_index in range(record.num_sessions):
+        num_frames = num_frames + record.session(session_index).num_frames
+
+    aggregator = hand_motion.ModeHandler(
+        client=client,
+        sensor_id=sensor_id,
+        mode_handler_config=ModeHandlerConfig,
+    )
+
+    aggregator.start()
+
+    print("Press Ctrl-C to end session")
+    try:
+        for idx in range(num_frames):
+            processed_data = aggregator.get_next()
+
+            # Put the result in row
+            processed_data_row = hand_motion_result_as_row(processed_data=processed_data)
+            processed_data_list.append(processed_data_row)
+
+            # Print progressing time every 5%
+            print(f"... {idx / num_frames:.0%}") if (idx % int(0.05 * num_frames)) == 0 else None
+
+    except KeyboardInterrupt:
+        print("Conversion aborted")
+    else:
+        print("Processing data is finished. . .")
+
+    print("Disconnecting...")
+    client.close()
+
+    # Creates DataFrames from processed data and keys
+    keys = ["app_mode", "detection_state"]
+    df_processed_data = pd.DataFrame(
+        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
+    )
+
     return df_processed_data, df_algo_data
 
 
@@ -1193,6 +1250,13 @@ def distance_result_as_row(
             strengths.append(strength_result)
 
     return [distances, strengths]
+
+
+def hand_motion_result_as_row(processed_data: hand_motion.ModeHandlerResult) -> list[t.Any]:
+    app_mode = processed_data.app_mode
+    detection_state = processed_data.detection_state
+
+    return [app_mode, detection_state]
 
 
 def speed_result_as_row(processed_data: speed._detector.DetectorResult) -> list[t.Any]:
