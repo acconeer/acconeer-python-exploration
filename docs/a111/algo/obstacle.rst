@@ -42,7 +42,7 @@ With a sweep frequency :math:`f_s` and object velocity :math:`v_o`, the phase ch
 
     \Delta\phi = \frac{4v_o\pi}{f_s\lambda}
 
-Note that for Acconeers radar module
+Note that for Acconeer's radar module
 
 .. math::
     :label:

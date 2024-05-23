@@ -8,7 +8,7 @@ Measurement range
     The liquid level in the tank can be measured from a minimum distance of 3 cm from the sensor to a maximum distance of 20 m.
 
 Presets
-    The application includes three pre-defined configurations optimized for tanks of varying sizes: small, medium, and large, corresponding to depths of 50 cm, 6.0 m, and 20.0 m, respectively.
+    The application includes three predefined configurations optimized for tanks of varying sizes: small, medium, and large, corresponding to depths of 50 cm, 6.0 m, and 20.0 m, respectively.
 
 Configuration
     The configuration parameter :attr:`~acconeer.exptool.a121.algo.tank_level._ref_app.RefAppConfig.start_m` defines the distance from the sensor to the surface of the liquid when the tank is full.
@@ -35,7 +35,7 @@ Processing
 GUI
 ---
 The GUI includes three plots. The top left plot indicates the fluid level, and the top right plot shows the level history.
-The bottom plot shows the tank size, the subsweeps, and the threshold used by the distance detector to detect amplitude peaks in the subsweeps. The subsweeps and different threshold types are decribed in :doc:`Distance detector</detectors/a121/distance_detection>`.
+The bottom plot shows the tank size, the subsweeps, and the threshold used by the distance detector to detect amplitude peaks in the subsweeps. The subsweeps and different threshold types are described in :doc:`Distance detector</detectors/a121/distance_detection>`.
 
 .. image:: /_static/processing/a121_tank_level.png
     :align: center
@@ -60,12 +60,12 @@ Test equipment
     * FZP lens ( for medium and large tanks)
     * Small tank (height = 30 cm)
     * Test tank (height = 1.0 m)
-    * Exploration tool with Tank level refrence application
+    * Exploration tool with Tank level reference application
 
     A simple workaround is used to estimate the performance for the medium and the large tank, where the sensor is mounted at a height to have the water level in at a longer distance than the actual test tank size.
 
 Test case
-    Fill tank x cm and verfiy that the actual distance is equal to the measured distance.
+    Fill tank x cm and verify that the actual distance is equal to the measured distance.
 Configurations
     .. list-table:: Application parameter configurations
         :widths: 40 20 20 20

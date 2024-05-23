@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import enum
@@ -535,7 +535,7 @@ class EnvelopeServiceConfig(_MURCapable, BaseDenseServiceConfig):
         help=r"""
             The time smoothing factor for Envelope sweeps. With the running average factor
             larger than zero, consecutive sweeps are averaged using an exponential window
-            function. A runnning average factor of 0.0 corresponds to no time filtering of
+            function. A running average factor of 0.0 corresponds to no time filtering of
             sweeps and close to 1.0 results in more filtering.
 
             Envelope sweep number :math:`s` returned by RSS, :math:`E_s(r)`, is calculated from

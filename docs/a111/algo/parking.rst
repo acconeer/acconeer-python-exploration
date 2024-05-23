@@ -85,7 +85,7 @@ This is in order to generalize well for varying settings.
 
 The default configuration for parking detection uses Profile 2 and a sweep range that
 starts 12 cm from the sensor. This setting excludes direct leakage caused by radar waves
-travelling directly between the Tx and Rx antennas. There is also an an indirect leakage
+traveling directly between the Tx and Rx antennas. There is also an an indirect leakage
 of radar waves that bounce within the sensor casing. This form of leakage is very hard
 to avoid in typical sensor casing designs (for the above-mentioned settings). For this
 reason, the parking detection algorithm is designed to work as long as the leakage stays

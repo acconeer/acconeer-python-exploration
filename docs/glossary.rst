@@ -5,7 +5,7 @@ Glossary
 .. glossary::
 
    SNR
-      Abbrevation of *Signal-to-noise ratio*.
+      Abbreviation of *Signal-to-noise ratio*.
       General ratios quantify how much more there is of *one thing* (Signal in this case),
       compared to the *other thing* (noise). Generally, a high SNR means high signal quality.
 

@@ -69,7 +69,7 @@ Thresholds
 ----------
 
 To determine if any objects are present, the sweep is compared to a threshold.
-A peak is defined as a middle point that has greater amplitude than its two neighbouring points.
+A peak is defined as a middle point that has greater amplitude than its two neighboring points.
 For an object to be detected, it has to yield a peak where all three points are above the threshold.
 Three different thresholds can be employed, each suitable for different use-cases.
 
@@ -89,7 +89,7 @@ Recorded threshold
     Secondly, the threshold is formed by adding a number of standard deviations (the number is determined by the parameter :attr:`~acconeer.exptool.a121.algo.distance.DetectorConfig.threshold_sensitivity`) to the mean sweep.
     The recorded threshold has a built in temperature compensation, based on the internal temperature sensor.
 Constant False Alarm Rate (CFAR) threshold (default)
-    A final method to construct a threshold for a certain distance is to use the signal from neighbouring distances of the same sweep.
+    A final method to construct a threshold for a certain distance is to use the signal from neighboring distances of the same sweep.
     This requires that the object gives rise to a single strong peak, such as a fluid surface and not, for example, the level in a large waste container.
     The main advantage is that the memory consumption is minimal.
     The sensitivity of the threshold is controlled through :attr:`~acconeer.exptool.a121.algo.distance.DetectorConfig.threshold_sensitivity`.

@@ -85,5 +85,5 @@ Configuration summary
     Receiver gain      Adjust to accommodate received signal level.
     Repetition mode    On demand or Streaming.
     Update rate        Desired rate at which sweeps are generated [Hz] (in repetition mode Streaming).
-    Power save mode    Tradeoff between power consumption and rate and accuracy at which sweeps are generated.
+    Power save mode    Trade-off between power consumption and rate and accuracy at which sweeps are generated.
     ================== ==============================================================================================

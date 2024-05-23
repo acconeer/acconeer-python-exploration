@@ -10,7 +10,7 @@ Inter-frame deviation -- detecting (slower) movements *between* frames
    The inter-frame deviation is based on the deviation between the two filters.
 
 Intra-frame deviation -- detecting (faster) movements *inside* frames
-   For every frame and depth, the intra-frame devition is based on the deviation from the mean of the sweeps.
+   For every frame and depth, the intra-frame deviation is based on the deviation from the mean of the sweeps.
 
 Both the inter- and the intra-frame deviations are filtered both in time and depth. Also, to be more robust against changing environments and variations between sensors, a normalization is done against the noise floor. Finally, some simple processing is applied to generate the final output.
 
@@ -195,7 +195,7 @@ Let the deviation from the be mean be:
 
 where the first factor is a correction for the limited number of samples (sweeps).
 
-Then, let the low pass filtered (smoothened) version be:
+Then, let the low pass filtered (smoothed) version be:
 
 .. math::
    \bar{s}_\text{intra}(f, d) = \alpha_\text{intra} \cdot \bar{s}_\text{intra}(f-1, d) + (1 - \alpha_\text{intra}) \cdot s_\text{intra}(f, d)

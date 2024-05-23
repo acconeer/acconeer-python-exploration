@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ from acconeer.exptool._core.class_creation.attrs import attrs_ndarray_eq
 class Metadata:
     """Metadata
 
-    Represents a superset of the RSS ``processing_metadata``.
+    Represents a super set of the RSS ``processing_metadata``.
     """
 
     _frame_data_length: int = attrs.field()

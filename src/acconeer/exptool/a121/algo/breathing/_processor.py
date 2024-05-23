@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -258,7 +258,7 @@ class BreathingProcessor(ProcessorBase[BreathingProcessorResult]):
         num_points_to_analyze = self.end_point - self.start_point
         self.center_distance_idx = int(num_points_to_analyze / 2)
 
-        # Memory of iir filters.
+        # Memory of IIR filters.
         self.sparse_iq_buffer = np.zeros(
             shape=(self.b_static.size, num_points_to_analyze), dtype="complex128"
         )

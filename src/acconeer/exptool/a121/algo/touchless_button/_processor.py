@@ -39,7 +39,7 @@ class ProcessorConfig(AlgoProcessorConfigBase):
         converter=MeasurementType,
     )
     """The measurement type.
-    This decides which of the other paramteres to take into consideration.
+    This decides which of the other parameters to take into consideration.
     ``CLOSE_RANGE`` will apply the close range parameters onto the sweep.
     ``FAR_RANGE`` will apply the far range parameters onto the sweep.
     ``CLOSE_AND_FAR_RANGE`` will apply the parameters for close range onto the first subsweep and

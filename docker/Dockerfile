@@ -14,6 +14,7 @@ RUN apt-get update -qq \
         libasan5 \
         libdbus-1-3 \
         libegl1 \
+        libenchant-2-2 \
         libfontconfig1 \
         libgl1-mesa-glx \
         libtsan0 \

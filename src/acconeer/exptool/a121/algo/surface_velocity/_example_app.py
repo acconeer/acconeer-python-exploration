@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -94,7 +94,7 @@ class ExampleAppConfig(AlgoConfigBase):
     """Number of sweeps in the time series."""
 
     psd_lp_coeff: float = attrs.field(default=0.75)
-    """Filter coefficient for the exponential filter of psd over time."""
+    """Filter coefficient for the exponential filter of PSD over time."""
 
     cfar_sensitivity: float = attrs.field(default=0.15)
     """Sensitivity of the CFAR threshold. Low sensitivity will set a high threshold."""

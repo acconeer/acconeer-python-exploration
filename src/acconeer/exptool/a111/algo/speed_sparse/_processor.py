@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from enum import Enum
@@ -90,7 +90,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
             "windowed using a Hann window."
             "\nIn Bartlett's method there is no overlap between segments "
             "and the periodograms are not modified."
-            "\nWelch's method will result in lower variance and added complexity"
+            "\nWelch's method will result in lower variance and added complexity "
             "compared to Bartlett's method."
         ),
         order=12,

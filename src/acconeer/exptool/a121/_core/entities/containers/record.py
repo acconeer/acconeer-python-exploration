@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -153,7 +153,7 @@ class Record(SessionRecord):
 
     A Record also is a SessionRecord, but its session-related accessors
     (like results, session_config) will raise an error if this Record contains
-    multiple sessions/SessionRecords.
+    multiple sessions/:class:`SessionRecords`.
     """
 
     @property

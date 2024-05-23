@@ -14,7 +14,7 @@ A reflection occurs when there is a difference in relative permittivity between 
     \gamma=\left(\frac{\sqrt{\varepsilon_1}-\sqrt{\varepsilon_2}}{\sqrt{\varepsilon_1}+\sqrt{\varepsilon_2}}\right)^2
 
 where :math:`\varepsilon_1` and :math:`\varepsilon_2` is the relative permittivity, at 60 GHz, on either side of the boundary.
-Keep in mind that the relative permittivity is generally frequency dependent and may also vary depending on the exact material composiion and manufacturing process.
+Keep in mind that the relative permittivity is generally frequency dependent and may also vary depending on the exact material composition and manufacturing process.
 :numref:`tab_material` lists approximate values for the real part of the relative permittivity for some common materials.
 
 .. _tab_material:
@@ -60,4 +60,4 @@ It is seen that the objects can have different maximum RCS, but also different r
 
     Radiation pattern and analytical expressions for simple geometrical shapes.
 
-For most objects it is not possible to analytically calculate :math:`\sigma`, instead it needs to be measured or modelled.
+For most objects it is not possible to analytically calculate :math:`\sigma`, instead it needs to be measured or modeled.

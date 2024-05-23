@@ -117,11 +117,11 @@ class DetectorConfig(AlgoConfigBase):
     )
     """Sorting method of targets."""
     enable_close_proximity_detection: bool = attrs.field(default=False)
-    """Enable close proximity detection. Utilises the first subsweep to control the activity very close to the
+    """Enable close proximity detection. Utilizes the first subsweep to control the activity very close to the
      sensor. Extends the result with the flag ´close_proximity_trig´ which is ´True´ if an object
      suddenly appears close to the sensor. If ´subsweep_configurations´ is not set, then the detector
      will automatically add an additional subsweep for the close proximity functionality, otherwise
-     the first subsweep will be utilised. """
+     the first subsweep will be utilized. """
 
     dead_reckoning_duration_s: float = attrs.field(default=0.5)
     """Specify the duration (s) of the Kalman filter to perform dead reckoning before stop

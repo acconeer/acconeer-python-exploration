@@ -8,7 +8,7 @@ The algorithm consists of the following key concepts:
 - Determine the distance to the person using the presence algorithm.
 - Form a time series, reflecting the breathing motion over time.
 - Remove irrelevant signal content by applying a bandpass filter to the time series.
-- Estimate the breating rate by calculating the power spectrum of the time series.
+- Estimate the breathing rate by calculating the power spectrum of the time series.
 
 Each concept is explained in more detail in the following sections.
 
@@ -26,7 +26,7 @@ The presence processor is run for a configurable duration of time, determined by
 If no presence is detected during this period, a new measurement period is initiated.
 This procedure is repeated until a person is detected.
 
-When presence is detected, the corresponding distance estimates (outputed by the presence algorithm) are passed through a lowpass filter.
+When presence is detected, the corresponding distance estimates (outputted by the presence algorithm) are passed through a lowpass filter.
 The final output of the filter, after the configured duration has elapsed, is used as the distance to the person.
 
 Once the distance to the person has been determined, a sub-segment of the measured range is analyzed to estimate the breathing rate.
@@ -43,7 +43,7 @@ In this case, it is important to narrow the measured range to the interval where
 
 Form time series
 ----------------
-Once the segment to be analyzed has been identified, a fifo buffer is used to store the time series, characterizing the breathing motion at each distance in the segment.
+Once the segment to be analyzed has been identified, a FIFO buffer is used to store the time series, characterizing the breathing motion at each distance in the segment.
 
 The concept for estimating the breathing motion utilize processing, similar to what is described in the phase tracking example.
 For details, see the :doc:`phase tracking documentation</example_apps/a121/phase_tracking>`.
@@ -54,7 +54,7 @@ A displacement of the reflecting object results in a change of this relative pha
 The difference in phase between two consecutive measurements can therefor be converted to the corresponding relative change in distance to the reflecting object.
 The algorithm takes advantage of this by cumulating the relative changes in phase and thereby track the motion of the chest of the breathing person.
 
-The result is stored in the previously mentioned fifo buffer.
+The result is stored in the previously mentioned FIFO buffer.
 The length of the buffer depends on the selected time series length (:attr:`~acconeer.exptool.a121.algo.breathing._processor.BreathingProcessorConfig.time_series_length_s`),
 frame rate (:attr:`~acconeer.exptool.a121.algo.breathing._ref_app.RefAppConfig.frame_rate`).
 The number of buffers is determined by the number of distance to be analyzed
@@ -74,8 +74,8 @@ The breathing rate is estimated by identifying the peak location in the Power Sp
 
 As the frequency bins of the PSD are discrete, peak interpolation is utilized to further improve the estimation accuracy.
 
-The PSD is not calculated at each time step as the majority of the fifo buffer consists of the same data it did during the pervious time step.
-Instead, the PSD is analyzed once half ot the buffer contains new data, e.g., if the time series length is 20 s, there will be 10 s between evaluations of the PSD.
+The PSD is not calculated at each time step as the majority of the FIFO buffer consists of the same data it did during the previous time step.
+Instead, the PSD is analyzed once half of the buffer contains new data, e.g., if the time series length is 20 s, there will be 10 s between evaluations of the PSD.
 
 Application states
 ------------------
@@ -90,19 +90,19 @@ The state is returned as a part of the reference application result, :attr:`~acc
 
 GUI
 ---
-The following figure shows the Expolration tool GUI of the breathing reference application.
+The following figure shows the Exploration Tool GUI of the breathing reference application.
 
 The upper graph shows the inter and intra presence score.
 The highlighted section of the traces indicates the region where the breathing rate is being analyzed.
 
 The second graph shows the time series of the center point in the segment being analyzed.
-The neighbouring distances, also being analyzed, are not visualized to avoid cluttering the plot.
+The neighboring distances, also being analyzed, are not visualized to avoid cluttering the plot.
 
 Next, the third plot shows the power spectrum of the time series.
 The breathing rate is estimated as the peak location(plus interpolation as previously mentioned) of the PSD.
 
 Lastly, the lower plot shows the history of the estimated breathing rate.
-The solid blue line shows the estimated rate after each frame and the red dots show the output of the embedded implementation, outputing a new values when half of the buffer contains new data. Here, the person has an initial breathing rate of 12 bpm, transferring to a higher rate around 19 bpm.
+The solid blue line shows the estimated rate after each frame and the red dots show the output of the embedded implementation, outputting a new values when half of the buffer contains new data. Here, the person has an initial breathing rate of 12 bpm, transferring to a higher rate around 19 bpm.
 
 .. image:: /_static/processing/a121_breathing_gui.png
     :width: 600
@@ -121,7 +121,7 @@ This section outlines a number of recommendations when calibrating the reference
 - Once the sweeps per frame has been set, increase :attr:`~acconeer.exptool.a121.algo.breathing._ref_app.RefAppConfig.hwaas` to achieve better SNR.
 - If needed, the :attr:`~acconeer.exptool.a121.algo.breathing._ref_app.RefAppConfig.frame_rate` can be lowered from the default of 20 Hz to reduce the memory and power consumption. A suitable value for an embedded application is 5-10Hz.
 
-Use the pre-defined presets as a starting point and then tweak if necessary.
+Use the predefined presets as a starting point and then tweak if necessary.
 
 Practical considerations
 ------------------------

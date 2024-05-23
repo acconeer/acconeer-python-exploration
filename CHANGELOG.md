@@ -57,7 +57,7 @@ to get started!
 ### Added
 - Plugin title to plot area
 - Display filename of loaded data file
-- Hide unnecesary details in the status bar when not in the Streaming tab.
+- Hide unnecessary details in the status bar when not in the Streaming tab.
 - Resource calculator: Add input block renaming
 
 ## v7.7.3
@@ -112,7 +112,7 @@ to get started!
 
 ### Changed
 - Resource Calculator
-    - Power Curve average current is no longer dependant on "X-axis length"
+    - Power Curve average current is no longer dependent on "X-axis length"
     - Power Curve now displays average current in 10ths of uA when below 1 mA.
 
 ### Fixed
@@ -337,14 +337,14 @@ All examples have been updated accordingly.
 - Add auto-connect setting, found under advanced settings
 
 ### Changed
-- Rename Virutal button to Touchless button
+- Rename Virtual button to Touchless button
 
 ## v5.7.0
 
 ### Added
 - Separate changelog for unreleased changes
 - Frame count in status bar
-- Support for 15.6HMz PRF
+- Support for 15.6MHz PRF
 
 ### Fixed
 - Unplugging of USB device not detected
@@ -358,7 +358,7 @@ All examples have been updated accordingly.
 - A121: Plugin configuration presets
 
 ### Changed
-- Forbid setting up with 5.2HMz PRF if the connected server cannot handle that.
+- Forbid setting up with 5.2MHz PRF if the connected server cannot handle that.
 
 ### Fixed
 - A121 presence: Fix depth filter length so it never is bigger than
@@ -405,7 +405,7 @@ All examples have been updated accordingly.
 - Vibration measurement application
 
 ### Changed
-- Use USB communication when possible in linux
+- Use USB communication when possible in Linux
 - Simplify USB device selection in client
 
 ### Fixed
@@ -428,7 +428,7 @@ All examples have been updated accordingly.
 ### Fixed
 - A121 distance detector: Fix bug in CFAR calculation where num_stds was
   applied to full threshold.
-- A121 algo utils: remove prf 19.5 MHz for profile 2 in select_prf
+- A121 algo utils: remove PRF 19.5 MHz for profile 2 in `select_prf`
 
 ## v5.3.0
 
@@ -455,7 +455,7 @@ All examples have been updated accordingly.
 ## v5.2.9
 
 ### Fixed
-- A121 presence detector: set prf based on range
+- A121 presence detector: set PRF based on range
 - A121 presence detector: fix number of points calculation to include end range
 - A121 presence detector: set presence:distance to 0 when no presence detected
 - A121 distance detector: offset compensation bugfix
@@ -520,7 +520,7 @@ All examples have been updated accordingly.
 ## v5.2.3
 
 ### Fixed
-- A111: Unclear-ness in the Calibration management section.
+- A111: Unclearness in the Calibration management section.
   Users are now able see if calibrations are used by the processor or not.
 - A121 presence detector: Fix step_length bug when using profile 1.
 
@@ -567,7 +567,7 @@ All examples have been updated accordingly.
 ## v5.0.3
 
 ### Fixed
-- Fix version parsing for a111. Version string "a111-vx.x.x" is now
+- Fix version parsing for a111. Version string `"a111-vx.x.x"` is now
   handled properly.
 
 ## v5.0.2

@@ -2,7 +2,7 @@ Setting up Raspberry Pi for XC112/XR112
 =======================================
 
 .. note::
-   Altough discontinued, this guide applies to XC111/XR111 as well.
+   Although discontinued, this guide applies to XC111/XR111 as well.
 
 Overview
 --------

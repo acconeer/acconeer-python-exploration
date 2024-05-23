@@ -146,7 +146,8 @@ def get_distances_m(
 ) -> npt.NDArray[np.float_]:
     """
     Returns an array of all distances measured by the config.
-    The distances are returned in the same order as found in the result frame (acconeer.exptool.a121.Result.frame)
+    The distances are returned in the same order as found in the result frame
+    (:py:meth:`acconeer.exptool.a121.Result.frame`)
     """
 
     if isinstance(config, a121.SensorConfig):
@@ -186,7 +187,7 @@ def interpolate_peaks(
     step_length_m: float,
 ) -> Tuple[list[float], list[float]]:
     """Quadratic interpolation around a peak using the amplitudes of the peak and its two
-    neghbouring points.
+    neighboring points.
 
     Derivation:
     https://math.stackexchange.com/questions/680646/get-polynomial-function-from-3-points
@@ -237,7 +238,7 @@ def calculate_loopback_peak_location(result: a121.Result, config: a121.SensorCon
 def find_peaks(abs_sweep: npt.NDArray[np.float_], threshold: npt.NDArray[np.float_]) -> list[int]:
     """Identifies peaks above threshold.
 
-    A peak is defined as a point with greater value than its two neighbouring points and all
+    A peak is defined as a point with greater value than its two neighboring points and all
     three points are above the threshold.
 
     :param abs_sweep: Absolute value of mean sweep.
@@ -308,7 +309,7 @@ def get_temperature_adjustment_factors(
     The reference_amplitude_new is an approximation of what the calibrated amplitude
     would be at the new temperature.
 
-    Eg. When the temperature falls 60 degrees, the amplitude (roughly) doubles.
+    E.g. When the temperature falls 60 degrees, the amplitude (roughly) doubles.
     This yields a signal_adjustment_factor of (about) 2.
 
     The signal adjustment model is follows 2 ** (temperature_diff / model_parameter), where
@@ -335,7 +336,7 @@ def get_temperature_adjustment_factors(
 
 
 def get_distance_filter_coeffs(profile: a121.Profile, step_length: int) -> Any:
-    """Calculates the iir coefficients corresponding to a matched filter, based on the profile and
+    """Calculates the IIR coefficients corresponding to a matched filter, based on the profile and
     the step length.
     """
     wnc = APPROX_BASE_STEP_LENGTH_M * step_length / (ENVELOPE_FWHM_M[profile])

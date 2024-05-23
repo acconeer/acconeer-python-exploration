@@ -136,7 +136,7 @@ To maximize the sweep rate, set the inter sweep idle state to READY.
 The time it takes to transition from SLEEP/DEEP SLEEP to READY impacts the maximum achievable sweep and frame rate.
 More info regarding idle state transition times can be found :ref:`here<rdac-a121-timing>`.
 
-The wake-up time from HIBERNATE and OFF are integration dependent (SPI communication speed and crystal startup/stablization time) and has to be evaluated for each case.
+The wake-up time from HIBERNATE and OFF are integration dependent (SPI communication speed and crystal startup/stabilization time) and has to be evaluated for each case.
 As a rule of thumb, HIBERNATE should be used when the inter frame duration is longer than 15 ms and OFF when the duration is longer than 2 s.
 These states only affects the inter frame power consumption.
 The inter sweep idle state needs to be set through the sensor configuration.

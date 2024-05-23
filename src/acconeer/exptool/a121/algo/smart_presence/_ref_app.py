@@ -156,7 +156,7 @@ class RefAppResult:
     """Fast motion presence detection result for all zones."""
 
     max_intra_zone: Optional[int] = attrs.field()
-    """The zone for maximum fast motion presence score if fast presence detecte, else None."""
+    """The zone for maximum fast motion presence score if fast presence detected, else None."""
 
     used_config: _Mode = attrs.field()
     """The configuration used for the measurement."""

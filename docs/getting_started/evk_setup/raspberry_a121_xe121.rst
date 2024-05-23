@@ -17,7 +17,7 @@ Setup
 -----
 Start a terminal window and type ``sudo raspi-config``, then:
 
-* In Localisation Options, select the appropriate timezone.
+* In Localization Options, select the appropriate timezone.
 * In Interfacing Options, enable SPI and I2C and the SSH interfaces.
 
 Install libgpio2 by running::

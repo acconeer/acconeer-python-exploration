@@ -49,10 +49,10 @@ GUI
 In the GUI, the fast and slow presence score together with their respective threshold is displayed for easy adjustments.
 The detection zones are displayed in a circle sector.
 When wake up mode is enabled, two circle sectors are displayed, one representing the wake up configuration and one representing the nominal configuration.
-Green background indicates whitch configuration that is currently active.
+Green background indicates which configuration that is currently active.
 The zones will be colored with different colors showing detection and detection type.
 Blue indicates slow motion detection, orange indicates fast motion detection and green indicates that both have detection.
-Light grey is an additional color for the wake up configuration. It represents the two seconds lingering detection of a zone that has lost its detection, see section :ref:`wake_up_mode_section` for more information.
+Light gray is an additional color for the wake up configuration. It represents the two seconds lingering detection of a zone that has lost its detection, see section :ref:`wake_up_mode_section` for more information.
 In the circle sector for the nominal configuration, it is possible to have only the distance with the maximum presence score displayed or to display all detected zones.
 
 The upper plots in the example in :numref:`smart_presence_gui` show that fast motions are not detected, and slow motions are detected.
@@ -287,7 +287,7 @@ Results
 
     Person detected in the middle detection zone with nominal configuration.
 
-.. list-table:: Smart presence test results for test cases 5-8. Presence was detected and cofiguration changed successfully for all test cases.
+.. list-table:: Smart presence test results for test cases 5-8. Presence was detected and configuration changed successfully for all test cases.
    :widths: 25 25 25
    :header-rows: 1
 

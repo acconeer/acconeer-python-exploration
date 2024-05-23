@@ -67,7 +67,7 @@ See :numref:`tab_a121_steplen` for an overview.
     :widths: auto
 
     +--------------------------+----------+--------------------------+----------+
-    | Step length                         | Step length cont'd                  |
+    | Step length                         | Step length continued               |
     +--------------------------+----------+--------------------------+----------+
     | Setting :math:`\Delta d` | Distance | Setting :math:`\Delta d` | Distance |
     +==========================+==========+==========================+==========+

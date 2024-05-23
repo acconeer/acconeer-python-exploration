@@ -10,7 +10,7 @@ This algorithm has an intended use of determining whether a stationary car is pr
 
 The measurement used for this algorithm is similar in nature to the measurement of the distance detector, which also detects (and reports distance to) static objects. However, this configuration is tailor made for the parking use case and designed with a power constraint in mind.
 
-The signatures are calculated from the mean sweep over a frame. For all sweeps, we only use the amplitude measurements for each depth, denoted with :math:`A(d)` (which is obtained by taking the absolute value of the sparseIQ data). The phase information is not used in this reference application. See :ref:`rdac-a121-sweeps-and-frames` for more information about frames and sweeps.
+The signatures are calculated from the mean sweep over a frame. For all sweeps, we only use the amplitude measurements for each depth, denoted with :math:`A(d)` (which is obtained by taking the absolute value of the Sparse IQ data). The phase information is not used in this reference application. See :ref:`rdac-a121-sweeps-and-frames` for more information about frames and sweeps.
 
 Integration Notes
 -----------------
@@ -61,7 +61,7 @@ In addition to the parking detection, the algorithm also has a component called 
 Measurement Range and Presets
 ------------------------------
 
-The lower bound for the range is limited to 0.15 m, which ensures that the measurement is outside the direct leakage, which can interfere with detection. The upper limit is set to 5 m due to usage of the standard prf (15.6 MHz).
+The lower bound for the range is limited to 0.15 m, which ensures that the measurement is outside the direct leakage, which can interfere with detection. The upper limit is set to 5 m due to usage of the standard PRF (15.6 MHz).
 
 We have two main presets, one for where the sensor is located close to the car (typically ground or curb mounted) and looking up at the car. And one for when the sensor is looking at the car at a longer range (typically the case of a pole mounted sensor) and looking at the car from the side or slightly downwards. These two presets are aptly named "Ground" and "Pole" mounted. There is also a preset called "Ground_Low_Energy" which is intended to reflect a case with high focus on power requirements optimization.
 
@@ -69,13 +69,13 @@ Note that these settings are intended to reflect a "best practice", the settings
 
 Configuration
 --------------
-The most basic configuration parameters for the reference application is the range settings (:attr:`~acconeer.exptool.a121.algo.parking._ref_app.RefAppConfig.range_start_m` and :attr:`~acconeer.exptool.a121.algo.parking._ref_app.RefAppConfig.range_end_m`). These determine the approximate range from the sensor wherein we expect to find a part of a car. Note that it is detrimental to the performace to let the range be to close to the sensor, it is not recommended to set the :attr:`~acconeer.exptool.a121.algo.parking._ref_app.RefAppConfig.range_start_m` closer than the direct leakage allows, which is constricted in Exploration tool as well. If an object is blocking the sensor, even if the range setting is beyond it, it will still affect the signal.
+The most basic configuration parameters for the reference application is the range settings (:attr:`~acconeer.exptool.a121.algo.parking._ref_app.RefAppConfig.range_start_m` and :attr:`~acconeer.exptool.a121.algo.parking._ref_app.RefAppConfig.range_end_m`). These determine the approximate range from the sensor wherein we expect to find a part of a car. Note that it is detrimental to the performance to let the range be to close to the sensor, it is not recommended to set the :attr:`~acconeer.exptool.a121.algo.parking._ref_app.RefAppConfig.range_start_m` closer than the direct leakage allows, which is constricted in Exploration tool as well. If an object is blocking the sensor, even if the range setting is beyond it, it will still affect the signal.
 
 Ref App Parameters
 ^^^^^^^^^^^^^^^^^^
 This section contains all parameters that directly pertain to the reference application functionality.
 
-The :attr:`~acconeer.exptool.a121.algo.parking._ref_app.RefAppConfig.queue_length_n` parameter sets how many consecutive detections above the threshold that is needed to report a parked car. Note that this behaviour is closely related to the update rate, with a high update rate, it is natural to increase the number of required detections for parking detection.
+The :attr:`~acconeer.exptool.a121.algo.parking._ref_app.RefAppConfig.queue_length_n` parameter sets how many consecutive detections above the threshold that is needed to report a parked car. Note that this behavior is closely related to the update rate, with a high update rate, it is natural to increase the number of required detections for parking detection.
 
 The :attr:`~acconeer.exptool.a121.algo.parking._ref_app.RefAppConfig.amplitude_threshold` determines how many times the noise level the amplitude level needs to be in order to consider the signature as detected.
 
@@ -111,7 +111,7 @@ In general, it is better to calibrate the sensor as close as possible to operati
 
 Temperature
 ^^^^^^^^^^^
-The SNR is dependent on the sensor temperature, this relationship is modelled in the algorithm and compensated for. The general rule is that the SNR increases in lower temperatures and decreases with increased temperatures. However, this is based on the temperature during calibration. So for optimal performance, the calibration temperature should be as close to operating conditions as possible.
+The SNR is dependent on the sensor temperature, this relationship is modeled in the algorithm and compensated for. The general rule is that the SNR increases in lower temperatures and decreases with increased temperatures. However, this is based on the temperature during calibration. So for optimal performance, the calibration temperature should be as close to operating conditions as possible.
 
 Results
 ---------

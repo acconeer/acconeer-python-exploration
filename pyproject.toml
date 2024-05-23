@@ -76,6 +76,7 @@ docs = [
     "sphinx-book-theme==1.1.2",
     "sphinx-tabs",
     "sphinxcontrib-youtube",
+    "sphinxcontrib-spelling",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -150,7 +151,8 @@ dependencies = ["sphinx_autobuild"]
 
 [tool.hatch.envs.docs.scripts]
 autobuild = 'python -m sphinx_autobuild -t internal -b html docs docs/_build --watch src'
-html = 'python -m sphinx -W -b html -b linkcheck docs docs/_build'
+html = 'python -m sphinx -W -b html -b linkcheck -b spelling docs docs/_build'
+spelling = 'python -m sphinx -W -b spelling docs docs/_build'
 latexpdf = 'python -m sphinx -M latexpdf docs docs/_build'
 rediraffe-write = 'python -m sphinx -b rediraffewritediff docs docs/_build'
 rediraffe-check = 'python -m sphinx -b rediraffecheckdiff docs docs/_build'

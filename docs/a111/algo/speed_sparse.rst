@@ -33,12 +33,12 @@ The speed estimation algorithm is based on the power spectral density of the rad
 
 The estimation is carried out by dividing the sweeps for each distance into segments, then forming a windowed periodogram of each segment and averaging all segments together.
 
-The *m*:th windowed and zero-padded segement from the signal *x* can be denoted by
+The *m*:th windowed and zero-padded segment from the signal *x* can be denoted by
 
 .. math::
    x_m(n) \triangleq w(n)x(n+mR), \; \; n=0, 1 ... M-1, \;\; m=0, 1, .., K-1
 
-where *R* is defined as the segment size, :math:`w(n)` is defined as the window function and *K* is defined as the number of segments. The periodogram of the *m* th segment is given by
+where *R* is defined as the segment size, :math:`w(n)` is defined as the window function and *K* is defined as the number of segments. The periodogram of the *m*:th segment is given by
 
 .. math::
    P_{x_m,M}(w_k) = \frac{1}{M}|\text{FFT}_{N,k}(x_m)|² \triangleq \frac{1}{M}\left | \sum_{n=0}^{N-1} x_m(n)e^{-j2\pi nk/N}\right |^2

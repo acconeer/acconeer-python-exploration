@@ -7,7 +7,7 @@ Radar sensor performance metrics (RSPMs) for the Acconeer radar system provides 
 Radar loop gain
 ---------------
 
-The SNR can be modelled as a function of a limited number of parameters: the RCS of the object (:math:`\sigma`), the distance to the object (:math:`R`), the reflectivity of the object (:math:`\gamma`), and a radar sensor dependent constant referred to as radar loop gain (:math:`C`). The SNR (in dB) is then given by
+The SNR can be modeled as a function of a limited number of parameters: the RCS of the object (:math:`\sigma`), the distance to the object (:math:`R`), the reflectivity of the object (:math:`\gamma`), and a radar sensor dependent constant referred to as radar loop gain (:math:`C`). The SNR (in dB) is then given by
 
 .. math::
     :label: eq_radar_eq

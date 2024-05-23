@@ -34,6 +34,13 @@ and a handful of extensions (plugins).
 
 All of this is configured in the file ``docs/conf.py``.
 
+Spell checking
+==============
+
+We run spell checks using `sphinxcontrib-spelling <https://sphinxcontrib-spelling.readthedocs.io/en/latest/index.html>`_.
+The supplementary wordlist can be found in ``docs/spelling_wordlist.txt``
+
+
 *****************************
 Reference-/Learning Resources
 *****************************

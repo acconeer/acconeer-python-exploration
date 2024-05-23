@@ -25,7 +25,7 @@ Since the sweep frequency determines the time (T_s) between the sampled points, 
 
    How phase changing over time can be interpreted as a frequency.
 
-The DFT is calculated on the sweeps in each frame, so the :attr:`~acconeer.exptool.a121.algo.speed._detector.DetectorConfig.num_bins` directly correlates to how many frequency bins we have in the DFT. Therefore, the :attr:`~acconeer.exptool.a121.algo.speed._detector.DetectorConfig.num_bins` variable naturally lets us set the resolution of the output values. A good model to imagine is that we divide the [-:attr:`~acconeer.exptool.a121.algo.speed._detector.DetectorConfig.max_speed`, :attr:`~acconeer.exptool.a121.algo.speed._detector.DetectorConfig.max_speed`] interval into a number of evenly spaced points, correspoinding to the :attr:`~acconeer.exptool.a121.algo.speed._detector.DetectorConfig.num_bins` parameter, these points defines which values can be reported by the detector.
+The DFT is calculated on the sweeps in each frame, so the :attr:`~acconeer.exptool.a121.algo.speed._detector.DetectorConfig.num_bins` directly correlates to how many frequency bins we have in the DFT. Therefore, the :attr:`~acconeer.exptool.a121.algo.speed._detector.DetectorConfig.num_bins` variable naturally lets us set the resolution of the output values. A good model to imagine is that we divide the [-:attr:`~acconeer.exptool.a121.algo.speed._detector.DetectorConfig.max_speed`, :attr:`~acconeer.exptool.a121.algo.speed._detector.DetectorConfig.max_speed`] interval into a number of evenly spaced points, corresponding to the :attr:`~acconeer.exptool.a121.algo.speed._detector.DetectorConfig.num_bins` parameter, these points defines which values can be reported by the detector.
 
 As an example, assume that we have a :attr:`~acconeer.exptool.a121.algo.speed._detector.DetectorConfig.max_speed` of 10 m/s and :attr:`~acconeer.exptool.a121.algo.speed._detector.DetectorConfig.num_bins` is set to 3 (which is a very low value). This means that the only speeds that can be reported by the detector is -10 m/s, 0 m/s and 10 m/s, where the sign indicates whether the object is moving towards or away from the sensor.
 
@@ -35,11 +35,11 @@ Implementation
 
 Welch's method
 ^^^^^^^^^^^^^^
-The DFT is implemented using the welch method directly on each frame with no overlap (then also called Bartlett's method) and a segment length of 1/4 of the number of sweeps. This is already accounted for in the adjustment of the parameter ":attr:`~acconeer.exptool.a121.algo.speed._detector.DetectorConfig.num_bins`", so the number of samples will actually be 4 times :attr:`~acconeer.exptool.a121.algo.speed._detector.DetectorConfig.num_bins`. For example, if we set :attr:`~acconeer.exptool.a121.algo.speed._detector.DetectorConfig.num_bins` to 300, each frame will consist of 1200 sweeps, with a sweep rate depending on the :attr:`~acconeer.exptool.a121.algo.speed._detector.DetectorConfig.max_speed` parameter.
+The DFT is implemented using Welch's method directly on each frame with no overlap (then also called Bartlett's method) and a segment length of 1/4 of the number of sweeps. This is already accounted for in the adjustment of the parameter ":attr:`~acconeer.exptool.a121.algo.speed._detector.DetectorConfig.num_bins`", so the number of samples will actually be 4 times :attr:`~acconeer.exptool.a121.algo.speed._detector.DetectorConfig.num_bins`. For example, if we set :attr:`~acconeer.exptool.a121.algo.speed._detector.DetectorConfig.num_bins` to 300, each frame will consist of 1200 sweeps, with a sweep rate depending on the :attr:`~acconeer.exptool.a121.algo.speed._detector.DetectorConfig.max_speed` parameter.
 
 Threshold
 ^^^^^^^^^
-The frequency component with the highest amplitude is compared against a threshold based on the median value of the whole frequency spectra. If the max value is above the threshold, the point is interpolated using the neighbouring points to find a max value. The threshold is computed by taking a constant multiplied with the median value. In :numref:`threshold` we use a threshold value of 100, taken from the default preset in the exploration tool.
+The frequency component with the highest amplitude is compared against a threshold based on the median value of the whole frequency spectra. If the max value is above the threshold, the point is interpolated using the neighboring points to find a max value. The threshold is computed by taking a constant multiplied with the median value. In :numref:`threshold` we use a threshold value of 100, taken from the default preset in the exploration tool.
 
 .. _threshold:
 .. figure:: /_tikz/res/a121/speed/max_thresholds.png
@@ -78,7 +78,7 @@ Several of the detector parameters are automatically configured, unless the over
 
 **Frame rate**
 
-    This is not automatically set anywhere, since it is dependant on the sweeps per frame, sweep rate and HWAAS, it will be adjusted to the max possible value according to that. As with the sweep rate, it is recommended to not adjust this manually.
+    This is not automatically set anywhere, since it is dependent on the sweeps per frame, sweep rate and HWAAS, it will be adjusted to the max possible value according to that. As with the sweep rate, it is recommended to not adjust this manually.
 
 **HWAAS**
 
@@ -86,11 +86,11 @@ Several of the detector parameters are automatically configured, unless the over
 
 **Number of bins**
 
-    This parameter is very important for the performance of the detector. A high value will allow for better precision of the output, the tradeoff is that more bins will require more sweeps to be collected, which will affect the HWAAS and frame rate. There is also a hard limit on the number of bins that is set by a buffer size on the chip.
+    This parameter is very important for the performance of the detector. A high value will allow for better precision of the output, the trade-off is that more bins will require more sweeps to be collected, which will affect the HWAAS and frame rate. There is also a hard limit on the number of bins that is set by a buffer size on the chip.
 
 **Max speed**
 
-    The other main parameter to adjust, this defines the max speed that is detectable by the detector. The interpolation makes this a truth with modification, but in general, this should be seen as a limit on what speed the detector can detect. Set this to a speed that is slightly higher than what you expect to measure, just setting it as high as possible will likely yield an incorrect and sluggish behaviour.
+    The other main parameter to adjust, this defines the max speed that is detectable by the detector. The interpolation makes this a truth with modification, but in general, this should be seen as a limit on what speed the detector can detect. Set this to a speed that is slightly higher than what you expect to measure, just setting it as high as possible will likely yield an incorrect and sluggish behavior.
 
 **Detection threshold**
 
@@ -109,7 +109,7 @@ Traffic
 ^^^^^^^
 Continuing with the other preset, *traffic*. Here we have a longer range, which almost certainly will need adjustment when looking at a road. When aiming the sensor at cars passing by, we notice that we can not only measure the speed, but also that we see a gap between measurements. Combining the information of the time gap between *new* detections, with the speed of the detected object we can also get a good estimate of the distance between the cars.
 
-Another thing to notice when aiming the sensor at a road is that we only measure the speed component towards the sensor. If we have an angle between the sensor and the road (which is usually the case, since measuring straight ahead would require a position on the road), we will observe a lower speed that the object is travelling at. See more information here: `Cosine error effect <https://copradar.com/chapts/chapt2/ch2d1.html>`_.
+Another thing to notice when aiming the sensor at a road is that we only measure the speed component towards the sensor. If we have an angle between the sensor and the road (which is usually the case, since measuring straight ahead would require a position on the road), we will observe a lower speed that the object is traveling at. See more information here: `Cosine error effect <https://copradar.com/chapts/chapt2/ch2d1.html>`_.
 
 
 Further reading:

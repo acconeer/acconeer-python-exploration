@@ -1127,13 +1127,13 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         )
 
         # No neighbours if no close range measurement or transition groups defined.
-        has_neighbouring_subsweep = (
+        has_neighboring_subsweep = (
             MeasurementType.CLOSE_RANGE in plans or len(transition_subgroup_plans) != 0
         )
 
         # Define group plans with max profile
         max_profile_subgroup_plans = cls._get_max_profile_group_plans(
-            config, min_dist_m, has_neighbouring_subsweep, num_remaining_subsweeps
+            config, min_dist_m, has_neighboring_subsweep, num_remaining_subsweeps
         )
 
         far_subgroup_plans = transition_subgroup_plans + max_profile_subgroup_plans
@@ -1232,7 +1232,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         cls,
         config: DetectorConfig,
         min_dist_m: Dict[a121.Profile, float],
-        has_neighbouring_subsweep: bool,
+        has_neighboring_subsweep: bool,
         num_remaining_subsweeps: int,
     ) -> list[SubsweepGroupPlan]:
         """Define far range group plans with max_profile
@@ -1267,7 +1267,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                     config.max_profile,
                     config,
                     breakpoints_m,
-                    (has_neighbouring_subsweep, False),
+                    (has_neighboring_subsweep, False),
                     False,
                 )
             ]
@@ -1383,7 +1383,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         Add points to segment edges based on their position.
 
         1. Add one margin to each segment for distance filter initialization
-        2. Add an additional margin to segments with neighbouring segments for segment overlap
+        2. Add an additional margin to segments with neighboring segments for segment overlap
         """
 
         margin_p = get_distance_filter_edge_margin(profile, step_length) * step_length

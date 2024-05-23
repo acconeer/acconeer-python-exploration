@@ -47,7 +47,7 @@ The normalization is done to handle the variation in direct leakage due to minut
 .. math::
    \bar{z}(s) = \alpha_z \cdot \bar{z}(s-1) + (1 - \alpha_z) \cdot z(s)
 
-where the smoothing factor now is calculated using the deviation time constant, which should be chosen to tbe the length of a typical button press event.
+where the smoothing factor now is calculated using the deviation time constant, which should be chosen to be the length of a typical button press event.
 
 The final step of the algorithm is to detect a button press at sweep :math:`s` if, and only if, the following both are true:
 

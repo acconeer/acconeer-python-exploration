@@ -162,7 +162,7 @@ Let :math:`N_s` denote the number of sweeps, and let the deviation from the mean
 
 where the first factor is a correction for the limited number of samples (sweeps).
 
-Then, let the low pass filtered (smoothened) version be:
+Then, let the low pass filtered (smoothed) version be:
 
 .. math::
    \bar{s}_\text{intra_dev}(f, d) = \alpha_\text{intra_dev} \cdot \bar{s}_\text{intra_dev}(f-1, d) + (1 - \alpha_\text{intra_dev}) \cdot s_\text{intra_dev}(f, d)
@@ -371,7 +371,7 @@ Inter-frame timeout
 ^^^^^^^^^^^^^^^^^^^
 For faster decline of the inter-frame presence score, an exponential scaling of the score starts after :math:`t` seconds determined by the
 :attr:`~acconeer.exptool.a121.algo.presence._detector.DetectorConfig.inter_frame_presence_timeout`
-parameter. We track the number of frames with declining score, :math:`n`. With the fram rate defined as :math:`f_f`, the scale factor, :math:`C_\text{inter}`, is calculated as:
+parameter. We track the number of frames with declining score, :math:`n`. With the frame rate defined as :math:`f_f`, the scale factor, :math:`C_\text{inter}`, is calculated as:
 
 .. math::
    C_\text{inter} = \exp\left(\frac{\max(n - (t \cdot f_f), 0)}{t \cdot f_f}\right)

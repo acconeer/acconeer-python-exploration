@@ -641,10 +641,10 @@ class Processor(ProcessorBase[ProcessorResult]):
     ) -> npt.NDArray[np.float_]:
         """Calculate CFAR threshold.
 
-        Each point of the threshold is formed by using data from neighbouring segments of the
+        Each point of the threshold is formed by using data from neighboring segments of the
         sweep.
 
-        The distance between a point and the start of the neighbouring segment is determined by
+        The distance between a point and the start of the neighboring segment is determined by
         the guard half length. The width of the segment by the window length.
 
         For each point, the threshold is calculated as the average of the points located in the

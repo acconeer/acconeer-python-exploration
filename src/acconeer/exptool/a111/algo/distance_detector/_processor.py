@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -530,7 +530,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         help=(
             "Instead of determining the CFAR threshold from sweep amplitudes from "
             "distances both closer and a farther, use only closer. Helpful e.g. for "
-            "fluid level in small tanks, where many multipath signal can apprear "
+            "fluid level in small tanks, where many multipath signal can appear "
             "just after the main peak."
         ),
     )
@@ -574,7 +574,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
             "When detect in the presence of object very close to the sensor, the "
             "strong direct leakage might cause that no well shaped peaks are detected, "
             "even though the envelope signal is above the threshold. Therefore the "
-            "first distace where the signal is above the threshold can be used as an "
+            "first distance where the signal is above the threshold can be used as an "
             "alternative to peak detection."
         ),
     )

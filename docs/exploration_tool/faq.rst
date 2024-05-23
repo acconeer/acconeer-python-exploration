@@ -41,7 +41,7 @@ Python related
 
 #) Dropdown menu is out of position
 
-   This is a known issue on for Qt when running Wayland display server. The issue is fixed for Qt verison >= 6.4.0.
+   This is a known issue on for Qt when running Wayland display server. The issue is fixed for Qt version >= 6.4.0.
    (See related issue: https://bugreports.qt.io/browse/QTBUG-85297)
 
 #) ``malloc_consolidate(): unaligned fastbin chunk detected`` appears in the console when running ET

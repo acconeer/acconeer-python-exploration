@@ -66,7 +66,7 @@ There are three options for handling multi-sensor support:
 Note about file structure
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 We at Acconeer have split up this file in multiple files and put those files in a folder.
-This is not necessary to do for your first example, but if you want to look att how we have done things, you can find
+This is not necessary to do for your first example, but if you want to look at how we have done things, you can find
 the corresponding classes and functions in the following places:
 
 +-------------------+----------------------------------------------------------------------------------+
@@ -79,7 +79,7 @@ the corresponding classes and functions in the following places:
 | ``ui.py``         | ``PGUpdater``                                                                    |
 +-------------------+----------------------------------------------------------------------------------+
 
-You might come across some other files aswell, but they are not important for now.
+You might come across some other files as well, but they are not important for now.
 
 
 Module import for the App

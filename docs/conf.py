@@ -29,6 +29,7 @@ extensions = [
     "notfound.extension",
     "sphinx_tabs.tabs",
     "sphinxcontrib.youtube",
+    "sphinxcontrib.spelling",
 ]
 
 suppress_warnings = [
@@ -70,6 +71,12 @@ rediraffe_auto_redirect_perc = 95
 # sphinx tabs
 sphinx_tabs_disable_tab_closing = True
 
+# spelling
+spelling_suggestion_limit = 7
+spelling_show_suggestions = True
+spelling_show_whole_line = True
+spelling_warning = True
+spelling_word_list_filename = ["spelling_wordlist.txt"]
 
 ############################# HTML Builder Options #############################
 

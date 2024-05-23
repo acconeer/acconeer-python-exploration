@@ -35,7 +35,7 @@ In many cases, we want to track and/or detect moving objects in the range.
 This is demonstrated in :numref:`fig_a121_data_moving`, where the object has moved during the measurement of the frame.
 The sweeps still have roughly the same amplitude, but the phase is changing.
 Due to this, we can no longer coherently average the sweeps together.
-However, we can still (noncoherently) average the amplitudes.
+However, we can still (non-coherently) average the amplitudes.
 
 .. _fig_a121_data_moving_slice_polar:
 .. figure:: /_static/handbook/a121/data_moving_slice_polar.png

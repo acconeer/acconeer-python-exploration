@@ -33,7 +33,7 @@ The radar is configured to collect IQ radar sweeps with a range covering the che
 
 where, :math:`d`, is the range index, :math:`s`, is the sweep index. Typically, the spacing between samples in range is approx. 0.5 mm and the sweep rate, :math:`f_s`, is in the 100 Hz range, depending on configuration.
 
-Since neighbouring samples in range are strongly correlated, the IQ samples can be downsampled in range to :math:`x_D[s,d]`, where
+Since neighboring samples in range are strongly correlated, the IQ samples can be downsampled in range to :math:`x_D[s,d]`, where
 
 .. math:: x_D[s,d] = x[s,d D + D/2],
 
@@ -78,7 +78,7 @@ Breathing detection
 
 The final step in the algorithm is to see if the peak in the spectra is high compared to the spectral noise. The noise level is estimated as the average power level in the half of the frequency bins with the lowest power. If the peak is higher than the threshold, :math:`\lambda_p`, times the noise level, breathing is detected.
 
-Since chest motion during breathing is highly non-sinusodial, many harmonics of the breathing frequency are often seen in the spectra. To avoid detecting the first harmonic, instead of the fundamental, a final check is carried out to inspect the spectral power at half the frequency of the highest peak in the spectra. This spectral power is compared to a second threshold, :math:`\lambda_{1/2}`, so that half the frequency is chosen if
+Since chest motion during breathing is highly non-sinusoidal, many harmonics of the breathing frequency are often seen in the spectra. To avoid detecting the first harmonic, instead of the fundamental, a final check is carried out to inspect the spectral power at half the frequency of the highest peak in the spectra. This spectral power is compared to a second threshold, :math:`\lambda_{1/2}`, so that half the frequency is chosen if
 
 .. math:: P[i_p/2]/P[i_p] > \lambda_{1/2},
 

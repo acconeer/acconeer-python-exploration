@@ -50,11 +50,11 @@ distances.
 The pairing is done by comparing the filter distance state to each distance measurement from the
 detector.
 The measurement closest to the state is used.
-However, the distance mustbe smaller than a threshold, derived from the user defined parameter
+However, the distance must be smaller than a threshold, derived from the user defined parameter
 :attr:`~acconeer.exptool.a121.algo.bilateration._processors.ProcessorConfig.max_anticipated_velocity_mps`,
 which is reflecting the largest anticipated change in distance between frames.
 
-If a filter does not get paired with a distance measurementm i.e., no distance was smaller than the
+If a filter does not get paired with a distance measurement i.e., no distance was smaller than the
 threshold, it is propagated using dead reckoning. Dead reckoning refers to the process of
 predicting the states without a new measurement, based on the state is updated using the current
 the state.
@@ -64,7 +64,7 @@ The duration of the dead reckoning is determined by the user specified parameter
 :attr:`~acconeer.exptool.a121.algo.bilateration._processors.ProcessorConfig.dead_reckoning_duration_s`.
 Once exceeded, the filter is terminated and the object is no longer tracked.
 
-The purpose of dead reckoning is to get a more robust behaviour of the algorithm with regards to
+The purpose of dead reckoning is to get a more robust behavior of the algorithm with regards to
 temporary data dropouts.
 
 The trade-off between responsiveness and robustness of the filter is determined by the user
@@ -145,7 +145,7 @@ The following properties of an object will impact its detectability.
     **Shape**: There are a few aspects related to the shape of the object that will determine
     its detectability. Firstly, the orientation of the normal of the object
     will impact how much of the transmitted energy is reflected back towards the sensor. A normal
-    pointing towards the sensor is typically more favourable. Next, the uniformness of the object
+    pointing towards the sensor is typically more favorable. Next, the uniformness of the object
     is also an important factor. Objects such as a furniture leg or a wall results in
     a distinct reflection, while a less uniform object such a tree trunk with roots will result in
     a wider distribution of the reflected energy, resulting in a less defined peak in the measured

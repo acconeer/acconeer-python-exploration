@@ -9,7 +9,7 @@ Measurement Range and Presets
 ------------------------------
 The reference application is designed to have two different detection ranges: one in close proximity to the sensor and another farther away. Users can choose which range, or even both, to activate simultaneously.
 
-The close range is defined as the zone from the sensor up to 5 centimeters, while the far range spans from the sensor to roughly 24 cenitmeters. These ranges are presented in three preset configurations within the Exploration Tool: one for exclusive close range detection, another for exclusive far range detection, and a third for detecting in both ranges.
+The close range is defined as the zone from the sensor up to 5 centimeters, while the far range spans from the sensor to roughly 24 centimeters. These ranges are presented in three preset configurations within the Exploration Tool: one for exclusive close range detection, another for exclusive far range detection, and a third for detecting in both ranges.
 
 It's important to note that the algorithm can also accommodate extended ranges, provided the sensor settings are appropriately adjusted to encompass a larger distance.
 
@@ -33,7 +33,7 @@ The :attr:`~acconeer.exptool.a121.algo.touchless_button.ProcessorConfig.calibrat
 Processing
 ------------
 
-For every frame, the processor evaluates whether the sweeps significantly surpass the threshold or not. In the selected range or ranges, a frame is recorded as significant when a minimum of two sweeps at the same distance surpass the threshold within the same frame. The patience settings (:attr:`~acconeer.exptool.a121.algo.touchless_button.ProcessorConfig.patience_close` and :attr:`~acconeer.exptool.a121.algo.touchless_button.ProcessorConfig.patience_far`) dictate the number of consecutive significant frames needed for the event to be deemed as a valid detection (button press). Similarly, it specifies the number of consecutive frames required to be nonsignificant to signal the end of a detection event. Increasing the patience setting results in the button detecting prolonged presence in front of the sensor, consequently reducing its responsiveness. However, it decreases the risk of false detections if short sporadic noise appears.
+For every frame, the processor evaluates whether the sweeps significantly surpass the threshold or not. In the selected range or ranges, a frame is recorded as significant when a minimum of two sweeps at the same distance surpass the threshold within the same frame. The patience settings (:attr:`~acconeer.exptool.a121.algo.touchless_button.ProcessorConfig.patience_close` and :attr:`~acconeer.exptool.a121.algo.touchless_button.ProcessorConfig.patience_far`) dictate the number of consecutive significant frames needed for the event to be deemed as a valid detection (button press). Similarly, it specifies the number of consecutive frames required to be non-significant to signal the end of a detection event. Increasing the patience setting results in the button detecting prolonged presence in front of the sensor, consequently reducing its responsiveness. However, it decreases the risk of false detections if short sporadic noise appears.
 
 Since the data from the A121 sensor is complex, each data point includes both phase and amplitude information. The threshold takes advantage of both the real and imaginary part of the data and can be seen as an circular boundary in the complex plane. A data point can pass the threshold by either a shift in phase (which would be caused by movement), a shift in amplitude (which would be caused by a more reflecting object) or both at the same time. Which in turn will trigger a detection. The placement of the circular boundary in the complex plane is determined by the mean and standard deviation of the calibration frames measured during the time set by :attr:`~acconeer.exptool.a121.algo.touchless_button.ProcessorConfig.calibration_duration_s` and the radius of the boundary is set by the sensitivity parameters (:attr:`~acconeer.exptool.a121.algo.touchless_button.ProcessorConfig.sensitivity_close` and :attr:`~acconeer.exptool.a121.algo.touchless_button.ProcessorConfig.sensitivity_far`). Opting for a high sensitivity setting results in a smaller radius, leading to a lower threshold. Conversely, a low sensitivity setting produces a larger radius, subsequently yielding a higher threshold.
 
@@ -53,7 +53,7 @@ GUI
 
 In the GUI two plots are displayed, see :numref:`touchless_button_gui`. The top plot shows the detection duration for the close and far range. The displayed range can be changed by switching the *Range* parameter under *Processor parameters* in the GUI or switch preset under *Preset Configurations*.
 
-The bottom plot displays the detection score for each distance point in each range. To hide thresholds or points click on the corresponding symbol in the legend. The points represent the 2nd highest detection score per frame for each distance. The 2nd highest score is chosen for plotting since a frame counts as significant after two points at the same distance pass the threshold during the same frame. A detection in the activated range(s) will be shown in the top plot when the consecutive number of points above the threshold is greater or equal to the patience parameter for the activated range(s). The purpose of the bottom plot is to demonstrate the effect of the sensitivity settings and to give the user an idea of which points are most important for the user’s detection scenario. The sensitivity settings might need to be adjusted depending on integration and purpose of the application. The sensitivity will always result in a trade-off between missed detections and false detections.
+The bottom plot displays the detection score for each distance point in each range. To hide thresholds or points click on the corresponding symbol in the legend. The points represent the second highest detection score per frame for each distance. The second highest score is chosen for plotting since a frame counts as significant after two points at the same distance pass the threshold during the same frame. A detection in the activated range(s) will be shown in the top plot when the consecutive number of points above the threshold is greater or equal to the patience parameter for the activated range(s). The purpose of the bottom plot is to demonstrate the effect of the sensitivity settings and to give the user an idea of which points are most important for the user’s detection scenario. The sensitivity settings might need to be adjusted depending on integration and purpose of the application. The sensitivity will always result in a trade-off between missed detections and false detections.
 
 .. _touchless_button_gui:
 .. figure:: /_static/processing/a121_touchless_button_gui.png
@@ -114,7 +114,7 @@ The configurations below corresponds to the presets in Exploration Tool, see :nu
    * - Inter frame idle state
      - Ready
      - Ready
-   * - Continous sweep mode
+   * - Continuous sweep mode
      - True
      - True
    * - Double buffering
@@ -201,7 +201,7 @@ This test utilized the "Close and far range" preset in Exploration Tool. This pr
 
 Comments regarding changes in temperature
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Changing temperature will affect the SNR of the signal. At lower temperatures the SNR is increased and at higher temperatures the SNR is decreased. Some actions will therefore trigger detection easier at lower temperatures and the sensitivity can threrefore be set lower at these termperatures. It is therefore favorable to set the sensitivity according to the desired responsiveness at the highest estimated temperature for the intended integration. The sensitivities selected for the presets were chosen to minimize missed detections and false detections in the range -10°C and 50°C. The evaluation was made using 8 different sensors at three different temperatures: -10°C, 25°C and 50°C.
+Changing temperature will affect the SNR of the signal. At lower temperatures the SNR is increased and at higher temperatures the SNR is decreased. Some actions will therefore trigger detection easier at lower temperatures and the sensitivity can therefore be set lower at these temperatures. It is therefore favorable to set the sensitivity according to the desired responsiveness at the highest estimated temperature for the intended integration. The sensitivities selected for the presets were chosen to minimize missed detections and false detections in the range -10°C and 50°C. The evaluation was made using 8 different sensors at three different temperatures: -10°C, 25°C and 50°C.
 
 Processor Configuration
 --------------------------
