@@ -27,7 +27,7 @@ you can install in different ways:
    .. tab:: :fab:`windows;fa-xl` Quick Start
 
       If you have a Windows PC and you're only interested in running Exploration Tool to see visualizations,
-      experiment with configurations or use the :doc:`/exploration_tool/resource_calc`, the Portable Windows
+      experiment with configurations or use the :doc:`/resource_calc`, the Portable Windows
       package is a great choice.
 
       Get started with the following steps:

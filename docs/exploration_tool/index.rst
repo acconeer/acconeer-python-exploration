@@ -23,7 +23,6 @@ It is freely downloaded and installed from `GitHub <https://github.com/acconeer/
    example_scripts/index
    api/index
    file_format_ref/index
-   Resource Calculator <resource_calc>
    adding_your_own_plugin
    changelog
    faq

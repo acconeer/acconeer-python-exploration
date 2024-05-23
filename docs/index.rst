@@ -9,6 +9,7 @@
    ref_apps/index
    example_apps/index
    exploration_tool/index
+   resource_calc
    glossary
 
    a111/index

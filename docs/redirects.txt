@@ -126,3 +126,4 @@
 "handbook/a121/timing.rst" "radar_data_and_control/a121/timing.rst"
 "getting_started/installation_and_setup.rst" "getting_started/setting_up_and_running_et.rst"
 "getting_started/running.rst" "getting_started/setting_up_and_running_et.rst"
+"exploration_tool/resource_calc.rst" "resource_calc.rst"
