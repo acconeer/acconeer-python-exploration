@@ -137,7 +137,7 @@ These fields are optional.
 
    Load the original processing configuration using ``ProcessingConfig._load`` on this field.
    Here, ``ProcessingConfig`` refers to the subclassed ``acconeer.exptool.configbase.ProcessingConfig`` for the processing module used.
-   For example, ``ProcessingConfiguration`` in :github_1a5d2c6:`Presence Detection <src/acconeer/exptool/a111/algo/presence_detection_sparse/_processor.py#L19>`.
+   For example, ``ProcessingConfiguration`` in :github_1a5d2c6:`Presence Detection <src/acconeer/exptool/a111/algo/presence_detection_sparse/_processor.py>`.
 
    This field can also be loaded to a dict using ``json.loads``.
 

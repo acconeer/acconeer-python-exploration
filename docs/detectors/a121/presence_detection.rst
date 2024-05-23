@@ -433,7 +433,7 @@ Going from cutoff frequency :math:`f_c` to smoothing factor :math:`\alpha`:
 The lower the cutoff frequency, the slower the filter. The expression is obtained from setting the -3 dB frequency of the resulting exponential filter to be the cutoff frequency. For low cutoff frequencies, the more well known expression :math:`\alpha = \exp(-2\pi f_c/f_f)` is a good approximation.
 
 Read more:
-`time constants <https://en.wikipedia.org/wiki/Exponential_smoothing#Time_Constant>`_,
+`time constants <https://en.wikipedia.org/wiki/Exponential_smoothing#Time_constant>`_,
 `cutoff frequencies <https://www.dsprelated.com/showarticle/182.php>`_.
 
 Hints and Recommendations
