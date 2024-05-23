@@ -245,7 +245,7 @@ Configuration Hints
 The following section contains hints and recommendations on how to configure the distance detector.
 
 Several of the described parameters affect the sensor configuration and memory utilization.
-For a quantitative estimate on these numbers, please consult the :doc:`Resource calculator</exploration_tool/resource_calc>`, available in the Exploration Tool.
+For a quantitative estimate on these numbers, please consult the :doc:`/exploration_tool/resource_calc`, available in the Exploration Tool.
 
 The distance detector has two predefined configurations, available in the application as presets, with the following design philosophies:
 
