@@ -94,3 +94,6 @@ For the example plugin ``my_plugin.py``, this can be done in three way if the us
 
         cd examples/app/new/plugins
         python -m acconeer.exptool.app.new --plugin-module my_plugin
+
+.. tip::
+   You can specify many plugins to load by repeating the ``--plugin-module`` option!

@@ -28,7 +28,8 @@ class ExptoolArgumentParser(argparse.ArgumentParser):
                 "Allows you to load an arbitrary plugin given a python module "
                 + "(installed or in your working directory) NOTE! Accepted argument "
                 + "is not a path (e.g. not 'my_processor/latest/plugin.py'), it's a "
-                + "python module (e.g. 'my_processor.latest.plugin')"
+                + "python module (e.g. 'my_processor.latest.plugin'). "
+                + "This option can be repeated."
             ),
         )
 
