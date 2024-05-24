@@ -18,6 +18,7 @@ import numpy.typing as npt
 import pandas as pd
 
 import acconeer.exptool as et
+import acconeer.exptool.a121.algo.bilateration as bilateration
 import acconeer.exptool.a121.algo.breathing as breathing
 import acconeer.exptool.a121.algo.distance as distance
 import acconeer.exptool.a121.algo.hand_motion as hand_motion
@@ -527,6 +528,7 @@ def get_processed_data(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
 
     load_algo_and_client: Dict[str, t.Callable[[h5py.File], Tuple[pd.DataFrame, pd.DataFrame]]] = {
         "breathing": get_processed_data_breathing,
+        "bilateration": get_processed_data_bilateration,
         "distance_detector": get_processed_data_distance,
         "hand_motion": get_processed_data_hand_motion,
         "parking": get_processed_data_parking,
@@ -693,6 +695,69 @@ def get_processed_data_breathing(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.D
     df_processed_data = pd.DataFrame(
         {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
     )
+    return df_processed_data, df_algo_data
+
+
+def get_processed_data_bilateration(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    processed_data_list = []
+
+    # Client preparation
+    record = H5Record(h5_file)
+    client = _ReplayingClient(record, realtime_replay=False)
+    (
+        sensor_ids,
+        detector_config,
+        processor_config,
+        context,
+    ) = bilateration._processor._load_algo_data(h5_file["algo"])
+    detector_config_dict = detector_config.to_dict()
+    processor_config_dict = processor_config.to_dict()
+    config = {**detector_config_dict, **processor_config_dict}
+
+    # Create DataFrames from configurations, sensor id, and detector context
+    df_sensor_id = pd.DataFrame({"sensor_ids": sensor_ids}.items())
+    df_config = pd.DataFrame([[k, v] for k, v in config.items()])
+    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
+
+    # Record file extraction
+    num_frames = record.num_frames
+
+    detector = distance.Detector(
+        client=client, sensor_ids=sensor_ids, detector_config=detector_config, context=context
+    )
+    session_config = detector.session_config
+
+    processor = bilateration._processor.Processor(
+        session_config=session_config, processor_config=processor_config, sensor_ids=sensor_ids
+    )
+
+    detector.start()
+    try:
+        for idx in range(num_frames):
+            detector_result = detector.get_next()
+            processed_data = processor.process(detector_result)
+
+            # Put the result in row
+            processed_data_row = bilateration_as_row(processed_data=processed_data)
+            processed_data_list.append(processed_data_row)
+
+            # Print progressing time every 5%
+            if (idx % int(0.05 * num_frames)) == 0:
+                print(f"... {idx / num_frames:.0%}")
+
+    except KeyboardInterrupt:
+        print("Conversion aborted")
+    else:
+        print("Processing data is finished. . .")
+
+    print("Disconnecting...")
+
+    # Creates DataFrames from processed data and keys
+    keys = ["distances", "points"]
+    df_processed_data = pd.DataFrame(
+        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
+    )
+
     return df_processed_data, df_algo_data
 
 
@@ -1249,6 +1314,16 @@ def breathing_result_as_row(processed_data: breathing.RefAppResult) -> list[t.An
     )
 
     return [rate, motion, presence_dist]
+
+
+def bilateration_as_row(processed_data: bilateration.ProcessorResult) -> list[t.Any]:
+    distance = (
+        None
+        if processed_data.objects_without_counterpart == []
+        else processed_data.objects_without_counterpart[0].distance
+    )
+    points = processed_data.points
+    return [distance, points]
 
 
 def parking_result_as_row(processed_data: parking.RefAppResult) -> list[t.Any]:
