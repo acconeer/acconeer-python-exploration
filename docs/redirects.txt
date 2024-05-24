@@ -127,3 +127,7 @@
 "getting_started/installation_and_setup.rst" "getting_started/setting_up_and_running_et.rst"
 "getting_started/running.rst" "getting_started/setting_up_and_running_et.rst"
 "exploration_tool/resource_calc.rst" "resource_calc.rst"
+"getting_started/evk_setup/raspberry_a111.rst" "a111/evk_setup/raspberry_a111.rst"
+"getting_started/evk_setup/xm112.rst" "a111/evk_setup/xm112.rst"
+"getting_started/evk_setup/xm122.rst" "a111/evk_setup/xm122.rst"
+"getting_started/evk_setup/xm132.rst" "a111/evk_setup/xm132.rst"

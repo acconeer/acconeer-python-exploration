@@ -5,9 +5,9 @@ Setting up your XM122
 
 For detailed instructions, visit our `developer page <https://developer.acconeer.com/>`_.
 
-.. include:: find_serial_port.rst
+.. include:: ../../getting_started/evk_setup/find_serial_port.rst
 
-.. include:: windows_com_port_drivers.rst
+.. include:: ../../getting_started/evk_setup/windows_com_port_drivers.rst
 - XM122: `FTDI <https://ftdichip.com/drivers/vcp-drivers/>`_
 
 Flashing
