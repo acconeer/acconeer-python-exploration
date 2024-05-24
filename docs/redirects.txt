@@ -144,3 +144,7 @@
 "handbook/a111/services_and_detectors_overview.rst" "a111/radar_data_and_control/services_and_detectors_overview.rst"
 "handbook/a111/system_overview.rst" "a111/radar_data_and_control/system_overview.rst"
 "handbook/a111/typical_ranges.rst" "a111/radar_data_and_control/typical_ranges.rst"
+"handbook/a121/differences_from_a111.rst" "radar_data_and_control/a121/differences_from_a111.rst"
+"handbook/a121/detectors.rst" "removed.rst"
+"handbook/a121/index.rst" "removed.rst"
+"handbook/a121/introduction.rst" "removed.rst"

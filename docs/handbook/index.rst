@@ -12,4 +12,3 @@ The *Handbook* provides in-depth information on a wide range of topics.
 
    radar_principles
    physical_integration
-   a121/index

@@ -1,9 +1,7 @@
 Differences between A121 and A111
 =================================
 
-If you're new to Acconeer products and haven't used the A111 before, skip this section.
-
-Here are some of the main differences, additions, and highlights coming from A111:
+Here are some of the main differences, additions, and highlights with A121 compared to A111:
 
 - The four services available for the A111
   --
