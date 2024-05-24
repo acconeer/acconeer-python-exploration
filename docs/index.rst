@@ -4,7 +4,7 @@
    pcr_tech/index
    getting_started/index
    radar_data_and_control/index
-   use_cases
+   use_cases/index
    detectors/index
    ref_apps/index
    example_apps/index
