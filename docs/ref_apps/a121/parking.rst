@@ -1,7 +1,7 @@
 Parking
 =======
 
-The use case of mounting a radar on a parking space is an established functional concept present in the Acconeer offering for the A111 sensor. This algorithm extends this to the A121 sensor as well.
+The use case of mounting a radar on a parking space is an established functional concept present in the Acconeer offering.
 
 Algorithm Concept
 -----------------

@@ -3,14 +3,14 @@
 Physical integration
 ====================
 
-The A111 sensor contains the mmWave front-end, digital control logic, digitization of received signal and memory, all in one package. To integrate it in your application it is required to have a reference frequency or XTAL (24 MHz), 1.8 V supply, and a host processor, as illustrated in :numref:`fig_host_platform`, supported platforms and reference schematics are available at `developer.acconeer.com <https://developer.acconeer.com>`__.
+The A121 sensor contains the mmWave front-end, digital control logic, digitization of received signal and memory, all in one package. To integrate it in your application it is required to have a reference frequency or XTAL (24 MHz), 1.8 V supply, and a host processor, as illustrated in :numref:`fig_host_platform`, supported platforms and reference schematics are available at `developer.acconeer.com <https://developer.acconeer.com>`__.
 
 .. _fig_host_platform:
 .. figure:: /_static/introduction/fig_host_platform.png
     :align: center
     :width: 80%
 
-    Illustration of integration into host platform, the A111 is marked with the Acconeer logo.
+    Illustration of integration into host platform, the A121 is marked with the Acconeer logo.
 
 In addition to the above it is also important for optimized integration to consider the electromagnetic (EM) environment, both in terms of what is placed on top of the sensor as well as to the side of the sensor. To evaluate the EM integration a Radar loop measurement can be conducted by placing an object in front of the sensor and rotating the sensor around its own axis, as illustrated in :numref:`fig_radar_loop_pattern`. The received energy from e.g. the Envelope Service can then be used to plot the amplitude versus rotation angle (:math:`\theta`).
 

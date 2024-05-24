@@ -39,24 +39,6 @@ This multiple sweep angle estimation using a moving radar can be seen as `Synthe
 <https://en.wikipedia.org/wiki/Synthetic-aperture_radar>`_.
 
 
-A121 Improvements
------------------
-
-If you are familiar with the :doc:`A111 Obstacle detection</a111/algo/obstacle>`, a list of improvements with the A121 Obstacle detection application is given here:
-
-**1. Multiple sweeps per frame:**
-A high robot speed requires a high sweep rate to determine the object angle. In the A111, each sweep needs to be transferred from the sensor before the next can be measured, which limits the maximum sweep rate. In A121, multiple sweeps can be measured in a frame, before the frame is transferred to the host. This enables higher sweep rates and therefore higher robot speeds.
-
-**2. Subsweeps and step length:**
-By utilizing subsweeps, the application scanning range can be split up in a range close to the sensor where a low profile and low step length can be used, and a range far from the sensor where a higher profile can be used for maximum sensitivity. Note, currently the Obstacle detection application in the Exploration Tool GUI does not support subsweeps, please run the example file described below.
-
-**3. Temperature sensor:**
-The surrounding temperature impacts the amplitude of the measured signal and noise. With the temperature sensor integrated in the radar, the thresholds can be adjusted when the temperature changes to keep the false alarm rate of the application low and sensitivity high.
-
-**4. Better distance performance:**
-The A121 Obstacle detection example application uses data supplied by the Sparse IQ service which has improved distance accuracy compared to the A111 IQ data service.
-
-
 Limitations
 -----------
 
@@ -104,3 +86,21 @@ Processor result
 ----------------
 .. autoclass:: acconeer.exptool.a121.algo.obstacle._processors.ProcessorResult
    :members:
+
+
+A121 Improvements Compared to A111
+----------------------------------
+
+If you are familiar with the :doc:`A111 Obstacle detection</a111/algo/obstacle>`, a list of improvements with the A121 Obstacle detection application is given here:
+
+**1. Multiple sweeps per frame:**
+A high robot speed requires a high sweep rate to determine the object angle. In the A111, each sweep needs to be transferred from the sensor before the next can be measured, which limits the maximum sweep rate. In A121, multiple sweeps can be measured in a frame, before the frame is transferred to the host. This enables higher sweep rates and therefore higher robot speeds.
+
+**2. Subsweeps and step length:**
+By utilizing subsweeps, the application scanning range can be split up in a range close to the sensor where a low profile and low step length can be used, and a range far from the sensor where a higher profile can be used for maximum sensitivity. Note, currently the Obstacle detection application in the Exploration Tool GUI does not support subsweeps, please run the example file described below.
+
+**3. Temperature sensor:**
+The surrounding temperature impacts the amplitude of the measured signal and noise. With the temperature sensor integrated in the radar, the thresholds can be adjusted when the temperature changes to keep the false alarm rate of the application low and sensitivity high.
+
+**4. Better distance performance:**
+The A121 Obstacle detection example application uses data supplied by the Sparse IQ service which has improved distance accuracy compared to the A111 IQ data service.

@@ -3,7 +3,6 @@
 Interpreting radar data
 =======================
 
-The data produced by the A121 sparse IQ service is conceptually similar to that of the A111 IQ service.
 The A121 Sparse IQ data is represented by complex numbers, one for each distance sampled.
 Each number has an *amplitude* and a *phase*, the amplitude is obtained by taking the absolute value of the complex number
 and the phase is obtained by taking the argument of the same complex number.
