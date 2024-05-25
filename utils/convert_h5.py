@@ -7,7 +7,6 @@ from __future__ import annotations
 import abc
 import argparse
 import json
-import os
 import typing as t
 from pathlib import Path
 from typing import Dict, Tuple, Union, cast
@@ -22,6 +21,7 @@ import acconeer.exptool.a121.algo.bilateration as bilateration
 import acconeer.exptool.a121.algo.breathing as breathing
 import acconeer.exptool.a121.algo.distance as distance
 import acconeer.exptool.a121.algo.hand_motion as hand_motion
+import acconeer.exptool.a121.algo.obstacle as obstacle
 import acconeer.exptool.a121.algo.parking as parking
 import acconeer.exptool.a121.algo.phase_tracking as phase_tracking
 import acconeer.exptool.a121.algo.presence as presence
@@ -48,11 +48,23 @@ except ImportError:
 
 
 DESCRIPTION = """This is a command line utility that lets you convert
-.h5/.npz files to .csv-files for use as is or in
+.h5/.npz files to .csv, .tsv, and .xlsx-files for use as is or in
 e.g. Microsoft Excel.
 
 example usage:
-  python3 convert_h5.py -v ~/my_data_file.h5 ~/my_output_file.csv
+  python convert_h5.py my_data_file.h5
+  # Using the default python on a personal desktop, this will convert 'my_data_file.h5'
+  # that exist in same directory as directory of convert_h5.py python script
+  # into an Excel file (.xlsx) format named my_data_file.xlsx with multiple sheets
+  # inside of a folder named my_data_file
+
+  python3 convert_h5.py -v C:/Users/Desktop/my_data_file.h5 D:/my_folder/saved_file.csv
+  # Using the python 3 version on a personal desktop,
+  # this will convert 'my_data_file.h5' from a specified directory
+  # into different .csv files in a specified directory,
+  # inside of a folder named saved_file
+  # instead of all information being in a single file 'saved_file.csv'
+  # It also prints the metadata from the input file
 """
 
 
@@ -60,16 +72,16 @@ class ConvertToCsvArgumentParser(argparse.ArgumentParser):
     def __init__(self) -> None:
         super().__init__(description=DESCRIPTION, formatter_class=argparse.RawTextHelpFormatter)
         self.add_argument(
-            "input_file",
+            "input_path",
             type=Path,
-            help='The input file with file endings ".h5" or ".npz" (only A111).',
+            help='The input file or path with file endings ".h5" or ".npz" (only A111).',
         )
         self.add_argument(
-            "output_file",
+            "output_path",
             type=Path,
             nargs="?",
             default=None,
-            help="The output file to which h5-data will be written.",
+            help="The output file or path to which h5-data will be written.",
         )
         self.add_argument(
             "--index",
@@ -87,14 +99,14 @@ class ConvertToCsvArgumentParser(argparse.ArgumentParser):
             "--force",
             action="store_true",
             default=False,
-            help='Forcefully overwrite "output_file" if it already exists.',
+            help='Forcefully overwrite "output_path" if it already exists.',
         )
         self.add_argument(
             "-v",
             "--verbose",
             action="store_true",
             default=False,
-            help='Prints meta data from "input_file".',
+            help='Prints meta data from "input_path".',
         )
         self.add_argument(
             "--sweep-as-column",
@@ -471,45 +483,81 @@ class A121RecordTableConverter(TableConverter):
             print("=" * 60)
 
 
-def _check_files(
-    input_file: Path, output_file: Union[Path, None], force: bool
-) -> Tuple[bool, str, Path, str, str]:
+def _check_args(args: argparse.Namespace) -> Tuple[bool, str, Path, Path, t.Any, str, bool, bool]:
+    """For file with path = C:\\Users\\Desktop\\my_file.h5
+    These means :
+    drive = C
+    directory parent = C:\\Users\\Desktop
+    filename = my_file.h5
+    filestem = my_file
+    file suffix = .h5
+    """
     files_ok = True
     exit_text = ""
-    to_csv_sep = ","
+
+    # Check input_path argument
+    input_path = Path(args.input_path)
+
+    # Check output_file suffix
     output_suffix = (
-        ".xlsx" if output_file is None or output_file.suffix == "" else output_file.suffix
+        ".xlsx"
+        if args.output_path is None or args.output_path.suffix == ""
+        else args.output_path.suffix
     )
+    output_csv_separator = "\t" if output_suffix == ".tsv" else ","
 
-    if output_suffix == ".tsv":
-        to_csv_sep = "\t"
-    output_stem = Path(input_file.stem if output_file is None else output_file.stem)
-    output_stem = input_file.stem if output_stem is None else output_stem
-    new_output_file = output_stem.with_suffix(output_suffix)
+    # Check output_path argument
+    if args.output_path is None:
+        output_path = input_path.with_suffix("")
+    else:
+        output_path = args.output_path.with_suffix("")
+        # Below will make the output_path similar to input_path if output_path is not defined
+        # Instead of similar to convert_h5.py path
+        output_path = (
+            output_path
+            if (output_path.parent) != output_path
+            else input_path.with_name(output_path.stem)
+        )
 
-    if not os.path.exists(input_file):
-        exit_text = str(f'The input file ("{input_file}") can not be found.')
+    verbose = args.verbose
+    sweep_as_column = args.sweep_as_column
+
+    print(f"Reading from {input_path!r} ... \n")
+
+    if not Path.exists(input_path):
+        exit_text = str(f'The input file ("{input_path}") can not be found.')
         files_ok = False
 
-    if os.path.exists(new_output_file) and not force:
-        exit_text_0 = str(f'The output file ("{output_file}") already exists.')
+    if Path.exists(output_path) and not args.force:
+        exit_text_0 = str(f'The output file ("{output_path}") already exists.')
         exit_text_1 = str(
             'Overwrite existing file with "-f" or give different name for output file.'
         )
         exit_text = exit_text_0 + "\n" + exit_text_1
         files_ok = False
 
-    return files_ok, exit_text, output_stem, output_suffix, to_csv_sep
+    return (
+        files_ok,
+        exit_text,
+        input_path,
+        output_path,
+        output_suffix,
+        output_csv_separator,
+        verbose,
+        sweep_as_column,
+    )
 
 
-def load_file(input_file: str) -> tuple[Union[et.a111.recording.Record, a121.Record], str]:
+def load_file(
+    input_path: Union[Path, str],
+) -> tuple[Union[et.a111.recording.Record, a121.Record], str]:
     try:
-        return a121.load_record(input_file), "a121"
+        return a121.load_record(input_path), "a121"
     except Exception:  # noqa: S110
         pass
 
     try:
-        return et.a111.recording.load(input_file), "a111"
+        return et.a111.recording.load(input_path), "a111"
     except Exception:  # noqa: S110
         pass
 
@@ -519,6 +567,15 @@ def load_file(input_file: str) -> tuple[Union[et.a111.recording.Record, a121.Rec
 
 def get_default_sensor_id_or_index(namespace: argparse.Namespace, generation: str) -> int:
     try:
+        if generation == "a121" and isinstance(int(namespace.sensor), int):
+            exit_text_0 = str(
+                "The file from the A121 results includes results from multiple sessions."
+            )
+            exit_text_1 = str(
+                "Specifying the sensor/session id in the arguments do not provide extra information."
+            )
+            exit_text = exit_text_0 + "\n" + exit_text_1
+            print(exit_text)
         return int(namespace.sensor)
     except AttributeError:
         return 1 if generation == "a121" else 0
@@ -533,6 +590,7 @@ def get_processed_data(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
         "breathing": get_processed_data_breathing,
         "bilateration": get_processed_data_bilateration,
         "distance_detector": get_processed_data_distance,
+        "obstacle_detector": get_processed_data_obstacle,
         "hand_motion": get_processed_data_hand_motion,
         "parking": get_processed_data_parking,
         "phase_tracking": get_processed_data_phase_tracking,
@@ -698,6 +756,60 @@ def get_processed_data_breathing(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.D
     df_processed_data = pd.DataFrame(
         {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
     )
+    return df_processed_data, df_algo_data
+
+
+def get_processed_data_obstacle(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    processed_data_list = []
+
+    # Client preparation
+    record = H5Record(h5_file)
+    client = _ReplayingClient(record, realtime_replay=False)
+    sensor_ids, detector_config, detector_context = obstacle._detector._load_algo_data(
+        h5_file["algo"]
+    )
+
+    # Create DataFrames from configurations, sensor id, and detector context
+    df_sensor_id = pd.DataFrame({"sensor_ids": sensor_ids}.items())
+    df_config = pd.DataFrame([[k, v] for k, v in detector_config.to_dict().items()])
+    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
+
+    # Record file extraction
+    num_frames = record.num_frames
+
+    detector = obstacle.Detector(
+        client=client,
+        sensor_ids=sensor_ids,
+        detector_config=detector_config,
+        context=detector_context,
+    )
+
+    detector.start()
+    try:
+        for idx, result in enumerate(record.results):
+            processed_data = detector.get_next()
+
+            # Put the result in row
+            processed_data_row = obstacle_as_row(processed_data=processed_data)
+            processed_data_list.append(processed_data_row)
+
+            # Print progressing time every 5%
+            if (idx % int(0.05 * num_frames)) == 0:
+                print(f"... {idx / num_frames:.0%}")
+
+    except KeyboardInterrupt:
+        print("Conversion aborted")
+    else:
+        print("Processing data is finished. . .")
+
+    print("Disconnecting...")
+
+    # Creates DataFrames from processed data and keys
+    keys = ["close_proximity_trig", "current_velocity"]
+    df_processed_data = pd.DataFrame(
+        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
+    )
+
     return df_processed_data, df_algo_data
 
 
@@ -1319,6 +1431,13 @@ def breathing_result_as_row(processed_data: breathing.RefAppResult) -> list[t.An
     return [rate, motion, presence_dist]
 
 
+def obstacle_as_row(processed_data: obstacle.DetectorResult) -> list[t.Any]:
+    close_proximity_trig = processed_data.close_proximity_trig
+    current_velocity = processed_data.current_velocity
+
+    return [close_proximity_trig, current_velocity]
+
+
 def bilateration_as_row(processed_data: bilateration.ProcessorResult) -> list[t.Any]:
     distance = (
         None
@@ -1439,15 +1558,22 @@ def main() -> None:
     args = parser.parse_args()
 
     # File checking and formatting from args
-    files_ok, exit_text, output_stem, output_suffix, to_csv_sep = _check_files(
-        args.input_file, args.output_file, args.force
-    )
-    input_file = args.input_file
+    (
+        files_ok,
+        exit_text,
+        input_path,
+        output_path,
+        output_suffix,
+        output_csv_separator,
+        verbose,
+        sweep_as_column,
+    ) = _check_args(args)
     if not (files_ok):
         print(exit_text)
         exit(1)
-    print(f"Reading from {input_file!r} ... \n")
-    record, generation = load_file(input_file)
+    else:
+        output_path.mkdir(parents=True, exist_ok=True)
+    record, generation = load_file(input_path)
     sensor = get_default_sensor_id_or_index(args, generation)
     table_converter = TableConverter.from_record(record)
     try:
@@ -1457,10 +1583,10 @@ def main() -> None:
         print(e)
         exit(1)
 
-    table_converter.print_information(verbose=args.verbose)
+    table_converter.print_information(verbose=verbose)
     print()
     dict_excel_file = {}
-    if args.sweep_as_column:
+    if sweep_as_column:
         if isinstance(sparse_iq_data, np.ndarray):
             sparse_iq_data = [sparse_iq_data.T]
         else:
@@ -1484,23 +1610,23 @@ def main() -> None:
         dict_config = table_converter.get_configs(session_index=0)
         dict_excel_file["Configurations"] = pd.DataFrame(dict_config.items())
 
-    # Create a Pandas DataFrame from the environtment
+    # Create a Pandas DataFrame from the environment
     record_environtment = table_converter.get_environment()
     dict_excel_file["Environtment"] = pd.DataFrame(record_environtment.items())
 
     # Create a Pandas DataFrame from processed data
     if isinstance(record, a121.Record):
-        h5_file = h5py.File(str(input_file))
+        h5_file = h5py.File(str(input_path))
         df_processed_data, df_app_config = get_processed_data(h5_file)
         dict_excel_file["Application configurations"] = df_app_config
         dict_excel_file["Processed data"] = df_processed_data
         h5_file.close()
     # Save the DataFrame to a CSV or excel file
     if output_suffix == ".xlsx":
-        output_file = output_stem.with_suffix(output_suffix)
+        filepath = output_path / (output_path.stem + output_suffix)
         # Write each DataFrame to a separate sheet using to_excel
         # Default example data frame is written as below
-        with pd.ExcelWriter(output_file, engine="xlsxwriter") as writer:
+        with pd.ExcelWriter(filepath, engine="xlsxwriter") as writer:
             # Write each DataFrame to a separate sheet
             for key, value in dict_excel_file.items():
                 pd.DataFrame(value).to_excel(
@@ -1510,9 +1636,10 @@ def main() -> None:
     if output_suffix == ".csv" or output_suffix == ".tsv":
         # Write each DataFrame to a separate sheet using to_csv
         for key, value in dict_excel_file.items():
+            filepath = output_path / (key + output_suffix)
             pd.DataFrame(value).to_csv(
-                Path(str(output_stem) + "_" + key + output_suffix),
-                sep=to_csv_sep,
+                Path(str(filepath)),
+                sep=output_csv_separator,
                 index_label="Index",
             )
 
