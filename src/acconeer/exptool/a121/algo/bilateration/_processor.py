@@ -13,7 +13,7 @@ import numpy.typing as npt
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121.algo import AlgoProcessorConfigBase
-from acconeer.exptool.a121.algo.distance import DetectorConfig, DetectorResult
+from acconeer.exptool.a121.algo.distance import DetectorConfig, DetectorContext, DetectorResult
 
 
 @attrs.frozen(kw_only=True)
@@ -415,8 +415,13 @@ class _KalmanFilter:
         return 0.01 + sensitivity * 20.0
 
 
-def _load_algo_data(algo_group: h5py.Group) -> Tuple[list[int], DetectorConfig, ProcessorConfig]:
+def _load_algo_data(
+    algo_group: h5py.Group
+) -> Tuple[list[int], DetectorConfig, ProcessorConfig, DetectorContext]:
     sensor_ids = algo_group["sensor_ids"][()].tolist()
     detector_config = DetectorConfig.from_json(algo_group["detector_config"][()])
     bilateration_config = ProcessorConfig()
-    return sensor_ids, detector_config, bilateration_config
+
+    context_group = algo_group["context"]
+    context = DetectorContext.from_h5(context_group)
+    return sensor_ids, detector_config, bilateration_config, context
