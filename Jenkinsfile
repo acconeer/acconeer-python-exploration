@@ -140,9 +140,7 @@ try {
                     buildDocker(path: 'docker').inside(dockerArgs(env)) {
                         sh 'python3 -V'
                         sh 'hatch build'
-                        sh 'hatch run docs:html'
-                        sh 'hatch run docs:latexpdf'
-                        sh 'hatch run docs:rediraffe-check'
+                        sh 'hatch run docs:build'
                     }
                     archiveArtifacts artifacts: 'dist/*', allowEmptyArchive: true
                     archiveArtifacts artifacts: 'docs/_build/latex/*.pdf', allowEmptyArchive: true

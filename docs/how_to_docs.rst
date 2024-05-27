@@ -66,8 +66,8 @@ Documentation Structure
 Navigation on left hand side gets of sync.
    This a common occurence when modifying the documentation structure
    (modifying ``.. toctree::`` s.).
-   Exit out of ``hatch run docs:autobuild`` and remove the folder ``docs/_build``
-   and run ``hatch run docs:autobuild`` again to resolve the issue.
+   Re-running ``hatch run docs:autobuild`` will remove the folder ``docs/_build``
+   and eliminate the issue.
 
 *************
 VS Code Setup

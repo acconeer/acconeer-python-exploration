@@ -12,7 +12,7 @@ In addition to the Profile configuration parameter, two main configuration param
 
 * Hardware Accelerated Average Samples (HWAAS) is related to the number of pulses averaged in the radar to produce one data point. A high number will increase the radar loop gain but each sweep will take longer to acquire and therefore limit the maximum update rate.
 
-* The gain of the amplifiers in the sensor. Adjusting this parameter so the ADC isn't saturated and at the same time the signal is above the quantization noise is necessary. A gain figure of 0.5 is often a good start.
+* The gain of the amplifiers in the sensor. Adjusting this parameter so the ADC is not saturated and at the same time the signal is above the quantization noise is necessary. A gain figure of 0.5 is often a good start.
 
 
 Sweep and update rate

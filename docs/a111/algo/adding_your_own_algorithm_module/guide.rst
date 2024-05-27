@@ -113,7 +113,7 @@ which defines the services and detectors loaded into the App, to include the new
 .. note::
     Unless you have an editable install of Exploration Tool, you will need to reinstall after editing ``modules.py``
 
-That's it! Now, lets have a look at what we've accomplished.
+That's it! Now, lets have a look at what we have accomplished.
 
 .. figure:: /_static/gui/my_new_algorithm_module_select_service.png
     :figwidth: 40%

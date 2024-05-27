@@ -35,7 +35,7 @@ Having these questions and answers in mind, we go though the parameters in order
     See :numref:`fig_a121_optimal_range_config` for an example.
 - From here, the **start point** and **number of points** can be set.
   Just make sure the points cover :math:`r_\text{near}` to :math:`r_\text{far}`.
-  Due to the pulse length (profile), the start and end points doesn't necessarily have to pass :math:`r_\text{near}` and :math:`r_\text{far}`.
+  Due to the pulse length (profile), the start and end points does not necessarily have to pass :math:`r_\text{near}` and :math:`r_\text{far}`.
   Again, see :numref:`fig_a121_optimal_range_config` for an example of this.
   However, keep in mind that distance measurements typically cannot be done in the very edge of the range, so you might have to extend it outside :math:`r_\text{near}` and :math:`r_\text{far}` anyways.
 - Set the PRF such that the resulting maximum unambiguous range (MUR) extends beyond the farthest distance an object may appear.
