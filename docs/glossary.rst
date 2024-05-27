@@ -4,6 +4,12 @@ Glossary
 
 .. glossary::
 
+   PCR
+      Pulsed Coherent Radar.
+
+   PRF
+      Pulse repetition frequency. The frequency at which the radar transmits wavelets.
+
    SNR
       Abbreviation of *Signal-to-noise ratio*.
       General ratios quantify how much more there is of *one thing* (Signal in this case),

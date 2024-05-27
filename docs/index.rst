@@ -1,7 +1,7 @@
 .. toctree::
    :hidden:
 
-   handbook/index
+   pcr_tech/index
    getting_started/index
    radar_data_and_control/index
    use_cases

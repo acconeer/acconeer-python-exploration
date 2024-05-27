@@ -30,7 +30,7 @@ This means that a 5 mm shift of the received wavelet corresponds to a 2.5 mm shi
 :numref:`fig_block_diagram` shows a block diagram of the A111 sensor. The signal is transmitted from the Tx antenna and received by the Rx antenna, both integrated in the top layer of the A111 package substrate. In addition to the mmWave radio the sensor consists of power management and digital control, signal quantization, memory and a timing circuit.
 
 .. _fig_block_diagram:
-.. figure:: /_static/introduction/fig_block_diagram.png
+.. figure:: /_static/introduction/fig_block_diagram_a111.png
     :align: center
 
     Block diagram of the A111 sensor package, further details about interfaces can be found in the A111 data sheet.
