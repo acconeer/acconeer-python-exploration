@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -14,8 +15,10 @@ from acconeer.exptool.a121.algo.presence import _configs as presence_configs
 from acconeer.exptool.a121.model import power
 
 
-_mA = 1e-3
 CURRENT_LIMITS_ROOT = Path("stash/python_libs/acconeer-analyses/acconeer/analyses/a121/resources")
+
+if not CURRENT_LIMITS_ROOT.exists() and not os.environ.get("CI", False):
+    pytest.skip("Could not find stash and not running in CI", allow_module_level=True)
 
 
 with (CURRENT_LIMITS_ROOT / "sensor_current_limits.yaml").open("r") as f:

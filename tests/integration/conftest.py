@@ -1,6 +1,7 @@
 # Copyright (c) Acconeer AB, 2024
 # All rights reserved
 
+import os
 import subprocess as sp
 import typing as t
 from pathlib import Path
@@ -28,7 +29,8 @@ def worker_tcp_port(worker_id: str) -> int:
 
 @pytest.fixture(scope="function")
 def a121_exploration_server(worker_tcp_port: int) -> t.Iterator[None]:
-    assert server_path("a121").exists(), "Could not find a121 mock exploration server"
+    if not server_path("a121").exists() and not os.environ.get("CI", False):
+        pytest.skip("Could not find binary and not running in CI")
 
     args = [server_path("a121").as_posix(), "--port", str(worker_tcp_port)]
     env = {"ACC_MOCK_TEST_PATTERN": "1"}
@@ -43,7 +45,8 @@ def a121_exploration_server(worker_tcp_port: int) -> t.Iterator[None]:
 
 @pytest.fixture(scope="function")
 def a111_exploration_server(worker_tcp_port: int) -> t.Iterator[None]:
-    assert server_path("a111").exists(), "Could not find a111 mock exploration server"
+    if not server_path("a111").exists() and not os.environ.get("CI", False):
+        pytest.skip("Could not find binary and not running in CI")
 
     args = [server_path("a111").as_posix(), "--port", str(worker_tcp_port)]
     env = {"ACC_MOCK_TEST_PATTERN": "1"}
