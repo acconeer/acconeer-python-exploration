@@ -35,9 +35,9 @@ Glossary
       :term:`Example Applications<Example Application>`.
 
    Reference Application
-      A near-complete use case specific package-offering.
-      Differs from :term:`Detectors<Detector>` as they are not intended to be usable, but
-      rather do one thing, and one thing well.
+      A nearly complete use case specific package-offering.
+      Unlike :term:`Detectors<Detector>`, these packages are targeting more specific
+      use cases, such as *Tank Level* or *Parking*.
 
    Example Application
       A use case specific proof-of-concept signal processing algorithm
