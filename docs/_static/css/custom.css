@@ -23,9 +23,3 @@ h1, h2 {
 .center {
     text-align: center;
 }
-
-.sd-card-footer {
-    border: none;
-    padding-top: 0;
-    padding-bottom: 1rem;
-}

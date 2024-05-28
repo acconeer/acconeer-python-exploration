@@ -181,4 +181,4 @@ Here you find the [disclaimer](https://docs.acconeer.com/en/latest/disclaimer.ht
 
 ## FAQ and common issues
 
-See the [FAQ](https://docs.acconeer.com/en/latest/exploration_tool/faq.html) on the Acconeer documentation pages.
+See the [FAQ at docs.acconeer.com](https://docs.acconeer.com/en/latest/exploration_tool/faq.html).

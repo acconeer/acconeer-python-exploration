@@ -24,109 +24,109 @@
     :align: center
     :width: 100%
 
-Acconeer documentation pages
-============================
+#############################
+Acconeer Online Documentation
+#############################
 
-We are very happy that you have decided to have a closer look at what Acconeer's Pulsed Coherent Radar technology can offer.
-On these documentation pages, you can find all the resources you need to explore your use case and integrate the sensor in your product.
+Welcome to the Online Documentation!
 
-To get started, the first thing you need is an evaluation kit.
-Check out our |product_page| to see our current offer of sensors, modules, and evaluation kits.
-A typical development flow to get started is to setup one of our evaluation kits and:
+This page contains more detailed and practical information than `acconeer.com <https://www.acconeer.com>`_,
+and is aimed to help you find solutions for your use case or solve any technical challenges you might have.
 
-.. |product_page| raw:: html
+Here, you will find guides, references, learning resources and links to other
+great information.
 
-   <a href="https://acconeer.com/products" target="_blank">product page</a>
+Not sure where to go? See our featured content below:
 
-* Use the `Exploration Tool <https://docs.acconeer.com/en/latest/exploration_tool/index.html>`__ to get data from sensor into Python to start evaluating your use case
-* Use our |reference_applications| to get guidance in your own application development
-* Use one of our SDKs or Module Softwares to start software development, you find them on |developer_page|
-
-.. |reference_applications| raw:: html
-
-    <a href="https://www.acconeer.com/focus-use-cases/" target="_blank">reference applications</a>
-
-.. |developer_page| raw:: html
-
-    <a href="https://developer.acconeer.com" target="_blank">developer page</a>
-
-
-To further support and guide you through the development process we also provide several user guides, data sheets, reference schematics, and reference layouts, which you can find at our |developer_page|.
-For more inspiration, don't miss our |innovation_lab|, |demo_videos| and |application_page| to learn how you can solve different use cases and how the Acconeer sensor can be used in your application.
-
-.. |innovation_lab| raw:: html
-
-   <a href="https://acconeer.com/innovation-lab/" target="_blank">Innovation Lab</a>
-
-.. |demo_videos| raw:: html
-
-   <a href="https://www.youtube.com/acconeer" target="_blank">demo videos</a>
-
-.. |application_page| raw:: html
-
-    <a href="https://www.acconeer.com/applications" target="_blank">application page</a>
-
-.. grid:: 1 1 1 3
+.. grid:: 1 1 1 2
    :gutter: 4
 
    .. grid-item-card::
+      :class-body: center
 
-      .. rst-class:: center
+      .. rst-class:: sd-text-primary fa-4x
 
-      :octicon:`mortar-board;5em;sd-text-primary;`
+      :fas:`person-running`
 
-      Already up and running and want to learn more?
-      The *Handbook* provides in-depth information on a wide range of topics.
+      Bought an EVK and ready to *get started*?
 
       +++
 
-      .. button-ref:: handbook/index
+      .. button-ref:: getting_started/index
          :color: primary
          :expand:
          :outline:
          :click-parent:
-         :ref-type: myst
+         :class: sd-font-weight-bold
 
-         **Handbook**
+         Go to Getting Started
 
    .. grid-item-card::
+      :class-body: center
 
-      .. rst-class:: center
+      .. rst-class:: sd-text-primary fa-4x
 
-      :octicon:`tools;5em;sd-text-primary;`
+      :fas:`square-check`
 
-      The *Exploration Tool* page covers information related to that project,
-      such as API and file format reference.
+      Wondering how Acconeer's offering can help you solve your Use Case?
 
       +++
 
-      .. button-ref:: exploration_tool/index
+      .. button-ref:: use_cases
          :color: primary
          :expand:
          :outline:
          :click-parent:
-         :ref-type: myst
+         :class: sd-font-weight-bold
 
-         **Exploration Tool**
+         Go to Use Cases
+
+**************
+External links
+**************
+
+.. grid:: 1 1 1 2
+   :gutter: 4
 
    .. grid-item-card::
+      :class-body: center
 
-      .. rst-class:: center
+      .. rst-class:: sd-text-primary fa-4x
 
-      :octicon:`archive;5em;sd-text-primary;`
+      :fas:`boxes-stacked`
 
-      Looking for software downloads and additional resources?
-      Head over to the developer site.
+      Looking into purchasing Acconeer products?
 
       +++
 
-      .. button-link:: https://developer.acconeer.com
+      .. button-link:: https://www.acconeer.com/products
          :color: primary
          :expand:
          :outline:
          :click-parent:
-         :ref-type: myst
+         :class: sd-font-weight-bold
 
-         **Developer site**
+         :fas:`up-right-from-square` Visit the Products Page
+
+   .. grid-item-card::
+         :class-body: center
+
+         .. rst-class:: sd-text-primary fa-4x
+
+         :fas:`box-archive`
+
+         Looking for software downloads and additional resources?
+
+         +++
+
+         .. button-link:: https://developer.acconeer.com
+            :color: primary
+            :expand:
+            :outline:
+            :click-parent:
+            :class: sd-font-weight-bold
+
+            :fas:`up-right-from-square` Visit the Developer Site
+
 
 :doc:`disclaimer`

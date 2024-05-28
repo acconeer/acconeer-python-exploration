@@ -102,11 +102,25 @@ html_theme_options = {
             "name": "Twitter",
             "url": "https://twitter.com/acconeer_ab",
             "icon": "fab fa-twitter",
+            "type": "fontawesome",
         },
         {
             "name": "Instagram",
             "url": "https://instagram.com/acconeerab",
             "icon": "fab fa-instagram",
+            "type": "fontawesome",
+        },
+        {
+            "name": "YouTube",
+            "url": "https://www.youtube.com/acconeer",
+            "icon": "fab fa-youtube",
+            "type": "fontawesome",
+        },
+        {
+            "name": "Innovation Lab",
+            "url": "https://www.acconeer.com/innovation-lab",
+            "icon": "far fa-lightbulb",
+            "type": "fontawesome",
         },
     ],
 }
