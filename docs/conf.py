@@ -63,6 +63,9 @@ graphviz_dot_args = [
 ]
 graphviz_output_format = "svg"
 
+# linkcheck
+linkcheck_retries = 2
+
 # rediraffe
 rediraffe_redirects = "redirects.txt"
 rediraffe_branch = "origin/master"
