@@ -109,24 +109,24 @@ External links
          :fas:`up-right-from-square` Visit the Products Page
 
    .. grid-item-card::
-         :class-body: center
+      :class-body: center
 
-         .. rst-class:: sd-text-primary fa-4x
+      .. rst-class:: sd-text-primary fa-4x
 
-         :fas:`box-archive`
+      :fas:`file-arrow-down`
 
-         Looking for software downloads and additional resources?
+      Looking for software downloads and additional resources?
 
-         +++
+      +++
 
-         .. button-link:: https://developer.acconeer.com
-            :color: primary
-            :expand:
-            :outline:
-            :click-parent:
-            :class: sd-font-weight-bold
+      .. button-link:: https://developer.acconeer.com
+         :color: primary
+         :expand:
+         :outline:
+         :click-parent:
+         :class: sd-font-weight-bold
 
-            :fas:`up-right-from-square` Visit the Developer Site
+         :fas:`up-right-from-square` Visit the Developer Site
 
 
 :doc:`disclaimer`

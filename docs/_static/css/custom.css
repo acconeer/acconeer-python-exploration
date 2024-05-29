@@ -7,11 +7,12 @@
 }
 
 :root {
-    --pst-color-primary: 27, 77, 100;
-    --pst-color-active-navigation: 27, 77, 100;
-    --pst-color-link: 45, 145, 169;
-    --sd-color-primary: #1b4d64;
-    --sd-color-secondary: #2d91a9;
+    --sd-color-primary: #2888a9 !important;                              /* Teal from header links on acconeer.com */
+    --sd-color-secondary: #57c9f4 !important;                            /* Teal from the logo*/
+    --sd-color-primary-highlight: var(--sd-color-secondary) !important;  /* Used when hovering buttons */
+    --sd-color-secondary-highlight: var(--sd-color-primary) !important;  /* Used when hovering buttons */
+    --pst-color-primary: var(--sd-color-primary) !important;
+    --pst-color-secondary: var(--sd-color-secondary) !important;
     --pst-font-family-heading: "Spinnaker", var(--pst-font-family-base);
 }
 
