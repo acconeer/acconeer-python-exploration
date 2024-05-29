@@ -11,4 +11,3 @@ The *Handbook* provides in-depth information on a wide range of topics.
    :maxdepth: 1
 
    radar_principles
-   physical_integration

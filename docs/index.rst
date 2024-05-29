@@ -8,6 +8,7 @@
    detectors/index
    ref_apps/index
    example_apps/index
+   integration/index
    exploration_tool/index
    resource_calc
    glossary

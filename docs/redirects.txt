@@ -148,3 +148,4 @@
 "handbook/a121/detectors.rst" "removed.rst"
 "handbook/a121/index.rst" "removed.rst"
 "handbook/a121/introduction.rst" "removed.rst"
+"handbook/physical_integration.rst" "integration/a121/index.rst"
