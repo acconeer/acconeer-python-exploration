@@ -68,7 +68,7 @@ linkcheck_retries = 2
 
 # rediraffe
 rediraffe_redirects = "redirects.txt"
-rediraffe_branch = "origin/master"
+rediraffe_branch = "HEAD~1"
 rediraffe_auto_redirect_perc = 95
 
 # sphinx tabs
