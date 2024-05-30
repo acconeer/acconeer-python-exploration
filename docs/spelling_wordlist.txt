@@ -16,6 +16,7 @@ baudrate
 beamwidth
 bilateration
 bilaterator
+biometric
 blinkstick
 boolean
 bootloader
@@ -66,6 +67,7 @@ ImpImporter
 infos
 interquartile
 intra
+IoT
 iq
 jitter
 Kalman

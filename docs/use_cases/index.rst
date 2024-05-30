@@ -8,18 +8,18 @@ Acconeer's :term:`PCR` technology is versatile and can be applied to a wide rang
 .. toctree::
    :maxdepth: 1
 
-   Distance Measurement <distance>
+   distance
    presence
    speed
-   Parking <parking>
+   parking
    tank_level
    touchless_button
-   Breathing <breathing>
+   breathing
    vibration
    faucet
    surface_velocity
    waste_level
    small_movement_tracking
-   Obstacle Detection <obstacle>
-   Carpet Detection <carpet_detection>
-   Gesture Control <gesture_control>
+   obstacle
+   surface_classification
+   gesture_control
