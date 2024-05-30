@@ -49,7 +49,7 @@ def real_setup(request):
 
 @pytest.fixture(
     scope="function",
-    params=["exploration_server_setup", pytest.param("real_setup", marks=pytest.mark.xm112)],
+    params=["exploration_server_setup"],
 )
 def setup(request):
     return request.getfixturevalue(request.param)

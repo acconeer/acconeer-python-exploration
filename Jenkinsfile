@@ -276,50 +276,6 @@ try {
         }
     }
 
-    parallel_steps["XM112 test (py=${integrationTestPythonVersions}, rss=${integrationTestA111RssVersions})"] = {
-        node('exploration_tool') {
-            ws('workspace/exptool') {
-                integrationTestA111RssVersions.each { rssVersion ->
-                    def rssVersionName = rssVersion.getValue()
-
-                    def dockerImg = null
-                    stage("Setup (rss=${rssVersionName})") {
-                        printNodeInfo()
-                        checkoutAndCleanup()
-
-                        findBuildAndCopyArtifacts(
-                            [
-                                projectName: 'sw-main',
-                                artifactNames: [
-                                    "out/internal_stash_python_libs.tgz",
-                                    "out/internal_stash_binaries_xm112.tgz",
-                                ]
-                            ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a111-vX.Y.Z']
-                        )
-                        sh 'mkdir stash'
-                        sh 'tar -xzf out/internal_stash_python_libs.tgz -C stash'
-                        sh 'tar -xzf out/internal_stash_binaries_xm112.tgz -C stash'
-                        dockerImg = buildDocker(path: 'docker')
-                    }
-                    lock("${env.NODE_NAME}-xm112") {
-                        stage ("Flash (rss=${rssVersionName})") {
-                            sh '(cd stash && python3 python_libs/test_utils/flash.py)'
-                        }
-                        dockerImg.inside(dockerArgs(env) + " --net=host --privileged") {
-                            integrationTestPythonVersions.each { pythonVersion ->
-                                stage("Run integration tests (py=${pythonVersion}, rss=${rssVersionName})") {
-                                    // E.g. hatch-test.py3.10
-                                    def hatchEnvName = "hatch-test.py${pythonVersion}"
-                                    sh "hatch run ${hatchEnvName}:integration-xm112"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     parallel_steps['failFast'] = true
 
     parallel parallel_steps

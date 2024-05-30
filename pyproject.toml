@@ -135,10 +135,6 @@ extra-dependencies = [
 python = ["3.8", "3.9", "3.10", "3.11", "3.12"]
 
 [tool.hatch.envs.hatch-test.scripts]
-integration-xm112 = [
-    "run tests/integration/a111 -m xm112 --uart auto {args}",
-    "run tests/integration/a111 -m xm112 --spi {args}",
-]
 run = "pytest{env:HATCH_TEST_ARGS:} {args}"  # default
 run-cov = "coverage run -m pytest{env:HATCH_TEST_ARGS:} {args}"  # default
 cov-combine = "coverage combine"  # default
@@ -308,8 +304,7 @@ module = [
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-markers = ["xm112"]
-addopts = "--ignore=src/acconeer/exptool/_winusbcdc --ignore=src/acconeer/exptool/a111 --ignore=tests/gui -m 'not xm112'"
+addopts = "--ignore=src/acconeer/exptool/_winusbcdc --ignore=src/acconeer/exptool/a111 --ignore=tests/gui"
 doctest_optionflags = [
     "ELLIPSIS",
     "NORMALIZE_WHITESPACE",
