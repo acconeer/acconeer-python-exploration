@@ -103,15 +103,17 @@ The :attr:`~acconeer.exptool.a121.algo.parking._ref_app.RefAppConfig.profile` de
 
 Calibration
 ------------
-Estimation of the underlying noise level is an important factor for the performance of the algorithm. This is done at start up with an empty channel. The purpose of this is to get a noise estimate in the current temperature. If the obstruction detection is activated, we also get the signature for the unobstructed close range. The processing has an internal model to account for temperature changes during execution. However, for large temperature fluctuations, there is still a risk that the obstruction detection performance deteriorates.
 
-Note that the calibration of the obstruction detection must be done with the sensor unobstructed in the intended casing, since the calibration takes a snapshot of the radar signal in the obstruction detection range.
+There are two types of calibration to consider for this application, for normal usage ("regular") and an additional for when obstruction detection is used. Both calibrations are done at start-up, but the obstruction detector can require regular re-calibration.
 
-In general, it is better to calibrate the sensor as close as possible to operating temperatures.
+#. Regular parking detection: The algorithm uses an estimation of the underlying noise level to calculate when an object is in front of it. The noise level is mainly dependent on the temperature, so the calibration not only stores the noise level, but also the temperature measured by the sensor at the time of calibration. It is important to note that the calibration is done with the tx antenna turned off, so there is no dependence on what is in front of the sensor at time of calibration. It can be thought of as part of the start-up sequence without any operator requirements. The algorithm has an internal model to compensate for the temperature fluctuations, so after the calibration has finished, there is no need for additional calibration unless the power is dropped.
+
+#. For obstruction detection functionality, stricter calibration requirements apply. The obstruction calibration analyzes channel data (thus cannot be done with the sensor obstructed). In addition, optimal performance requires calibration under conditions close to normal operation. This is not required for the regular parking detection functionality, only for the obstruction detection.
+
 
 Temperature
 ^^^^^^^^^^^
-The SNR is dependent on the sensor temperature, this relationship is modeled in the algorithm and compensated for. The general rule is that the SNR increases in lower temperatures and decreases with increased temperatures. However, this is based on the temperature during calibration. So for optimal performance, the calibration temperature should be as close to operating conditions as possible.
+The SNR is dependent on the sensor temperature, this relationship is modeled in the algorithm and compensated for automatically based on the temperature recorded at time for calibration (typically at start-up). The general rule is that the SNR increases in lower temperatures and decreases with increased temperatures. If the obstruction detector is activated and the temperature is estimated to deviate more than 20 degrees, it is recommended to re-calibrate the obstruction detector.
 
 Results
 ---------
@@ -166,7 +168,11 @@ The obstruction system was tested by obstructing the sensor with different objec
 
 Temperature
 ^^^^^^^^^^^
-All tests have been performed outside in southern Swedish winter conditions (around 0 degrees Celsius ambient temperature) while the sensor was calibrated in indoor conditions. So a temperature difference slightly below 20 degrees was experienced without issue.
+All parking tests have been performed outside in southern Swedish winter conditions (around 0 degrees Celsius ambient temperature) while the sensor was calibrated in indoor conditions. So a temperature difference slightly below 20 degrees was experienced without issue.
+
+Obstruction Detection
+^^^^^^^^^^^^^^^^^^^^^
+The obstruction detection has been tested in a temperature oven by first calibrating in ambient (25 degrees) and then heating/cooling and performing an obstruction in regular intervals. The obstruction (under default settings) works to 22 degrees deviation, where the sensor start to report constant obstruction.
 
 
 Ref App Configuration
