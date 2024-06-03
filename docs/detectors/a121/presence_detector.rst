@@ -1,7 +1,7 @@
 .. _exploration_tool-a121-presence_detection:
 
-Presence detection
-==================
+Presence Detector
+=================
 
 This presence detector measures changes in the data over time to detect motion. It is divided into two separate parts:
 

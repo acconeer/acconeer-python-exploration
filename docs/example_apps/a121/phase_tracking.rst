@@ -1,4 +1,4 @@
-Phase tracking
+Phase Tracking
 ==============
 
 Phase Tracking is an example of how a single object can be tracked using only the phase information of the Sparse IQ service.

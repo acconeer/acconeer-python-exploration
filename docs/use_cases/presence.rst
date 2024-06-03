@@ -9,4 +9,4 @@ Acconeer Offering
 
 Acconeer's sensor use state-of-the-art :term:`PCR` technology to deliver accurate and reliable presence detection for a wide range of use cases. To address these use cases we have created a ready-to-use :term:`Detector`:
 
--  :doc:`Presence Detector</detectors/a121/presence_detection>`: This Detector identifies fast and slow movements within a specified range.
+-  :doc:`Presence Detector</detectors/a121/presence_detector>`: This Detector identifies fast and slow movements within a specified range.

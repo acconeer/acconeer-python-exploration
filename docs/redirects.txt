@@ -154,3 +154,6 @@
 "handbook/index.rst" "removed.rst"
 "exploration_tool/example_scripts/vibration/examples-a121-algo-vibration-vibration.rst" "removed.rst"
 "use_cases.rst" "use_cases/index.rst"
+"detectors/a121/presence_detection.rst" "detectors/a121/presence_detector.rst"
+"detectors/a121/distance_detection.rst" "detectors/a121/distance_detector.rst"
+"detectors/a121/speed_detection.rst" "detectors/a121/speed_detector.rst"

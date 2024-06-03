@@ -14,4 +14,4 @@ Acconeer's solution improves on this by
 Acconeer Offering
 =================
 
-- :doc:`/example_apps/a121/hand_motion_detection`: This A121 Example Application continuously detect the hands and uses the :doc:`/detectors/a121/presence_detection` to attain low power consumption.
+- :doc:`/example_apps/a121/hand_motion_detection`: This A121 Example Application continuously detect the hands and uses the :doc:`/detectors/a121/presence_detector` to attain low power consumption.

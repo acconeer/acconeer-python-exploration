@@ -11,7 +11,7 @@ Acconeer Offering
 
 You can also see the offerings that measure distance in different ways:
 
-- :doc:`/detectors/a121/distance_detection`: This :term:`Detector` offers pure distance measurements using the A121 sensor.
+- :doc:`/detectors/a121/distance_detector`: This :term:`Detector` offers pure distance measurements using the A121 sensor.
 
 - :doc:`/example_apps/a121/phase_tracking`: An A121 Example Application for relative movement displacement.
 

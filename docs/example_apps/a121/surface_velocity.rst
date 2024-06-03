@@ -1,4 +1,4 @@
-Surface velocity
+Surface Velocity
 ================
 
 This example uses the A121 to measure the surface velocity of a water flow.

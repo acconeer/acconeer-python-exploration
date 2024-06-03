@@ -1,11 +1,11 @@
-Hand motion detection
+Hand Motion Detection
 =====================
 
 The purpose of the hand motion detection algorithm is to detect the presence of a pair of hands in front of the faucet in a sink.
 In the typical application, the goal is to minimize the water consumption by turning the faucet on and off, based on the output of the algorithm.
 
 To achieve low power consumption, thereby enabling the usage of battery, the hand motion detection algorithm is paired with the
-:doc:`presence detector</detectors/a121/presence_detection>`,
+:doc:`/detectors/a121/presence_detector`,
 monitoring the presence of a human in the vicinity of the sink.
 If presence is detected, the application switches over from the presence detector mode to the hand motion detection mode.
 Once hand motion is no longer detected, the application switches back to the low power mode.
@@ -47,7 +47,7 @@ and the hand motion detection mode.
 **Presence detection configuration**
 
 For details on the presence detector configuration and how to configure, follow
-:doc:`this link</detectors/a121/presence_detection>`.
+:doc:`this link</detectors/a121/presence_detector>`.
 
 **Hand motion detection configuration**
 
@@ -87,7 +87,7 @@ The following hints should be used as a starting point when setting up applicati
 - With the water turned off, adjust :attr:`~acconeer.exptool.a121.algo.hand_motion.ExampleAppConfig.filter_time_const`, :attr:`~acconeer.exptool.a121.algo.hand_motion.ExampleAppConfig.threshold` and :attr:`~acconeer.exptool.a121.algo.hand_motion.ExampleAppConfig.detection_retention_duration` to get desired response.
 - Set the parameters :attr:`~acconeer.exptool.a121.algo.hand_motion.ExampleAppConfig.sensor_to_water_distance`, :attr:`~acconeer.exptool.a121.algo.hand_motion.ExampleAppConfig.water_jet_width` and :attr:`~acconeer.exptool.a121.algo.hand_motion.ExampleAppConfig.measurement_range_end` according to the sensor installation and faucet setup.
 - Make sure that the algorithm does not detect running water by starting the water flow and observing the hand motion metric, visualized in Exploration Tool. If the water causes the metric to go over the threshold, increase :attr:`~acconeer.exptool.a121.algo.hand_motion.ExampleAppConfig.water_jet_width` to further increase size the region not being measured an/or increase the :attr:`~acconeer.exptool.a121.algo.hand_motion.ExampleAppConfig.threshold`.
-- Tuning the parameters of the presence detector is easily done in the :doc:`presence detector</detectors/a121/presence_detection>` application, available in Exploration Tool. Once a satisfactory configuration is found, transfer the parameters back to this application.
+- Tuning the parameters of the presence detector is easily done in the :doc:`/detectors/a121/presence_detector` application, available in Exploration Tool. Once a satisfactory configuration is found, transfer the parameters back to this application.
 
 Result
 ------

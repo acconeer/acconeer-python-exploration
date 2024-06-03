@@ -15,7 +15,7 @@ Each concept is explained in more detail in the following sections.
 Determine distance to person
 ----------------------------
 The algorithm utilize the
-:doc:`presence algorithm</detectors/a121/presence_detection>`
+:doc:`presence algorithm</detectors/a121/presence_detector>`
 to determine the distance to the person, located somewhere in the measurement range.
 The measurement range is defined through the reference application configuration parameters
 :attr:`~acconeer.exptool.a121.algo.breathing._ref_app.RefAppConfig.start_m`
@@ -128,7 +128,7 @@ Practical considerations
 This section outlines a number of practical considerations when getting started with the breathing reference application.
 
 - Start with one of the recommended presets, and then tune parameters if necessary.
-- If there is a need to change the dynamics of the presence processor, do the tuning in the :doc:`presence algorithm</detectors/a121/presence_detection>` GUI as there is more visual feedback related to the presence algorithm. Once new parameter values has been determined, transfer them to the breathing reference application.
+- If there is a need to change the dynamics of the presence processor, do the tuning in the :doc:`presence algorithm</detectors/a121/presence_detector>` GUI as there is more visual feedback related to the presence algorithm. Once new parameter values has been determined, transfer them to the breathing reference application.
 - When running the breathing reference application, aim the sensor towards the chest and stomach of the person for best performance.
 - Use a lens when measuring at distances greater than 1 meter.
 

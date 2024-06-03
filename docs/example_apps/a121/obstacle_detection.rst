@@ -1,6 +1,6 @@
 .. _exploration_tool-a121-obstacle_detection:
 
-Obstacle detection
+Obstacle Detection
 ==================
 
 Introduction
@@ -9,15 +9,15 @@ Introduction
 The purpose of the Obstacle detection example application is to detect objects and estimate their distance and angle from a moving platform, such as a robot.
 The algorithm is built on top of the Sparse IQ service and has various configuration parameters available to tailor the application to specific use cases.
 
-The application can be seen as a combination of the :doc:`Distance Detector</detectors/a121/distance_detection>` and :doc:`Speed Detector</detectors/a121/speed_detection>` to measure both the distance to and speed of an object simultaneously.
+The application can be seen as a combination of the :doc:`/detectors/a121/distance_detector` and :doc:`/detectors/a121/speed_detector` to measure both the distance to and speed of an object simultaneously.
 
 The application utilizes the following key concepts:
 
 **1. Distance filtering:**
-A matched filter is applied along the distance dimension to improve the signal quality and suppress noise. For a more in-depth discussion on the topic of distance filter, see the :doc:`Distance Detector documentation</detectors/a121/distance_detection>`.
+A matched filter is applied along the distance dimension to improve the signal quality and suppress noise. For a more in-depth discussion on the topic of distance filter, see the :doc:`/detectors/a121/distance_detector` documentation.
 
 **2. DFT in the sweep dimension:**
-The velocity component at every distance point is computed by performing a Discrete Fourier Transform (DFT) in the sweep dimension of the data frame. For a more in-depth discussion on the topic of speed estimation by DFT in the sweep dimension, see the :doc:`Speed Detector documentation</detectors/a121/speed_detection>`.
+The velocity component at every distance point is computed by performing a Discrete Fourier Transform (DFT) in the sweep dimension of the data frame. For a more in-depth discussion on the topic of speed estimation by DFT in the sweep dimension, see the :doc:`Speed Detector documentation</detectors/a121/speed_detector>`.
 
 **3. Comparing frame to a threshold:**
 Peaks in the distance-velocity frames, corresponding to objects in front of the radar, are found and compared to a threshold.

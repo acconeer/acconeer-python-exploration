@@ -1,5 +1,5 @@
-Touchless button
-=====================
+Touchless Button
+================
 
 The purpose of the touchless button reference application is to employ the A121 sensor as a contactless button. This algorithm proves useful in scenarios where registering a button press is needed without physically touching a surface. A prime example would be in public spaces.
 

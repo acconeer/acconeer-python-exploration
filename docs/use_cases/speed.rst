@@ -14,4 +14,4 @@ Acconeer Offering
 
 We have provided a :term:`Detector` to help you easily get started to utilize Acconeer's :term:`PCR` technology to deliver reliable and accurate speed measurements:
 
-- :doc:`Speed Detector</detectors/a121/speed_detection>`: This Detector can determine the speed and the radial direction of a moving object.
+- :doc:`Speed Detector</detectors/a121/speed_detector>`: This Detector can determine the speed and the radial direction of a moving object.

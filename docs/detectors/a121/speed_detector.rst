@@ -1,7 +1,7 @@
 .. _exploration_tool-a121-speed_detection:
 
-Speed Detection
-==================
+Speed Detector
+===============
 
 Introduction
 ------------

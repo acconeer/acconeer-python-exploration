@@ -1,5 +1,5 @@
-Distance Detection
-==================
+Distance Detector
+=================
 
 The goal of the distance detector is to produce highly accurate distance measurements while maintaining low power consumption by combining the features of the A121 sensor with powerful signal processing concepts, all wrapped with a simple to use API.
 

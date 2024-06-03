@@ -1,4 +1,4 @@
-Smart presence
+Smart Presence
 ==============
 
 Smart presence is based on the presence detector, see :ref:`exploration_tool-a121-presence_detection`.
