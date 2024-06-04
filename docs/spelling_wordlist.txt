@@ -6,6 +6,7 @@ addDataItem
 addItem
 al
 algo
+algos
 amongst
 autocorrelation
 backend
