@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -453,7 +453,7 @@ TOUCHLESS_BUTTON_PLUGIN = PluginSpec(
     generation=PluginGeneration.A121,
     key="touchless_button",
     title="Touchless button",
-    docs_link="https://docs.acconeer.com/en/latest/exploration_tool/algo/a121/ref_apps/touchless_button.html",
+    docs_link="https://docs.acconeer.com/en/latest/ref_apps/a121/touchless_button.html",
     description="Detect tap/wave motion and register as button press.",
     family=PluginFamily.REF_APP,
     presets=[

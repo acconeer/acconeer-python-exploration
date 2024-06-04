@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -812,7 +812,7 @@ BREATHING_PLUGIN = PluginSpec(
     generation=PluginGeneration.A121,
     key="breathing",
     title="Breathing",
-    docs_link="https://docs.acconeer.com/en/latest/exploration_tool/algo/a121/ref_apps/breathing.html",
+    docs_link="https://docs.acconeer.com/en/latest/ref_apps/a121/breathing.html",
     description="Detect breathing rate.",
     family=PluginFamily.REF_APP,
     presets=[

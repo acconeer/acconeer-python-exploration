@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -715,7 +715,7 @@ DISTANCE_DETECTOR_PLUGIN = PluginSpec(
     generation=PluginGeneration.A121,
     key="distance_detector",
     title="Distance detector",
-    docs_link="https://docs.acconeer.com/en/latest/exploration_tool/algo/a121/detectors/distance_detection.html",
+    docs_link="https://docs.acconeer.com/en/latest/detectors/a121/distance_detector.html",
     description="Easily measure distance to objects.",
     family=PluginFamily.DETECTOR,
     presets=[

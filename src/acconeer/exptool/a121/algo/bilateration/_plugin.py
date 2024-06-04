@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -685,7 +685,7 @@ BILATERATION_PLUGIN = PluginSpec(
     generation=PluginGeneration.A121,
     key="bilateration",
     title="Bilateration",
-    docs_link="https://docs.acconeer.com/en/latest/exploration_tool/algo/a121/examples/bilateration.html",
+    docs_link="https://docs.acconeer.com/en/latest/example_apps/a121/bilateration.html",
     description="Use two sensors to estimate distance and angle.",
     family=PluginFamily.EXAMPLE_APP,
     presets=[

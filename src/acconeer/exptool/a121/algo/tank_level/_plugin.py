@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -781,7 +781,7 @@ TANK_LEVEL_PLUGIN = PluginSpec(
     generation=PluginGeneration.A121,
     key="tank_level",
     title="Tank level",
-    docs_link="https://docs.acconeer.com/en/latest/exploration_tool/algo/a121/ref_apps/tank_level.html",
+    docs_link="https://docs.acconeer.com/en/latest/ref_apps/a121/tank_level.html",
     description="Measure liquid levels in tanks",
     family=PluginFamily.REF_APP,
     presets=[

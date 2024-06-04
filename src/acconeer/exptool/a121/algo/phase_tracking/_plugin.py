@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -265,7 +265,7 @@ PHASE_TRACKING_PLUGIN = PluginSpec(
     generation=PluginGeneration.A121,
     key="phase_tracking",
     title="Phase tracking",
-    docs_link="https://docs.acconeer.com/en/latest/exploration_tool/algo/a121/examples/phase_tracking.html",
+    docs_link="https://docs.acconeer.com/en/latest/example_apps/a121/phase_tracking.html",
     description="Track target with micrometer precision.",
     family=PluginFamily.EXAMPLE_APP,
     presets=[
