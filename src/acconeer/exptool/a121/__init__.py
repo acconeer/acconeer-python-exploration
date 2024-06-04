@@ -1,7 +1,7 @@
 # Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
-SDK_VERSION = "1.6.0"
+SDK_VERSION = "1.7.0"
 
 # Make these visible under the a121 package to not break api
 from acconeer.exptool._core.communication.client import ClientError, ServerError
