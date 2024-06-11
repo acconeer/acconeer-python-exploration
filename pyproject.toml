@@ -163,7 +163,7 @@ build = ["clean", "html", "latexpdf", "linkcheck", "spelling", "rediraffe-check"
 # This is the environment for "hatch fmt"
 config-path = "none"
 dependencies = [
-    "ruff==0.1.6",
+    "ruff==0.4.8",
     "packaging",
     'tomli; python_version < "3.11"',
 ]
@@ -171,11 +171,9 @@ dependencies = [
 [tool.hatch.envs.hatch-static-analysis.scripts]
 format-check = [
     "python -m ruff format --diff .",
-    "python docs/generate_example_script_pages.py check",
 ]
 format-fix = [
     "python -m ruff format .",
-    "python docs/generate_example_script_pages.py generate",
 ]
 lint-check = [
     "python tools/check_permissions.py",
@@ -184,20 +182,24 @@ lint-check = [
     "python tools/check_sdk_mentions.py",
     "python tools/check_changelog.py",
     "python tools/check_copyright.py",
-    "python -m ruff .",
+    "python docs/generate_example_script_pages.py check",
+    "python -m ruff check .",
 ]
 lint-fix = [
     "python tools/check_copyright.py --update-year",
-    "python -m ruff --fix .",
+    "python docs/generate_example_script_pages.py generate",
+    "python -m ruff check --fix .",
     "lint-check"
 ]
 
 [tool.ruff]
+include = ["pyproject.toml", "**/*.py"]
+
 line-length = 99
 target-version = "py38"
 
 show-fixes = true
-show-source = true
+output-format = "concise"
 
 src = ["src", "tests"]
 namespace-packages = ["src/acconeer"]
@@ -209,17 +211,16 @@ explicit-preview-rules = true
 # Q = flake8-quotes, TID = flake8-tidy-imports, I = isort, FA = flake8-future-annotations, NPY = Numpy specific rules
 extend-select = ["Q", "TID", "I", "FA", "NPY"]
 # E741 = Ambiguous variable names, e.g. I vs l
-# E501 = "line too long". Handled by black.
-extend-ignore = ["E741", "E501"]
+extend-ignore = ["E741"]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401", "E402"]
 "src/acconeer/exptool/_winusbcdc/*" = ["F40", "E501"]
 
-[tool.ruff.flake8-tidy-imports]
+[tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "parents"
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 lines-after-imports = 2
 
 known-third-party = [
@@ -256,7 +257,7 @@ section-order = [
     "local-folder",
 ]
 
-[tool.ruff.isort.sections]
+[tool.ruff.lint.isort.sections]
 "PySide6" = ["PySide6"]
 "pyqtgraph" = ["pyqtgraph"]
 "acconeer" = ["acconeer"]

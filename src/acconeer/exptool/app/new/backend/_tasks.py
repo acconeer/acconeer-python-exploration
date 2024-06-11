@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -30,12 +30,10 @@ class _TaskDescriptor(t.Generic[_P, _R]):
         setattr(owner, self._method_name, self._method)
 
     @t.overload
-    def __get__(self, obj: None, objtype: t.Any = ...) -> te.Self:
-        ...
+    def __get__(self, obj: None, objtype: t.Any = ...) -> te.Self: ...
 
     @t.overload
-    def __get__(self, obj: t.Any, objtype: t.Any = ...) -> t.Callable[_P, _R]:
-        ...
+    def __get__(self, obj: t.Any, objtype: t.Any = ...) -> t.Callable[_P, _R]: ...
 
     def __get__(
         self, obj: t.Optional[t.Any], objtype: t.Any = None

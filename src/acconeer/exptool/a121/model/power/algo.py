@@ -26,16 +26,14 @@ def _interleave(
     __a: t.Iterable[_S],
     __b: t.Iterable[_T],
     __c: t.Iterable[_U],
-) -> t.Iterator[t.Union[_S, _T, _U]]:
-    ...
+) -> t.Iterator[t.Union[_S, _T, _U]]: ...
 
 
 @te.overload
 def _interleave(
     __a: t.Iterable[_S],
     __b: t.Iterable[_T],
-) -> t.Iterator[t.Union[_S, _T]]:
-    ...
+) -> t.Iterator[t.Union[_S, _T]]: ...
 
 
 def _interleave(*iterables: t.Iterable[_T]) -> t.Iterator[_T]:
@@ -58,8 +56,7 @@ class Algorithm(te.Protocol):
         lower_idle_state: t.Optional[Sensor.LowerIdleState],
         sensor: Sensor,
         module: Module,
-    ) -> t.Iterable[domain.EnergyRegion]:
-        ...
+    ) -> t.Iterable[domain.EnergyRegion]: ...
 
 
 class SparseIq(Algorithm):
@@ -144,7 +141,7 @@ class Distance(Algorithm):
 
     @staticmethod
     def recalculate_idle(
-        idle_and_processing: tuple[domain.SimpleRegion, domain.EnergyRegion]
+        idle_and_processing: tuple[domain.SimpleRegion, domain.EnergyRegion],
     ) -> t.Optional[domain.SimpleRegion]:
         idle, processing = idle_and_processing
 

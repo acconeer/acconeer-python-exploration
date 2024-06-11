@@ -72,6 +72,7 @@ correct type is returned.
 
 [1] type-safe practically means your editor will yell at you for using the wrong types
 """
+
 from __future__ import annotations
 
 import functools
@@ -238,16 +239,14 @@ class Epoch(t.Generic[_HeadT, _ReqCtxT, _MigT]):
         )
 
     @te.overload
-    def migrate(self: Epoch[_HeadT, te.Never, _MigT], obj: _HeadT | _MigT) -> _HeadT:
-        ...
+    def migrate(self: Epoch[_HeadT, te.Never, _MigT], obj: _HeadT | _MigT) -> _HeadT: ...
 
     @te.overload
     def migrate(
         self: Epoch[_HeadT, _ReqCtxT, _MigT],
         obj: _HeadT | _MigT,
         completer: Completer[_ReqCtxT],
-    ) -> _HeadT:
-        ...
+    ) -> _HeadT: ...
 
     def migrate(
         self, obj: _HeadT | _MigT, completer: Completer[t.Any] = _null_completer

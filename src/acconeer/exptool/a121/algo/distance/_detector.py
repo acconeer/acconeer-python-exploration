@@ -283,9 +283,9 @@ class SingleSensorContext(AlgoBase):
                 recorded_threshold_frames = _get_group_items(
                     extra_group["recorded_threshold_frames"]
                 )
-                context_dict["extra_context"][
-                    "recorded_threshold_frames"
-                ] = recorded_threshold_frames
+                context_dict["extra_context"]["recorded_threshold_frames"] = (
+                    recorded_threshold_frames
+                )
 
         context_dict["extra_context"] = SingleSensorExtraContext(**context_dict["extra_context"])
 

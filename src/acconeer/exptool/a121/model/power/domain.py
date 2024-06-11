@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 r"""
 This module contains the power modelling building blocks.
@@ -68,20 +68,17 @@ class EnergyRegion(te.Protocol):
         COMMUNICATION = auto()
 
     @property
-    def average_current(self) -> float:
-        ...
+    def average_current(self) -> float: ...
 
     @property
-    def duration(self) -> float:
-        ...
+    def duration(self) -> float: ...
 
     @property
     def charge(self) -> float:
         return self.average_current * self.duration
 
     @property
-    def description(self) -> str:
-        ...
+    def description(self) -> str: ...
 
     def truncate(self, new_duration: float) -> EnergyRegion:
         """Returns a (time-)truncated copy of this region"""

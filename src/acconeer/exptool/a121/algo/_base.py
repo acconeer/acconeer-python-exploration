@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -26,8 +26,7 @@ ResultT = TypeVar("ResultT")
 
 class GenericProcessorBase(abc.ABC, Generic[InputT, ResultT]):
     @abc.abstractmethod
-    def process(self, result: InputT) -> ResultT:
-        ...
+    def process(self, result: InputT) -> ResultT: ...
 
 
 ProcessorBase = GenericProcessorBase[a121.Result, ResultT]
@@ -40,16 +39,13 @@ class Controller(abc.ABC, Generic[ConfigT, ResultT]):
         self.config = config
 
     @abc.abstractmethod
-    def start(self, recorder: Optional[a121.Recorder] = None) -> None:
-        ...
+    def start(self, recorder: Optional[a121.Recorder] = None) -> None: ...
 
     @abc.abstractmethod
-    def get_next(self) -> ResultT:
-        ...
+    def get_next(self) -> ResultT: ...
 
     @abc.abstractmethod
-    def stop(self) -> Any:
-        ...
+    def stop(self) -> Any: ...
 
 
 @attrs.mutable(slots=False)

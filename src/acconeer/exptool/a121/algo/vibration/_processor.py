@@ -160,8 +160,7 @@ class ProcessorConfig(AlgoProcessorConfigBase):
 
 
 @attrs.frozen(kw_only=True)
-class ProcessorContext:
-    ...
+class ProcessorContext: ...
 
 
 @attrs.frozen(kw_only=True)

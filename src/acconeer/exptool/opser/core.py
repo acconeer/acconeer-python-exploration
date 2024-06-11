@@ -77,12 +77,10 @@ class TypeMissmatchError(SaveError):
 
 
 class JsonPresentable(te.Protocol):
-    def to_json(self) -> str:
-        ...
+    def to_json(self) -> str: ...
 
     @classmethod
-    def from_json(cls, json_string: str) -> te.Self:
-        ...
+    def from_json(cls, json_string: str) -> te.Self: ...
 
 
 @attrs.frozen

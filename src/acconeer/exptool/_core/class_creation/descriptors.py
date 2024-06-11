@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -16,11 +16,9 @@ _T = t.TypeVar("_T")
 
 @te.runtime_checkable
 class Descriptor(te.Protocol[_T]):
-    def __get__(self, obj: t.Any, objtype: t.Optional[type] = None) -> _T:
-        ...
+    def __get__(self, obj: t.Any, objtype: t.Optional[type] = None) -> _T: ...
 
-    def __set__(self, obj: t.Any, value: _T) -> None:
-        ...
+    def __set__(self, obj: t.Any, value: _T) -> None: ...
 
 
 def delegate_field(

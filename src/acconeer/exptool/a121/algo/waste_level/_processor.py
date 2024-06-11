@@ -123,8 +123,7 @@ class ProcessorConfig(AlgoProcessorConfigBase):
 
 
 @attrs.frozen(kw_only=True)
-class ProcessorContext:
-    ...
+class ProcessorContext: ...
 
 
 @attrs.frozen(kw_only=True)
@@ -212,8 +211,7 @@ class Processor(ProcessorBase[ProcessorResult]):
             extra_result=extra_result,
         )
 
-    def update_config(self, config: ProcessorConfig) -> None:
-        ...
+    def update_config(self, config: ProcessorConfig) -> None: ...
 
 
 def _load_algo_data(algo_group: h5py.Group) -> ProcessorConfig:

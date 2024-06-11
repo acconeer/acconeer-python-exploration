@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -225,7 +225,7 @@ def zip3_extended_structures(
 
 
 def iterate_extended_structure(
-    structure: Sequence[Mapping[int, ValueT]]
+    structure: Sequence[Mapping[int, ValueT]],
 ) -> Iterator[Tuple[int, int, ValueT]]:
     """Iterates over the elements of the extended structure.
 
@@ -238,7 +238,7 @@ def iterate_extended_structure(
 
 
 def iterate_extended_structure_as_entry_list(
-    structure: list[dict[int, ValueT]]
+    structure: list[dict[int, ValueT]],
 ) -> Iterator[Tuple[int, int, ValueT]]:
     """Iterates over the elements of the extended structure.
 
@@ -263,7 +263,7 @@ def extended_structure_entry_count(structure: list[dict[int, Any]]) -> int:
 
 
 def iterate_extended_structure_values(
-    structure: Sequence[Mapping[int, ValueT]]
+    structure: Sequence[Mapping[int, ValueT]],
 ) -> Iterator[ValueT]:
     """Iterates like `iterate_extended_structure` but throws away group id and sensor id."""
     for _, _, value in iterate_extended_structure(structure):
@@ -275,7 +275,7 @@ def extended_structure_shape(structure: list[dict[int, Any]]) -> list[set[int]]:
 
 
 def transpose_extended_structures(
-    structures: list[list[dict[int, ValueT]]]
+    structures: list[list[dict[int, ValueT]]],
 ) -> list[dict[int, list[ValueT]]]:
     """'Transposes' a list of extended structures to create an extended structure of lists"""
 

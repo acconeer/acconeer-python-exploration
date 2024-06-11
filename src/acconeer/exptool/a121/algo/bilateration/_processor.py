@@ -416,7 +416,7 @@ class _KalmanFilter:
 
 
 def _load_algo_data(
-    algo_group: h5py.Group
+    algo_group: h5py.Group,
 ) -> Tuple[list[int], DetectorConfig, ProcessorConfig, DetectorContext]:
     sensor_ids = algo_group["sensor_ids"][()].tolist()
     detector_config = DetectorConfig.from_json(algo_group["detector_config"][()])

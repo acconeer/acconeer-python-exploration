@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 """
@@ -63,6 +63,7 @@ actual ``Pidget`` the hook is attached to is the first argument of the hook.
 This means that the hook has access to any pidget in a ``AttrsConfigEditor``,
 allowing for interesting combinations!
 """
+
 from __future__ import annotations
 
 import typing as t

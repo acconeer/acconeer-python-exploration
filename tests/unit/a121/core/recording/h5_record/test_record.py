@@ -12,6 +12,7 @@ round-trip through:
 4. Deserialization
 5. ... and finally compared.
 """
+
 from __future__ import annotations
 
 from typing import Any, Iterator

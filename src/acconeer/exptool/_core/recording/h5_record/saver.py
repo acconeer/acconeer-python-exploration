@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -19,22 +19,17 @@ _ServerInfoT = t.TypeVar("_ServerInfoT", contravariant=True)
 class H5Saver(te.Protocol[_ConfigT, _MetadataT, _ResultT, _ServerInfoT]):
     """Interface for savers handling writing results to file"""
 
-    def _start(self) -> None:
-        ...
+    def _start(self) -> None: ...
 
-    def _write_server_info(self, group: h5py.Group, server_info: _ServerInfoT) -> None:
-        ...
+    def _write_server_info(self, group: h5py.Group, server_info: _ServerInfoT) -> None: ...
 
     def _start_session(
         self, group: h5py.Group, *, config: _ConfigT, metadata: _MetadataT, **kwargs: t.Any
-    ) -> None:
-        ...
+    ) -> None: ...
 
-    def _sample(self, group: h5py.Group, results: t.Iterable[_ResultT]) -> None:
-        ...
+    def _sample(self, group: h5py.Group, results: t.Iterable[_ResultT]) -> None: ...
 
-    def _stop_session(self, group: h5py.Group) -> None:
-        ...
+    def _stop_session(self, group: h5py.Group) -> None: ...
 
 
 class ChunkedH5Saver(H5Saver[_ConfigT, _MetadataT, _ResultT, _ServerInfoT]):

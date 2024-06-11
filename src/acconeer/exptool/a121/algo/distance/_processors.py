@@ -419,9 +419,9 @@ class Processor(ProcessorBase[ProcessorResult]):
             self.cfar_abs_noise = np.zeros(shape=self.num_points_cropped)
             if self.context.bg_noise_std is not None:
                 for idx, tx_off_noise_std in enumerate(self.context.bg_noise_std):
-                    self.cfar_abs_noise[
-                        self.subsweep_bpts[idx] : self.subsweep_bpts[idx + 1]
-                    ] = tx_off_noise_std
+                    self.cfar_abs_noise[self.subsweep_bpts[idx] : self.subsweep_bpts[idx + 1]] = (
+                        tx_off_noise_std
+                    )
             self.cfar_margin = self.calc_cfar_margin(self.profile, self.step_length)
             self.window_length = self._calc_cfar_window_length(self.profile, self.step_length)
             self.guard_half_length = self._calc_cfar_guard_half_length(

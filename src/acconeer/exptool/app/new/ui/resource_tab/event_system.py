@@ -21,6 +21,7 @@ on its events so that consumers are able to tell events from
 different producers apart (this allows duplicated producer services).
 This is done via 'EventBroker.install_identified_service'.
 """
+
 from __future__ import annotations
 
 import collections

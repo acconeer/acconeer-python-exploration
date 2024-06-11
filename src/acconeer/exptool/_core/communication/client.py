@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -134,20 +134,16 @@ class Client(
         self._recorder_start(recorder)
 
     @abc.abstractmethod
-    def _recorder_start(self, recorder: _RecorderT) -> None:
-        ...
+    def _recorder_start(self, recorder: _RecorderT) -> None: ...
 
     @abc.abstractmethod
-    def _recorder_start_session(self) -> None:
-        ...
+    def _recorder_start_session(self) -> None: ...
 
     @abc.abstractmethod
-    def _recorder_sample(self, result: _ResultT) -> None:
-        ...
+    def _recorder_sample(self, result: _ResultT) -> None: ...
 
     @abc.abstractmethod
-    def _recorder_stop_session(self) -> None:
-        ...
+    def _recorder_stop_session(self) -> None: ...
 
     def detach_recorder(self) -> t.Optional[_RecorderT]:
         if self.session_is_started:
@@ -164,8 +160,7 @@ class Client(
             return previously_attached_recorder
 
     @abc.abstractmethod
-    def setup_session(self, config: _ConfigT) -> _MetadataT:
-        ...
+    def setup_session(self, config: _ConfigT) -> _MetadataT: ...
 
     @abc.abstractmethod
     def start_session(self) -> None:
@@ -178,8 +173,7 @@ class Client(
         ...
 
     @abc.abstractmethod
-    def get_next(self) -> _ResultT:
-        ...
+    def get_next(self) -> _ResultT: ...
 
     @abc.abstractmethod
     def stop_session(self) -> None:

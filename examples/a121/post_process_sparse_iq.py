@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 """
@@ -12,6 +12,7 @@ Usage:
 
     python path/to/post_process_sparse_iq.py <path/to/h5 file> --processing distance
 """
+
 import argparse
 import pathlib
 

@@ -354,7 +354,7 @@ def get_distance_filter_edge_margin(profile: a121.Profile, step_length: int) -> 
 
 
 def double_buffering_frame_filter(
-    _frame: npt.NDArray[Any]
+    _frame: npt.NDArray[Any],
 ) -> Optional[npt.NDArray[np.complex128]]:
     """
     Detects and removes outliers in data that appear when the double buffering mode is enabled,

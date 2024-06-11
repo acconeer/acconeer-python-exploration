@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -21,12 +21,10 @@ ResultT = TypeVar("ResultT")
 
 class _Extractor(te.Protocol):
     @staticmethod
-    def create_rate_calculator(client: Any) -> _RateCalculator:
-        ...
+    def create_rate_calculator(client: Any) -> _RateCalculator: ...
 
     @staticmethod
-    def update_rate_calculator(calculator: _RateCalculator, result: Any) -> _RateStats:
-        ...
+    def update_rate_calculator(calculator: _RateCalculator, result: Any) -> _RateStats: ...
 
 
 class _A121Extractor(_Extractor):

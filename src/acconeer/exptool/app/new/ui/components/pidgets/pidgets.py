@@ -56,8 +56,7 @@ class PidgetFactory(abc.ABC):
     hooks: Sequence[PidgetHook] = attrs.field(factory=tuple, converter=_hooks_converter)
 
     @abc.abstractmethod
-    def create(self, parent: QWidget) -> Pidget:
-        ...
+    def create(self, parent: QWidget) -> Pidget: ...
 
     @name_label_text.validator
     def check_for_whitespaces(self, attribute: Any, value: str) -> None:
@@ -876,7 +875,7 @@ class _PidgetFloatSlider(QSlider):
 
 
 def _convert_int_limits_to_qt_range(
-    limits: Optional[Tuple[Optional[int], Optional[int]]]
+    limits: Optional[Tuple[Optional[int], Optional[int]]],
 ) -> Tuple[int, int]:
     if limits is None:
         limits = (None, None)
@@ -893,7 +892,7 @@ def _convert_int_limits_to_qt_range(
 
 
 def _convert_float_limits_to_qt_range(
-    limits: Optional[Tuple[Optional[float], Optional[float]]]
+    limits: Optional[Tuple[Optional[float], Optional[float]]],
 ) -> Tuple[float, float]:
     if limits is None:
         limits = (None, None)

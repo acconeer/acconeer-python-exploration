@@ -226,9 +226,9 @@ def get_setupapi_functions(setupapi):
     ]
 
     # BOOL SetupDiGetDeviceInterfaceDetail(_In_ HDEVINFO DeviceInfoSet,_In_ PSP_DEVICE_INTERFACE_DATA DeviceInterfaceData,_Out_opt_ PSP_DEVICE_INTERFACE_DETAIL_DATA DeviceInterfaceDetailData,_In_ DWORD DeviceInterfaceDetailDataSize,_Out_opt_  PDWORD RequiredSize,_Out_opt_  PSP_DEVINFO_DATA DeviceInfoData);
-    setupapi_functions[
-        SetupDiGetDeviceRegistryProperty
-    ] = setupapi.SetupDiGetDeviceRegistryPropertyW
+    setupapi_functions[SetupDiGetDeviceRegistryProperty] = (
+        setupapi.SetupDiGetDeviceRegistryPropertyW
+    )
     setupapi_restypes[SetupDiGetDeviceRegistryProperty] = BOOL
     setupapi_argtypes[SetupDiGetDeviceRegistryProperty] = [
         c_void_p,

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -35,12 +35,10 @@ _FILE_DIALOG_FILTER = "JSON (*.json)"
 
 @te.runtime_checkable
 class JsonPresentable(te.Protocol):
-    def to_json(self) -> str:
-        ...
+    def to_json(self) -> str: ...
 
     @classmethod
-    def from_json(self, json_str: str) -> te.Self:
-        ...
+    def from_json(self, json_str: str) -> te.Self: ...
 
 
 _JsonPresentableT = t.TypeVar("_JsonPresentableT", bound=JsonPresentable)

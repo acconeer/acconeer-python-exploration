@@ -1,7 +1,7 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
-""" Tool dfu/flash devices with bootloader firmware """
+"""Tool dfu/flash devices with bootloader firmware"""
 
 import logging
 import time
@@ -98,7 +98,6 @@ class ImageFlasher:
 
 
 class BootloaderTool(DeviceFlasherBase):
-
     """Class to handle dfu/flash of devices with bootloader firmware"""
 
     @staticmethod

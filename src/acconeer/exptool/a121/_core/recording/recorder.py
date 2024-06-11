@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -33,8 +33,7 @@ class Recorder(
         metadata: t.List[t.Dict[int, Metadata]],
         calibrations: t.Optional[t.Dict[int, SensorCalibration]] = None,
         calibrations_provided: t.Optional[t.Dict[int, bool]] = None,
-    ) -> None:
-        ...
+    ) -> None: ...
 
 
 RecorderAttachable: te.TypeAlias = recording.RecorderAttachable[Recorder]

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -42,8 +42,7 @@ class ConnectionTypeBase(abc.ABC):
         usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
         override_baudrate: Optional[int] = None,
-    ) -> ClientInfo:
-        ...
+    ) -> ClientInfo: ...
 
     def to_dict(self) -> dict[str, Any]:
         return attrs.asdict(self)

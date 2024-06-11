@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -24,16 +24,13 @@ _AcceptedFileExtensions = Sequence[Tuple[_FileExtension, _Description]]
 
 class Calibration(ABC):
     @abstractmethod
-    def save(self, path: _Path):
-        ...
+    def save(self, path: _Path): ...
 
     @abstractclassmethod
-    def load(cls, path: _Path) -> Calibration:
-        ...
+    def load(cls, path: _Path) -> Calibration: ...
 
     @abstractclassmethod
-    def file_extensions(cls) -> _AcceptedFileExtensions:
-        ...
+    def file_extensions(cls) -> _AcceptedFileExtensions: ...
 
     @classmethod
     def validate_path(

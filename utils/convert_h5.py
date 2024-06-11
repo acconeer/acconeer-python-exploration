@@ -1342,7 +1342,7 @@ def phase_tracking_as_row(processed_data: phase_tracking.ProcessorResult) -> lis
 
 
 def surface_velocity_result_as_row(
-    processed_data: surface_velocity.ExampleAppResult
+    processed_data: surface_velocity.ExampleAppResult,
 ) -> list[t.Any]:
     velocity = f"{processed_data.velocity :.3f}"
     distance_m = f"{processed_data.distance_m :.3f} m"

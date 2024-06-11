@@ -29,7 +29,7 @@ T = TypeVar("T", bound=JsonPresentable)
 
 
 def _to_group_factory_mapping(
-    factory_mapping: Union[PidgetFactoryMapping, PidgetGroupFactoryMapping]
+    factory_mapping: Union[PidgetFactoryMapping, PidgetGroupFactoryMapping],
 ) -> PidgetGroupFactoryMapping:
     if factory_mapping == {}:
         return {}

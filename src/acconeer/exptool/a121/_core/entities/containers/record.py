@@ -131,7 +131,7 @@ class SessionRecord(abc.ABC):
 
 
 def sole_accessor(
-    f: Callable[Concatenate[Record, _P], _T]
+    f: Callable[Concatenate[Record, _P], _T],
 ) -> Callable[Concatenate[Record, _P], _T]:
     @functools.wraps(f)
     def decorated(instance: Record, *args: _P.args, **kwargs: _P.kwargs) -> _T:

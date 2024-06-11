@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -12,8 +12,7 @@ from acconeer.exptool.app.new.app_model import AppModel
 
 
 class PolicyFunction(te.Protocol):
-    def __call__(self, app_model: AppModel, *, extra_condition: bool = True) -> bool:
-        ...
+    def __call__(self, app_model: AppModel, *, extra_condition: bool = True) -> bool: ...
 
 
 def start_button_enabled(app_model: AppModel, *, extra_condition: bool = True) -> bool:
