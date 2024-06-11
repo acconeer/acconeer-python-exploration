@@ -24,6 +24,9 @@ from acconeer.exptool.a121.algo import (
 @attributes_doc
 @attrs.mutable(kw_only=True)
 class ProcessorConfig(AlgoProcessorConfigBase):
+    _MIN_START_POINT = 32  # Set to avoid direct leakage using profile 1
+    _MIN_MEASURABLE_DISTANCE_M = _MIN_START_POINT * APPROX_BASE_STEP_LENGTH_M
+
     bin_start_m: float = attrs.field(default=0.15)
     """Minimum detection distance from sensor."""
     bin_end_m: float = attrs.field(default=1.00)
@@ -66,6 +69,25 @@ class ProcessorConfig(AlgoProcessorConfigBase):
         min_measured_distance_m = min_measured_point * APPROX_BASE_STEP_LENGTH_M
         max_measured_distance_m = max_measured_point * APPROX_BASE_STEP_LENGTH_M
         measured_range_str = f"{min_measured_distance_m:.2f}-{max_measured_distance_m:.2f}m"
+
+        for subsweep in config.sensor_config.subsweeps:
+            if subsweep.start_point < self._MIN_START_POINT:
+                validation_results.append(
+                    a121.ValidationError(
+                        subsweep,
+                        "start_point",
+                        f"Start point must be greater or equal to {self._MIN_START_POINT}",
+                    )
+                )
+
+        if self.bin_start_m < self._MIN_MEASURABLE_DISTANCE_M:
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "bin_start_m",
+                    f"Bin start must be greater or equal to {self._MIN_MEASURABLE_DISTANCE_M} m",
+                )
+            )
 
         if not min_measured_distance_m <= self.bin_start_m <= max_measured_distance_m:
             bin_msg = f"Bin start is outside measured range ({measured_range_str})"
