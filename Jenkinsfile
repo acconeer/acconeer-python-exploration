@@ -6,16 +6,9 @@ enum BuildScope {
 }
 
 @Field
-def isolatedTestPythonVersionsForBuildScope = [
+def pythonVersionsForBuildScope = [
     (BuildScope.SANITY)  : ["3.9", "3.13"],
-    (BuildScope.HOURLY)  : ["3.10", "3.11"],
-    (BuildScope.NIGHTLY) : ["3.9", "3.10", "3.11", "3.12", "3.13"],
-]
-
-@Field
-def integrationTestPythonVersionsForBuildScope = [
-    (BuildScope.SANITY)  : ["3.9"],
-    (BuildScope.HOURLY)  : ["3.9"],
+    (BuildScope.HOURLY)  : ["3.10", "3.11", "3.12"],
     (BuildScope.NIGHTLY) : ["3.9", "3.10", "3.11", "3.12", "3.13"],
 ]
 
@@ -106,8 +99,7 @@ try {
 
     def buildScope = getBuildScope()
 
-    def isolatedTestPythonVersions = isolatedTestPythonVersionsForBuildScope[buildScope]
-    def integrationTestPythonVersions = integrationTestPythonVersionsForBuildScope[buildScope]
+    def pythonVersions = pythonVersionsForBuildScope[buildScope]
     def integrationTestA121RssVersions = integrationTestA121RssVersionsForBuildScope[buildScope]
     def integrationTestA111RssVersions = integrationTestA111RssVersionsForBuildScope[buildScope]
     def modelTestA121RssVersion = modelTestA121RssVersionForBuildScope[buildScope]
@@ -171,102 +163,18 @@ try {
         }
     }
 
-    parallel_steps["Model Regression Tests (${modelTestA121RssVersion})"] = {
+    parallel_steps["Test (py=${pythonVersions}, rss_a121=${integrationTestA121RssVersions}, rss_a111=${integrationTestA111RssVersions})"] = {
         node('docker') {
             ws('workspace/exptool') {
-                modelTestA121RssVersion.each { rssVersion ->
-                    stage('Setup') {
-                        printNodeInfo()
-                        checkoutAndCleanup()
+                printNodeInfo()
+                checkoutAndCleanup()
 
-                        findBuildAndCopyArtifacts(
-                            [
-                                projectName: 'sw-main',
-                                artifactNames: ["out/internal_stash_python_libs.tgz"],
-                            ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a121-vX.Y.Z']
-                        )
-                        sh 'mkdir -p stash'
-                        sh 'tar -xzf out/internal_stash_python_libs.tgz -C stash'
-                    }
-                    stage("Model Regression Tests (rss=${modelTestA121RssVersion})") {
-                        buildDocker(path: 'docker').inside(dockerArgs(env)) {
-                            hatchWrap """test -py=3.9 tests/model \
-                                --sensor-current-limits-path stash/python_libs/acconeer-analyses/acconeer/analyses/a121/resources/sensor_current_limits.yaml \
-                                --module-current-limits-path stash/python_libs/acconeer-analyses/acconeer/analyses/a121/resources/module_current_limits.yaml \
-                                --inter-sweep-idle-state-current-limits-path stash/python_libs/acconeer-analyses/acconeer/analyses/a121/resources/inter_sweep_idle_states_limits.yaml \
-                                --memory-usage-path stash/python_libs/test_utils/memory_usage.yaml \
-                            """
-                        }
-                    }
-                }
-            }
-        }
-    }
+                stage("Fetch A111 stashes (${integrationTestA111RssVersions})") {
+                    integrationTestA111RssVersions.each { rssVersion ->
+                        def rssVersionName = rssVersion.getValue()
+                        def stashFolder = "stash/a111/${rssVersionName}"
 
-    parallel_steps["Isolated tests (${isolatedTestPythonVersions})"] = {
-        node('docker') {
-            ws('workspace/exptool') {
-                stage("Isolated tests (${isolatedTestPythonVersions})") {
-                    printNodeInfo()
-                    checkoutAndCleanup()
-
-                    buildDocker(path: 'docker').inside(dockerArgs(env)) {
-                        String versionSelection = "-py=" + isolatedTestPythonVersions.join(",")
-                        hatchWrap "test ${versionSelection} --parallel tests/unit tests/processing tests/app src/acconeer/exptool tests/examples"
-                    }
-                }
-            }
-        }
-    }
-
-    parallel_steps["A121 Mock test (py=${integrationTestPythonVersions}, rss=${integrationTestA121RssVersions})"] = {
-        node('docker') {
-            ws('workspace/exptool') {
-                integrationTestA121RssVersions.each { rssVersion ->
-                    def rssVersionName = rssVersion.getValue()
-
-                    stage("Setup (rss=${rssVersionName})") {
-                        printNodeInfo()
-                        checkoutAndCleanup()
-
-                        findBuildAndCopyArtifacts(
-                            [
-                                projectName: 'sw-main',
-                                artifactNames: ["out/internal_stash_binaries_sanitizer_a121.tgz"],
-                            ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a121-vX.Y.Z']
-                        )
-                        findBuildAndCopyArtifacts(
-                            [
-                                projectName: 'sw-main',
-                                artifactNames: ["out/internal_stash_python_libs.tgz"],
-                            ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a121-vX.Y.Z']
-                        )
-                        sh 'mkdir stash'
-                        sh 'tar -xzf out/internal_stash_binaries_sanitizer_a121.tgz -C stash'
-                        sh 'tar -xzf out/internal_stash_python_libs.tgz -C stash'
-                    }
-                    stage("Run integration tests (py=${integrationTestPythonVersions}, rss=${rssVersionName})") {
-                        buildDocker(path: 'docker').inside(dockerArgs(env)) {
-                            String versionSelection = "-py=" + integrationTestPythonVersions.join(",")
-                            hatchWrap """test ${versionSelection} tests/integration/a121 \
-                                --a121-exploration-server-paths stash/out/customer/a121/internal_sanitizer_x86_64/out/acc_exploration_server_a121 \
-                            """
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    parallel_steps["A111 Mock test (py=${integrationTestPythonVersions}, rss=${integrationTestA111RssVersions})"] = {
-        node('docker') {
-            ws('workspace/exptool') {
-                integrationTestA111RssVersions.each { rssVersion ->
-                    def rssVersionName = rssVersion.getValue()
-
-                    stage("Setup (rss=${rssVersionName})") {
-                        printNodeInfo()
-                        checkoutAndCleanup()
+                        sh "mkdir -p ${stashFolder}"
 
                         findBuildAndCopyArtifacts(
                             [
@@ -274,16 +182,64 @@ try {
                                 artifactNames: ["out/internal_stash_binaries_sanitizer_a111.tgz"],
                             ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a111-vX.Y.Z']
                         )
-                        sh 'mkdir stash'
-                        sh 'tar -xzf out/internal_stash_binaries_sanitizer_a111.tgz -C stash'
+                        sh "tar -xzf out/internal_stash_binaries_sanitizer_a111.tgz -C ${stashFolder}"
                     }
-                    stage("Run integration tests (py=${integrationTestPythonVersions}, rss=${rssVersionName})") {
-                        buildDocker(path: 'docker').inside(dockerArgs(env)) {
-                            String versionSelection = "-py=" + integrationTestPythonVersions.join(",")
-                            hatchWrap """test ${versionSelection} tests/integration/a111 \
-                                --a111-exploration-server-paths stash/out/customer/a111/internal_sanitizer_x86_64/out/acc_exploration_server_a111 \
-                            """
-                        }
+                }
+
+                stage("Fetch A121 stashes (${integrationTestA121RssVersions})") {
+                    integrationTestA121RssVersions.each { rssVersion ->
+                        def rssVersionName = rssVersion.getValue()
+                        def stashFolder = "stash/a121/${rssVersionName}"
+
+                        sh "mkdir -p ${stashFolder}"
+
+                        findBuildAndCopyArtifacts(
+                            [
+                                projectName: 'sw-main',
+                                artifactNames: ["out/internal_stash_binaries_sanitizer_a121.tgz"],
+                            ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a121-vX.Y.Z']
+                        )
+                        sh "tar -xzf out/internal_stash_binaries_sanitizer_a121.tgz -C ${stashFolder}"
+                    }
+                }
+
+                stage("Fetch A121 model regression stashes ${modelTestA121RssVersion}") {
+                    modelTestA121RssVersion.each { rssVersion ->
+                        def rssVersionName = rssVersion.getValue()
+                        def stashFolder = "stash/model_a121/${rssVersionName}"
+
+                        sh "mkdir -p ${stashFolder}"
+
+                        findBuildAndCopyArtifacts(
+                            [
+                                projectName: 'sw-main',
+                                artifactNames: ["out/internal_stash_python_libs.tgz"],
+                            ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a121-vX.Y.Z']
+                        )
+                        sh "tar -xzf out/internal_stash_python_libs.tgz -C ${stashFolder}"
+                    }
+                }
+
+                stage("Run tests (${pythonVersions})") {
+                    buildDocker(path: 'docker').inside(dockerArgs(env)) {
+                        String versionSelection = "-py=" + pythonVersions.join(",")
+
+                        def a121_es_binaries = findFiles glob: 'stash/a121/*/out/customer/a121/internal_sanitizer_x86_64/out/acc_exploration_server_a121'
+                        def a111_es_binaries = findFiles glob: 'stash/a111/*/out/customer/a111/internal_sanitizer_x86_64/out/acc_exploration_server_a111'
+
+                        def a121_sensor_current_limits_matches = findFiles glob: "stash/model_a121/**/python_libs/**/sensor_current_limits.yaml"
+                        def a121_module_current_limits_matches = findFiles glob: "stash/model_a121/**/python_libs/**/module_current_limits.yaml"
+                        def a121_inter_sweep_idle_state_current_limits_matches = findFiles glob: "stash/model_a121/**/python_libs/**/inter_sweep_idle_states_limits.yaml"
+                        def a121_memory_usage_yaml_matches = findFiles glob: "stash/model_a121/**/python_libs/**/memory_usage.yaml"
+
+                        hatchWrap """test ${versionSelection} --parallel tests/ src/ \
+                            --a121-exploration-server-paths ${a121_es_binaries.join(" ")} \
+                            --a111-exploration-server-paths ${a111_es_binaries.join(" ")} \
+                            --sensor-current-limits-path ${a121_sensor_current_limits_matches[0]} \
+                            --module-current-limits-path ${a121_module_current_limits_matches[0]} \
+                            --inter-sweep-idle-state-current-limits-path ${a121_inter_sweep_idle_state_current_limits_matches[0]} \
+                            --memory-usage-path ${a121_memory_usage_yaml_matches[0]}
+                        """
                     }
                 }
             }
