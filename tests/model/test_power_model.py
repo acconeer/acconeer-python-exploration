@@ -1,9 +1,9 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
 
-import os
+import typing as t
 from pathlib import Path
 
 import pytest
@@ -15,20 +15,24 @@ from acconeer.exptool.a121.algo.presence import _configs as presence_configs
 from acconeer.exptool.a121.model import power
 
 
-CURRENT_LIMITS_ROOT = Path("stash/python_libs/acconeer-analyses/acconeer/analyses/a121/resources")
+@pytest.fixture
+def sensor_current_limits(sensor_current_limits_path: Path) -> t.Iterator[dict[str, t.Any]]:
+    with sensor_current_limits_path.open("r") as f:
+        yield yaml.safe_load(f)
 
-if not CURRENT_LIMITS_ROOT.exists() and not os.environ.get("CI", False):
-    pytest.skip("Could not find stash and not running in CI", allow_module_level=True)
+
+@pytest.fixture
+def module_current_limits(module_current_limits_path: Path) -> t.Iterator[dict[str, t.Any]]:
+    with module_current_limits_path.open("r") as f:
+        yield yaml.safe_load(f)
 
 
-with (CURRENT_LIMITS_ROOT / "sensor_current_limits.yaml").open("r") as f:
-    SENSOR_CURRENT_LIMITS = yaml.safe_load(f)
-
-with (CURRENT_LIMITS_ROOT / "module_current_limits.yaml").open("r") as f:
-    MODULE_CURRENT_LIMITS = yaml.safe_load(f)
-
-with (CURRENT_LIMITS_ROOT / "inter_sweep_idle_states_limits.yaml").open("r") as f:
-    INTER_SWEEP_IDLE_STATES = yaml.safe_load(f)
+@pytest.fixture
+def inter_sweep_idle_state_limits(
+    inter_sweep_idle_state_current_limits_path: Path,
+) -> t.Iterator[dict[str, t.Any]]:
+    with inter_sweep_idle_state_current_limits_path.open("r") as f:
+        yield yaml.safe_load(f)
 
 
 def _assert_percent_off_message(actual: float, expected: float, absolute_tolerance: float) -> None:
@@ -43,32 +47,28 @@ def _assert_percent_off_message(actual: float, expected: float, absolute_toleran
 
 
 @pytest.mark.parametrize(
-    ("limit_name", "limits_dict", "actual"),
+    ("limit_name", "actual"),
     [
         (
             "Idle state, deep_sleep",
-            SENSOR_CURRENT_LIMITS,
             power.frame_idle(
                 a121.IdleState.DEEP_SLEEP, duration=1, module=power.Module.none()
             ).average_current,
         ),
         (
             "Idle state, sleep",
-            SENSOR_CURRENT_LIMITS,
             power.frame_idle(
                 a121.IdleState.SLEEP, duration=1, module=power.Module.none()
             ).average_current,
         ),
         (
             "Idle state, ready",
-            SENSOR_CURRENT_LIMITS,
             power.frame_idle(
                 a121.IdleState.READY, duration=1, module=power.Module.none()
             ).average_current,
         ),
         (
             "Measurement state, profile 1",
-            SENSOR_CURRENT_LIMITS,
             power.subsweep_active(
                 a121.SubsweepConfig(profile=a121.Profile.PROFILE_1),
                 high_speed_mode=False,
@@ -78,7 +78,6 @@ def _assert_percent_off_message(actual: float, expected: float, absolute_toleran
         ),
         (
             "Measurement state, profile 2",
-            SENSOR_CURRENT_LIMITS,
             power.subsweep_active(
                 a121.SubsweepConfig(profile=a121.Profile.PROFILE_2),
                 high_speed_mode=False,
@@ -88,7 +87,6 @@ def _assert_percent_off_message(actual: float, expected: float, absolute_toleran
         ),
         (
             "Measurement state, profile 3",
-            SENSOR_CURRENT_LIMITS,
             power.subsweep_active(
                 a121.SubsweepConfig(profile=a121.Profile.PROFILE_3),
                 high_speed_mode=False,
@@ -98,7 +96,6 @@ def _assert_percent_off_message(actual: float, expected: float, absolute_toleran
         ),
         (
             "Measurement state, profile 4",
-            SENSOR_CURRENT_LIMITS,
             power.subsweep_active(
                 a121.SubsweepConfig(profile=a121.Profile.PROFILE_4),
                 high_speed_mode=False,
@@ -108,7 +105,6 @@ def _assert_percent_off_message(actual: float, expected: float, absolute_toleran
         ),
         (
             "Measurement state, profile 5",
-            SENSOR_CURRENT_LIMITS,
             power.subsweep_active(
                 a121.SubsweepConfig(profile=a121.Profile.PROFILE_5),
                 high_speed_mode=False,
@@ -118,21 +114,34 @@ def _assert_percent_off_message(actual: float, expected: float, absolute_toleran
         ),
         (
             "Hibernation state",
-            SENSOR_CURRENT_LIMITS,
             power.power_state(
                 power.Sensor.IdleState.HIBERNATE, duration=1, module=power.Module.none()
             ).average_current,
         ),
         (
             "Off state, ENABLE low",
-            SENSOR_CURRENT_LIMITS,
             power.power_state(
                 power.Sensor.IdleState.OFF, duration=1, module=power.Module.none()
             ).average_current,
         ),
+    ],
+)
+def test_sensor_current_limits(
+    sensor_current_limits: dict[str, dict[str, float]], limit_name: str, actual: float
+) -> None:
+    unit_factor = 1e-3
+
+    expected_current = sensor_current_limits[limit_name]["target"] * unit_factor
+    absolute_tolerance = sensor_current_limits[limit_name]["abs_tol"] * unit_factor
+
+    assert actual == pytest.approx(expected_current, abs=absolute_tolerance)
+
+
+@pytest.mark.parametrize(
+    ("limit_name", "actual"),
+    [
         (
             "deep_sleep",
-            INTER_SWEEP_IDLE_STATES,
             power.sweep_idle(
                 a121.SensorConfig(inter_sweep_idle_state=a121.IdleState.DEEP_SLEEP),
                 duration=1,
@@ -141,7 +150,6 @@ def _assert_percent_off_message(actual: float, expected: float, absolute_toleran
         ),
         (
             "ready",
-            INTER_SWEEP_IDLE_STATES,
             power.sweep_idle(
                 a121.SensorConfig(inter_sweep_idle_state=a121.IdleState.READY),
                 duration=1,
@@ -150,7 +158,6 @@ def _assert_percent_off_message(actual: float, expected: float, absolute_toleran
         ),
         (
             "sleep",
-            INTER_SWEEP_IDLE_STATES,
             power.sweep_idle(
                 a121.SensorConfig(inter_sweep_idle_state=a121.IdleState.SLEEP),
                 duration=1,
@@ -159,13 +166,15 @@ def _assert_percent_off_message(actual: float, expected: float, absolute_toleran
         ),
     ],
 )
-def test_sensor_limits(
-    limit_name: str, limits_dict: dict[str, dict[str, float]], actual: float
+def test_inter_sweep_idle_state_current_limits(
+    inter_sweep_idle_state_limits: dict[str, t.Any],
+    limit_name: str,
+    actual: float,
 ) -> None:
     unit_factor = 1e-3
 
-    expected_current = limits_dict[limit_name]["target"] * unit_factor
-    absolute_tolerance = limits_dict[limit_name]["abs_tol"] * unit_factor
+    expected_current = inter_sweep_idle_state_limits[limit_name]["target"] * unit_factor
+    absolute_tolerance = inter_sweep_idle_state_limits[limit_name]["abs_tol"] * unit_factor
 
     assert actual == pytest.approx(expected_current, abs=absolute_tolerance)
 
@@ -178,15 +187,16 @@ def test_sensor_limits(
     ],
 )
 def test_lower_idle_state_limits(
+    module_current_limits: dict[str, t.Any],
     limit_name: str,
     lower_idle_state: power.Sensor.LowerIdleState,
 ) -> None:
-    unit = MODULE_CURRENT_LIMITS[limit_name]["limits"]["xm125"]["unit"]
+    unit = module_current_limits[limit_name]["limits"]["xm125"]["unit"]
     unit_factor = {"mA": 1e-3, "μA": 1e-6}[unit]
 
-    expected_current = MODULE_CURRENT_LIMITS[limit_name]["limits"]["xm125"]["target"] * unit_factor
+    expected_current = module_current_limits[limit_name]["limits"]["xm125"]["target"] * unit_factor
     absolute_tolerance = (
-        MODULE_CURRENT_LIMITS[limit_name]["limits"]["xm125"]["abs_tol"] * unit_factor
+        module_current_limits[limit_name]["limits"]["xm125"]["abs_tol"] * unit_factor
     )
 
     avg_current = power.power_state(lower_idle_state, duration=0.1).average_current
@@ -273,17 +283,18 @@ def test_lower_idle_state_limits(
     ],
 )
 def test_module_limits(
+    module_current_limits: dict[str, t.Any],
     limit_name: str,
     session_config: a121.SessionConfig,
     lower_idle_state: power.Sensor.LowerIdleState,
     algorithm: power.algo.Algorithm,
 ) -> None:
-    unit = MODULE_CURRENT_LIMITS[limit_name]["limits"]["xm125"]["unit"]
+    unit = module_current_limits[limit_name]["limits"]["xm125"]["unit"]
     unit_factor = {"mA": 1e-3, "μA": 1e-6}[unit]
 
-    expected_current = MODULE_CURRENT_LIMITS[limit_name]["limits"]["xm125"]["target"] * unit_factor
+    expected_current = module_current_limits[limit_name]["limits"]["xm125"]["target"] * unit_factor
     absolute_tolerance = (
-        MODULE_CURRENT_LIMITS[limit_name]["limits"]["xm125"]["abs_tol"] * unit_factor
+        module_current_limits[limit_name]["limits"]["xm125"]["abs_tol"] * unit_factor
     )
 
     avg_current = power.converged_average_current(

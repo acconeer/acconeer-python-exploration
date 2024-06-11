@@ -1,10 +1,11 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
 
 import math
-from typing import Dict, Optional
+from pathlib import Path
+from typing import Dict
 
 import pytest
 import yaml
@@ -20,18 +21,11 @@ from acconeer.exptool.a121.algo.presence import _configs as PresenceConfigs
 from acconeer.exptool.a121.model import memory
 
 
-MEMORY_USAGE_YAML = "stash/python_libs/test_utils/memory_usage.yaml"
-
-
-def memory_usage(application) -> Optional[Dict[str, int]]:
-    try:
-        with open(MEMORY_USAGE_YAML, encoding="utf-8") as yaml_file:
-            mem_usage = yaml.safe_load(yaml_file)
-
-        return mem_usage["devices"]["xm125"][application]
-
-    except Exception:
-        return None
+@pytest.fixture
+def xm125_memory_usage(memory_usage_path: Path) -> Dict[str, int]:
+    with open(memory_usage_path, encoding="utf-8") as yaml_file:
+        mem_usage = yaml.safe_load(yaml_file)
+        return mem_usage["devices"]["xm125"]
 
 
 @pytest.mark.parametrize(
@@ -70,23 +64,20 @@ def memory_usage(application) -> Optional[Dict[str, int]]:
         ),
     ],
 )
-def test_service_memory_model(config, application, test_case):
-    mem_usage = memory_usage(application)
+def test_service_memory_model(config, application, test_case, xm125_memory_usage):
+    mem_usage = xm125_memory_usage[application]
     test_case_key = test_case + "-internal_xm125"
 
-    if mem_usage is None:
-        pytest.skip("No memory reference")
-    else:
-        mem_usage = mem_usage[test_case_key]
+    mem_usage = mem_usage[test_case_key]
 
-        session_config = SessionConfig(config)
-        session_rss_heap_mem = memory.session_rss_heap_memory(session_config)
-        session_external_heap_mem = memory.session_external_heap_memory(session_config)
-        session_heap_mem = memory.session_heap_memory(session_config)
+    session_config = SessionConfig(config)
+    session_rss_heap_mem = memory.session_rss_heap_memory(session_config)
+    session_external_heap_mem = memory.session_external_heap_memory(session_config)
+    session_heap_mem = memory.session_heap_memory(session_config)
 
-        assert session_rss_heap_mem + session_external_heap_mem == session_heap_mem
-        assert math.isclose(mem_usage["rss_heap"], session_rss_heap_mem, rel_tol=0.05)
-        assert math.isclose(mem_usage["app_heap"], session_external_heap_mem, rel_tol=0.05)
+    assert session_rss_heap_mem + session_external_heap_mem == session_heap_mem
+    assert math.isclose(mem_usage["rss_heap"], session_rss_heap_mem, rel_tol=0.05)
+    assert math.isclose(mem_usage["app_heap"], session_external_heap_mem, rel_tol=0.05)
 
 
 @pytest.mark.parametrize(
@@ -106,22 +97,19 @@ def test_service_memory_model(config, application, test_case):
         ),
     ],
 )
-def test_presence_memory_model(config, test_case):
-    mem_usage = memory_usage("example_detector_presence")
+def test_presence_memory_model(config, test_case, xm125_memory_usage):
+    mem_usage = xm125_memory_usage["example_detector_presence"]
     test_case_key = test_case + "-internal_xm125"
 
-    if mem_usage is None:
-        pytest.skip("No memory reference")
-    else:
-        mem_usage = mem_usage[test_case_key]
+    mem_usage = mem_usage[test_case_key]
 
-        presence_rss_heap_mem = memory.presence_rss_heap_memory(config)
-        presence_ext_heap_mem = memory.presence_external_heap_memory(config)
-        presence_heap_mem = memory.presence_heap_memory(config)
+    presence_rss_heap_mem = memory.presence_rss_heap_memory(config)
+    presence_ext_heap_mem = memory.presence_external_heap_memory(config)
+    presence_heap_mem = memory.presence_heap_memory(config)
 
-        assert presence_rss_heap_mem + presence_ext_heap_mem == presence_heap_mem
-        assert math.isclose(mem_usage["rss_heap"], presence_rss_heap_mem, rel_tol=0.05)
-        assert math.isclose(mem_usage["app_heap"], presence_ext_heap_mem, rel_tol=0.05)
+    assert presence_rss_heap_mem + presence_ext_heap_mem == presence_heap_mem
+    assert math.isclose(mem_usage["rss_heap"], presence_rss_heap_mem, rel_tol=0.05)
+    assert math.isclose(mem_usage["app_heap"], presence_ext_heap_mem, rel_tol=0.05)
 
 
 @pytest.mark.parametrize(
@@ -149,19 +137,16 @@ def test_presence_memory_model(config, test_case):
         ),
     ],
 )
-def test_distance_memory_model(config, test_case):
-    mem_usage = memory_usage("example_detector_distance")
+def test_distance_memory_model(config, test_case, xm125_memory_usage):
+    mem_usage = xm125_memory_usage["example_detector_distance"]
     test_case_key = test_case + "-internal_xm125"
 
-    if mem_usage is None:
-        pytest.skip("No memory reference")
-    else:
-        mem_usage = mem_usage[test_case_key]
+    mem_usage = mem_usage[test_case_key]
 
-        distance_rss_heap_mem = memory.distance_rss_heap_memory(config)
-        distance_ext_heap_mem = memory.distance_external_heap_memory(config)
-        distance_heap_mem = memory.distance_heap_memory(config)
+    distance_rss_heap_mem = memory.distance_rss_heap_memory(config)
+    distance_ext_heap_mem = memory.distance_external_heap_memory(config)
+    distance_heap_mem = memory.distance_heap_memory(config)
 
-        assert distance_rss_heap_mem + distance_ext_heap_mem == distance_heap_mem
-        assert math.isclose(mem_usage["rss_heap"], distance_rss_heap_mem, rel_tol=0.05)
-        assert math.isclose(mem_usage["app_heap"], distance_ext_heap_mem, rel_tol=0.05)
+    assert distance_rss_heap_mem + distance_ext_heap_mem == distance_heap_mem
+    assert math.isclose(mem_usage["rss_heap"], distance_rss_heap_mem, rel_tol=0.05)
+    assert math.isclose(mem_usage["app_heap"], distance_ext_heap_mem, rel_tol=0.05)

@@ -27,7 +27,7 @@ def _validate_parametrization(iterable: t.Sized, err_msg: str) -> t.Sized:
     return iterable
 
 
-def pytest_addoption(parser):
+def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
         "--update-outputs",
         dest="update_outputs",
@@ -44,6 +44,34 @@ def pytest_addoption(parser):
 
     parser.addoption(
         "--a111-exploration-server-paths",
+        nargs="*",
+        type=_existing_path,
+        default=[],
+    )
+
+    parser.addoption(
+        "--sensor-current-limits-path",
+        nargs="*",
+        type=_existing_path,
+        default=[],
+    )
+
+    parser.addoption(
+        "--module-current-limits-path",
+        nargs="*",
+        type=_existing_path,
+        default=[],
+    )
+
+    parser.addoption(
+        "--inter-sweep-idle-state-current-limits-path",
+        nargs="*",
+        type=_existing_path,
+        default=[],
+    )
+
+    parser.addoption(
+        "--memory-usage-path",
         nargs="*",
         type=_existing_path,
         default=[],
@@ -70,12 +98,35 @@ def pytest_generate_tests(metafunc):
         )
         metafunc.parametrize(argnames="a121_exploration_server_path", argvalues=values)
 
+    if "sensor_current_limits_path" in metafunc.fixturenames:
+        values = _validate_parametrization(
+            metafunc.config.getoption("--sensor-current-limits-path", []),
+            err_msg=err_msg_fmt.format("A121 sensor current limits"),
+        )
+        metafunc.parametrize(argnames="sensor_current_limits_path", argvalues=values)
 
-def ids_fun(setup):
-    try:
-        return setup[0]
-    except Exception:
-        return ""
+    if "module_current_limits_path" in metafunc.fixturenames:
+        values = _validate_parametrization(
+            metafunc.config.getoption("--module-current-limits-path", []),
+            err_msg=err_msg_fmt.format("A121 module current limits"),
+        )
+        metafunc.parametrize(argnames="module_current_limits_path", argvalues=values)
+
+    if "inter_sweep_idle_state_current_limits_path" in metafunc.fixturenames:
+        values = _validate_parametrization(
+            metafunc.config.getoption("--inter-sweep-idle-state-current-limits-path", []),
+            err_msg=err_msg_fmt.format("A121 inter sweep idle state current limits"),
+        )
+        metafunc.parametrize(
+            argnames="inter_sweep_idle_state_current_limits_path", argvalues=values
+        )
+
+    if "memory_usage_path" in metafunc.fixturenames:
+        values = _validate_parametrization(
+            metafunc.config.getoption("--memory-usage-path", []),
+            err_msg=err_msg_fmt.format("A121 memory usage"),
+        )
+        metafunc.parametrize(argnames="memory_usage_path", argvalues=values)
 
 
 @pytest.fixture(scope="session")

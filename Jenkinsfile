@@ -190,7 +190,12 @@ try {
                     }
                     stage("Model Regression Tests (rss=${modelTestA121RssVersion})") {
                         buildDocker(path: 'docker').inside(dockerArgs(env)) {
-                            hatchWrap 'test -py=3.9 tests/model'
+                            hatchWrap """test -py=3.9 tests/model \
+                                --sensor-current-limits-path stash/python_libs/acconeer-analyses/acconeer/analyses/a121/resources/sensor_current_limits.yaml \
+                                --module-current-limits-path stash/python_libs/acconeer-analyses/acconeer/analyses/a121/resources/module_current_limits.yaml \
+                                --inter-sweep-idle-state-current-limits-path stash/python_libs/acconeer-analyses/acconeer/analyses/a121/resources/inter_sweep_idle_states_limits.yaml \
+                                --memory-usage-path stash/python_libs/test_utils/memory_usage.yaml \
+                            """
                         }
                     }
                 }
