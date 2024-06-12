@@ -216,13 +216,13 @@ class A111RecordTableConverter(TableConverter):
 
     def get_configs(self, session_index: int = 0) -> dict[str, t.Any]:
         session_info = self._record.session_info
-        config_dict = self.parse_config_dump(self._record.sensor_config_dump)
+        sensor_config = self.parse_config_dump(self._record.sensor_config_dump)
         processing_config_dump = self._record.processing_config_dump or ""
         processing_config_dict = self.parse_config_dump(processing_config_dump)
 
         return {
             **session_info,
-            **config_dict,
+            **sensor_config,
             **processing_config_dict,
         }
 
@@ -386,10 +386,13 @@ class A121RecordTableConverter(TableConverter):
         subsweep_config_with_index: Dict[str, t.Any] = {}
         sensor_config_with_index: Dict[str, t.Any] = {}
         session_config = self._record.session(session_index).session_config
+        sensor_ids = []
         # Create DataFrames from configurations
         for group_id, sensor_id, sensor_config in _core.utils.iterate_extended_structure(
             session_config.groups
         ):
+            if sensor_id not in sensor_ids:
+                sensor_ids.append(sensor_id)
             sensor_config_with_index[f"group_id [{group_id}] sensor_id [{sensor_id}]"] = None
             frame_rate = "Max" if sensor_config.frame_rate is None else sensor_config.frame_rate
             sweep_rate = "Max" if sensor_config.sweep_rate is None else sensor_config.sweep_rate
@@ -415,8 +418,12 @@ class A121RecordTableConverter(TableConverter):
             "extended": session_config.extended,
             "update_rate": update_rate,
         }
+        sensor_ids_dict = {
+            "sensor_ids": sensor_ids,
+        }
         config_dict = {
             **configs,
+            **sensor_ids_dict,
             **group_configs,
             **sensor_config_with_index,
             **subsweep_config_with_index,
@@ -430,9 +437,13 @@ class A121RecordTableConverter(TableConverter):
         :returns: list of 2D NDArray of cell values from every session.
         """
         sparse_iq_list = []
+        sensor_ids = self.get_configs()["sensor_ids"]
+
         # Sensor results as a concatenate results of multiple or single configs
-        for session_index in range(self._record.num_sessions):
-            sparse_iq_list.append(self._get_sparse_iq(sensor, session_index=session_index))
+        for session_index in list(range(self._record.num_sessions)):
+            for sensor_id in sensor_ids:
+                sparse_iq_list.append(self._get_sparse_iq(sensor_id, session_index=session_index))
+
         return sparse_iq_list
 
     def get_metadata_rows(self, sensor: int) -> list[t.Any]:
@@ -483,102 +494,92 @@ class A121RecordTableConverter(TableConverter):
             print("=" * 60)
 
 
-def _check_args(args: argparse.Namespace) -> Tuple[bool, str, Path, Path, t.Any, str, bool, bool]:
-    """For file with path = C:\\Users\\Desktop\\my_file.h5
-    These means :
-    drive = C
-    directory parent = C:\\Users\\Desktop
-    filename = my_file.h5
-    filestem = my_file
-    file suffix = .h5
-    """
-    files_ok = True
-    exit_text = ""
+class ArgumentsChecker:
+    files_ok: bool = True
+    exit_text: str = ""
 
-    # Check input_path argument
-    input_path = Path(args.input_path)
+    def __init__(self, args: argparse.Namespace):
+        """For file with path = C:\\Users\\Desktop\\my_file.h5
+        These means :
+        drive = C
+        directory parent = C:\\Users\\Desktop
+        filename = my_file.h5
+        filestem = my_file
+        file suffix = .h5
+        """
+        self.args = args
 
-    # Check output_file suffix
-    output_suffix = (
-        ".xlsx"
-        if args.output_path is None or args.output_path.suffix == ""
-        else args.output_path.suffix
-    )
-    output_csv_separator = "\t" if output_suffix == ".tsv" else ","
+        # Check input_path argument
+        self.input_path = Path(args.input_path)
 
-    # Check output_path argument
-    if args.output_path is None:
-        output_path = input_path.with_suffix("")
-    else:
-        output_path = args.output_path.with_suffix("")
-        # Below will make the output_path similar to input_path if output_path is not defined
-        # Instead of similar to convert_h5.py path
-        output_path = (
-            output_path
-            if (output_path.parent) != output_path
-            else input_path.with_name(output_path.stem)
+        # Check output_file suffix
+        self.output_suffix = (
+            ".xlsx"
+            if args.output_path is None or args.output_path.suffix == ""
+            else args.output_path.suffix
         )
+        self.output_csv_separator = "\t" if self.output_suffix == ".tsv" else ","
 
-    verbose = args.verbose
-    sweep_as_column = args.sweep_as_column
-
-    print(f"Reading from {input_path!r} ... \n")
-
-    if not Path.exists(input_path):
-        exit_text = str(f'The input file ("{input_path}") can not be found.')
-        files_ok = False
-
-    if Path.exists(output_path) and not args.force:
-        exit_text_0 = str(f'The output file ("{output_path}") already exists.')
-        exit_text_1 = str(
-            'Overwrite existing file with "-f" or give different name for output file.'
-        )
-        exit_text = exit_text_0 + "\n" + exit_text_1
-        files_ok = False
-
-    return (
-        files_ok,
-        exit_text,
-        input_path,
-        output_path,
-        output_suffix,
-        output_csv_separator,
-        verbose,
-        sweep_as_column,
-    )
-
-
-def load_file(
-    input_path: Union[Path, str],
-) -> tuple[Union[et.a111.recording.Record, a121.Record], str]:
-    try:
-        return a121.load_record(input_path), "a121"
-    except Exception:  # noqa: S110
-        pass
-
-    try:
-        return et.a111.recording.load(input_path), "a111"
-    except Exception:  # noqa: S110
-        pass
-
-    msg = "The specified file was neither A111 or A121. Cannot load."
-    raise Exception(msg)
-
-
-def get_default_sensor_id_or_index(namespace: argparse.Namespace, generation: str) -> int:
-    try:
-        if generation == "a121" and isinstance(int(namespace.sensor), int):
-            exit_text_0 = str(
-                "The file from the A121 results includes results from multiple sessions."
+        # Check output_path argument
+        if args.output_path is None:
+            self.output_path = self.input_path.with_suffix("")
+        else:
+            self.output_path = args.output_path.with_suffix("")
+            # Below will make the output_path similar to input_path if output_path is not defined
+            # Instead of similar to convert_h5.py path
+            self.output_path = (
+                self.output_path
+                if (self.output_path.parent) != self.output_path
+                else self.input_path.with_name(self.output_path.stem)
             )
+
+        self.verbose = args.verbose
+        self.sweep_as_column = args.sweep_as_column
+
+        print(f"Reading from {self.input_path!r} ... \n")
+
+        if not Path.exists(self.input_path):
+            self.exit_text = str(f'The input file ("{self.input_path}") can not be found.')
+            self.files_ok = False
+
+        if Path.exists(self.output_path) and not args.force:
+            exit_text_0 = str(f'The output file ("{self.output_path}") already exists.')
             exit_text_1 = str(
-                "Specifying the sensor/session id in the arguments do not provide extra information."
+                'Overwrite existing file with "-f" or give different name for output file.'
             )
-            exit_text = exit_text_0 + "\n" + exit_text_1
-            print(exit_text)
-        return int(namespace.sensor)
-    except AttributeError:
-        return 1 if generation == "a121" else 0
+            self.exit_text = exit_text_0 + "\n" + exit_text_1
+            self.files_ok = False
+        self.record, self.generation = self.load_file()
+        self.sensor = self.get_default_sensor_id_or_index()
+
+    def load_file(self) -> tuple[Union[et.a111.recording.Record, a121.Record], str]:
+        try:
+            return a121.load_record(self.input_path), "a121"
+        except Exception:  # noqa: S110
+            pass
+
+        try:
+            return et.a111.recording.load(self.input_path), "a111"
+        except Exception:  # noqa: S110
+            pass
+
+        msg = "The specified file was neither A111 or A121. Cannot load."
+        raise Exception(msg)
+
+    def get_default_sensor_id_or_index(self) -> int:
+        try:
+            if self.generation == "a121" and isinstance(int(self.args.sensor), int):
+                note_text_0 = str(
+                    "The file from the A121 results includes results from multiple sessions."
+                )
+                note_text_1 = str(
+                    "Specifying the sensor/session id in the arguments does not provide extra information."
+                )
+                note_text = note_text_0 + "\n" + note_text_1
+                print(note_text)
+            return int(self.args.sensor)
+        except AttributeError:
+            return 1 if self.generation == "a121" else 0
 
 
 def get_processed_data(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
@@ -1558,23 +1559,19 @@ def main() -> None:
     args = parser.parse_args()
 
     # File checking and formatting from args
-    (
-        files_ok,
-        exit_text,
-        input_path,
-        output_path,
-        output_suffix,
-        output_csv_separator,
-        verbose,
-        sweep_as_column,
-    ) = _check_args(args)
-    if not (files_ok):
-        print(exit_text)
+    input_args = ArgumentsChecker(args)
+
+    if not (input_args.files_ok):
+        # Exit if files files is not ok
+        print(input_args.exit_text)
         exit(1)
     else:
-        output_path.mkdir(parents=True, exist_ok=True)
-    record, generation = load_file(input_path)
-    sensor = get_default_sensor_id_or_index(args, generation)
+        # Create directory if files files is ok
+        input_args.output_path.mkdir(parents=True, exist_ok=True)
+    record = input_args.record
+    sensor = input_args.sensor
+    output_suffix = input_args.output_suffix
+    output_path = input_args.output_path
     table_converter = TableConverter.from_record(record)
     try:
         sparse_iq_data = table_converter.convert(sensor=sensor)
@@ -1583,44 +1580,52 @@ def main() -> None:
         print(e)
         exit(1)
 
-    table_converter.print_information(verbose=verbose)
+    table_converter.print_information(verbose=input_args.verbose)
     print()
     dict_excel_file = {}
-    if sweep_as_column:
-        if isinstance(sparse_iq_data, np.ndarray):
-            sparse_iq_data = [sparse_iq_data.T]
-        else:
-            sparse_iq_data = [np.transpose(arr) for arr in sparse_iq_data]
-
-    for index in range(len(sparse_iq_data)):
-        dict_excel_file[f"Sparse IQ data session {index}"] = pd.DataFrame(sparse_iq_data[index])
-
-    # Create a Pandas DataFrame from the data
-    dict_excel_file["Metadata"] = pd.DataFrame(metadata_rows)
+    if isinstance(sparse_iq_data, np.ndarray):
+        sparse_iq_data = [sparse_iq_data.T]
+    if input_args.sweep_as_column:
+        sparse_iq_data = [np.transpose(arr) for arr in sparse_iq_data]
 
     if isinstance(record, a121.Record):
+        counter_index = 0
         for session_index in range(record.num_sessions):
-            # Add configurations in excel
             dict_config = table_converter.get_configs(session_index=session_index)
+            sensor_ids = dict_config["sensor_ids"]
+            # Add sparse IQ data in excel
+            for sensor_id in sensor_ids:
+                dict_excel_file[f"Sparse IQ session {session_index} sensor {sensor_id}"] = (
+                    pd.DataFrame(sparse_iq_data[counter_index])
+                )
+                counter_index = +1
+
+            # Add configurations in excel
             dict_excel_file[f"Configurations session {session_index}"] = pd.DataFrame(
                 dict_config.items()
             )
     else:
+        # Add sparse IQ data in excel
+        dict_excel_file["Sparse IQ data"] = pd.DataFrame(sparse_iq_data[0])
+
         # Add configurations in excel
         dict_config = table_converter.get_configs(session_index=0)
         dict_excel_file["Configurations"] = pd.DataFrame(dict_config.items())
+
+    # Create a Pandas DataFrame from the data
+    dict_excel_file["Metadata"] = pd.DataFrame(metadata_rows)
 
     # Create a Pandas DataFrame from the environment
     record_environtment = table_converter.get_environment()
     dict_excel_file["Environtment"] = pd.DataFrame(record_environtment.items())
 
     # Create a Pandas DataFrame from processed data
-    if isinstance(record, a121.Record):
-        h5_file = h5py.File(str(input_path))
+    if isinstance(record, a121.H5Record):
+        h5_file = record.file
         df_processed_data, df_app_config = get_processed_data(h5_file)
         dict_excel_file["Application configurations"] = df_app_config
         dict_excel_file["Processed data"] = df_processed_data
-        h5_file.close()
+        record.close()
     # Save the DataFrame to a CSV or excel file
     if output_suffix == ".xlsx":
         filepath = output_path / (output_path.stem + output_suffix)
@@ -1639,7 +1644,7 @@ def main() -> None:
             filepath = output_path / (key + output_suffix)
             pd.DataFrame(value).to_csv(
                 Path(str(filepath)),
-                sep=output_csv_separator,
+                sep=input_args.output_csv_separator,
                 index_label="Index",
             )
 
