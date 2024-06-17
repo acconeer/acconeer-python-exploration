@@ -20,6 +20,18 @@ Setup for docs writing
 .. _pipx_install_gh: https://github.com/pypa/pipx?tab=readme-ov-file#install-pipx
 .. _hatch_install: https://hatch.pypa.io/latest/install/#pipx
 
+*********
+Templates
+*********
+
+.. _cards-clickable:
+
+.. card:: Detectors, Reference Applications and Example Applications
+    :link: template_detector_ref_app_ex_app
+    :link-type: doc
+
+    This template can also be found in the file ``template_detector_ref_app_ex_app.rst``
+
 ************************
 Our Sphinx configuration
 ************************

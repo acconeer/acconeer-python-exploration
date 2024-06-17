@@ -44,6 +44,7 @@ di
 dicts
 dicts
 directivity
+docstrings
 doppler
 downsampled
 downsampling
