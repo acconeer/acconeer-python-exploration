@@ -203,6 +203,8 @@ src = ["src", "tests"]
 namespace-packages = ["src/acconeer"]
 
 [tool.ruff.lint]
+preview = true
+explicit-preview-rules = true
 # "extend" here adds to the ruff defaults, rather than replacing.
 # Q = flake8-quotes, TID = flake8-tidy-imports, I = isort, FA = flake8-future-annotations
 extend-select = ["Q", "TID", "I", "FA"]

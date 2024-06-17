@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import acconeer.exptool as et
@@ -23,7 +23,7 @@ def main():
     fc = et.utils.FreqCounter(num_bits=(4 * 8 * info["data_length"]))
 
     while not interrupt_handler.got_signal:
-        info, data = client.get_next()
+        info, _ = client.get_next()
         fc.tick()
 
     print("\nDisconnecting...")

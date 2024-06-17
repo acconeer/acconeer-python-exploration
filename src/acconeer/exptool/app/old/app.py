@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -673,7 +673,7 @@ class GUI(QMainWindow):
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
         title = "Save configuration"
         file_types = "Text file (*.txt)"
-        filename, info = QtWidgets.QFileDialog.getSaveFileName(
+        filename, _ = QtWidgets.QFileDialog.getSaveFileName(
             self, title, "", file_types, options=options
         )
 
@@ -1223,7 +1223,7 @@ class GUI(QMainWindow):
         self.set_multi_sensors()
 
     def format_error(self, e):
-        exc_type, exc_obj, exc_tb = sys.exc_info()
+        exc_type, _, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         err = "{}\n{}\n{}\n{}".format(exc_type, fname, exc_tb.tb_lineno, e)
         return err
@@ -2177,7 +2177,7 @@ class Threaded_Scan(QtCore.QThread):
         self.sig_scan.emit(message_type, message, data)
 
     def format_error(self, e):
-        exc_type, exc_obj, exc_tb = sys.exc_info()
+        exc_type, _, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
         err = "{}\n{}\n{}\n{}".format(exc_type, fname, exc_tb.tb_lineno, e)
         return err

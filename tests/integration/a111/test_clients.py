@@ -174,22 +174,22 @@ def test_sanity_check_output(setup, mode):
     assert isinstance(data, np.ndarray)
 
     if mode == et.a111.Mode.POWER_BINS:
-        assert data.dtype == float
+        assert data.dtype.type is np.float64
         size = session_info["bin_count"]
         assert data.shape == (size,)
         assert 1 < size < 10
     elif mode == et.a111.Mode.ENVELOPE:
-        assert data.dtype == float
+        assert data.dtype.type is np.float64
         size = session_info["data_length"]
         assert data.shape == (size,)
         assert size == pytest.approx(config.range_length / 0.06 * 124, abs=10)
     elif mode == et.a111.Mode.IQ:
-        assert data.dtype == complex
+        assert data.dtype.type is np.complex128
         size = session_info["data_length"]
         assert data.shape == (size,)
         assert size == pytest.approx(config.range_length / 0.06 * 124, abs=10)
     elif mode == et.a111.Mode.SPARSE:
-        assert data.dtype == float
+        assert data.dtype.type is np.float64
         data_length = session_info["data_length"]
         num_depths = data_length // config.sweeps_per_frame
         assert num_depths * config.sweeps_per_frame == data_length
@@ -217,7 +217,7 @@ def test_downsampling_factor(setup, mode):
         config.downsampling_factor = df
 
         session_info = client.start_session(config)
-        data_info, data = client.get_next()
+        _ = client.get_next()
         client.stop_session()
 
         step_length = session_info["step_length_m"]
@@ -251,7 +251,7 @@ def test_repetition_mode(setup):
         n = 5
 
         for _ in range(n):
-            info, data = client.get_next()
+            info, _ = client.get_next()
             if info["missed_data"]:
                 missed = True
 

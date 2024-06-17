@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import numpy as np
@@ -37,7 +37,7 @@ def main():
     print("Press Ctrl-C to end session")
 
     while not interrupt_handler.got_signal:
-        data_info, data = client.get_next()
+        _, data = client.get_next()
 
         try:
             pg_process.put_data(data)

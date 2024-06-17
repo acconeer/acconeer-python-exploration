@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import acconeer.exptool as et
@@ -23,7 +23,7 @@ def main():
     print("session_info:")
     print_dict(session_info)
 
-    data_info, data = client.get_next()
+    data_info, _ = client.get_next()
     print("data_info:")
     print_dict(data_info)
 

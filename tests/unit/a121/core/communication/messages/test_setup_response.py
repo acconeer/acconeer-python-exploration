@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -47,7 +47,7 @@ class TestSetupResponse:
     ) -> None:
         assert (
             type(ExplorationProtocol.parse_message(valid_server_response, bytes()))
-            == a121_messages.SetupResponse
+            is a121_messages.SetupResponse
         )
         _ = a121_messages.SetupResponse.parse(valid_server_response, bytes())
 

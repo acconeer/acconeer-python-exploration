@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ class TestStopStreamingResponse:
     ) -> None:
         assert (
             type(ExplorationProtocol.parse_message(valid_server_response, bytes()))
-            == messages.StopStreamingResponse
+            is messages.StopStreamingResponse
         )
         _ = messages.StopStreamingResponse.parse(valid_server_response, bytes())
 

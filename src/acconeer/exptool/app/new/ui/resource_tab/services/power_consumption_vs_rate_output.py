@@ -124,7 +124,7 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
         (self._off_curve, off_done) = self._increment_plot(
             "Off", pg_pen_cycler(3), self._off_plotter, self._off_curve
         )
-        (self._ready_curve, ready_done) = self._increment_plot(
+        (self._ready_curve, _) = self._increment_plot(
             "Ready", pg_pen_cycler(4), self._ready_plotter, self._ready_curve
         )
 
@@ -185,7 +185,7 @@ class _PowerConsumptionVsRatePlot(pg.PlotWidget):
 
         if configured_rate is None:
             self.disableAutoRange()
-            ((x_min, x_max), (y_min, y_max)) = self.viewRange()
+            ((_, x_max), (_, _)) = self.viewRange()
 
             text_item = pg.InfiniteLine(
                 pos=0.75 * x_max,

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -219,7 +219,7 @@ class DictPersistor(core.Persistor):
 
     @classmethod
     def is_applicable(cls, __type: core.TypeLike) -> bool:
-        should_be_dict, *type_args = core.unwrap_generic(__type)
+        should_be_dict, *_ = core.unwrap_generic(__type)
         return should_be_dict is dict
 
     def save(self, data: t.Any) -> None:

@@ -70,7 +70,7 @@ def run_terminal(p: ComPort, log):
     p.setControlLineState(True, True)
     p.setLineCoding()
 
-    q, t = configInputQueue()
+    q, _ = configInputQueue()
 
     while True:
         read = p.read()

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -50,7 +50,7 @@ class TestResultMessage:
     ) -> None:
         assert (
             type(ExplorationProtocol.parse_message(valid_server_message, server_payload))
-            == a121_messages.ResultMessage
+            is a121_messages.ResultMessage
         )
         _ = a121_messages.ResultMessage.parse(valid_server_message, server_payload)
 

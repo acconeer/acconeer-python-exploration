@@ -232,7 +232,7 @@ def is_optional(__type: TypeLike) -> bool:
 
 
 def optional_args(__type: TypeLike) -> t.Tuple[TypeLike, ...]:
-    origin, *type_args = unwrap_generic(__type)
+    _, *type_args = unwrap_generic(__type)
 
     return tuple(ta for ta in type_args if ta is not type(None))
 

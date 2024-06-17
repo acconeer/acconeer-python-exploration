@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -218,7 +218,7 @@ def unpack(packed: dict) -> Record:
 
     for a in attr.fields(Record):
         k = a.name
-        if a.type == str:
+        if a.type is str:
             kwargs[k] = packed[k]
         elif a.type == Optional[str]:
             kwargs[k] = packed.get(k, None)

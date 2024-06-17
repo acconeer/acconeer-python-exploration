@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -39,7 +39,7 @@ class TestGetSensorInfoResponse:
     ) -> None:
         assert (
             type(ExplorationProtocol.parse_message(valid_server_response, bytes()))
-            == a121_messages.SensorInfoResponse
+            is a121_messages.SensorInfoResponse
         )
         _ = a121_messages.SensorInfoResponse.parse(valid_server_response, bytes())
 

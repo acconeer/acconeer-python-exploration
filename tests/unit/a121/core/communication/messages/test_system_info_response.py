@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ class TestGetSystemInfoReponse:
     ) -> None:
         assert (
             type(ExplorationProtocol.parse_message(valid_server_response, bytes()))
-            == messages.SystemInfoResponse
+            is messages.SystemInfoResponse
         )
         _ = messages.SystemInfoResponse.parse(valid_server_response, bytes())
 

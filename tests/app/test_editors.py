@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 # type: ignore
@@ -310,7 +310,7 @@ class TestSignalling:
         editor.sig_update.connect(listener)
 
         any_editor_fixt.good_ui_edit(editor)
-        (args, kwargs) = listener.call_args
+        (args, _) = listener.call_args
         assert args != (original_data,)
 
     def test_making_an_bad_edit_signals_an_equal_object(
@@ -322,7 +322,7 @@ class TestSignalling:
         editor.sig_update.connect(listener)
 
         config_editor_fixt.bad_ui_edit(editor)
-        (args, kwargs) = listener.call_args
+        (args, _) = listener.call_args
         assert args == (original_data,)
 
     def test_making_a_noop_edit_signals_an_equal_object(

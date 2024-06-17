@@ -541,7 +541,7 @@ def test_ok_to_annotated_with_builtins() -> None:
 
 
 def test_sanity_generic_alias() -> None:
-    assert type(t.List[int]) == t._GenericAlias
+    assert type(t.List[int]) is t._GenericAlias
 
 
 @attrs.define

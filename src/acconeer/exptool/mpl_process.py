@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import multiprocessing as mp
@@ -124,7 +124,7 @@ class ExampleFigureUpdater(FigureUpdater):
         return [self.line]
 
     def update(self, data):
-        x, y = data
+        _, y = data
         self.line.set_ydata(y)
 
 

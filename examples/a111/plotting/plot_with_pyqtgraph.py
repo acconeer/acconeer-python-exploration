@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import numpy as np
@@ -67,7 +67,7 @@ def main():
     client.start_session()
 
     while not interrupt_handler.got_signal:
-        info, data = client.get_next()
+        _, data = client.get_next()
 
         hist_data = np.roll(hist_data, -1, axis=0)
         hist_data[-1] = data
