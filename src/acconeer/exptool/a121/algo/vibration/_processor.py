@@ -169,12 +169,12 @@ class ProcessorExtraResult:
     amplitude_threshold: float
     """Amplitude threshold."""
 
-    zm_time_series: Optional[npt.NDArray[np.float_]] = attrs.field(
+    zm_time_series: Optional[npt.NDArray[np.float64]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
     """Time series being analyzed."""
 
-    lp_displacements_threshold: Optional[npt.NDArray[np.float_]] = attrs.field(
+    lp_displacements_threshold: Optional[npt.NDArray[np.float64]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
     """CFAR threshold used for detecting significant frequencies in the FFT."""
@@ -188,12 +188,12 @@ class ProcessorResult:
     Used to determine whether an object is in front of the sensor.
     """
 
-    lp_displacements: Optional[npt.NDArray[np.float_]] = attrs.field(
+    lp_displacements: Optional[npt.NDArray[np.float64]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
     """Array of estimated displacement (μm) per frequency."""
 
-    lp_displacements_freqs: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    lp_displacements_freqs: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
     """Array of frequencies where displacement is estimated (Hz)."""
 
     max_displacement: Optional[float] = attrs.field(default=None)
@@ -366,7 +366,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         )
 
     @classmethod
-    def _extend_cfar_threshold(cls, threshold: npt.NDArray[np.float_]) -> npt.NDArray[np.float_]:
+    def _extend_cfar_threshold(cls, threshold: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
         """Extends CFAR threshold using extrapolation
 
         The head of the threshold is extended using linear extrapolation, based on the first points
@@ -400,11 +400,11 @@ class Processor(ProcessorBase[ProcessorResult]):
 
     @staticmethod
     def _calculate_cfar_threshold(
-        psd: npt.NDArray[np.float_],
+        psd: npt.NDArray[np.float64],
         sensitivity: float,
         window_length: int,
         half_guard_length: int,
-    ) -> npt.NDArray[np.float_]:
+    ) -> npt.NDArray[np.float64]:
         threshold = np.full(psd.shape, np.nan)
         margin = window_length + half_guard_length
         length_after_filtering = psd.shape[0] - 2 * margin

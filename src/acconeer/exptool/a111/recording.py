@@ -247,7 +247,7 @@ def load_npz(filename: Union[str, Path]) -> Record:
     packed = {}
     with np.load(filename, allow_pickle=False) as f:
         for k, v in f.items():
-            if v.dtype.type is np.unicode_:
+            if v.dtype.type is np.str_:
                 v = str(v)
 
             packed[k] = v

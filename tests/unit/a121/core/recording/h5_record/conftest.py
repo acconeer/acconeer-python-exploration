@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -114,8 +114,8 @@ def ref_frame_raw(
 
 
 @pytest.fixture
-def ref_frame(ref_frame_raw: npt.NDArray[Any]) -> npt.NDArray[np.complex_]:
-    return cast(npt.NDArray[np.complex_], ref_frame_raw["real"] + 1j * ref_frame_raw["imag"])
+def ref_frame(ref_frame_raw: npt.NDArray[Any]) -> npt.NDArray[np.complex128]:
+    return cast(npt.NDArray[np.complex128], ref_frame_raw["real"] + 1j * ref_frame_raw["imag"])
 
 
 @pytest.fixture

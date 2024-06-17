@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -60,13 +60,13 @@ class ProcessorContext:
 
 @attrs.frozen(kw_only=True)
 class ProcessorResult:
-    lp_abs_sweep: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
-    angle_sweep: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    lp_abs_sweep: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
+    angle_sweep: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
     threshold: Optional[float] = attrs.field(default=None)
-    rel_time_stamps: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
-    distance_history: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    rel_time_stamps: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
+    distance_history: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
     peak_loc_m: Optional[float] = attrs.field(default=None)
-    iq_history: npt.NDArray[np.complex_] = attrs.field(eq=attrs_ndarray_isclose)
+    iq_history: npt.NDArray[np.complex128] = attrs.field(eq=attrs_ndarray_isclose)
 
 
 class Processor(ProcessorBase[ProcessorResult]):
@@ -107,9 +107,9 @@ class Processor(ProcessorBase[ProcessorResult]):
         self.threshold = processor_config.threshold
 
         self.max_num_points_to_plot = int(sensor_config.sweep_rate * self.TIME_HORIZON_S)
-        self.distance_history: npt.NDArray[np.float_] = np.array([])
-        self.iq_history: npt.NDArray[np.complex_] = np.full(
-            self.NUM_POINTS_IN_IQ_HISTORY, np.nan, dtype=np.complex_
+        self.distance_history: npt.NDArray[np.float64] = np.array([])
+        self.iq_history: npt.NDArray[np.complex128] = np.full(
+            self.NUM_POINTS_IN_IQ_HISTORY, np.nan, dtype=np.complex128
         )
 
         self.last_sweep_prev_frame = None
@@ -182,7 +182,7 @@ class Processor(ProcessorBase[ProcessorResult]):
             rel_time_to_plot = np.array([])
             self.distance_history = np.array([])
             self.last_sweep_prev_frame = None
-            self.iq_history = np.full(self.NUM_POINTS_IN_IQ_HISTORY, np.nan, dtype=np.complex_)
+            self.iq_history = np.full(self.NUM_POINTS_IN_IQ_HISTORY, np.nan, dtype=np.complex128)
 
         self.sweep_index += 1
         self.prev_peak_loc_m = peak_loc_m

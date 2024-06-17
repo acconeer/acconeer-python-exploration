@@ -51,13 +51,13 @@ class RefAppStatus:
 
 @attrs.mutable(kw_only=True)
 class CalibrationData(AlgoBase):
-    noise_frames: Optional[npt.NDArray[np.complex_]] = attrs.field(
+    noise_frames: Optional[npt.NDArray[np.complex128]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    obs_tx_off_frames: Optional[npt.NDArray[np.complex_]] = attrs.field(
+    obs_tx_off_frames: Optional[npt.NDArray[np.complex128]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    obs_frames: Optional[npt.NDArray[np.complex_]] = attrs.field(
+    obs_frames: Optional[npt.NDArray[np.complex128]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
     temperatures: Optional[List[int]] = attrs.field(default=None)
@@ -66,7 +66,7 @@ class CalibrationData(AlgoBase):
 @attrs.mutable(kw_only=True)
 class RefAppContext(AlgoBase):
     noise_level: float = attrs.field(default=1.0)
-    obstruction_center: npt.NDArray[np.float_] = attrs.field(default=np.array([0.0, 0.0]))
+    obstruction_center: npt.NDArray[np.float64] = attrs.field(default=np.array([0.0, 0.0]))
     calibration_temperature: float = attrs.field(default=0.0)
     calibration_done: bool = attrs.field(default=False)
     calibration_sensor_config: a121.SensorConfig = attrs.field(factory=a121.SensorConfig)
@@ -168,22 +168,22 @@ class RefAppConfig(AlgoConfigBase):
 
 @attrs.frozen(kw_only=True)
 class RefAppExtraResult:
-    signature_history: npt.NDArray[np.float_] = attrs.field()
+    signature_history: npt.NDArray[np.float64] = attrs.field()
     """Array containing queue_length_n last signatures."""
 
-    parking_data: npt.NDArray[np.float_] = attrs.field()
+    parking_data: npt.NDArray[np.float64] = attrs.field()
     """The scaled amplitude array used to calculate the last signature."""
 
     closest_object_dist: float = attrs.field(default=0.0)
     """Location of closest signature in cluster. Only availible if car is detected."""
 
-    obstruction_data: Optional[npt.NDArray[np.float_]] = attrs.field(default=None)
+    obstruction_data: Optional[npt.NDArray[np.float64]] = attrs.field(default=None)
     """Array with obstruction amplitudes (usually direct leakage)."""
 
-    obstruction_signature: npt.NDArray[np.float_] = attrs.field(default=(0.0, 0.0))
+    obstruction_signature: npt.NDArray[np.float64] = attrs.field(default=(0.0, 0.0))
     """Signature of amplitudes used for the obstruction detection."""
 
-    obstruction_center: npt.NDArray[np.float_] = attrs.field(default=(0.0, 0.0))
+    obstruction_center: npt.NDArray[np.float64] = attrs.field(default=(0.0, 0.0))
     """Signature of amplitudes used in calibration."""
 
     obstruction_distance: float = attrs.field(default=0.0)

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ class ProcessorExtraResult:
     Contains information for visualization in ET.
     """
 
-    level_and_time_for_plotting: Dict[str, npt.NDArray[np.float_]] = attrs.field(
+    level_and_time_for_plotting: Dict[str, npt.NDArray[np.float64]] = attrs.field(
         eq=attrs_dict_ndarray_isclose
     )
 

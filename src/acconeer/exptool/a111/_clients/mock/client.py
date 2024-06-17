@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import logging
@@ -126,18 +126,20 @@ class DenseMocker:
 
 
 class EnvelopeMocker(DenseMocker):
+    _rng = np.random.default_rng()
+
     def get_next(self, t, i, offset):
         info = {
             DATA_SATURATED_KEY: False,
             DATA_QUALITY_WARNING_KEY: False,
         }
 
-        noise = 100 + 20 * np.random.randn(self.num_depths)
+        noise = 100 + 20 * self._rng.standard_normal(self.num_depths)
         noise = filtfilt_simple(noise, 0.98)
 
-        ampl = 2000 + np.random.randn() * 20
+        ampl = 2000 + self._rng.standard_normal() * 20
         center = self.range_center
-        center += np.random.randn() * 0.2e-3
+        center += self._rng.standard_normal() * 0.2e-3
         center += offset * 0.1
         profile = getattr(self.config, "profile", BaseServiceConfig.Profile.PROFILE_2)
         s = 0.01 + (profile.json_value - 1.0) * 0.03
@@ -151,18 +153,22 @@ class EnvelopeMocker(DenseMocker):
 
 
 class IQMocker(DenseMocker):
+    _rng = np.random.default_rng()
+
     def get_next(self, t, i, offset):
         info = {
             DATA_SATURATED_KEY: False,
             DATA_QUALITY_WARNING_KEY: False,
         }
 
-        noise = np.random.randn(self.num_depths) + 1j * np.random.randn(self.num_depths)
+        noise = self._rng.standard_normal(self.num_depths) + 1j * self._rng.standard_normal(
+            self.num_depths
+        )
         noise *= 0.015
 
-        ampl = 0.2 * (1 + 0.03 * np.random.randn())
+        ampl = 0.2 * (1 + 0.03 * self._rng.standard_normal())
         center = self.range_center
-        center += np.random.randn() * (3 / 360) * 2.5e-3
+        center += self._rng.standard_normal() * (3 / 360) * 2.5e-3
         center += offset * 0.1
         center += 4e-3 * np.sin(t)
         xs = self.depths - center
@@ -197,6 +203,7 @@ class PowerBinMocker(EnvelopeMocker):
 
 class SparseMocker:
     BASE_STEP_LENGTH = 0.06
+    _rng = np.random.default_rng()
 
     def __init__(self, config):
         self.config = config
@@ -228,7 +235,7 @@ class SparseMocker:
 
         num_sweeps = self.config.sweeps_per_frame
 
-        noise = 100 * np.random.randn(num_sweeps, self.num_depths)
+        noise = 100 * self._rng.standard_normal((num_sweeps, self.num_depths))
 
         xs = self.depths - self.range_center + 0.1 * np.sin(t)
         signal = 5000 * np.exp(-np.square(xs / 0.1)) * np.sin(xs / 2.5e-3)

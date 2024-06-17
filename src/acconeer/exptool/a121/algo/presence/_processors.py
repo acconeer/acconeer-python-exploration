@@ -70,20 +70,20 @@ class ProcessorExtraResult:
     Contains information for visualization in ET.
     """
 
-    frame: npt.NDArray[np.complex_] = attrs.field(eq=attrs_ndarray_isclose)
-    abs_mean_sweep: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
-    fast_lp_mean_sweep: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
-    slow_lp_mean_sweep: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
-    lp_noise: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    frame: npt.NDArray[np.complex128] = attrs.field(eq=attrs_ndarray_isclose)
+    abs_mean_sweep: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
+    fast_lp_mean_sweep: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
+    slow_lp_mean_sweep: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
+    lp_noise: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
     presence_distance_index: int = attrs.field()
 
 
 @attrs.frozen(kw_only=True)
 class ProcessorResult:
     intra_presence_score: float = attrs.field()
-    intra: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    intra: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
     inter_presence_score: float = attrs.field()
-    inter: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    inter: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
     presence_distance: float = attrs.field()
     presence_detected: bool = attrs.field()
     extra_result: ProcessorExtraResult = attrs.field()
@@ -142,8 +142,8 @@ class Processor(ProcessorBase[ProcessorResult]):
         nd = self.noise_est_diff_order
         self.noise_norm_factor = np.sqrt(np.sum(np.square(binom(nd, np.arange(nd + 1)))))
 
-        self.lp_mean_sweep_for_abs = np.zeros(self.num_distances, dtype=np.complex_)
-        self.lp_mean_sweep_for_phase = np.zeros(self.num_distances, dtype=np.complex_)
+        self.lp_mean_sweep_for_abs = np.zeros(self.num_distances, dtype=np.complex128)
+        self.lp_mean_sweep_for_phase = np.zeros(self.num_distances, dtype=np.complex128)
         self.mean_sweep_tc = self.processor_config.phase_adaptivity_tc
         self.mean_sweep_sf = self._tc_to_sf(self.mean_sweep_tc, self.f)
         self.lp_phase_shift = np.zeros(self.num_distances)
@@ -216,11 +216,11 @@ class Processor(ProcessorBase[ProcessorResult]):
 
     @staticmethod
     def _abs_dev(
-        a: npt.NDArray[np.complex_],
+        a: npt.NDArray[np.complex128],
         axis: Optional[int] = None,
         ddof: int = 0,
         subtract_mean: bool = True,
-    ) -> npt.NDArray[np.float_]:
+    ) -> npt.NDArray[np.float64]:
         if subtract_mean:
             a = a - a.mean(axis=axis, keepdims=True)
 
@@ -239,8 +239,8 @@ class Processor(ProcessorBase[ProcessorResult]):
 
     @staticmethod
     def _calculate_phase_shift(
-        a: npt.NDArray[np.complex_], b: npt.NDArray[np.float_]
-    ) -> npt.NDArray[np.float_]:
+        a: npt.NDArray[np.complex128], b: npt.NDArray[np.float64]
+    ) -> npt.NDArray[np.float64]:
         phase_a = np.angle(a)
         phase_b = np.angle(b)
         phases_unwrapped = np.unwrap([phase_a, phase_b], axis=0)
@@ -248,7 +248,7 @@ class Processor(ProcessorBase[ProcessorResult]):
 
         return phase_shift  # type: ignore[no-any-return]
 
-    def _calculate_phase_and_amp_weight(self, mean_sweep: npt.NDArray[np.float_]) -> np.float_:
+    def _calculate_phase_and_amp_weight(self, mean_sweep: npt.NDArray[np.float64]) -> np.float64:
         """
         Calculation of a weight factor based on phase shift and amplitude.
         The phase shift between the mean sweep and a lp-filtered mean sweep is

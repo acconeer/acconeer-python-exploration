@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -93,8 +93,8 @@ class PGUpdater:
         self,
         ref_app_config: RefAppConfig,
         estimated_frame_rate: float,
-        nominal_zone_limits: npt.NDArray[np.float_],
-        wake_up_zone_limits: npt.NDArray[np.float_],
+        nominal_zone_limits: npt.NDArray[np.float64],
+        wake_up_zone_limits: npt.NDArray[np.float64],
     ) -> None:
         self.ref_app_config = ref_app_config
         self.nominal_config = ref_app_config.nominal_config
@@ -254,7 +254,7 @@ class PGUpdater:
 
     @staticmethod
     def create_sector_plot(
-        title: str, num_sectors: int, start_m: float, zone_limits: npt.NDArray[np.float_]
+        title: str, num_sectors: int, start_m: float, zone_limits: npt.NDArray[np.float64]
     ) -> Tuple[pg.PlotItem, List[pg.QtWidgets.QGraphicsEllipseItem]]:
         sector_plot = pg.PlotItem(title=title)
 

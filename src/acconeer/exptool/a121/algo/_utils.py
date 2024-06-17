@@ -135,7 +135,7 @@ def get_distance_offset(
 
 def _subsweep_distances(
     subsweep: a121.SubsweepConfig, metadata: a121.Metadata
-) -> npt.NDArray[np.float_]:
+) -> npt.NDArray[np.float64]:
     points = np.arange(subsweep.num_points) * subsweep.step_length + subsweep.start_point
     distances_m = np.array(points, dtype=float) * metadata.base_step_length_m
     return distances_m
@@ -143,7 +143,7 @@ def _subsweep_distances(
 
 def get_distances_m(
     config: Union[a121.SensorConfig, a121.SubsweepConfig], metadata: a121.Metadata
-) -> npt.NDArray[np.float_]:
+) -> npt.NDArray[np.float64]:
     """
     Returns an array of all distances measured by the config.
     The distances are returned in the same order as found in the result frame
@@ -166,7 +166,7 @@ def get_distances_m(
 
 def get_approx_fft_vels(
     metadata: a121.Metadata, config: a121.SensorConfig
-) -> Tuple[npt.NDArray[np.float_], float]:
+) -> Tuple[npt.NDArray[np.float64], float]:
     if config.sweep_rate is not None:
         sweep_rate = config.sweep_rate
     else:
@@ -180,7 +180,7 @@ def get_approx_fft_vels(
 
 
 def interpolate_peaks(
-    abs_sweep: npt.NDArray[np.float_],
+    abs_sweep: npt.NDArray[np.float64],
     peak_idxs: list[int],
     start_point: int,
     step_length: int,
@@ -235,7 +235,9 @@ def calculate_loopback_peak_location(result: a121.Result, config: a121.SensorCon
     return estimated_dist[0]
 
 
-def find_peaks(abs_sweep: npt.NDArray[np.float_], threshold: npt.NDArray[np.float_]) -> list[int]:
+def find_peaks(
+    abs_sweep: npt.NDArray[np.float64], threshold: npt.NDArray[np.float64]
+) -> list[int]:
     """Identifies peaks above threshold.
 
     A peak is defined as a point with greater value than its two neighboring points and all
@@ -351,7 +353,9 @@ def get_distance_filter_edge_margin(profile: a121.Profile, step_length: int) -> 
     return int(_safe_ceil(ENVELOPE_FWHM_M[profile] / (APPROX_BASE_STEP_LENGTH_M * step_length)))
 
 
-def double_buffering_frame_filter(_frame: npt.NDArray[Any]) -> Optional[npt.NDArray[np.complex_]]:
+def double_buffering_frame_filter(
+    _frame: npt.NDArray[Any]
+) -> Optional[npt.NDArray[np.complex128]]:
     """
     Detects and removes outliers in data that appear when the double buffering mode is enabled,
     and returns the filtered frame.
@@ -423,7 +427,7 @@ def double_buffering_frame_filter(_frame: npt.NDArray[Any]) -> Optional[npt.NDAr
                         / 3
                     )
 
-    filtered_frame = np.empty((n_s, n_d), dtype=np.complex_)
+    filtered_frame = np.empty((n_s, n_d), dtype=np.complex128)
     filtered_frame.real = filtered_frame_real
     filtered_frame.imag = filtered_frame_imag
 

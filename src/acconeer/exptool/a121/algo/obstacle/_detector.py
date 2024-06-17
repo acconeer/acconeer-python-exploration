@@ -59,8 +59,8 @@ class DetectorContext(AlgoBase):
 
 @attrs.mutable(kw_only=True)
 class SingleSubsweepContext(AlgoBase):
-    mean_sweep: npt.NDArray[np.float_]
-    std_sweep: npt.NDArray[np.float_]
+    mean_sweep: npt.NDArray[np.float64]
+    std_sweep: npt.NDArray[np.float64]
 
 
 @attrs.mutable(kw_only=True)
@@ -297,8 +297,8 @@ class Detector:
         for s_id in self.sensor_ids:
             sens_context = self.context.single_sensor_contexts[s_id]
 
-            mean_sweeps: list[npt.NDArray[np.float_]] = []
-            std_sweeps: list[npt.NDArray[np.float_]] = []
+            mean_sweeps: list[npt.NDArray[np.float64]] = []
+            std_sweeps: list[npt.NDArray[np.float64]] = []
 
             if self.detector_config.enable_close_proximity_detection is True:
                 obstacle_proc_sensor_config = self.sensor_config_rest_subsweep

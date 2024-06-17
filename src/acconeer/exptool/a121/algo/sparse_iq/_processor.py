@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -39,10 +39,10 @@ class ProcessorConfig(AlgoProcessorConfigBase):
 
 @attrs.frozen(kw_only=True)
 class SubsweepProcessorResult:
-    frame: npt.NDArray[np.complex_] = attrs.field(eq=attrs_ndarray_eq)
-    amplitudes: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
-    phases: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
-    distance_velocity_map: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    frame: npt.NDArray[np.complex128] = attrs.field(eq=attrs_ndarray_eq)
+    amplitudes: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
+    phases: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
+    distance_velocity_map: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
 
 
 EntryResult = t.List[SubsweepProcessorResult]
@@ -64,13 +64,13 @@ class Processor(ExtendedProcessorBase[ProcessorResult]):
         )
 
     @staticmethod
-    def _get_hanning_widow(sensor_config: a121.SensorConfig) -> npt.NDArray[np.float_]:
+    def _get_hanning_widow(sensor_config: a121.SensorConfig) -> npt.NDArray[np.float64]:
         spf = sensor_config.sweeps_per_frame
         window = np.hanning(spf)[:, None]
         return window / np.sum(window)  # type: ignore[no-any-return]
 
     def _process_entry(
-        self, result_hanning_window: t.Tuple[a121.Result, npt.NDArray[np.float_]]
+        self, result_hanning_window: t.Tuple[a121.Result, npt.NDArray[np.float64]]
     ) -> EntryResult:
         (result, hanning_window) = result_hanning_window
 

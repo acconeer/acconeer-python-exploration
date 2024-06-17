@@ -22,7 +22,7 @@ from acconeer.exptool.a121.algo import (
 )
 
 
-T = TypeVar("T", float, npt.NDArray[np.float_])
+T = TypeVar("T", float, npt.NDArray[np.float64])
 
 
 class MeasurementType(AlgoParamEnum):
@@ -147,7 +147,7 @@ class RangeResult:
     Depends on the sensitivity parameter for the current range, the threshold is
     equal to 10 / *sensitivity*."""
 
-    score: npt.NDArray[np.float_] = attrs.field(eq=attrs_optional_ndarray_isclose)
+    score: npt.NDArray[np.float64] = attrs.field(eq=attrs_optional_ndarray_isclose)
     """Detection score for each point and sweep in current range.
     The output has the shape of (sweeps per frame, number of points in current subsweep)."""
 
@@ -307,7 +307,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         )
         self._frames_since_last_cal = 0
 
-    def _calc_variance(self, frame: npt.NDArray[np.complex_]) -> npt.NDArray[np.float_]:
+    def _calc_variance(self, frame: npt.NDArray[np.complex128]) -> npt.NDArray[np.float64]:
         xn = np.full((self._sweeps_per_frame, self._metadata.sweep_data_length), 0, dtype=float)
         y = np.full((self._sweeps_per_frame, self._metadata.sweep_data_length), 0, dtype=float)
 
@@ -333,7 +333,7 @@ class Processor(ProcessorBase[ProcessorResult]):
 
     def _process_single_range(
         self,
-        frame: npt.NDArray[np.complex_],
+        frame: npt.NDArray[np.complex128],
         detection: bool,
         patience: int,
         detection_depth: npt.NDArray[np.int_],
@@ -380,7 +380,7 @@ class Processor(ProcessorBase[ProcessorResult]):
 
     def _process_multiple_ranges(
         self,
-        frame: npt.NDArray[np.complex_],
+        frame: npt.NDArray[np.complex128],
         detection_depth: npt.NDArray[np.int_],
         counts: npt.NDArray[np.int_],
     ) -> List[bool]:
@@ -447,7 +447,7 @@ class Processor(ProcessorBase[ProcessorResult]):
 
         return [detection_close, detection_far]
 
-    def _get_sensitivity(self) -> npt.NDArray[np.float_]:
+    def _get_sensitivity(self) -> npt.NDArray[np.float64]:
         if self._processor_config.measurement_type == MeasurementType.FAR_RANGE:
             return np.repeat(
                 self._processor_config.sensitivity_far,

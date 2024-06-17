@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -99,7 +99,7 @@ def main():
 
 class PGUpdater:
     def __init__(self):
-        self.history = [np.NaN] * 100
+        self.history = [np.nan] * 100
 
     def setup(self, win):
         self.sweep_plot = win.addPlot(row=0, col=0)

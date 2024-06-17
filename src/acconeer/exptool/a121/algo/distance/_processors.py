@@ -91,16 +91,16 @@ class ProcessorConfig(AlgoProcessorConfigBase):
 
 @attrs.frozen(kw_only=True)
 class ProcessorContext:
-    direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(
+    direct_leakage: Optional[npt.NDArray[np.complex128]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    phase_jitter_comp_ref: Optional[npt.NDArray[np.float_]] = attrs.field(
+    phase_jitter_comp_ref: Optional[npt.NDArray[np.float64]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    recorded_threshold_mean_sweep: Optional[npt.NDArray[np.float_]] = attrs.field(
+    recorded_threshold_mean_sweep: Optional[npt.NDArray[np.float64]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    recorded_threshold_noise_std: Optional[List[np.float_]] = attrs.field(
+    recorded_threshold_noise_std: Optional[List[np.float64]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
     bg_noise_std: Optional[List[float]] = attrs.field(default=None)
@@ -114,13 +114,13 @@ class ProcessorExtraResult:
     Contains information for visualization in ET.
     """
 
-    abs_sweep: Optional[npt.NDArray[np.float_]] = attrs.field(
+    abs_sweep: Optional[npt.NDArray[np.float64]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    used_threshold: Optional[npt.NDArray[np.float_]] = attrs.field(
+    used_threshold: Optional[npt.NDArray[np.float64]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    distances_m: Optional[npt.NDArray[np.float_]] = attrs.field(
+    distances_m: Optional[npt.NDArray[np.float64]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
 
@@ -130,16 +130,16 @@ class ProcessorResult:
     estimated_distances: Optional[List[float]] = attrs.field(default=None)
     estimated_strengths: Optional[List[float]] = attrs.field(default=None)
     near_edge_status: Optional[bool] = attrs.field(default=None)
-    recorded_threshold_mean_sweep: Optional[npt.NDArray[np.float_]] = attrs.field(
+    recorded_threshold_mean_sweep: Optional[npt.NDArray[np.float64]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    recorded_threshold_noise_std: Optional[List[np.float_]] = attrs.field(
+    recorded_threshold_noise_std: Optional[List[np.float64]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    direct_leakage: Optional[npt.NDArray[np.complex_]] = attrs.field(
+    direct_leakage: Optional[npt.NDArray[np.complex128]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    phase_jitter_comp_reference: Optional[npt.NDArray[np.float_]] = attrs.field(
+    phase_jitter_comp_reference: Optional[npt.NDArray[np.float64]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
     extra_result: ProcessorExtraResult = attrs.field(factory=ProcessorExtraResult)
@@ -385,9 +385,9 @@ class Processor(ProcessorBase[ProcessorResult]):
     @staticmethod
     def _apply_phase_jitter_compensation(
         context: ProcessorContext,
-        frame: npt.NDArray[np.complex_],
-        lb_angle: npt.NDArray[np.float_],
-    ) -> npt.NDArray[np.complex_]:
+        frame: npt.NDArray[np.complex128],
+        lb_angle: npt.NDArray[np.float64],
+    ) -> npt.NDArray[np.complex128]:
         if context.direct_leakage is None or context.phase_jitter_comp_ref is None:
             raise ValueError("Sufficient context not provided")
 
@@ -452,7 +452,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         ) + cls._calc_cfar_guard_half_length(profile, step_length)
 
     def _process_distance_estimation(
-        self, abs_sweep: npt.NDArray[np.float_], temperature: int
+        self, abs_sweep: npt.NDArray[np.float64], temperature: int
     ) -> ProcessorResult:
         self.threshold = self._update_threshold(abs_sweep, temperature)
 
@@ -505,7 +505,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         self.sc_bg_num_sweeps = 1.0
 
     def _process_recorded_threshold_calibration(
-        self, abs_sweep: npt.NDArray[np.float_]
+        self, abs_sweep: npt.NDArray[np.float64]
     ) -> ProcessorResult:
         min_num_sweeps_in_valid_threshold = 2
 
@@ -553,8 +553,8 @@ class Processor(ProcessorBase[ProcessorResult]):
         )
 
     def _update_threshold(
-        self, abs_sweep: npt.NDArray[np.float_], temperature: int
-    ) -> npt.NDArray[np.float_]:
+        self, abs_sweep: npt.NDArray[np.float64], temperature: int
+    ) -> npt.NDArray[np.float64]:
         if self.threshold_method == ThresholdMethod.CFAR:
             return self._calculate_cfar_threshold(
                 abs_sweep,
@@ -599,7 +599,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         filt_margin: int,
         signal_adjustment_factor: float,
         noise_adjustment_factor: float,
-    ) -> npt.NDArray[np.float_]:
+    ) -> npt.NDArray[np.float64]:
         """Updates the recorded threshold to account for temperature effects.
 
         The threshold is constructed by adding a number of standard deviations of the background
@@ -633,12 +633,12 @@ class Processor(ProcessorBase[ProcessorResult]):
 
     @staticmethod
     def _calculate_cfar_threshold(
-        abs_sweep: npt.NDArray[np.float_],
+        abs_sweep: npt.NDArray[np.float64],
         window_length: int,
         guard_half_length: int,
         num_stds: float,
-        abs_noise_std: npt.NDArray[np.float_],
-    ) -> npt.NDArray[np.float_]:
+        abs_noise_std: npt.NDArray[np.float64],
+    ) -> npt.NDArray[np.float64]:
         """Calculate CFAR threshold.
 
         Each point of the threshold is formed by using data from neighboring segments of the
@@ -670,7 +670,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         bg_noise_std: list[float],
         reflector_shape: ReflectorShape,
         strength: float,
-    ) -> npt.NDArray[np.float_]:
+    ) -> npt.NDArray[np.float64]:
         """Calculates the threshold corresponding to a given RCS."""
         distances_m = (
             self.start_point_cropped + np.arange(self.num_points_cropped) * self.step_length
@@ -696,7 +696,7 @@ class Processor(ProcessorBase[ProcessorResult]):
 
     @staticmethod
     def _detect_close_object(
-        abs_sweep: npt.NDArray[np.float_], threshold: npt.NDArray[np.float_]
+        abs_sweep: npt.NDArray[np.float64], threshold: npt.NDArray[np.float64]
     ) -> bool:
         """This function determine if an object is present close to the start point, but
         not far enough into the measurement interval to result in a distinct peak.
@@ -716,7 +716,7 @@ class Processor(ProcessorBase[ProcessorResult]):
 
 
 def calculate_bg_noise_std(
-    subframe: npt.NDArray[np.complex_], subsweep_config: a121.SubsweepConfig
+    subframe: npt.NDArray[np.complex128], subsweep_config: a121.SubsweepConfig
 ) -> float:
     profile = subsweep_config.profile
     step_length = subsweep_config.step_length

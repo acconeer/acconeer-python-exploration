@@ -128,7 +128,7 @@ class RefAppContext(AlgoBase):
 
 @attrs.frozen(kw_only=True)
 class RefAppResult:
-    zone_limits: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    zone_limits: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
     "The upper limit for each zone."
 
     presence_detected: bool = attrs.field()

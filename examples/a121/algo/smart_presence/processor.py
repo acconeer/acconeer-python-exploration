@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -85,7 +85,7 @@ class PGUpdater:
         processor_config: smart_presence.ProcessorConfig,
         sensor_config: a121.SensorConfig,
         estimated_frame_rate: float,
-        zone_limits: npt.NDArray[np.float_],
+        zone_limits: npt.NDArray[np.float64],
     ):
         self.detector_config = detector_config
 

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ class RefAppResultSlice:
     max_intra_zone: t.Optional[int]
     max_presence_zone: t.Optional[int]
 
-    zone_limits: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    zone_limits: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
     total_zone_detections: npt.NDArray[np.int_] = attrs.field(eq=attrs_ndarray_eq)
     inter_zone_detections: npt.NDArray[np.int_] = attrs.field(eq=attrs_ndarray_eq)
     intra_zone_detections: npt.NDArray[np.int_] = attrs.field(eq=attrs_ndarray_eq)

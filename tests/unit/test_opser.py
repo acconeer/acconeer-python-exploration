@@ -53,7 +53,8 @@ def _list(element_type: type, length: int = 3) -> t.List[t.Any]:
 
 def _array(dtype: t.Any, shape: tuple[int, ...] = (1, 2, 3)) -> npt.NDArray[t.Any]:
     """Helper function for mock data. returns an array with elements of type `element_type`"""
-    return np.random.normal(shape).astype(dtype)
+    rng = np.random.default_rng()
+    return rng.normal(shape).astype(dtype)
 
 
 @attrs.frozen
@@ -185,20 +186,20 @@ BILATERATION = [
 
 
 PRESENCE_PROCESSOR_EXTRA_RESULT = presence_processors.ProcessorExtraResult(
-    frame=_array(np.complex_),
-    abs_mean_sweep=_array(np.float_),
-    fast_lp_mean_sweep=_array(np.float_),
-    slow_lp_mean_sweep=_array(np.float_),
-    lp_noise=_array(np.float_),
+    frame=_array(np.complex128),
+    abs_mean_sweep=_array(np.float64),
+    fast_lp_mean_sweep=_array(np.float64),
+    slow_lp_mean_sweep=_array(np.float64),
+    lp_noise=_array(np.float64),
     presence_distance_index=10,
 )
 
 
 PRESENCE_PROCESSOR_RESULT = presence.ProcessorResult(
     intra_presence_score=random(),
-    intra=_array(np.float_),
+    intra=_array(np.float64),
     inter_presence_score=random(),
-    inter=_array(np.float_),
+    inter=_array(np.float64),
     presence_distance=random(),
     presence_detected=choice([True, False]),
     extra_result=PRESENCE_PROCESSOR_EXTRA_RESULT,
@@ -213,12 +214,12 @@ BREATHING = [
         breathing_result=breathing_processor.BreathingProcessorResult(
             breathing_rate=None,
             extra_result=breathing_processor.BreathingProcessorExtraResult(
-                psd=_array(np.float_),
-                frequencies=_array(np.float_),
-                breathing_motion=_array(np.float_),
-                time_vector=_array(np.float_),
-                breathing_rate_history=_array(np.float_),
-                all_breathing_rate_history=_array(np.float_),
+                psd=_array(np.float64),
+                frequencies=_array(np.float64),
+                breathing_motion=_array(np.float64),
+                time_vector=_array(np.float64),
+                breathing_rate_history=_array(np.float64),
+                all_breathing_rate_history=_array(np.float64),
             ),
         ),
     ),
@@ -228,15 +229,15 @@ DISTANCE_PROCESSOR_RESULT = distance.ProcessorResult(
     estimated_distances=_list(float),
     estimated_strengths=_list(float),
     near_edge_status=choice([False, True]),
-    recorded_threshold_mean_sweep=_array(np.float_),
-    recorded_threshold_noise_std=_list(np.float_),
-    direct_leakage=_array(np.complex_),
-    phase_jitter_comp_reference=_array(np.float_),
+    recorded_threshold_mean_sweep=_array(np.float64),
+    recorded_threshold_noise_std=_list(np.float64),
+    direct_leakage=_array(np.complex128),
+    phase_jitter_comp_reference=_array(np.float64),
     extra_result=distance_processors.ProcessorExtraResult(),
 )
 
 DISTANCE_DETECTOR_RESULT = distance.DetectorResult(
-    distances=_array(np.float_),
+    distances=_array(np.float64),
     strengths=None,
     near_edge_status=choice([False, True]),
     calibration_needed=False,
@@ -251,11 +252,11 @@ DISTANCE = [
         single_sensor_contexts={
             1: distance_detector.SingleSensorContext(
                 loopback_peak_location_m=random(),
-                direct_leakage=_array(np.complex_),
-                phase_jitter_comp_reference=_array(np.float_),
-                recorded_thresholds_mean_sweep=[_array(np.float_) for _ in range(3)],
+                direct_leakage=_array(np.complex128),
+                phase_jitter_comp_reference=_array(np.float64),
+                recorded_thresholds_mean_sweep=[_array(np.float64) for _ in range(3)],
                 recorded_thresholds_noise_std=[
-                    [_array(np.float_) for _ in range(3)] for _ in range(3)
+                    [_array(np.float64) for _ in range(3)] for _ in range(3)
                 ],
                 bg_noise_std=[_list(float) for _ in range(3)],
                 session_config_used_during_calibration=a121.SessionConfig(),
@@ -269,10 +270,10 @@ DISTANCE = [
     DISTANCE_DETECTOR_RESULT,
     distance.ProcessorConfig(threshold_sensitivity=0.00001),
     distance.ProcessorContext(
-        direct_leakage=_array(np.complex_),
-        phase_jitter_comp_ref=_array(np.float_),
-        recorded_threshold_mean_sweep=_array(np.float_),
-        recorded_threshold_noise_std=_list(np.float_),
+        direct_leakage=_array(np.complex128),
+        phase_jitter_comp_ref=_array(np.float64),
+        recorded_threshold_mean_sweep=_array(np.float64),
+        recorded_threshold_noise_std=_list(np.float64),
         bg_noise_std=[1.0, 2.0, 3.0],
         reference_temperature=5,
         loopback_peak_location_m=5.0,
@@ -286,13 +287,13 @@ PHASE_TRACKING = [
     phase_tracking.ProcessorConfig(threshold=0.0),
     phase_tracking.ProcessorContext(),  # empty
     phase_tracking.ProcessorResult(
-        lp_abs_sweep=_array(np.float_),
-        angle_sweep=_array(np.float_),
+        lp_abs_sweep=_array(np.float64),
+        angle_sweep=_array(np.float64),
         threshold=None,
-        rel_time_stamps=_array(np.float_),
-        distance_history=_array(np.float_),
+        rel_time_stamps=_array(np.float64),
+        distance_history=_array(np.float64),
         peak_loc_m=13.37,
-        iq_history=_array(np.complex_),
+        iq_history=_array(np.complex128),
     ),
 ]
 
@@ -300,9 +301,9 @@ PRESENCE = [
     presence.ProcessorConfig(inter_phase_boost=True),
     presence.ProcessorResult(
         intra_presence_score=random(),
-        intra=_array(np.float_),
+        intra=_array(np.float64),
         inter_presence_score=random(),
-        inter=_array(np.float_),
+        inter=_array(np.float64),
         presence_distance=random(),
         presence_detected=choice([True, False]),
         extra_result=PRESENCE_PROCESSOR_EXTRA_RESULT,
@@ -310,9 +311,9 @@ PRESENCE = [
     presence.DetectorConfig(start_m=1.0),
     presence.DetectorResult(
         intra_presence_score=10.0,
-        intra_depthwise_scores=_array(np.float_),
+        intra_depthwise_scores=_array(np.float64),
         inter_presence_score=10.0,
-        inter_depthwise_scores=_array(np.float_),
+        inter_depthwise_scores=_array(np.float64),
         presence_distance=10.0,
         presence_detected=False,
         processor_extra_result=PRESENCE_PROCESSOR_EXTRA_RESULT,
@@ -322,12 +323,12 @@ PRESENCE = [
 
 
 SURFACE_VELOCITY_PROCESSOR_EXTRA_RESULT = surface_velocity_processor.ProcessorExtraResult(
-    max_bin_vertical_vs=_array(np.float_),
+    max_bin_vertical_vs=_array(np.float64),
     peak_width=13.0,
-    vertical_velocities=_array(np.float_),
-    psd=_array(np.float_),
+    vertical_velocities=_array(np.float64),
+    psd=_array(np.float64),
     peak_idx=np.int8(0),
-    psd_threshold=_array(np.float_),
+    psd_threshold=_array(np.float64),
 )
 
 SURFACE_VELOCITY = [
@@ -349,7 +350,7 @@ SURFACE_VELOCITY = [
 
 SMART_PRESENCE = [
     smart_presence.RefAppResult(
-        zone_limits=_array(np.float_),
+        zone_limits=_array(np.float64),
         presence_detected=choice([True, False]),
         max_presence_zone=4,
         total_zone_detections=_array(np.int_),
@@ -368,7 +369,7 @@ SMART_PRESENCE = [
 ]
 
 TANK_LEVEL_PROCESSOR_EXTRA_RESULT = tank_level_processor.ProcessorExtraResult(
-    level_and_time_for_plotting={"hello": _array(np.float_)}
+    level_and_time_for_plotting={"hello": _array(np.float64)}
 )
 
 TANK_LEVEL = [
@@ -414,12 +415,12 @@ TOUCHLESS_BUTTON = [
         close=touchless_button.RangeResult(
             detection=True,
             threshold=random(),
-            score=_array(np.float_),
+            score=_array(np.float64),
         ),
         far=touchless_button.RangeResult(
             detection=False,
             threshold=random(),
-            score=_array(np.float_),
+            score=_array(np.float64),
         ),
     ),
     touchless_button.ProcessorResult(
@@ -431,16 +432,16 @@ TOUCHLESS_BUTTON = [
 
 VIBRATION_PROCESSOR_EXTRA_RESULT = vibration.ProcessorExtraResult(
     amplitude_threshold=random(),
-    zm_time_series=_array(np.float_),
-    lp_displacements_threshold=_array(np.float_),
+    zm_time_series=_array(np.float64),
+    lp_displacements_threshold=_array(np.float64),
 )
 
 VIBRATION = [
     vibration.ProcessorConfig(),
     vibration.ProcessorContext(),  # empty
     vibration.ProcessorResult(
-        lp_displacements=_array(np.float_),
-        lp_displacements_freqs=_array(np.float_),
+        lp_displacements=_array(np.float64),
+        lp_displacements_freqs=_array(np.float64),
         max_sweep_amplitude=random(),
         max_displacement=random(),
         max_displacement_freq=random(),
@@ -449,7 +450,7 @@ VIBRATION = [
     ),
     vibration.ProcessorResult(
         lp_displacements=None,
-        lp_displacements_freqs=_array(np.float_),
+        lp_displacements_freqs=_array(np.float64),
         max_sweep_amplitude=random(),
         max_displacement=None,
         max_displacement_freq=None,

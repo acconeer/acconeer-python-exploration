@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -45,15 +45,15 @@ class StackedResults:
     _context: ResultContext = attrs.field()
 
     @property
-    def frame(self) -> npt.NDArray[np.complex_]:
+    def frame(self) -> npt.NDArray[np.complex128]:
         return int16_complex_array_to_complex(self._frame)
 
     @property
-    def subframes(self) -> list[npt.NDArray[np.complex_]]:
+    def subframes(self) -> list[npt.NDArray[np.complex128]]:
         return get_subsweeps_from_frame(self.frame, self._context.metadata)
 
     @property
-    def tick_time(self) -> npt.NDArray[np.float_]:
+    def tick_time(self) -> npt.NDArray[np.float64]:
         return self.tick / self._context.ticks_per_second
 
     def __len__(self) -> int:

@@ -91,7 +91,7 @@ class SessionRecord(abc.ABC):
         return utils.unextend(self.extended_stacked_results)
 
     @property
-    def frames(self) -> npt.NDArray[np.complex_]:
+    def frames(self) -> npt.NDArray[np.complex128]:
         """Retrieves the sole stack of frames in the record
 
         Alias for ``Record.stacked_results.frame``.

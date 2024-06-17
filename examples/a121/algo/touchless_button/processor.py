@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -60,7 +60,7 @@ def main():
 
 class PGUpdater:
     def __init__(self, sensor_config, processor_config):
-        self.detection_history = np.full((2, 100), np.NaN)
+        self.detection_history = np.full((2, 100), np.nan)
         self.sensor_config = sensor_config
         self.processor_config = processor_config
 
@@ -103,7 +103,7 @@ class PGUpdater:
         self.close_text_item.hide()
         self.far_text_item.hide()
 
-        self.detection_history = np.full((2, 100), np.NaN)
+        self.detection_history = np.full((2, 100), np.nan)
 
         self.score_history_plot = self._create_score_plot(win)
         score_plot_legend = self.score_history_plot.legend
@@ -116,7 +116,7 @@ class PGUpdater:
             pen=et.utils.pg_pen_cycler(0, width=2.5, style="--"),
         )
 
-        self.threshold_history = np.full((2, 100), np.NaN)
+        self.threshold_history = np.full((2, 100), np.nan)
 
         cycle_index = 2  # To not have same colors as thresholds
         if self.processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
@@ -127,7 +127,7 @@ class PGUpdater:
             score_plot_legend.addItem(self.threshold_history_curve_far, "Far range threshold")
 
         if self.processor_config.measurement_type != MeasurementType.CLOSE_AND_FAR_RANGE:
-            score_history = np.full((self.sensor_config.subsweep.num_points, 100), np.NaN)
+            score_history = np.full((self.sensor_config.subsweep.num_points, 100), np.nan)
             score_history_curves = np.empty(
                 (self.sensor_config.subsweep.num_points,), dtype=object
             )
@@ -154,10 +154,10 @@ class PGUpdater:
             score_plot_legend.addItem(self.threshold_history_curve_close, "Close range threshold")
             score_plot_legend.addItem(self.threshold_history_curve_far, "Far range threshold")
             self.score_history_close = np.full(
-                (self.sensor_config.subsweeps[0].num_points, 100), np.NaN
+                (self.sensor_config.subsweeps[0].num_points, 100), np.nan
             )
             self.score_history_far = np.full(
-                (self.sensor_config.subsweeps[1].num_points, 100), np.NaN
+                (self.sensor_config.subsweeps[1].num_points, 100), np.nan
             )
             self.score_history_curves_close = np.empty(
                 (self.sensor_config.subsweeps[0].num_points,), dtype=object

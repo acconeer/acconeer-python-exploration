@@ -141,12 +141,12 @@ class ExampleAppResult:
     Used to determine whether an object is in front of the sensor.
     """
 
-    lp_displacements: Optional[npt.NDArray[np.float_]] = attrs.field(
+    lp_displacements: Optional[npt.NDArray[np.float64]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
     """Array of estimated displacement (μm) per frequency."""
 
-    lp_displacements_freqs: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    lp_displacements_freqs: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
     """Array of frequencies where displacement is estimated (Hz)."""
 
     max_displacement: Optional[float] = attrs.field(default=None)

@@ -93,8 +93,8 @@ class PluginPresetId(Enum):
 class SetupMessage(GeneralMessage):
     ref_app_config: RefAppConfig
     estimated_frame_rate: float
-    nominal_zone_limits: npt.NDArray[np.float_]
-    wake_up_zone_limits: npt.NDArray[np.float_]
+    nominal_zone_limits: npt.NDArray[np.float64]
+    wake_up_zone_limits: npt.NDArray[np.float64]
     name: str = attrs.field(default="setup", init=False)
     recipient: backend.RecipientLiteral = attrs.field(default="plot_plugin", init=False)
 
@@ -253,8 +253,8 @@ class PlotPlugin(PgPlotPlugin):
         self,
         ref_app_config: RefAppConfig,
         estimated_frame_rate: float,
-        nominal_zone_limits: npt.NDArray[np.float_],
-        wake_up_zone_limits: npt.NDArray[np.float_],
+        nominal_zone_limits: npt.NDArray[np.float64],
+        wake_up_zone_limits: npt.NDArray[np.float64],
     ) -> None:
         self.plot_layout.clear()
 
@@ -411,7 +411,7 @@ class PlotPlugin(PgPlotPlugin):
 
     @staticmethod
     def create_sector_plot(
-        title: str, num_sectors: int, start_m: float, zone_limits: npt.NDArray[np.float_]
+        title: str, num_sectors: int, start_m: float, zone_limits: npt.NDArray[np.float64]
     ) -> Tuple[pg.PlotItem, List[pg.QtWidgets.QGraphicsEllipseItem]]:
         sector_plot = pg.PlotItem(title=title)
 

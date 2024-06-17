@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -145,7 +145,7 @@ class PlotPlugin(PlotPluginBase):
         self.ampl_plot: Optional[pg.PlotItem] = None
 
         self.ampl_curves: _Extended[list[pg.PlotDataItem]] = []
-        self.subsweeps_distances_m: _Extended[list[npt.NDArray[np.float_]]] = []
+        self.subsweeps_distances_m: _Extended[list[npt.NDArray[np.float64]]] = []
 
         layout = QVBoxLayout()
 
@@ -240,7 +240,7 @@ class PlotPlugin(PlotPluginBase):
     @staticmethod
     def _get_distances_m(
         config: a121.SensorConfig, metadata: a121.Metadata
-    ) -> list[npt.NDArray[np.float_]]:
+    ) -> list[npt.NDArray[np.float64]]:
         return [algo.get_distances_m(subsweep, metadata) for subsweep in config.subsweeps]
 
     def _setup_amplitude(self, session_config: a121.SessionConfig) -> None:

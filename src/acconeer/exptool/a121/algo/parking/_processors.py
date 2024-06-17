@@ -31,13 +31,13 @@ class ObstructionProcessorConfig:
 
 @attrs.frozen(kw_only=True)
 class ObstructionProcessorExtraResult:
-    obstruction_signature: npt.NDArray[np.float_] = attrs.field()
+    obstruction_signature: npt.NDArray[np.float64] = attrs.field()
     """Signature of amplitudes used for the obstruction detection."""
 
-    obstruction_data: npt.NDArray[np.float_] = attrs.field()
+    obstruction_data: npt.NDArray[np.float64] = attrs.field()
     """Array with obstruction amplitudes (usually direct leakage)."""
 
-    obstruction_center: npt.NDArray[np.float_] = attrs.field()
+    obstruction_center: npt.NDArray[np.float64] = attrs.field()
     """Signature of amplitudes used in calibration."""
 
     obstruction_distance: float = attrs.field()
@@ -61,7 +61,7 @@ class ObstructionProcessor:
         processor_config: ObstructionProcessorConfig,
         metadata: a121.Metadata,
         update_rate: float,
-        calibration_center: npt.NDArray[np.float_],
+        calibration_center: npt.NDArray[np.float64],
         calibration_noise_mean: float,
         calibration_temperature: float,
     ):
@@ -87,7 +87,7 @@ class ObstructionProcessor:
 
     @staticmethod
     def get_thresholds(
-        distance_threshold: float, distances: npt.NDArray[np.float_]
+        distance_threshold: float, distances: npt.NDArray[np.float64]
     ) -> Tuple[float, float]:
         distance_range = max(distances) - min(distances)
 
@@ -98,8 +98,8 @@ class ObstructionProcessor:
 
     @staticmethod
     def get_signature(
-        frame: npt.NDArray[np.complex128], noise_level: float, distances: npt.NDArray[np.float_]
-    ) -> Tuple[npt.NDArray[np.float_], npt.NDArray[np.float_]]:
+        frame: npt.NDArray[np.complex128], noise_level: float, distances: npt.NDArray[np.float64]
+    ) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         # Returns signature for a frame without temperature adjustment
 
         abs_frame = np.squeeze(abs(frame))
@@ -118,7 +118,7 @@ class ObstructionProcessor:
         return noise_level
 
     def process(
-        self, frame: npt.NDArray[np.complex_], temperature: float
+        self, frame: npt.NDArray[np.complex128], temperature: float
     ) -> ObstructionProcessorResult:
         # Do temperature adjustment
         signal_adjustment_factor, deviation_adjustment_factor = get_temperature_adjustment_factors(
@@ -176,10 +176,10 @@ class ProcessorConfig:
 
 @attrs.frozen(kw_only=True)
 class ProcessorExtraResult:
-    signature_history: npt.NDArray[np.float_] = attrs.field()
+    signature_history: npt.NDArray[np.float64] = attrs.field()
     """Array containing queue_length last signatures."""
 
-    parking_data: npt.NDArray[np.float_] = attrs.field()
+    parking_data: npt.NDArray[np.float64] = attrs.field()
     """The scaled amplitude array used to calculate the last signature."""
 
     closest_observation: float = attrs.field()
@@ -238,7 +238,7 @@ class Processor:
         noise_level = float(np.mean(amp) + n_std_dev * dev)
         return noise_level
 
-    def signature(self, depths: npt.NDArray[np.float_]) -> Tuple[float, float]:
+    def signature(self, depths: npt.NDArray[np.float64]) -> Tuple[float, float]:
         total_energy = sum(depths)
         max_energy = max(depths)
         if total_energy != 0.0:
@@ -288,7 +288,7 @@ class Processor:
 
         return ret
 
-    def process(self, frame: npt.NDArray[np.complex_], temperature: float) -> ProcessorResult:
+    def process(self, frame: npt.NDArray[np.complex128], temperature: float) -> ProcessorResult:
         self.frame_ind += 1
 
         _, deviation_adjustment_factor = get_temperature_adjustment_factors(

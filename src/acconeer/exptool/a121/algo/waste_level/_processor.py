@@ -133,7 +133,7 @@ class ProcessorExtraResult:
     Contains information for visualization in ET.
     """
 
-    phase_std: npt.NDArray[np.float_]
+    phase_std: npt.NDArray[np.float64]
     """The standard deviation of the phase from which the distance is detemined."""
     distance_m: Optional[float]
     """Distance from sensor to fill level."""
@@ -173,7 +173,7 @@ class Processor(ProcessorBase[ProcessorResult]):
 
         self.distances_m = get_distances_m(sensor_config, metadata)
 
-    def find_distance_m(self, phase_stds: npt.NDArray[np.float_]) -> float:
+    def find_distance_m(self, phase_stds: npt.NDArray[np.float64]) -> float:
         stable_phases = phase_stds < self.threshold
 
         potential_distances = (

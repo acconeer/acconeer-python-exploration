@@ -65,9 +65,9 @@ class SubsweepProcessorExtraResult:
     Contains information for visualization in ET.
     """
 
-    fft_map: npt.NDArray[np.float_] = attrs.field(default=None)
-    fft_map_threshold: npt.NDArray[np.float_] = attrs.field(default=None)
-    r: npt.NDArray[np.float_] = attrs.field(default=None)
+    fft_map: npt.NDArray[np.float64] = attrs.field(default=None)
+    fft_map_threshold: npt.NDArray[np.float64] = attrs.field(default=None)
+    r: npt.NDArray[np.float64] = attrs.field(default=None)
 
 
 @attrs.frozen(kw_only=True)
@@ -101,8 +101,8 @@ class SubsweepProcessorContext:
 @attrs.frozen(kw_only=True)
 class ProcessorContext:
     update_rate: float = attrs.field()
-    mean_sweeps: list[npt.NDArray[np.float_]] = attrs.field(factory=list)
-    std_sweeps: list[npt.NDArray[np.float_]] = attrs.field(factory=list)
+    mean_sweeps: list[npt.NDArray[np.float64]] = attrs.field(factory=list)
+    std_sweeps: list[npt.NDArray[np.float64]] = attrs.field(factory=list)
     reference_temperature: Optional[float] = attrs.field(default=None)
     loopback_peak_location_m: float = attrs.field(default=0.0)
 
@@ -176,7 +176,7 @@ class SubsweepProcessor:
         )
 
     def process(
-        self, subframe: npt.NDArray[np.complex_], temperature: float
+        self, subframe: npt.NDArray[np.complex128], temperature: float
     ) -> SubsweepProcessorResult:
         assert self.proc_context.reference_temperature is not None
 
@@ -258,7 +258,7 @@ class SubsweepProcessor:
 
         return SubsweepProcessorResult(targets=targets, extra_result=er)
 
-    def apply_depth_filter(self, frame: npt.NDArray[np.complex_]) -> npt.NDArray[np.complex_]:
+    def apply_depth_filter(self, frame: npt.NDArray[np.complex128]) -> npt.NDArray[np.complex128]:
         # Written as a separate function to be callable during detector calibration
 
         filtered_array = np.array(filtfilt(self.b, self.a, frame), dtype=complex)
@@ -424,7 +424,7 @@ class Processor(ProcessorBase[ProcessorResult]):
 
         return all_targets
 
-    def apply_depth_filter(self, result: a121.Result) -> list[npt.NDArray[np.complex_]]:
+    def apply_depth_filter(self, result: a121.Result) -> list[npt.NDArray[np.complex128]]:
         return [
             ssp.apply_depth_filter(r) for r, ssp in zip(result.subframes, self.subsweep_processors)
         ]
@@ -448,8 +448,8 @@ class Processor(ProcessorBase[ProcessorResult]):
 
     def get_closest_target_index(
         self,
-        distances: npt.NDArray[np.float_],
-        velocities: npt.NDArray[np.float_],
+        distances: npt.NDArray[np.float64],
+        velocities: npt.NDArray[np.float64],
         kf_distance: float,
         kf_velocity: float,
     ) -> int:
@@ -529,8 +529,8 @@ class Processor(ProcessorBase[ProcessorResult]):
 
 
 def apply_max_depth_filter(
-    abs_sweep: npt.NDArray[np.float_], config: a121.SubsweepConfig
-) -> npt.NDArray[np.float_]:
+    abs_sweep: npt.NDArray[np.float64], config: a121.SubsweepConfig
+) -> npt.NDArray[np.float64]:
     """Filter sweep so that every point is max within +/- one fwhm"""
 
     filtered_sweep = np.zeros_like(abs_sweep)
@@ -549,7 +549,7 @@ def apply_max_depth_filter(
     return filtered_sweep
 
 
-def get_interpolated_range_peak_index(env: npt.NDArray[np.float_]) -> float:
+def get_interpolated_range_peak_index(env: npt.NDArray[np.float64]) -> float:
     """Simple quadratic peak interpolation assuming equidistant points"""
 
     SMALL_NUMBER = 1e-10  # To avoid divide by zero for a flat peak.
@@ -565,7 +565,7 @@ def get_interpolated_range_peak_index(env: npt.NDArray[np.float_]) -> float:
     )
 
 
-def get_interpolated_fft_peak_index(Y: npt.NDArray[np.complex_], idx: int) -> float:
+def get_interpolated_fft_peak_index(Y: npt.NDArray[np.complex128], idx: int) -> float:
     """FFT peak interpolation according to Quinn's method"""
 
     Y2 = np.abs(Y[idx]) ** 2
@@ -579,15 +579,15 @@ def get_interpolated_fft_peak_index(Y: npt.NDArray[np.complex_], idx: int) -> fl
 
 
 def subtract_reflector_from_fftmap(
-    fftmap: npt.NDArray[np.float_], r_idx: int, f_idx: int, fwhm: float
-) -> npt.NDArray[np.float_]:
+    fftmap: npt.NDArray[np.float64], r_idx: int, f_idx: int, fwhm: float
+) -> npt.NDArray[np.float64]:
     """Subtract signal from single reflector in fft map"""
 
     MARGIN_FACTOR = 2
 
     Nf, Nr = fftmap.shape
     map_range = np.clip(
-        1 - np.abs(np.arange(Nr) - r_idx) / (MARGIN_FACTOR * fwhm), 0, np.Inf
+        1 - np.abs(np.arange(Nr) - r_idx) / (MARGIN_FACTOR * fwhm), 0, np.inf
     )  # Triangular envelope
 
     fs = np.arange(Nf)
@@ -618,8 +618,8 @@ class _KalmanFilter:
         init_velocity: float,
         min_num_updates_valid_estimate: int,
     ) -> None:
-        self.A: npt.NDArray[np.float_] = np.matrix([[1.0, dt], [0.0, 1.0]])
-        self.H: npt.NDArray[np.float_] = np.matrix([[1, 0], [0, 1]])
+        self.A: npt.NDArray[np.float64] = np.matrix([[1.0, dt], [0.0, 1.0]])
+        self.H: npt.NDArray[np.float64] = np.matrix([[1, 0], [0, 1]])
         process_noise_gain = self._sensitivity_to_gain(process_noise_gain_sensitivity)
         # Random acceleration process noise.
         self.Q = (
@@ -629,7 +629,7 @@ class _KalmanFilter:
         )
         self.R = self._MEASUREMENT_NOISE_STD**2
         self.P = np.eye(self.A.shape[1])
-        self.x: npt.NDArray[np.float_] = np.matrix([[init_position], [init_velocity]])
+        self.x: npt.NDArray[np.float64] = np.matrix([[init_position], [init_velocity]])
         self.min_num_updates_valid_estimate = min_num_updates_valid_estimate
         self.dead_reckoning_count = 0
         self.num_updates = 0
@@ -639,7 +639,7 @@ class _KalmanFilter:
         self.x = np.dot(self.A, self.x)
         self.P = np.dot(np.dot(self.A, self.P), self.A.T) + self.Q
 
-    def update(self, z: npt.NDArray[np.float_]) -> None:
+    def update(self, z: npt.NDArray[np.float64]) -> None:
         S = np.dot(self.H, np.dot(self.P, self.H.T)) + self.R
         K = np.dot(np.dot(self.P, self.H.T), np.linalg.inv(S))
         self.x = self.x + np.dot(K, (z - np.dot(self.H, self.x)))

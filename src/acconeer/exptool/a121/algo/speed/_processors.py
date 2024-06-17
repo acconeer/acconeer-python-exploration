@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -34,19 +34,19 @@ class ProcessorExtraResult:
     Contains information for visualization in ET.
     """
 
-    velocities: npt.NDArray[np.float_]
-    psd: npt.NDArray[np.float_]
-    est_peaks: npt.NDArray[np.float_]
-    actual_thresholds: npt.NDArray[np.float_]
+    velocities: npt.NDArray[np.float64]
+    psd: npt.NDArray[np.float64]
+    est_peaks: npt.NDArray[np.float64]
+    actual_thresholds: npt.NDArray[np.float64]
 
 
 @attrs.frozen(kw_only=True)
 class ProcessorResult:
     extra_result: ProcessorExtraResult
-    speed_per_depth: npt.NDArray[np.float_]
+    speed_per_depth: npt.NDArray[np.float64]
 
     @property
-    def max_speed(self) -> np.float_:
+    def max_speed(self) -> np.float64:
         return max(np.min(self.speed_per_depth), np.max(self.speed_per_depth), key=np.abs)
 
 
@@ -72,8 +72,8 @@ class Processor(ProcessorBase[ProcessorResult]):
         self.sweep_rate = sensor_config.sweep_rate
 
     def get_welch(
-        self, sweep: npt.NDArray[np.complex_]
-    ) -> Tuple[npt.NDArray[np.float_], npt.NDArray[np.float_]]:
+        self, sweep: npt.NDArray[np.complex128]
+    ) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         freqs, psd = welch(
             sweep,
             fs=self.sweep_rate,
@@ -88,7 +88,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         freqs = np.fft.fftshift(freqs, axes=0)
         return freqs, psd
 
-    def interpolate_peak(self, freqs: npt.NDArray[np.float_], peak_ind: int) -> float:
+    def interpolate_peak(self, freqs: npt.NDArray[np.float64], peak_ind: int) -> float:
         # we assume indices to be -1,0,1 and take a inverse based on that.
 
         freqs = np.squeeze(freqs)
@@ -105,7 +105,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         max_ind = -coeffs[1] / (2 * coeffs[0])
         return float(peak_ind + max_ind)
 
-    def interpolate_linear(self, speeds: npt.NDArray[np.float_], peak: float) -> float:
+    def interpolate_linear(self, speeds: npt.NDArray[np.float64], peak: float) -> float:
         p1 = int(np.floor(peak))
         p2 = int(np.ceil(peak))
         diff = speeds[p2] - speeds[p1]

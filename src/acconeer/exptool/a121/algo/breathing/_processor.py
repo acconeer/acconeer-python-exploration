@@ -74,12 +74,12 @@ class BreathingProcessorConfig(AlgoProcessorConfigBase):
 
 @attrs.frozen(kw_only=True)
 class BreathingProcessorExtraResult:
-    psd: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
-    frequencies: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
-    breathing_motion: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
-    time_vector: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
-    breathing_rate_history: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
-    all_breathing_rate_history: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    psd: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
+    frequencies: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
+    breathing_motion: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
+    time_vector: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
+    breathing_rate_history: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
+    all_breathing_rate_history: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
 
 
 @attrs.mutable(kw_only=True)
@@ -100,20 +100,20 @@ class BreathingProcessor(ProcessorBase[BreathingProcessorResult]):
     # Type declarations
     start_point: int
     end_point: int
-    sparse_iq_buffer: npt.NDArray[np.complex_]
-    filt_sparse_iq_buffer: npt.NDArray[np.complex_]
-    angle_buffer: npt.NDArray[np.float_]
-    filt_angle_buffer: npt.NDArray[np.float_]
-    breathing_motion_buffer: npt.NDArray[np.float_]
-    breathing_rate_history: npt.NDArray[np.float_]
-    all_breathing_rate_history: npt.NDArray[np.float_]
+    sparse_iq_buffer: npt.NDArray[np.complex128]
+    filt_sparse_iq_buffer: npt.NDArray[np.complex128]
+    angle_buffer: npt.NDArray[np.float64]
+    filt_angle_buffer: npt.NDArray[np.float64]
+    breathing_motion_buffer: npt.NDArray[np.float64]
+    breathing_rate_history: npt.NDArray[np.float64]
+    all_breathing_rate_history: npt.NDArray[np.float64]
 
     start_time: float
     init_counter: int
     point_counter: int
     prev_angle: Optional[float]
     lp_filt_ampl: Optional[float]
-    angle_unwrapped: npt.NDArray[np.float_]
+    angle_unwrapped: npt.NDArray[np.float64]
 
     def __init__(
         self,
@@ -290,7 +290,7 @@ class BreathingProcessor(ProcessorBase[BreathingProcessorResult]):
         )
 
     @staticmethod
-    def _peak_interpolation(y: npt.NDArray[np.float_], x: npt.NDArray[np.float_]) -> float:
+    def _peak_interpolation(y: npt.NDArray[np.float64], x: npt.NDArray[np.float64]) -> float:
         """Quadratic interpolation of three points.
 
         Derivation:

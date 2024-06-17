@@ -26,8 +26,8 @@ class ResultSlice:
     max_displacement: Optional[float] = attrs.field()
     max_displacement_freq: Optional[float] = attrs.field()
     max_sweep_amplitude: float
-    lp_displacements: Optional[npt.NDArray[np.float_]] = attrs.field(eq=attrs_ndarray_isclose)
-    lp_displacements_freqs: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    lp_displacements: Optional[npt.NDArray[np.float64]] = attrs.field(eq=attrs_ndarray_isclose)
+    lp_displacements_freqs: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
     time_series_std: Optional[float] = attrs.field()
 
     @classmethod

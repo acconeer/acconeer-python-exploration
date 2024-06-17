@@ -62,7 +62,7 @@ class Result:
     _context: ResultContext = attrs.field()
 
     @property
-    def frame(self) -> npt.NDArray[np.complex_]:
+    def frame(self) -> npt.NDArray[np.complex128]:
         """Frame data in a complex float data format
 
         2-D with dimensions (sweep, distance).
@@ -71,7 +71,7 @@ class Result:
         return int16_complex_array_to_complex(self._frame)
 
     @property
-    def subframes(self) -> list[npt.NDArray[np.complex_]]:
+    def subframes(self) -> list[npt.NDArray[np.complex128]]:
         """Frame split up into subframes, one for every subsweep config used"""
 
         return get_subsweeps_from_frame(self.frame, self._context.metadata)

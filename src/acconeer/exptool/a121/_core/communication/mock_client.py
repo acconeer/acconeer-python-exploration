@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -107,6 +107,7 @@ class MockClient(Client, register=True):
         self._connected = True
         self._mock_update_rate = self.MAX_MOCK_UPDATE_RATE_HZ
         self._mock_next_data_time = 0.0
+        self._rng = np.random.default_rng()
 
     @classmethod
     def _sensor_config_to_metadata(
@@ -144,32 +145,33 @@ class MockClient(Client, register=True):
             metadata_list.append(metadata_dict)
         return metadata_list
 
-    @classmethod
-    def _get_mock_data(cls, sensor_id: int, subsweep: SubsweepConfig) -> npt.NDArray[np.complex_]:
-        noise: npt.NDArray[np.complex_] = np.random.normal(
-            0, cls.NOISE_AMPLITUDE, size=2 * subsweep.num_points
-        ).view(np.complex_)
+    def _get_mock_data(
+        self, sensor_id: int, subsweep: SubsweepConfig
+    ) -> npt.NDArray[np.complex128]:
+        noise: npt.NDArray[np.complex128] = self._rng.normal(
+            0, self.NOISE_AMPLITUDE, size=2 * subsweep.num_points
+        ).view(np.complex128)
 
         if not subsweep.enable_tx:
             return noise
 
-        object_distance = cls.SENSOR_OBJECTS[sensor_id]["distance_mm"] / (
-            1000 * cls.BASE_STEP_LENGTH_M
+        object_distance = self.SENSOR_OBJECTS[sensor_id]["distance_mm"] / (
+            1000 * self.BASE_STEP_LENGTH_M
         )
-        peak_amplitude = cls.SENSOR_OBJECTS[sensor_id]["peak_amplitude"]
-        phase = cls.SENSOR_OBJECTS[sensor_id]["phase"]
+        peak_amplitude = self.SENSOR_OBJECTS[sensor_id]["peak_amplitude"]
+        phase = self.SENSOR_OBJECTS[sensor_id]["phase"]
         points = subsweep.start_point + np.arange(subsweep.num_points) * subsweep.step_length
-        std = cls.FWHM[subsweep.profile] / 2.355
-        direct_leakage: npt.NDArray[np.complex_] = (
-            np.exp(1j * cls.DIRECT_LEAKAGE_PHASE)
-            * cls.DIRECT_LEAKAGE_AMPLITUDE
+        std = self.FWHM[subsweep.profile] / 2.355
+        direct_leakage: npt.NDArray[np.complex128] = (
+            np.exp(1j * self.DIRECT_LEAKAGE_PHASE)
+            * self.DIRECT_LEAKAGE_AMPLITUDE
             * np.exp(-((points) ** 2) / (2 * std**2))
         )
 
         if subsweep.enable_loopback:
             return direct_leakage + noise
 
-        signal: npt.NDArray[np.complex_] = (
+        signal: npt.NDArray[np.complex128] = (
             np.exp(1j * phase)
             * peak_amplitude
             * np.exp(-((points - object_distance) ** 2) / (2 * std**2))
@@ -177,9 +179,8 @@ class MockClient(Client, register=True):
 
         return direct_leakage + signal + noise
 
-    @classmethod
     def _sensor_config_to_frame(
-        cls, sensor_id: int, sensor_config: SensorConfig, metadata: Metadata
+        self, sensor_id: int, sensor_config: SensorConfig, metadata: Metadata
     ) -> npt.NDArray[Any]:
         frame: npt.NDArray[Any] = np.ndarray(
             shape=(sensor_config._sweeps_per_frame, metadata.sweep_data_length),
@@ -188,7 +189,7 @@ class MockClient(Client, register=True):
         for sweep in range(0, sensor_config._sweeps_per_frame):
             sweep_offset = 0
             for subsweep in sensor_config.subsweeps:
-                subsweep_data = cls._get_mock_data(sensor_id, subsweep)
+                subsweep_data = self._get_mock_data(sensor_id, subsweep)
                 for idx, point in enumerate(subsweep_data):
                     frame[sweep][sweep_offset + idx]["real"] = point.real
                     frame[sweep][sweep_offset + idx]["imag"] = point.imag
@@ -201,7 +202,7 @@ class MockClient(Client, register=True):
             data_saturated=False,
             frame_delayed=False,
             calibration_needed=False,
-            temperature=int(self.CALIBRATION_TEMPERATURE + np.random.normal(0, 2)),
+            temperature=int(self.CALIBRATION_TEMPERATURE + self._rng.normal(0, 2)),
             tick=int((time.perf_counter() - self._start_time) * self.TICKS_PER_SECOND),
             frame=self._sensor_config_to_frame(sensor_id, sensor_config, metadata),
             context=ResultContext(ticks_per_second=self.TICKS_PER_SECOND, metadata=metadata),

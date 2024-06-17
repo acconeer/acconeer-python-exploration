@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -35,8 +35,8 @@ class AggregatorConfig:
 @attrs.frozen(kw_only=True)
 class AggregatorResult:
     processor_results: list[ProcessorResult] = attrs.field()
-    estimated_distances: npt.NDArray[np.float_] = attrs.field()
-    estimated_strengths: npt.NDArray[np.float_] = attrs.field()
+    estimated_distances: npt.NDArray[np.float64] = attrs.field()
+    estimated_strengths: npt.NDArray[np.float64] = attrs.field()
     near_edge_status: Optional[bool] = attrs.field(default=None)
     service_extended_result: list[dict[int, a121.Result]] = attrs.field()
 
@@ -78,9 +78,9 @@ class Aggregator:
 
     def process(self, extended_result: list[dict[int, a121.Result]]) -> AggregatorResult:
         processors_result = []
-        dists: npt.NDArray[np.float_] = np.array([])
-        strengths: npt.NDArray[np.float_] = np.array([])
-        profile_fwhms: npt.NDArray[np.float_] = np.array([])
+        dists: npt.NDArray[np.float64] = np.array([])
+        strengths: npt.NDArray[np.float64] = np.array([])
+        profile_fwhms: npt.NDArray[np.float64] = np.array([])
 
         for spec, processor in zip(self.specs, self.processors):
             processor_result = processor.process(extended_result[spec.group_index][self.sensor_id])
@@ -117,10 +117,10 @@ class Aggregator:
 
     @staticmethod
     def _merge_peaks(
-        profile_fwhms: npt.NDArray[np.float_],
-        dists: npt.NDArray[np.float_],
-        strengths: npt.NDArray[np.float_],
-    ) -> Tuple[npt.NDArray[np.float_], npt.NDArray[np.float_]]:
+        profile_fwhms: npt.NDArray[np.float64],
+        dists: npt.NDArray[np.float64],
+        strengths: npt.NDArray[np.float64],
+    ) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         sorting_order = np.argsort(dists)
         distances_sorted = dists[sorting_order]
         strengths_sorted = strengths[sorting_order]
@@ -140,10 +140,10 @@ class Aggregator:
 
     @staticmethod
     def _sort_peaks(
-        dists: npt.NDArray[np.float_],
-        strengths: npt.NDArray[np.float_],
+        dists: npt.NDArray[np.float64],
+        strengths: npt.NDArray[np.float64],
         method: PeakSortingMethod,
-    ) -> Tuple[npt.NDArray[np.float_], npt.NDArray[np.float_]]:
+    ) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         if method == PeakSortingMethod.CLOSEST:
             quantity_to_sort = dists
         elif method == PeakSortingMethod.STRONGEST:

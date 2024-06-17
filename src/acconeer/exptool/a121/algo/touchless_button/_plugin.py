@@ -169,8 +169,8 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
 
 
 class PlotPlugin(PgPlotPlugin):
-    score_history_close: Optional[npt.NDArray[np.float_]]
-    score_history_far: Optional[npt.NDArray[np.float_]]
+    score_history_close: Optional[npt.NDArray[np.float64]]
+    score_history_far: Optional[npt.NDArray[np.float64]]
     score_history_curves_close: Optional[npt.NDArray[np.object_]]
     score_history_curves_far: Optional[npt.NDArray[np.object_]]
     score_history_curves: Union[List[npt.NDArray[Any]], npt.NDArray[Any]]
@@ -252,7 +252,7 @@ class PlotPlugin(PgPlotPlugin):
         self.close_text_item.hide()
         self.far_text_item.hide()
 
-        self.detection_history = np.full((2, 100), np.NaN)
+        self.detection_history = np.full((2, 100), np.nan)
 
         self.score_history_plot = self._create_score_plot(self.plot_layout)
         score_plot_legend = self.score_history_plot.legend
@@ -265,7 +265,7 @@ class PlotPlugin(PgPlotPlugin):
             pen=et.utils.pg_pen_cycler(0, width=2.5, style="--"),
         )
 
-        self.threshold_history = np.full((2, 100), np.NaN)
+        self.threshold_history = np.full((2, 100), np.nan)
 
         cycle_index = 2  # To not have same colors as thresholds
         if processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
@@ -278,7 +278,7 @@ class PlotPlugin(PgPlotPlugin):
             detection_plot_legend.addItem(self.detection_history_curve_far, "Far range")
 
         if processor_config.measurement_type != MeasurementType.CLOSE_AND_FAR_RANGE:
-            score_history = np.full((sensor_config.subsweep.num_points, 100), np.NaN)
+            score_history = np.full((sensor_config.subsweep.num_points, 100), np.nan)
             score_history_curves = np.empty((sensor_config.subsweep.num_points,), dtype=object)
             for i in range(sensor_config.subsweep.num_points):
                 score_history_curves[i] = pg.ScatterPlotItem(
@@ -305,9 +305,9 @@ class PlotPlugin(PgPlotPlugin):
             detection_plot_legend.addItem(self.detection_history_curve_close, "Close range")
             detection_plot_legend.addItem(self.detection_history_curve_far, "Far range")
             self.score_history_close = np.full(
-                (sensor_config.subsweeps[0].num_points, 100), np.NaN
+                (sensor_config.subsweeps[0].num_points, 100), np.nan
             )
-            self.score_history_far = np.full((sensor_config.subsweeps[1].num_points, 100), np.NaN)
+            self.score_history_far = np.full((sensor_config.subsweeps[1].num_points, 100), np.nan)
             self.score_history_curves_close = np.empty(
                 (sensor_config.subsweeps[0].num_points,), dtype=object
             )

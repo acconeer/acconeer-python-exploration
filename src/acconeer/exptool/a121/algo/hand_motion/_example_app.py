@@ -98,10 +98,10 @@ opser.register_json_presentable(ExampleAppConfig)
 
 @attrs.frozen(kw_only=True)
 class ExtraResult:
-    history: npt.NDArray[np.float_] = attrs.field()
+    history: npt.NDArray[np.float64] = attrs.field()
     """Detection history."""
 
-    history_time: npt.NDArray[np.float_] = attrs.field()
+    history_time: npt.NDArray[np.float64] = attrs.field()
     """Time vector for detection history."""
 
     threshold: float = attrs.field()

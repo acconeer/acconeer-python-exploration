@@ -206,8 +206,8 @@ namespace-packages = ["src/acconeer"]
 preview = true
 explicit-preview-rules = true
 # "extend" here adds to the ruff defaults, rather than replacing.
-# Q = flake8-quotes, TID = flake8-tidy-imports, I = isort, FA = flake8-future-annotations
-extend-select = ["Q", "TID", "I", "FA"]
+# Q = flake8-quotes, TID = flake8-tidy-imports, I = isort, FA = flake8-future-annotations, NPY = Numpy specific rules
+extend-select = ["Q", "TID", "I", "FA", "NPY"]
 # E741 = Ambiguous variable names, e.g. I vs l
 # E501 = "line too long". Handled by black.
 extend-ignore = ["E741", "E501"]

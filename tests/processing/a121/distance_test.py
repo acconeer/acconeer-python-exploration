@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -19,16 +19,16 @@ from acconeer.exptool.a121.algo.distance._detector import _load_algo_data
 
 @attrs.frozen
 class ResultSlice:
-    distances: t.Optional[npt.NDArray[np.float_]] = attrs.field(eq=attrs_optional_ndarray_isclose)
-    strengths: t.Optional[npt.NDArray[np.float_]] = attrs.field(eq=attrs_optional_ndarray_isclose)
+    distances: t.Optional[npt.NDArray[np.float64]] = attrs.field(eq=attrs_optional_ndarray_isclose)
+    strengths: t.Optional[npt.NDArray[np.float64]] = attrs.field(eq=attrs_optional_ndarray_isclose)
     near_edge_status: t.Optional[bool]
 
     @property
-    def estimated_distances(self) -> t.Optional[npt.NDArray[np.float_]]:
+    def estimated_distances(self) -> t.Optional[npt.NDArray[np.float64]]:
         return self.distances
 
     @property
-    def estimated_strengths(self) -> t.Optional[npt.NDArray[np.float_]]:
+    def estimated_strengths(self) -> t.Optional[npt.NDArray[np.float64]]:
         return self.strengths
 
     @classmethod

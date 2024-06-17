@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 """
@@ -62,7 +62,7 @@ def test_data_layout(ref_record: a121.H5Record, ref_structure: Iterator[Iterator
 
 
 def test_extended_results(
-    ref_record: a121.Record, ref_frame_raw: npt.NDArray[Any], ref_frame: npt.NDArray[np.complex_]
+    ref_record: a121.Record, ref_frame_raw: npt.NDArray[Any], ref_frame: npt.NDArray[np.complex128]
 ) -> None:
     # ref_record is setup to have multiple identical sessions
     for i in range(ref_record.num_sessions):
@@ -94,7 +94,7 @@ def test_stacked_results_num_frames(
 
 def test_stacked_results_data(
     ref_record: a121.Record,
-    ref_frame: npt.NDArray[np.complex_],
+    ref_frame: npt.NDArray[np.complex128],
     ref_structure: Iterator[Iterator[int]],
 ) -> None:
     # ref_record is setup to have multiple identical sessions

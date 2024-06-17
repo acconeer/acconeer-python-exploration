@@ -17,7 +17,7 @@ from acconeer.exptool.a121.algo.presence import DetectorConfig, DetectorMetadata
 class ProcessorResult:
     """Processor result"""
 
-    zone_limits: npt.NDArray[np.float_] = attrs.field()
+    zone_limits: npt.NDArray[np.float64] = attrs.field()
     max_presence_zone: Optional[int] = attrs.field()
     total_zone_detections: npt.NDArray[np.int_] = attrs.field()
     inter_zone_detections: npt.NDArray[np.int_] = attrs.field()
@@ -73,7 +73,9 @@ class Processor:
         self.max_intra_zone = None
 
     @staticmethod
-    def create_zones(distances: npt.NDArray[np.float_], num_zones: int) -> npt.NDArray[np.float_]:
+    def create_zones(
+        distances: npt.NDArray[np.float64], num_zones: int
+    ) -> npt.NDArray[np.float64]:
         """Create zones limits based on chosen range and number of zones."""
 
         if num_zones < distances.size:
@@ -85,7 +87,7 @@ class Processor:
             return distances
 
     def get_zone_detections(
-        self, depthwise_scores: npt.NDArray[np.float_], threshold: float
+        self, depthwise_scores: npt.NDArray[np.float64], threshold: float
     ) -> npt.NDArray[np.int_]:
         """Get presence detection result for all zones."""
 
@@ -102,7 +104,7 @@ class Processor:
 
         return zones
 
-    def get_max_presence_zone(self, depthwise_scores: npt.NDArray[np.float_]) -> int:
+    def get_max_presence_zone(self, depthwise_scores: npt.NDArray[np.float64]) -> int:
         """Get the zone with maximum presence score."""
 
         max_idx = np.argmax(depthwise_scores)

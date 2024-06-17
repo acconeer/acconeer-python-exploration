@@ -210,13 +210,13 @@ class DetectorResult:
     intra_presence_score: float = attrs.field()
     """A measure of the amount of fast motion detected."""
 
-    intra_depthwise_scores: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    intra_depthwise_scores: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
     """The depthwise presence scores for fast motions."""
 
     inter_presence_score: float = attrs.field()
     """A measure of the amount of slow motion detected."""
 
-    inter_depthwise_scores: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    inter_depthwise_scores: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
     """The depthwise presence scores for slow motions."""
 
     presence_distance: float = attrs.field()

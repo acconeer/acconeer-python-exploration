@@ -1390,11 +1390,11 @@ def distance_result_as_row(
     for sensor_id in sensor_ids:
         # Explicitly inform the type checker that distances is not None here
         # This will pass mypy checker
-        non_null_distances = cast(npt.NDArray[np.float_], processed_data[sensor_id].distances)
+        non_null_distances = cast(npt.NDArray[np.float64], processed_data[sensor_id].distances)
         for distance_result in non_null_distances:
             distances.append(distance_result)
         # Explicitly inform the type checker that strengths is not None here
-        non_null_strengths = cast(npt.NDArray[np.float_], processed_data[sensor_id].strengths)
+        non_null_strengths = cast(npt.NDArray[np.float64], processed_data[sensor_id].strengths)
         for strength_result in non_null_strengths:
             strengths.append(strength_result)
 

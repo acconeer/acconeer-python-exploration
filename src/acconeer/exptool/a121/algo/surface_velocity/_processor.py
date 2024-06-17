@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -84,13 +84,13 @@ class ProcessorExtraResult:
     Contains information for visualization in ET.
     """
 
-    max_bin_vertical_vs: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    max_bin_vertical_vs: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
     peak_width: float = attrs.field()
 
-    vertical_velocities: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
-    psd: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    vertical_velocities: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
+    psd: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
     peak_idx: Optional[np.int_] = attrs.field()
-    psd_threshold: npt.NDArray[np.float_] = attrs.field(eq=attrs_ndarray_isclose)
+    psd_threshold: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
 
 
 @attrs.frozen(kw_only=True)
@@ -134,7 +134,7 @@ class Processor(ProcessorBase[ProcessorResult]):
             self.time_series_length = processor_config.time_series_length
 
         self.time_series = np.zeros(
-            [self.time_series_length, self.num_distances], dtype=np.complex_
+            [self.time_series_length, self.num_distances], dtype=np.complex128
         )
 
         self.surface_distance = processor_config.surface_distance
@@ -183,8 +183,8 @@ class Processor(ProcessorBase[ProcessorResult]):
         return min(static_sf, 1.0 - 1.0 / (1.0 + update_index))
 
     def scipy_welch(
-        self, sweeps: npt.NDArray[np.complex_], sweep_rate: float
-    ) -> Tuple[npt.NDArray[np.float_], npt.NDArray[np.float_]]:
+        self, sweeps: npt.NDArray[np.complex128], sweep_rate: float
+    ) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         psds = []
         for i in np.arange(self.num_distances):
             freqs, psd = welch(
@@ -210,14 +210,14 @@ class Processor(ProcessorBase[ProcessorResult]):
 
         return angle_correction  # type: ignore[no-any-return]
 
-    def get_distance_idx(self, psds: npt.NDArray[np.float_]) -> int:
+    def get_distance_idx(self, psds: npt.NDArray[np.float64]) -> int:
         max_negative_side = np.max(psds[self.middle_idx + self.slow_zone :, :], axis=0)
         max_positive_side = np.max(psds[: self.middle_idx - self.slow_zone, :], axis=0)
         max_amps = np.maximum(max_negative_side, max_positive_side)
 
         return np.argmax(max_amps, axis=0)  # type: ignore[no-any-return]
 
-    def get_cfar_threshold(self, psd: npt.NDArray[np.float_]) -> npt.NDArray[np.float_]:
+    def get_cfar_threshold(self, psd: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
         window_length = self.cfar_win_length
         guard_length = self.cfar_guard_length
         margin = window_length + guard_length
@@ -238,16 +238,16 @@ class Processor(ProcessorBase[ProcessorResult]):
         return threshold_cfar * 1 / self.cfar_sensitivity
 
     def cfar_peaks(
-        self, threshold: npt.NDArray[np.float_], psd: npt.NDArray[np.float_]
+        self, threshold: npt.NDArray[np.float64], psd: npt.NDArray[np.float64]
     ) -> list[int]:
         return find_peaks(psd, threshold)
 
     @staticmethod
     def _merge_peaks(
         min_peak_to_peak_vel: float,
-        velocities: npt.NDArray[np.float_],
-        energies: npt.NDArray[np.float_],
-    ) -> Tuple[npt.NDArray[np.float_], npt.NDArray[np.float_], npt.NDArray[np.float_]]:
+        velocities: npt.NDArray[np.float64],
+        energies: npt.NDArray[np.float64],
+    ) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         sorting_order = np.argsort(velocities)
         velocities_sorted = velocities[sorting_order]
         energies_sorted = energies[sorting_order]
@@ -275,9 +275,9 @@ class Processor(ProcessorBase[ProcessorResult]):
 
     def _get_peak_velocity(
         self,
-        velocities: npt.NDArray[np.float_],
-        energies: npt.NDArray[np.float_],
-        bin_vs: npt.NDArray[np.float_],
+        velocities: npt.NDArray[np.float64],
+        energies: npt.NDArray[np.float64],
+        bin_vs: npt.NDArray[np.float64],
     ) -> float:
         idxs = energies.argsort()
         slow_vs = []
@@ -295,9 +295,9 @@ class Processor(ProcessorBase[ProcessorResult]):
 
     def get_velocity_estimate(
         self,
-        bin_vertical_vs: npt.NDArray[np.float_],
+        bin_vertical_vs: npt.NDArray[np.float64],
         peak_idxs: list[int],
-        psd: npt.NDArray[np.float_],
+        psd: npt.NDArray[np.float64],
     ) -> Tuple[float, np.int_, float]:
         velocities, peak_widths, energies = self._merge_peaks(
             self.MIN_PEAK_VS, bin_vertical_vs[peak_idxs], psd[peak_idxs]
@@ -310,9 +310,9 @@ class Processor(ProcessorBase[ProcessorResult]):
 
     def get_velocity_estimate_slow_zone(
         self,
-        bin_vertical_vs: npt.NDArray[np.float_],
+        bin_vertical_vs: npt.NDArray[np.float64],
         peak_idxs: list[int],
-        psd: npt.NDArray[np.float_],
+        psd: npt.NDArray[np.float64],
     ) -> Tuple[float, np.int_]:
         velocities = bin_vertical_vs[peak_idxs]
         energies = psd[peak_idxs]
