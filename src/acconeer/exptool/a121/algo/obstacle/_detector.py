@@ -794,8 +794,8 @@ def _record_algo_data(
 
 def _load_algo_data(
     algo_group: h5py.Group,
-) -> Tuple[int, DetectorConfig, DetectorContext]:
-    sensor_id = algo_group["sensor_ids"][()]
+) -> Tuple[list[int], DetectorConfig, DetectorContext]:
+    sensor_id = algo_group["sensor_ids"][()].tolist()
     config = DetectorConfig.from_json(algo_group["detector_config"][()])
 
     context_group = algo_group["context"]
