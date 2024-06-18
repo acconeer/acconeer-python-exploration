@@ -1,5 +1,12 @@
 # Changelog
 
+## v7.11.1
+
+### Fixed
+- A121 Waste level: Avoid interference from direct leakage by limiting min start
+  point
+- Limit Numpy version to <2.0 to avoid compatibility issues
+
 ## v7.11.0
 
 ### Added

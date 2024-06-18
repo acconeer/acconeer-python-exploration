@@ -87,6 +87,7 @@ multisensor
 nox
 ns
 num
+Numpy
 Nyquist
 observables
 Oja
