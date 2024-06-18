@@ -315,6 +315,7 @@ line_length = 80
 include = [
     "LICENSE.md",
     "CHANGELOG.md",
+    "UNRELEASED_CHANGELOG.md",
 ]
 
 [tool.check_sdk_mentions]
