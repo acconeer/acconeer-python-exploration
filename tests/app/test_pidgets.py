@@ -52,6 +52,7 @@ class TestPidgets:
             pidgets.ComboboxPidgetFactory: dict(items=[]),
             pidgets.SensorIdPidgetFactory: dict(items=[]),
             pidgets.FloatSliderPidgetFactory: dict(limits=(None, None)),
+            pidgets.FloatRangeSliderPidgetFactory: dict(limits=(None, None)),
             pidgets.IntFlagPidgetFactory: dict(num_bits=1),
         }
         if _class_is_ABC(factory_class):

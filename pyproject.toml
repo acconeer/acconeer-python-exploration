@@ -69,6 +69,8 @@ app = [
     "pyqtgraph==0.14.0",
     "qtawesome",
     "qtpy>=2.3.0",
+    "pyopengl==3.1.10",
+    "superqt==0.6.7",
 ]
 
 [dependency-groups]

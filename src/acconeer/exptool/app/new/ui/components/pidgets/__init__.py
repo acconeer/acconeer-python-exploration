@@ -13,6 +13,8 @@ from .pidgets import (
     EnumPidgetFactory,
     FloatPidget,
     FloatPidgetFactory,
+    FloatRangeSliderPidget,
+    FloatRangeSliderPidgetFactory,
     FloatSliderPidget,
     FloatSliderPidgetFactory,
     IntFlagPidget,

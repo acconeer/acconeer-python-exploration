@@ -24,6 +24,7 @@ from typing import (
 import attrs
 import numpy as np
 import typing_extensions as te
+from superqt import QLabeledRangeSlider, QRangeSlider  # noqa : F401
 
 from PySide6 import QtCore, QtGui
 from PySide6.QtWidgets import (
@@ -403,6 +404,135 @@ class FloatPidget(Pidget):
 
     def __on_changed(self) -> None:
         self.sig_update.emit(self._spin_box.value())
+
+
+@attrs.frozen(kw_only=True, slots=False)
+class FloatRangeSliderPidgetFactory(FloatPidgetFactory):
+    limits: Tuple[float, float]
+    log_scale: bool = False
+    show_limit_values: bool = True
+    limit_texts: Optional[Tuple[Optional[str], Optional[str]]] = None
+
+    def __attrs_post_init__(self) -> None:
+        if self.log_scale and self.limits[0] <= 0:
+            msg = "Lower limit must be > 0 when using log scale"
+            raise ValueError(msg)
+
+    def create(self, parent: QWidget) -> FloatRangeSliderPidget:  # type: ignore[override]
+        return FloatRangeSliderPidget(self, parent)
+
+
+class FloatRangeSliderPidget(Pidget):
+    def __init__(self, factory: FloatRangeSliderPidgetFactory, parent: QWidget) -> None:
+        super().__init__(factory, parent)
+
+        self.__spin_box_l = _PidgetDoubleSpinBox(
+            self,
+            limits=factory.limits,
+            suffix=factory.suffix,
+            decimals=factory.decimals,
+        )
+        self.__spin_box_r = _PidgetDoubleSpinBox(
+            self,
+            limits=factory.limits,
+            suffix=factory.suffix,
+            decimals=factory.decimals,
+        )
+        self.__spin_box_l.valueChanged.connect(self.__on_spin_box_l_changed)
+        self.__spin_box_l.setFixedWidth(int(round(WIDGET_WIDTH * 2 / 3)))
+        self.__spin_box_r.valueChanged.connect(self.__on_spin_box_r_changed)
+        self.__spin_box_r.setFixedWidth(int(round(WIDGET_WIDTH * 2 / 3)))
+
+        slider_widget = QWidget(parent=self)
+        slider_widget_layout = QHBoxLayout(slider_widget)
+        slider_widget_layout.setContentsMargins(11, 6, 11, 0)
+        slider_widget.setLayout(slider_widget_layout)
+
+        lower_limit, upper_limit = factory.limits
+        if factory.show_limit_values:
+            slider_widget_layout.addWidget(QLabel(str(lower_limit), slider_widget))
+
+        self._slider = _PidgetRangeSlider(
+            slider_widget,
+            limits=factory.limits,
+            decimals=factory.decimals,
+            log_scale=factory.log_scale,
+        )
+
+        self._slider.wrapped_value_changed.connect(self.__on_slider_changed)
+
+        slider_widget_layout.addWidget(self._slider)
+
+        if factory.show_limit_values:
+            slider_widget_layout.addWidget(QLabel(str(upper_limit), slider_widget))
+
+        if factory.limit_texts is not None:
+            label_text_widget = QWidget(self)
+            label_text_widget_layout = QHBoxLayout(label_text_widget)
+            label_text_widget.setLayout(label_text_widget_layout)
+            label_text_widget_layout.setContentsMargins(11, 0, 11, 0)
+            label_text_widget_layout.setSpacing(0)
+
+            left, right = factory.limit_texts
+
+            if left is not None:
+                label = QLabel(left, label_text_widget)
+                label_text_widget_layout.addWidget(label)
+
+            label_text_widget_layout.addStretch(1)
+
+            if right is not None:
+                label = QLabel(right, label_text_widget)
+                label_text_widget_layout.addWidget(label)
+
+            full_row_widgets = [slider_widget, label_text_widget]
+        else:
+            full_row_widgets = [slider_widget]
+
+        # "Semaphore" for setting value without recursion
+        self.setting = False
+
+        self.set_standard_layout(
+            factory,
+            first_row_elements=[
+                "name_label",
+                "extra_widget",
+                self.__spin_box_l,
+                self.__spin_box_r,
+            ],
+            full_row_widgets=full_row_widgets,
+        )
+
+    def set_data(self, value: Any) -> None:
+        if not self.setting:
+            with QtCore.QSignalBlocker(self):
+                self.setting = True
+                self.__spin_box_l.setValue(value[0])
+                self.__spin_box_r.setValue(value[1])
+                self._slider.wrapped_set_value(value)
+                self.setting = False
+
+    def get_data(self) -> Tuple[float, float]:
+        return self._slider.wrapped_get_value()
+
+    def __on_spin_box_r_changed(self, new_r_value: float) -> None:
+        with QtCore.QSignalBlocker(self):
+            l_value = self.get_data()[0]
+            new_value = [l_value, new_r_value]
+            self.set_data(new_value)
+        self.sig_update.emit(self.get_data())
+
+    def __on_spin_box_l_changed(self, new_l_value: float) -> None:
+        with QtCore.QSignalBlocker(self):
+            r_value = self.get_data()[1]
+            new_value = [new_l_value, r_value]
+            self.set_data(new_value)
+        self.sig_update.emit(self.get_data())
+
+    def __on_slider_changed(self, value: Tuple[float, float]) -> None:
+        with QtCore.QSignalBlocker(self):
+            self.set_data(value)
+        self.sig_update.emit(self.get_data())
 
 
 @attrs.frozen(kw_only=True, slots=False)
@@ -1089,6 +1219,94 @@ class _PidgetFloatSlider(QSlider):
             x = np.exp(x)
 
         return round(x, self.decimals)
+
+
+STYLE_OVERRIDE = """
+QSlider {
+    background: none;
+}
+QSlider::groove {
+    background: #abc6f6;
+}
+"""
+
+
+class _PidgetRangeSlider(QRangeSlider):
+    NUM_STEPS = 1000
+
+    wrapped_value_changed = QtCore.Signal(list)
+
+    def __init__(
+        self,
+        parent: QWidget,
+        *,
+        limits: Tuple[float, float],
+        decimals: int,
+        log_scale: bool,
+    ) -> None:
+        super().__init__(QtCore.Qt.Orientation.Horizontal, parent)
+
+        self.limits = limits
+        self.decimals = decimals
+        self.log_scale = log_scale
+
+        self.setRange(0, self.NUM_STEPS)
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
+
+        self.barColor = QtGui.QBrush(QtGui.QColor(26, 115, 232, 255))
+        self.setStyleSheet(STYLE_OVERRIDE)
+
+        self.valueChanged.connect(self.__on_value_changed)
+
+    def __on_value_changed(self, value: Tuple[float, float]) -> None:
+        val = self.__from_slider_scale(value)
+        self.wrapped_value_changed.emit(val)
+
+    def wrapped_set_value(self, value: Tuple[float, float]) -> None:
+        self.setValue(self.__to_slider_scale(value))
+
+    def wrapped_get_value(self) -> Tuple[float, float]:
+        return self.__from_slider_scale((float(self.value()[0]), float(self.value()[1])))
+
+    def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
+        if self.hasFocus():
+            super().wheelEvent(event)
+        else:
+            event.ignore()
+
+    def __to_slider_scale(self, value: Tuple[float, float]) -> Tuple[float, float]:
+        lower, upper = self.limits
+        [xb, xt] = value
+
+        if self.log_scale:
+            lower = np.log(lower)
+            upper = np.log(upper)
+            xb = np.log(xb)
+            xt = np.log(xt)
+
+        yb = (xb - lower) / (upper - lower) * self.NUM_STEPS
+        yt = (xt - lower) / (upper - lower) * self.NUM_STEPS
+
+        return (int(round(yb)), int(round(yt)))
+
+    def __from_slider_scale(self, value: Tuple[float, float]) -> Tuple[float, float]:
+        lower, upper = self.limits
+        [yb, yt] = value
+
+        if self.log_scale:
+            lower = np.log(lower)
+            upper = np.log(upper)
+            yb = np.log(yb)
+            yt = np.log(yt)
+
+        xb = yb / self.NUM_STEPS * (upper - lower) + lower
+        xt = yt / self.NUM_STEPS * (upper - lower) + lower
+
+        if self.log_scale:
+            xb = np.exp(xb)
+            xt = np.exp(xt)
+
+        return (round(xb, self.decimals), round(xt, self.decimals))
 
 
 def _convert_int_limits_to_qt_range(
