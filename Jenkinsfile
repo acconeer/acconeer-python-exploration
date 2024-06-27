@@ -1,5 +1,5 @@
 import groovy.transform.Field
-@Library('sw-jenkins-library@1c4f7b55ac3559620ccbc54a847f5bb46c172619') _
+@Library('sw-jenkins-library@b87bc07f098464ab05a82b46c86a874030972a04') _
 
 enum BuildScope {
     SANITY, HOURLY, NIGHTLY
@@ -313,7 +313,7 @@ try {
         node('docker') {
             ws('workspace/exptool') {
                 printNodeInfo()
-                checkoutAndCleanup(lfs: false)
+                checkoutAndCleanup()
 
                 buildDocker(path: 'docker').inside(dockerArgs(env)) {
                     withCredentials([gitUsernamePassword(credentialsId: '1bef2b16-6cd9-4836-a014-421199e7fb0f'),
