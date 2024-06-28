@@ -685,13 +685,21 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         for sensor_id in sensor_ids:
             for group in noise_session_config.groups:
                 group[sensor_id].sweeps_per_frame = 1
+                # Set num_points to a high number to get sufficient number of data points to
+                # estimate the standard deviation. Extra num_points for step_length = 1 together
+                # with profile = 5 due to filter margin and cropping
+                if any(
+                    ss.step_length == 1 and ss.profile == a121.Profile.PROFILE_5
+                    for ss in group[sensor_id].subsweeps
+                ):
+                    num_points = 352
+                else:
+                    num_points = 220
                 for subsweep in group[sensor_id].subsweeps:
                     subsweep.enable_tx = False
                     subsweep.step_length = 1
                     subsweep.start_point = 0
-                    # Set num_points to a high number to get sufficient number of data points to
-                    # estimate the standard deviation.
-                    subsweep.num_points = 220
+                    subsweep.num_points = num_points
 
         return noise_session_config
 
