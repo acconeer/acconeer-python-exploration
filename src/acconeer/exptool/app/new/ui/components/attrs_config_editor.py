@@ -66,6 +66,7 @@ class AttrsConfigEditor(DataEditor[Optional[T]]):
         config_type: Type[T],
         *,
         save_load_buttons: bool = True,
+        min_top_padding: int = 0,
         extra_presenter: PresenterFunc = lambda i, t: None,
         parent: Optional[QWidget] = None,
     ) -> None:
@@ -84,6 +85,7 @@ class AttrsConfigEditor(DataEditor[Optional[T]]):
                 if save_load_buttons
                 else None
             ),
+            min_top_padding=min_top_padding,
             parent=self,
         )
         self.layout().addWidget(group_box)
