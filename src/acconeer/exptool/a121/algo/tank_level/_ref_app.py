@@ -35,6 +35,16 @@ class RefAppConfig(DetectorConfig):
     """Length of the median filter used to improve robustness of the result."""
     num_medians_to_average: int = attrs.field(default=1)
     """Number of medians averaged to obtain the final level."""
+    close_range_leakage_cancellation: bool = attrs.field(default=False)
+    """Enable close range leakage cancellation logic.
+
+    Close range leakage cancellation refers to the process of measuring close to the
+    sensor(<100mm) by first characterizing the direct leakage, and then subtracting it
+    from the measured sweep in order to isolate the signal component of interest.
+
+    The close range leakage cancellation process requires the sensor to be installed in its
+    intended geometry with free space in front of the sensor during detector calibration.
+    """
 
     @start_m.validator
     def _(self, _: Any, value: float) -> None:
@@ -54,7 +64,7 @@ class RefAppConfig(DetectorConfig):
             end_m=self.end_m * 1.05,
             max_step_length=self.max_step_length,
             max_profile=self.max_profile,
-            close_range_leakage_cancellation=True,
+            close_range_leakage_cancellation=self.close_range_leakage_cancellation,
             signal_quality=self.signal_quality,
             threshold_method=self.threshold_method,
             peaksorting_method=self.peaksorting_method,

@@ -623,6 +623,7 @@ class ViewPlugin(A121ViewPluginBase):
             "num_frames_in_recorded_threshold",
             "threshold_sensitivity",
             "signal_quality",
+            "close_range_leakage_cancellation",
         }
 
         return {
