@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
 
 import logging
-import os
+import shutil
 import traceback
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -149,7 +149,7 @@ class BinDownloadThread(QThread):
 
                     if temp_file is not None:
                         bin_file = str(ET_DIR / Path(temp_file).name)
-                        os.replace(temp_file, bin_file)
+                        shutil.move(temp_file, bin_file)
                         self.download_done.emit(bin_file, version)
                     else:
                         self.download_failed.emit(
