@@ -282,8 +282,10 @@ def _flash(args):
 
 def main():
     parser = argparse.ArgumentParser(description="Image Flasher")
+    parser.prog = "python -m acconeer.exptool.flash"
     subparsers = parser.add_subparsers(help="sub-command help", dest="operation", required=True)
     subparsers.add_parser("list", help="List connected devices")
+    subparsers.add_parser("clear", help="Clears saved login session")
     subparser = subparsers.add_parser("flash", help="Flash device")
 
     subparser.add_argument(
@@ -315,11 +317,8 @@ def main():
         type=str.lower,
         choices=["usb", "serial"],
     )
-    subparser.add_argument(
-        "--clear-login", dest="clear", action="store_true", help="Clears saved login session."
-    )
 
-    image_group = subparser.add_mutually_exclusive_group(required=False)
+    image_group = subparser.add_mutually_exclusive_group(required=True)
     image_group.add_argument("--image", "-i", dest="image", help="Image file to flash")
     image_group.add_argument(
         "--fetch",
@@ -347,19 +346,15 @@ def main():
                 print("== Serial Devices ==")
                 print("".join([f" - {dev}\n" for dev in serial_devices]))
         return
+    elif args.operation == "clear":
+        clear_cookies()
+        print("Saved login session cookie deleted!\n")
     elif args.operation == "flash":
-        if args.clear:
-            clear_cookies()
-            print("Saved login session cookie deleted!\n")
-
         try:
             if args.fetch:
                 _fetch_and_flash(args)
             elif args.image:
                 _flash(args)
-            elif not args.clear:
-                print("No image file selected!\n")
-                parser.print_help()
         except FlashException as e:
             print(f"\n{str(e)}\n")
         except UsbPortError as e:
