@@ -13,6 +13,7 @@ from serial.tools import list_ports
 from acconeer.exptool._core.communication.comm_devices import get_usb_devices
 from acconeer.exptool._pyusb.pyusbcomm import PyUsbCdc
 from acconeer.exptool.flash._device_flasher_base import DeviceFlasherBase
+from acconeer.exptool.flash._flash_exception import FlashException
 from acconeer.exptool.flash._xc120._bootloader_comm import BLCommunication
 from acconeer.exptool.flash._xc120._meta import (
     ACCONEER_VID,
@@ -110,7 +111,7 @@ class BootloaderTool(DeviceFlasherBase):
         if len(found_ports) > 1 and search_port is not None:
             found_ports = [port for port in all_ports if port.device == search_port]
             if len(found_ports) < 1:
-                raise Exception("Couldn't find a device on the specified port")
+                raise FlashException("Couldn't find a device on the specified port")
             return found_ports[0].device
         elif len(found_ports) > 0:
             return found_ports[0].device
@@ -152,7 +153,7 @@ class BootloaderTool(DeviceFlasherBase):
                 retries -= 1
 
         if not port_ok:
-            raise ValueError(f"Device port {device_port} cannot be opened")
+            raise FlashException(f"Device port {device_port} cannot be opened")
 
     @staticmethod
     def _is_usb_dfu_device(device_port):
@@ -202,7 +203,7 @@ class BootloaderTool(DeviceFlasherBase):
                 ser.close()
 
             else:
-                raise ValueError("Device not found")
+                raise FlashException("Device not found")
 
             # Wait for DFU device to appear
             retries = 5
@@ -221,7 +222,7 @@ class BootloaderTool(DeviceFlasherBase):
                 retries -= 1
 
             if not device_found:
-                raise ValueError("DFU device not found")
+                raise FlashException("DFU device not found")
 
     @staticmethod
     def _try_open_port(serial_port):
@@ -236,7 +237,7 @@ class BootloaderTool(DeviceFlasherBase):
                 retries -= 1
 
         if ser is None:
-            raise ValueError(f"Flash failed, {serial_port} cannot be opened")
+            raise FlashException(f"Flash failed, {serial_port} cannot be opened")
 
         return ser
 
@@ -257,7 +258,7 @@ class BootloaderTool(DeviceFlasherBase):
                 pid=usb_dfu.pid,
             )
         else:
-            raise ValueError("Flash failed, device not found")
+            raise FlashException("Flash failed, device not found")
 
         with ImageFlasher(serial_dev) as image_flasher:
             image_flasher.set_progress_callback(progress_callback)

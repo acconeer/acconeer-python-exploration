@@ -10,6 +10,7 @@ import tempfile
 import time
 
 from acconeer.exptool._core.communication import comm_devices
+from acconeer.exptool._pyusb import UsbPortError
 from acconeer.exptool.flash._bin_fetcher import (
     BIN_FETCH_PROMPT,
     clear_cookies,
@@ -20,6 +21,7 @@ from acconeer.exptool.flash._bin_fetcher import (
     login,
     save_cookies,
 )
+from acconeer.exptool.flash._flash_exception import FlashException
 from acconeer.exptool.flash._products import (
     EVK_TO_PRODUCT_MAP,
     PRODUCT_NAME_TO_FLASH_MAP,
@@ -48,7 +50,7 @@ def _query_yes_no(question: str, default: str = "yes") -> bool:
     elif default == "no":
         prompt = " [y/N] "
     else:
-        raise ValueError("invalid default answer: '%s'" % default)
+        raise FlashException("invalid default answer: '%s'" % default)
 
     while True:
         print(question + prompt, end="", flush=True)
@@ -71,7 +73,7 @@ def flash_image(image_path, flash_device, device_name=None, progress_callback=No
     if flash_device:
         serial_device_name = device_name or flash_device.name
         if serial_device_name is None:
-            raise ValueError("Unknown device type")
+            raise FlashException("Unknown device type")
         serial_device_name = serial_device_name.upper()
         if (
             isinstance(flash_device, comm_devices.USBDevice)
@@ -88,9 +90,9 @@ def flash_image(image_path, flash_device, device_name=None, progress_callback=No
                 flash_device, serial_device_name, image_path, progress_callback
             )
         else:
-            raise NotImplementedError(f"No flash support device {str(flash_device)}")
+            raise FlashException(f"No flash support device {str(flash_device)}")
     else:
-        raise ValueError("No flash device")
+        raise FlashException("No devices found, try connecting a device before flashing.")
 
 
 def _find_flash_device(
@@ -137,7 +139,7 @@ def _find_flash_device(
         print(f"Flashing {flash_device}")
 
     if flash_device is None:
-        raise Exception(
+        raise FlashException(
             "Device couldn't be autodetected\n"
             "Specify the device by using the"
             " --port, --device, --interface or --serial-number flags."
@@ -171,7 +173,7 @@ def get_flash_download_name(device, device_name):
     name = device_name or device.name
     if name in EVK_TO_PRODUCT_MAP.keys():
         return EVK_TO_PRODUCT_MAP[name]
-    raise ValueError(f"Unknown device {name}")
+    raise FlashException(f"Unknown device {name}")
 
 
 def get_boot_description(flash_device, device_name):
@@ -188,94 +190,84 @@ def get_boot_description(flash_device, device_name):
 
 
 def _fetch_and_flash(args):
-    try:
-        flash_device = _get_flash_device_from_args(args)
+    flash_device = _get_flash_device_from_args(args)
 
-        cookies = get_cookies()
-        new_login = False
-        login_succeed = False
-        while login_succeed is False:
-            if cookies is None:
-                print("\n" + BIN_FETCH_PROMPT)
-                email = input("\nEmail: ")
-                password = getpass.getpass("Password: ")
-                new_login = True
-                cookies = login(email, password)
+    cookies = get_cookies()
+    new_login = False
+    login_succeed = False
+    while login_succeed is False:
+        if cookies is None:
+            print("\n" + BIN_FETCH_PROMPT)
+            email = input("\nEmail: ")
+            password = getpass.getpass("Password: ")
+            new_login = True
+            cookies = login(email, password)
 
-            print("\nLogging in... ", end="", flush=True)
-            login_succeed, session, page = get_content(cookies)
-            if not login_succeed:
-                cookies = None
-                print("[Error]")
+        print("\nLogging in... ", end="", flush=True)
+        login_succeed, session, page = get_content(cookies)
+        if not login_succeed:
+            cookies = None
+            print("[Error]")
 
-                if is_redirected_to_login_page(page):
-                    print(
-                        "Request failed. Try downloading the image directly "
-                        "from https://developer.acconeer.com"
-                    )
+            if is_redirected_to_login_page(page):
+                print(
+                    "Request failed. Try downloading the image directly "
+                    "from https://developer.acconeer.com"
+                )
 
-            else:
-                print("[OK]")
-
-        if new_login:
-            if _query_yes_no(
-                "\nWe use cookies to optimize the service of our applications."
-                "\n\nCookie Policy: https://acconeer.com/cookie-policy-eu/"
-                "\nPrivacy Statement: https://developer.acconeer.com/privacy-policy/"
-                "\n\nSelecting yes to the following question will store a cookie on "
-                "your computer:"
-                "\nRemember me?"
-            ):
-                save_cookies(cookies)
-
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            print("Preparing license agreement... ", end="", flush=True)
-            license = DevLicense()
-            license.load()
+        else:
             print("[OK]")
 
-            time.sleep(1)
-            DevLicenseTuiDialog.run(log="textual.log", license=license)
-            license_accepted = DevLicenseTuiDialog.get_accept()
+    if new_login:
+        if _query_yes_no(
+            "\nWe use cookies to optimize the service of our applications."
+            "\n\nCookie Policy: https://acconeer.com/cookie-policy-eu/"
+            "\nPrivacy Statement: https://developer.acconeer.com/privacy-policy/"
+            "\n\nSelecting yes to the following question will store a cookie on "
+            "your computer:"
+            "\nRemember me?"
+        ):
+            save_cookies(cookies)
 
-            if license_accepted:
-                device_name = get_flash_download_name(flash_device, args.device)
-                try:
-                    print(f"Downloading {device_name} image file... ", end="", flush=True)
-                    bin_path, version = download(
-                        session=session,
-                        cookies=cookies,
-                        path=tmp_dir,
-                        device=device_name,
-                    )
-                    print(f"[OK] (version: {version})")
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        print("Preparing license agreement... ", end="", flush=True)
+        license = DevLicense()
+        license.load()
+        print("[OK]")
 
-                    try:
-                        boot_description = get_boot_description(flash_device, device_name)
-                        if boot_description:
-                            boot_description = re.sub("<li>", " - ", boot_description)
-                            boot_description = re.sub("</[pli]+?>", "\n", boot_description)
-                            boot_description = re.sub("<[^<]+?>", "", boot_description)
-                            print("\n\n" + boot_description)
-                        if _query_yes_no("Proceed to flashing you device?"):
-                            print("Flashing...")
-                            flash_image(
-                                bin_path,
-                                flash_device,
-                                device_name=device_name,
-                                progress_callback=_flasher_progress_callback,
-                            )
-                    except ValueError:
-                        print("No devices found, try connecting a device before flashing.")
-                except Exception as e:
-                    print(f"[Error] {str(e)}")
-            else:
-                print("You need to accept the license agreement to download the image file.")
+        time.sleep(1)
+        DevLicenseTuiDialog.run(log="textual.log", license=license)
+        license_accepted = DevLicenseTuiDialog.get_accept()
 
-        session.close()
+        if license_accepted:
+            device_name = get_flash_download_name(flash_device, args.device)
+            print(f"Downloading {device_name} image file... ", end="", flush=True)
+            bin_path, version = download(
+                session=session,
+                cookies=cookies,
+                path=tmp_dir,
+                device=device_name,
+            )
+            print(f"[OK] (version: {version})")
 
-    except Exception as e:
-        print(str(e))
+            boot_description = get_boot_description(flash_device, device_name)
+            if boot_description:
+                boot_description = re.sub("<li>", " - ", boot_description)
+                boot_description = re.sub("</[pli]+?>", "\n", boot_description)
+                boot_description = re.sub("<[^<]+?>", "", boot_description)
+                print("\n\n" + boot_description)
+            if _query_yes_no("Proceed to flashing you device?"):
+                print("Flashing...")
+                flash_image(
+                    bin_path,
+                    flash_device,
+                    device_name=device_name,
+                    progress_callback=_flasher_progress_callback,
+                )
+        else:
+            print("You need to accept the license agreement to download the image file.")
+
+    session.close()
 
 
 def _flash(args):
@@ -360,10 +352,15 @@ def main():
             clear_cookies()
             print("Saved login session cookie deleted!\n")
 
-        if args.fetch:
-            _fetch_and_flash(args)
-        elif args.image:
-            _flash(args)
-        elif not args.clear:
-            print("No image file selected!\n")
-            parser.print_help()
+        try:
+            if args.fetch:
+                _fetch_and_flash(args)
+            elif args.image:
+                _flash(args)
+            elif not args.clear:
+                print("No image file selected!\n")
+                parser.print_help()
+        except FlashException as e:
+            print(f"\n{str(e)}\n")
+        except UsbPortError as e:
+            print(f"\n{str(e)}\n")
