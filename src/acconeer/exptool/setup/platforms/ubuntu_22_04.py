@@ -24,6 +24,12 @@ class Ubuntu_22_04(Linux):
                 ),
             ),
             utils.WithDescription(
+                '> Use "apt" to remove modemmanager, this is needed to not interfere with bootloader for some EVKs.',
+                SetupGroup(
+                    ShellCommandStep("sudo apt purge -y modemmanager".split()),
+                ),
+            ),
+            utils.WithDescription(
                 "> Trigger udev to update the permission rules.",
                 SetupGroup(
                     ShellCommandStep("sudo udevadm control --reload-rules".split()),

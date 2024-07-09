@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -22,10 +22,10 @@ class Linux(PlatformInstall):
 
     XC120_UDEV_RULE_FILE = "/etc/udev/rules.d/50-xc120.rules"
     XC120_UDEV_RULE = (
-        'SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a41d", MODE:="0666"\n'
-        'SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a42c", MODE:="0666"\n'
-        'SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a42d", MODE:="0666"\n'
-        'SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a449", MODE:="0666"\n'
+        'SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a41d", GROUP="plugdev", TAG+="uaccess"\n'
+        'SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a42c", GROUP="plugdev", TAG+="uaccess"\n'
+        'SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a42d", GROUP="plugdev", TAG+="uaccess"\n'
+        'SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a449", GROUP="plugdev", TAG+="uaccess"\n'
     )
 
     def __init__(self) -> None:
@@ -34,6 +34,11 @@ class Linux(PlatformInstall):
                 "> Setup up permissions needed for UART communication "
                 + "by adding the current user to the 'dialout' group.",
                 ShellCommandStep(f"sudo usermod -a -G dialout {os.environ.get('USER')}".split()),
+            ),
+            utils.WithDescription(
+                "> Setup up permissions needed for USB devices "
+                + "by adding the current user to the 'plugdev' group.",
+                ShellCommandStep(f"sudo usermod -a -G plugdev {os.environ.get('USER')}".split()),
             ),
             utils.WithDescription(
                 "> Create an udev rule for SPI communication with XM112.",
