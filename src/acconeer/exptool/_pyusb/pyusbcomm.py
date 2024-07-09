@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -89,7 +89,7 @@ class PyUsbCdc:
             if self._dev.is_kernel_driver_active(0):
                 self._dev.detach_kernel_driver(0)
         except usb.core.USBError:
-            raise UsbPortError("Could not access USB device")
+            raise UsbPortError("Could not access USB device, are USB permissions setup correctly?")
 
         # The XC120 USB device only has one config
         config = self._dev[0]
