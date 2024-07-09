@@ -61,7 +61,7 @@ def _query_yes_no(question: str, default: str = "yes") -> bool:
             print("Please respond with 'yes' or 'no' " "(or 'y' or 'n').\n")
 
 
-def flasher_progress_callback(progress, end=False):
+def _flasher_progress_callback(progress, end=False):
     print(f"\rProgress: [{progress}/100]", end="", flush=True)
     if end:
         print()
@@ -93,7 +93,7 @@ def flash_image(image_path, flash_device, device_name=None, progress_callback=No
         raise ValueError("No flash device")
 
 
-def find_flash_device(
+def _find_flash_device(
     device_name=None, port=None, serial_number=None, use_usb=True, use_serial=True
 ):
     all_devices = []
@@ -146,10 +146,10 @@ def find_flash_device(
     return flash_device
 
 
-def get_flash_device_from_args(args):
+def _get_flash_device_from_args(args):
     use_usb = args.interface is None or args.interface == "usb"
     use_serial = args.interface is None or args.interface == "serial"
-    flash_device = find_flash_device(
+    flash_device = _find_flash_device(
         port=args.port,
         device_name=args.device,
         serial_number=args.serial_number,
@@ -187,9 +187,9 @@ def get_boot_description(flash_device, device_name):
     return None
 
 
-def fetch_and_flash(args):
+def _fetch_and_flash(args):
     try:
-        flash_device = get_flash_device_from_args(args)
+        flash_device = _get_flash_device_from_args(args)
 
         cookies = get_cookies()
         new_login = False
@@ -263,7 +263,7 @@ def fetch_and_flash(args):
                                 bin_path,
                                 flash_device,
                                 device_name=device_name,
-                                progress_callback=flasher_progress_callback,
+                                progress_callback=_flasher_progress_callback,
                             )
                     except ValueError:
                         print("No devices found, try connecting a device before flashing.")
@@ -276,6 +276,16 @@ def fetch_and_flash(args):
 
     except Exception as e:
         print(str(e))
+
+
+def _flash(args):
+    flash_device = _get_flash_device_from_args(args)
+    flash_image(
+        args.image,
+        flash_device,
+        device_name=args.device,
+        progress_callback=_flasher_progress_callback,
+    )
 
 
 def main():
@@ -351,15 +361,9 @@ def main():
             print("Saved login session cookie deleted!\n")
 
         if args.fetch:
-            fetch_and_flash(args)
+            _fetch_and_flash(args)
         elif args.image:
-            flash_device = get_flash_device_from_args(args)
-            flash_image(
-                args.image,
-                flash_device,
-                device_name=args.device,
-                progress_callback=flasher_progress_callback,
-            )
+            _flash(args)
         elif not args.clear:
             print("No image file selected!\n")
             parser.print_help()
