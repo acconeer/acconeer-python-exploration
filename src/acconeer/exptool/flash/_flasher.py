@@ -1,16 +1,14 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
 
 import argparse
 import getpass
-import logging
 import re
 import tempfile
 import time
 
-import acconeer.exptool as et
 from acconeer.exptool._core.communication import comm_devices
 from acconeer.exptool.flash._bin_fetcher import (
     BIN_FETCH_PROMPT,
@@ -30,9 +28,6 @@ from acconeer.exptool.flash._products import (
 
 from ._dev_license import DevLicense
 from ._dev_license_tui import DevLicenseTuiDialog
-
-
-log = logging.getLogger(__name__)
 
 
 def _query_yes_no(question: str, default: str = "yes") -> bool:
@@ -275,8 +270,7 @@ def fetch_and_flash(args):
                     except ValueError:
                         print("No devices found, try connecting a device before flashing.")
                 except Exception as e:
-                    print("[Error]")
-                    log.error(str(e))
+                    print(f"[Error] {str(e)}")
             else:
                 print("You need to accept the license agreement to download the image file.")
 
@@ -337,26 +331,8 @@ def main():
             "Requires an Acconeer Developer Account."
         ),
     )
-    verbosity_group = parser.add_mutually_exclusive_group(required=False)
-    verbosity_group.add_argument(
-        "-v",
-        "--verbose",
-        action="store_true",
-    )
-    verbosity_group.add_argument(
-        "-vv",
-        "--debug",
-        action="store_true",
-    )
-    verbosity_group.add_argument(
-        "-q",
-        "--quiet",
-        action="store_true",
-    )
 
     args = parser.parse_args()
-
-    et.utils.config_logging(args)
 
     if args.operation == "list":
         usb_devices = comm_devices.get_usb_devices()
