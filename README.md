@@ -118,6 +118,9 @@ Connections via *Serial* have the option of choosing a *Protocol*. The choices a
 on the module (*Module server* or *Exploration server*, respectively). Choosing the wrong
 protocol will show an error.
 
+## Special Configurations
+- XM125 requires the baud rate to be manually set to `115200`
+
 After pressing _Connect_, a connection should be established.
 In the box below labelled _Scan controls_, select the service or processing example you want to test.
 Now you may tune the sensor and processing settings to your specific setup.
