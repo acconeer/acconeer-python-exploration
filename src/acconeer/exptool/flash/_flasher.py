@@ -94,7 +94,7 @@ def flash_image(image_path, flash_device, device_name=None, progress_callback=No
 
 
 def find_flash_device(
-    device_name=None, port=None, serial_number=None, use_usb=True, use_serial=True, verbose=True
+    device_name=None, port=None, serial_number=None, use_usb=True, use_serial=True
 ):
     all_devices = []
     found_devices = []
@@ -128,14 +128,13 @@ def find_flash_device(
             found_devices.append(device)
 
     if len(found_devices) == 0:
-        if verbose:
-            print("No devices connected")
+        print("No devices connected")
     elif len(found_devices) > 1:
-        if verbose:
-            print("Found multiple Acconeer products:")
-            print("".join([f" - {dev}\n" for dev in found_devices]))
+        print("Found multiple Acconeer products:")
+        print("".join([f" - {dev}\n" for dev in found_devices]))
     else:
         flash_device = found_devices[0]
+        print(f"Flashing {flash_device}")
 
     if flash_device is None:
         raise Exception(
@@ -147,7 +146,7 @@ def find_flash_device(
     return flash_device
 
 
-def get_flash_device_from_args(args, verbose=False):
+def get_flash_device_from_args(args):
     use_usb = args.interface is None or args.interface == "usb"
     use_serial = args.interface is None or args.interface == "serial"
     flash_device = find_flash_device(
@@ -156,7 +155,6 @@ def get_flash_device_from_args(args, verbose=False):
         serial_number=args.serial_number,
         use_usb=use_usb,
         use_serial=use_serial,
-        verbose=verbose,
     )
     return flash_device
 
@@ -355,7 +353,7 @@ def main():
         if args.fetch:
             fetch_and_flash(args)
         elif args.image:
-            flash_device = get_flash_device_from_args(args, verbose=True)
+            flash_device = get_flash_device_from_args(args)
             flash_image(
                 args.image,
                 flash_device,
