@@ -1,8 +1,9 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
 
+import contextlib
 from copy import copy
 from typing import List, Optional
 
@@ -64,10 +65,8 @@ class TabPGWidget(QFrame):
         self._button_layout.addWidget(button)
 
     def clear(self) -> None:
-        try:
+        with contextlib.suppress(RuntimeError, RuntimeWarning):
             self._button_group.idToggled.disconnect()
-        except RuntimeError:
-            pass
 
         for plot_widget in self._plot_widgets:
             self._main_layout.removeWidget(plot_widget)
