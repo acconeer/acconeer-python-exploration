@@ -44,6 +44,7 @@ _T = t.TypeVar("_T")
 
 
 opser.register_json_presentable(a121.SessionConfig)
+opser.register_json_presentable(a121.SensorConfig)
 
 
 def _list(element_type: type, length: int = 3) -> t.List[t.Any]:
@@ -532,6 +533,12 @@ def test_equality(instance: t.Any, tmp_h5_file: h5py.File) -> None:
                 }
             ),
             r"'.children\[2\].integer'",
+        ),
+        (
+            UnionParent(
+                Simple(integer=1, string=1),
+            ),
+            "",
         ),
     ],
     ids=lambda i: type(i).__name__,

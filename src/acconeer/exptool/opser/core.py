@@ -78,6 +78,10 @@ class TypeMissmatchError(SaveError):
             )
 
 
+class TypeMissmatchErrorGroup(TypeMissmatchError, eg.ExceptionGroup[TypeMissmatchError]):
+    """Exception group for TypeMissmatchErrors"""
+
+
 class JsonPresentable(te.Protocol):
     def to_json(self) -> str: ...
 
@@ -331,31 +335,22 @@ def sanitize_instance(instance: t.Any, type_tree: Node, attr_path: str = "") -> 
 
     if is_ndarray(current_type):
         return
-    elif is_subclass(current_type, numbers.Number) and isinstance(instance, numbers.Number):
-        return
-    elif is_class(current_type):
-        if isinstance(instance, current_type):
-            for name, tree in type_tree.children.items():
-                child = getattr(instance, name)
-                sanitize_instance(child, tree, attr_path=f"{attr_path}.{name}")
-        else:
-            raise TypeMissmatchError.wrong_type_encountered(instance, attr_path, current_type)
     elif is_generic(current_type):
         origin, *type_args = unwrap_generic(current_type)
 
         if origin is t.Union:
             children = type_tree.children.items()
+            errors = []
             for _, child in children:
                 try:
                     sanitize_instance(instance, child, attr_path=f"{attr_path}")
-                except TypeMissmatchError:
+                except TypeMissmatchError as tme:
+                    errors.append(tme)
                     continue
                 else:
                     break
             else:
-                raise TypeMissmatchError.wrong_type_encountered(
-                    instance, attr_path, *[c.data for _, c in children]
-                )
+                raise TypeMissmatchErrorGroup("No Union members were sanitary", errors)
 
             return
 
@@ -397,3 +392,12 @@ def sanitize_instance(instance: t.Any, type_tree: Node, attr_path: str = "") -> 
             )
 
         raise RuntimeError("Fell through instance sanitization")
+    elif is_subclass(current_type, numbers.Number) and isinstance(instance, numbers.Number):
+        return
+    elif is_class(current_type):
+        if isinstance(instance, current_type):
+            for name, tree in type_tree.children.items():
+                child = getattr(instance, name)
+                sanitize_instance(child, tree, attr_path=f"{attr_path}.{name}")
+        else:
+            raise TypeMissmatchError.wrong_type_encountered(instance, attr_path, current_type)
