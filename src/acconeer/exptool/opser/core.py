@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import abc
+import collections.abc
 import json
+import numbers
 import typing as t
 
 import attrs
@@ -61,18 +63,18 @@ class WrongH5ObjectError(LoadError):
 
 class TypeMissmatchError(SaveError):
     @classmethod
-    def wrong_type_encountered(cls, instance: t.Any, *expected_types: type) -> te.Self:
+    def wrong_type_encountered(cls, instance: t.Any, path: str, *expected_types: type) -> te.Self:
         if expected_types == ():
             raise ValueError("Gotta specify at least one expected type")
 
         if len(expected_types) == 1:
             (expected_type,) = expected_types
             return cls(
-                f"Expected type was {expected_type}. Encountered {instance} of type {type(instance)}"
+                f"Expected type {expected_type} at {path!r}. Encountered an instance of type {type(instance)}: {instance}"
             )
         else:
             return cls(
-                f"Expected type was any of {expected_types}. Encountered {instance} of type {type(instance)}"
+                f"Expected one of types {expected_types} at {path!r}. Encountered an instance of type {type(instance)}: {instance}"
             )
 
 
@@ -80,7 +82,7 @@ class JsonPresentable(te.Protocol):
     def to_json(self) -> str: ...
 
     @classmethod
-    def from_json(cls, json_string: str) -> te.Self: ...
+    def from_json(cls, json_str: str) -> te.Self: ...
 
 
 @attrs.frozen
@@ -100,7 +102,7 @@ class Persistor(abc.ABC):
 
         def _save(self: Persistor, data: t.Any) -> None:
             if not isinstance(data, presentable_type):
-                raise TypeMissmatchError(data, self.type_tree, presentable_type)
+                raise TypeMissmatchError.wrong_type_encountered(data, "?", presentable_type)
 
             self.create_own_dataset(data=data.to_json())
 
@@ -162,6 +164,10 @@ class Persistor(abc.ABC):
         return group
 
     def create_own_dataset(self, data: t.Any, *, dtype: t.Any = None) -> h5py.Dataset:
+        if self.name == "./":
+            msg = "Datasets cannot be the root entry. Try wrapping the object or save a different representation."
+            msg += f"\n\nAttempted to save the following to './': {data!r}"
+            raise SaveError(msg)
         dataset = self.parent_group.create_dataset(self.name, data=data, dtype=dtype)
         dataset.attrs["persistor"] = f"{type(self).__name__}"
         return dataset
@@ -180,31 +186,12 @@ class Persistor(abc.ABC):
         pass
 
 
+@attrs.frozen
 class Node:
     """Basic tree node implementation."""
 
-    def __init__(self, __data: t.Any, **children: Node) -> None:
-        self.data = __data
-        self.children = children
-        self.parent: t.Optional[Node] = None
-
-        for child in self.children.values():
-            child.parent = self
-
-    def __eq__(self, other: object) -> bool:
-        if isinstance(other, Node):
-            return self.data == other.data and self.children == other.children
-        else:
-            return False
-
-    def __repr__(self) -> str:
-        if self.children == {}:
-            return f"Node({self.data!r})"
-        else:
-            children_kwargs = ", ".join(
-                f"{name}={child!r}" for name, child in self.children.items()
-            )
-            return f"Node({self.data!r}, {children_kwargs})"
+    data: type
+    children: dict[str, Node]
 
 
 def is_class(__type: TypeLike) -> te.TypeGuard[type]:
@@ -280,22 +267,27 @@ DICT_KEY_TYPE = "dict_key_type"
 DICT_VALUE_TYPE = "dict_value_type"
 
 
-def create_type_tree(__type: TypeLike, parent: t.Optional[Node] = None) -> Node:
+def create_type_tree(__type: TypeLike, attr_path: str = "") -> Node:
+    """Creates a tree of Nodes that acts as a schema for serializing
+    instances of `__type`.
+
+    :param __type: The type to create a type tree for
+    :param attr_path: Accumulated attribute path. Used for enhancing error messages.
+    :returns: The root of the type tree.
+    """
     if isinstance(__type, t.TypeVar):
         raise NotImplementedError("Cannot resolve type variables of generic classes")
 
-    if is_class(__type):
-        hints = get_class_type_hints(__type)
-    elif is_ndarray(__type):
+    if is_ndarray(__type):
         hints = {}
     elif is_generic(__type):
         origin, *type_args = unwrap_generic(__type)
 
-        if origin is list:
+        if origin in [list, t.Sequence, collections.abc.Sequence]:
             (type_arg,) = type_args
             hints = {sequence_index(): type_arg}
 
-        elif origin is dict:
+        elif origin in [dict, t.Mapping, collections.abc.Mapping]:
             (key_type, value_type) = type_args
             hints = {
                 DICT_KEY_TYPE: key_type,
@@ -304,7 +296,8 @@ def create_type_tree(__type: TypeLike, parent: t.Optional[Node] = None) -> Node:
 
         elif origin is tuple:
             if ... in type_args:
-                raise NotImplementedError("Tuple with ellipsis (...) is not supported")
+                msg = f"Unsupported Tuple with ellipsis (...) at {attr_path!r}"
+                raise NotImplementedError(msg)
 
             hints = {sequence_index(i): arg for i, arg in enumerate(type_args)}
 
@@ -312,76 +305,89 @@ def create_type_tree(__type: TypeLike, parent: t.Optional[Node] = None) -> Node:
             hints = {union_index(i): arg for i, arg in enumerate(type_args)}
 
         else:
-            raise ValueError(
-                f"Unexpected generic type '{__type}' (origin={origin}, type_args={type_args})"
-            )
+            msg = f"Unexpected generic type at {attr_path!r}: '{__type}' (origin={origin}, type_args={type_args})"
+            raise ValueError(msg)
+    elif is_class(__type):
+        hints = get_class_type_hints(__type)
     else:
-        raise RuntimeError(f"Unexpected type: '{__type}' of type {type(__type)}")
+        msg = f"Unexpected type at {attr_path!r}: '{__type}' of type {type(__type)}"
+        raise RuntimeError(msg)
 
     try:
-        return Node(
-            __type,
-            **{name: create_type_tree(hint) for name, hint in hints.items()},
-        )
+        return Node(__type, {name: create_type_tree(hint) for name, hint in hints.items()})
     except RecursionError:
         raise TypeError(f"{__type} is recursive. Recursively defined classes are not supported")
 
 
-def sanitize_instance(instance: t.Any, type_tree: Node) -> None:
+def sanitize_instance(instance: t.Any, type_tree: Node, attr_path: str = "") -> None:
+    """Asserts that the instance conforms to its type and type annotations with instance-checks
+
+    :param instance: The instance to sanitize
+    :param type_tree: The type tree (schema) to use for sanitation
+    :param attr_path: Accumulated attribute path. Used for enhancing error messages.
     """
-    Asserts that the instance conforms to its type and type annotations with instance-checks
-    """
+
     current_type = type_tree.data
 
     if is_ndarray(current_type):
         return
+    elif is_subclass(current_type, numbers.Number) and isinstance(instance, numbers.Number):
+        return
     elif is_class(current_type):
         if isinstance(instance, current_type):
-            return
+            for name, tree in type_tree.children.items():
+                child = getattr(instance, name)
+                sanitize_instance(child, tree, attr_path=f"{attr_path}.{name}")
         else:
-            raise TypeMissmatchError(instance, type_tree, current_type)
+            raise TypeMissmatchError.wrong_type_encountered(instance, attr_path, current_type)
     elif is_generic(current_type):
         origin, *type_args = unwrap_generic(current_type)
-        if origin is list:
-            (child,) = type_tree.children.values()
 
-            for value in instance:
-                sanitize_instance(value, child)
-
-            return
-
-        elif origin is dict:
-            (key_tree, value_tree) = type_tree.children.values()
-
-            for key, value in instance.items():
-                sanitize_instance(key, key_tree)
-                sanitize_instance(value, value_tree)
-
-            return
-
-        elif origin is tuple:
-            if ... in type_args:
-                raise NotImplementedError("Tuple with ellipsis (...) is not supported")
-
-            children = type_tree.children.values()
-
-            assert len(children) == len(instance)
-            for value, child in zip(instance, children):
-                sanitize_instance(value, child)
-
-            return
-
-        elif origin is t.Union:
-            children = type_tree.children.values()
-            for child in children:
+        if origin is t.Union:
+            children = type_tree.children.items()
+            for _, child in children:
                 try:
-                    sanitize_instance(instance, child)
+                    sanitize_instance(instance, child, attr_path=f"{attr_path}")
                 except TypeMissmatchError:
                     continue
                 else:
                     break
             else:
-                raise TypeMissmatchError(instance, type_tree, *[c.data for c in children])
+                raise TypeMissmatchError.wrong_type_encountered(
+                    instance, attr_path, *[c.data for _, c in children]
+                )
+
+            return
+
+        if not isinstance(instance, origin):
+            raise TypeMissmatchError.wrong_type_encountered(instance, attr_path, origin)
+
+        if origin in [list, t.Sequence, collections.abc.Sequence]:
+            (child,) = type_tree.children.values()
+
+            for idx, value in enumerate(instance):
+                sanitize_instance(value, child, attr_path=f"{attr_path}[{idx}]")
+
+            return
+
+        if origin in [dict, t.Mapping, collections.abc.Mapping]:
+            (key_tree, value_tree) = type_tree.children.values()
+
+            for key, value in instance.items():
+                sanitize_instance(key, key_tree, attr_path=f"{attr_path}.keys()[{key}]")
+                sanitize_instance(value, value_tree, attr_path=f"{attr_path}[{key}]")
+
+            return
+
+        if origin is tuple:
+            if ... in type_args:
+                raise NotImplementedError("Tuple with ellipsis (...) is not supported")
+
+            children = type_tree.children.items()
+
+            assert len(children) == len(instance)
+            for value, (child_name, child) in zip(instance, children):
+                sanitize_instance(value, child, attr_path=f"{attr_path}[{child_name}]")
 
             return
 

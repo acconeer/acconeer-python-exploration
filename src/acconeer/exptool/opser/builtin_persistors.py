@@ -28,7 +28,7 @@ class StringPersistor(core.Persistor):
 
     def save(self, data: t.Any) -> None:
         if not isinstance(data, str):
-            raise core.TypeMissmatchError(data, self.type_tree, str)
+            raise core.TypeMissmatchError.wrong_type_encountered(data, "?", str)
 
         self.create_own_dataset(data=data.encode())
 
@@ -52,7 +52,7 @@ class EnumPersistor(core.Persistor):
 
     def save(self, data: t.Any) -> None:
         if not isinstance(data, Enum):
-            raise core.TypeMissmatchError(data, self.type_tree, Enum)
+            raise core.TypeMissmatchError.wrong_type_encountered(data, "?", Enum)
 
         self.create_own_dataset(data=data.name.encode())
 
@@ -62,7 +62,8 @@ class EnumPersistor(core.Persistor):
         self.assert_not_empty(enum_name_in_bytes)
 
         enum_type = self.type_tree.data
-        return enum_type[bytes.decode(enum_name_in_bytes)]  # type: ignore[no-any-return]
+
+        return enum_type[bytes.decode(enum_name_in_bytes)]  # type: ignore[index, no-any-return]
 
 
 @RegistryPersistor.register_persistor
@@ -79,7 +80,7 @@ class NonePersistor(core.Persistor):
 
     def save(self, data: t.Any) -> None:
         if data is not None:
-            raise core.TypeMissmatchError(data, self.type_tree, type(None))
+            raise core.TypeMissmatchError.wrong_type_encountered(data, "?", type(None))
 
         self.parent_group.create_dataset(self.name, dtype="f")
 
@@ -103,10 +104,10 @@ class FloatPersistor(core.Persistor):
 
     def save(self, data: t.Any) -> None:
         if not isinstance(data, (float, int)):
-            raise core.TypeMissmatchError(data, self.type_tree, float, int)
+            raise core.TypeMissmatchError.wrong_type_encountered(data, "?", float, int)
 
         if np.shape(data) != ():
-            raise core.TypeMissmatchError()
+            raise core.TypeMissmatchError
 
         self.create_own_dataset(data=float(data))
 
@@ -130,10 +131,10 @@ class BoolPersistor(core.Persistor):
 
     def save(self, data: t.Any) -> None:
         if data not in {True, False}:
-            raise core.TypeMissmatchError(data, self.type_tree, bool, np.bool_)
+            raise core.TypeMissmatchError.wrong_type_encountered(data, "?", bool, np.bool_)
 
         if np.shape(data) != ():
-            raise core.TypeMissmatchError()
+            raise core.TypeMissmatchError
 
         self.create_own_dataset(data=data)
 
@@ -157,10 +158,10 @@ class IntPersistor(core.Persistor):
 
     def save(self, data: t.Any) -> None:
         if not isinstance(data, (int, np.integer)):
-            raise core.TypeMissmatchError(data, self.type_tree, int, np.integer)
+            raise core.TypeMissmatchError.wrong_type_encountered(data, "?", int, np.integer)
 
         if np.shape(data) != ():
-            raise core.TypeMissmatchError()
+            raise core.TypeMissmatchError
 
         self.create_own_dataset(data=data)
 
@@ -187,7 +188,7 @@ class ListPersistor(core.Persistor):
 
     def save(self, data: t.Any) -> None:
         if not isinstance(data, list):
-            raise core.TypeMissmatchError(data, self.type_tree, list)
+            raise core.TypeMissmatchError.wrong_type_encountered(data, "?", list)
 
         (element_type_tree,) = self.type_tree.children.values()
 
@@ -224,7 +225,7 @@ class DictPersistor(core.Persistor):
 
     def save(self, data: t.Any) -> None:
         if not isinstance(data, dict):
-            raise core.TypeMissmatchError(data, self.type_tree, dict)
+            raise core.TypeMissmatchError.wrong_type_encountered(data, "?", dict)
 
         (key_type_tree, value_type_tree) = self.type_tree.children.values()
 
@@ -264,7 +265,7 @@ class TuplePersistor(core.Persistor):
 
     def save(self, data: t.Any) -> None:
         if not isinstance(data, tuple):
-            raise core.TypeMissmatchError(data, self.type_tree, tuple)
+            raise core.TypeMissmatchError.wrong_type_encountered(data, "?", tuple)
 
         element_group = self.require_own_group()
 
@@ -335,7 +336,7 @@ class AttrsInstancePersistor(core.Persistor):
 
     def save(self, data: t.Any) -> None:
         if not isinstance(data, self.type_tree.data):
-            raise core.TypeMissmatchError(data, self.type_tree, self.type_tree.data)
+            raise core.TypeMissmatchError.wrong_type_encountered(data, "?", self.type_tree.data)
 
         instance_group = self.require_own_group()
         for member_name, member_type_tree in self.type_tree.children.items():
@@ -370,7 +371,7 @@ class NumpyPersistor(core.Persistor):
 
     def save(self, data: t.Any) -> None:
         if not isinstance(data, (np.ndarray, np.generic)):
-            raise core.TypeMissmatchError(data, self.type_tree, np.ndarray)
+            raise core.TypeMissmatchError.wrong_type_encountered(data, "?", np.ndarray)
 
         self.create_own_dataset(data=data)
 

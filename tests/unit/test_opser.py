@@ -139,6 +139,22 @@ TEST = [
 ]
 
 
+@attrs.frozen
+class A121Configs:
+    subsweep_config: a121.SubsweepConfig
+    sensor_config: a121.SensorConfig
+    session_config: a121.SessionConfig
+
+
+A121_CONFIGS = [
+    A121Configs(
+        a121.SubsweepConfig(start_point=41),
+        a121.SensorConfig(num_subsweeps=2),
+        a121.SessionConfig(update_rate=50),
+    )
+]
+
+
 MOCK_SERVICE_RESULT = a121.Result(
     data_saturated=False,
     frame_delayed=True,
@@ -255,9 +271,7 @@ DISTANCE = [
                 direct_leakage=_array(np.complex128),
                 phase_jitter_comp_reference=_array(np.float64),
                 recorded_thresholds_mean_sweep=[_array(np.float64) for _ in range(3)],
-                recorded_thresholds_noise_std=[
-                    [_array(np.float64) for _ in range(3)] for _ in range(3)
-                ],
+                recorded_thresholds_noise_std=[[np.float64(1)]],
                 bg_noise_std=[_list(float) for _ in range(3)],
                 session_config_used_during_calibration=a121.SessionConfig(),
                 reference_temperature=5,
@@ -464,6 +478,7 @@ VIBRATION = [
     "instance",
     [
         *TEST,
+        *A121_CONFIGS,
         *BILATERATION,
         *BREATHING,
         *DISTANCE,
@@ -481,6 +496,53 @@ def test_equality(instance: t.Any, tmp_h5_file: h5py.File) -> None:
     opser.serialize(instance, tmp_h5_file)
     reconstructed = opser.deserialize(tmp_h5_file, type(instance))
     assert instance == reconstructed
+
+
+@pytest.mark.parametrize(
+    ("instance", "err_match"),
+    [
+        (Simple(integer="a", string=""), "'.integer'"),
+        (Parent(Simple(integer=1, string=1), a=1.0), "'.child.string'"),
+        (
+            ListParent(
+                [
+                    Simple(integer=1, string="1"),
+                    Simple(integer="1", string="1"),
+                    Simple(integer=1, string="1"),
+                ]
+            ),
+            r"'.children\[1\].integer'",
+        ),
+        (
+            DictParent(
+                {
+                    1: Simple(integer=1, string="1"),
+                    2: Simple(integer=1, string="1"),
+                    "3": Simple(integer=1, string="1"),
+                }
+            ),
+            r"'.children.keys\(\)\[3\]'",
+        ),
+        (
+            DictParent(
+                {
+                    1: Simple(integer=1, string="1"),
+                    2: Simple(integer="1", string="1"),
+                    3: Simple(integer=1, string="1"),
+                }
+            ),
+            r"'.children\[2\].integer'",
+        ),
+    ],
+    ids=lambda i: type(i).__name__,
+)
+def test_sanitize_instance_points_out_fields_of_wrong_type(
+    instance: t.Any, err_match: str
+) -> None:
+    tree = opser.core.create_type_tree(type(instance))
+
+    with pytest.raises(opser.core.TypeMissmatchError, match=err_match):
+        opser.core.sanitize_instance(instance, tree)
 
 
 def test_can_best_effort_handle_migration_from_optional(tmp_h5_file: h5py.File) -> None:

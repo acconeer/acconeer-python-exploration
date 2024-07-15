@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -274,7 +274,7 @@ class EnumListPersistor(core.Persistor):
         element_type = element_type_tree.data
 
         if core.is_subclass(element_type, Enum):
-            return element_type  # type: ignore[no-any-return]
+            return element_type
         elif core.is_optional(element_type) and core.is_subclass(
             core.optional_arg(element_type), Enum
         ):
@@ -394,7 +394,7 @@ class SausageableAttrsPersistor(core.Persistor):
                 attribute_name,
                 core.Node(
                     t.List[attribute_type_tree.data],  # type: ignore[name-defined]
-                    **{attribute_name: attribute_type_tree},
+                    {attribute_name: attribute_type_tree},
                 ),
             ).save([getattr(attrs_instance, attribute_name) for attrs_instance in data])
 
@@ -410,7 +410,7 @@ class SausageableAttrsPersistor(core.Persistor):
                 attribute_name,
                 core.Node(
                     t.List[attribute_type_tree.data],  # type: ignore[name-defined]
-                    **{attribute_name: attribute_type_tree},
+                    {attribute_name: attribute_type_tree},
                 ),
             ).load()
             for attribute_name, attribute_type_tree in attrs_type_tree.children.items()
