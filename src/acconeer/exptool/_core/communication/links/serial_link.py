@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -60,7 +60,8 @@ class SerialLink(BaseSerialLink):
         data = bytearray(self._ser.read(num_bytes))
 
         if not len(data) == num_bytes:
-            raise LinkError("recv timeout")
+            msg = "recv timeout"
+            raise LinkError(msg)
 
         return data
 
@@ -69,7 +70,8 @@ class SerialLink(BaseSerialLink):
         data = bytearray(self._ser.read_until(bs))
 
         if bs not in data:
-            raise LinkError("recv timeout")
+            msg = "recv timeout"
+            raise LinkError(msg)
 
         return data
 
@@ -128,7 +130,8 @@ class ExploreSerialLink(SerialLink):
         t0 = time()
         while len(self._buf) < num_bytes:
             if time() - t0 > self._timeout:
-                raise LinkError("recv timeout")
+                msg = "recv timeout"
+                raise LinkError(msg)
 
             try:
                 r = bytearray(self._ser.read(self._SERIAL_READ_PACKET_SIZE))
@@ -152,7 +155,8 @@ class ExploreSerialLink(SerialLink):
                 break
 
             if time() - t0 > self._timeout:
-                raise LinkError("recv timeout")
+                msg = "recv timeout"
+                raise LinkError(msg)
 
             try:
                 r = bytearray(self._ser.read(self._SERIAL_READ_PACKET_SIZE))
@@ -198,7 +202,8 @@ class SerialProcessLink(BaseSerialLink):
         )
 
         if self._process is None:
-            raise LinkError("failed to create subprocess")
+            msg = "failed to create subprocess"
+            raise LinkError(msg)
 
         self._process.start()
 
@@ -209,12 +214,14 @@ class SerialProcessLink(BaseSerialLink):
         else:
             log.debug("connect - flow event was not set (timeout)")
             self.disconnect()
-            raise LinkError("failed to connect, timeout")
+            msg = "failed to connect, timeout"
+            raise LinkError(msg)
 
         if self._error_event.is_set():
             log.debug("connect - error event was set")
             self.disconnect()
-            raise LinkError("failed to connect, see traceback from serial process")
+            msg = "failed to connect, see traceback from serial process"
+            raise LinkError(msg)
 
         log.debug("connect - successful")
 
@@ -228,7 +235,8 @@ class SerialProcessLink(BaseSerialLink):
             self.__get_into_buf()
 
             if time() - t0 > self._timeout:
-                raise LinkError("recv timeout")
+                msg = "recv timeout"
+                raise LinkError(msg)
 
         data = self._buf[:num_bytes]
         self._buf = self._buf[num_bytes:]
@@ -253,7 +261,8 @@ class SerialProcessLink(BaseSerialLink):
                 si = buf_size - n + 1
 
             if time() - t0 > self._timeout:
-                raise LinkError("recv timeout")
+                msg = "recv timeout"
+                raise LinkError(msg)
 
             self.__get_into_buf()
 
@@ -277,7 +286,8 @@ class SerialProcessLink(BaseSerialLink):
                 log.info("forced disconnect successful")
 
             if self._process.exitcode is None:
-                raise LinkError("failed to disconnect")
+                msg = "failed to disconnect"
+                raise LinkError(msg)
 
     def __empty_queue_into_buf(self) -> None:
         while True:
@@ -292,7 +302,8 @@ class SerialProcessLink(BaseSerialLink):
         try:
             data = self._recv_queue.get(timeout=self._timeout)
         except queue.Empty:
-            raise LinkError("recv timeout")
+            msg = "recv timeout"
+            raise LinkError(msg)
         except InterruptedError:
             return  # fixes interrupt issue on Windows
 

@@ -46,9 +46,8 @@ def import_and_register_plugin_module(module_name: str) -> None:
     imported_module = importlib.import_module(name=module_name)
 
     if not isinstance(imported_module, ThirdPartyPluginModule):
-        raise ValueError(
-            f"Module specified by {module_name!r} does not have a 'register' function."
-        )
+        msg = f"Module specified by {module_name!r} does not have a 'register' function."
+        raise ValueError(msg)
 
     try:
         imported_module.register()

@@ -176,7 +176,8 @@ class Processor(ProcessorBase[ProcessorResult]):
         self._sweeps_per_frame = sensor_config.sweeps_per_frame
 
         if sensor_config.sweep_rate is None:
-            raise ValueError("sweep_rate must be set")
+            msg = "sweep_rate must be set"
+            raise ValueError(msg)
 
         frame_rate = sensor_config.sweep_rate / sensor_config.sweeps_per_frame
         self._cal_interval_frames = int(processor_config.calibration_interval_s * frame_rate)

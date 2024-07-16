@@ -193,18 +193,22 @@ class ResetResponse:
         header = ResetRequestHeader.decode(data)
 
         if seq_id != header.seq_id:
-            raise McuMgrFlashException(f"Seq number mismatch: {header}")
+            msg = f"Seq number mismatch: {header}"
+            raise McuMgrFlashException(msg)
 
         if len(data) > ResetRequestHeader.size:
             dec_msg: Dict[str, Any] = cbor2.loads(data[ResetRequestHeader.size :])
         else:
-            raise McuMgrFlashException(f"Complete header w/o payload: {header}")
+            msg = f"Complete header w/o payload: {header}"
+            raise McuMgrFlashException(msg)
 
         if "rc" not in dec_msg:
-            raise McuMgrFlashException("Missing key 'rc' in response")
+            msg = "Missing key 'rc' in response"
+            raise McuMgrFlashException(msg)
 
         if dec_msg["rc"] != 0:
-            raise McuMgrFlashException(f"Error code: '{dec_msg['rc']}' response")
+            msg = f"Error code: '{dec_msg['rc']}' response"
+            raise McuMgrFlashException(msg)
 
 
 class ImageUploadRequest:
@@ -291,21 +295,26 @@ class ImageUploadResponse:
         header = ImageRequestHeader.decode(data)
 
         if seq_id != header.seq_id:
-            raise McuMgrFlashException(f"Seq number mismatch: {header}")
+            msg = f"Seq number mismatch: {header}"
+            raise McuMgrFlashException(msg)
 
         if len(data) > ImageRequestHeader.size:
             dec_msg: Dict[str, Any] = cbor2.loads(data[ImageRequestHeader.size :])
         else:
-            raise McuMgrFlashException(f"Complete header w/o payload: {header}")
+            msg = f"Complete header w/o payload: {header}"
+            raise McuMgrFlashException(msg)
 
         if "rc" not in dec_msg:
-            raise McuMgrFlashException("Missing key 'rc' in response")
+            msg = "Missing key 'rc' in response"
+            raise McuMgrFlashException(msg)
 
         if dec_msg["rc"] != 0:
-            raise McuMgrFlashException(f"Error code: '{dec_msg['rc']}' response")
+            msg = f"Error code: '{dec_msg['rc']}' response"
+            raise McuMgrFlashException(msg)
 
         if "off" not in dec_msg:
-            raise McuMgrFlashException("Missing key 'off' in response")
+            msg = "Missing key 'off' in response"
+            raise McuMgrFlashException(msg)
 
         return int(dec_msg["off"])
 
@@ -354,10 +363,12 @@ class McuMgrFlashProtocol:
             # chunk start marker expected
             if bytes_read == 0:
                 if rec_data != b"\x06\x09":
-                    raise McuMgrFlashException("Incorrect start marker")
+                    msg = "Incorrect start marker"
+                    raise McuMgrFlashException(msg)
             else:
                 if rec_data != b"\x04\x14":
-                    raise McuMgrFlashException("Incorrect start marker")
+                    msg = "Incorrect start marker"
+                    raise McuMgrFlashException(msg)
 
             # read until newline
             while True:
@@ -387,7 +398,8 @@ class McuMgrFlashProtocol:
         length = int.from_bytes(decoded[:2], byteorder="big")
 
         if length != len(decoded) - 2:
-            raise McuMgrFlashException("Wrong chunk length")
+            msg = "Wrong chunk length"
+            raise McuMgrFlashException(msg)
 
         # verify checksum
         data = decoded[2 : len(decoded) - 2]
@@ -397,7 +409,8 @@ class McuMgrFlashProtocol:
         )
 
         if read_crc != calculated_crc:
-            raise McuMgrFlashException("Wrong crc")
+            msg = "Wrong crc"
+            raise McuMgrFlashException(msg)
 
         return data
 
@@ -457,7 +470,8 @@ class McuMgrFlashProtocol:
                 if enc_data_len > McuMgrFlashProtocol.mtu:
                     reduce = enc_data_len - McuMgrFlashProtocol.mtu
                     if reduce > try_length:
-                        raise McuMgrFlashException("MTU too small")
+                        msg = "MTU too small"
+                        raise McuMgrFlashException(msg)
 
                     # number of bytes to reduce is base64 encoded, calculate back the number of bytes
                     # and then reduce a bit more for base64 filling and rounding
@@ -474,7 +488,8 @@ class McuMgrFlashProtocol:
                 break
 
             if offset_start == offset:
-                raise McuMgrFlashException("Wrong offset received")
+                msg = "Wrong offset received"
+                raise McuMgrFlashException(msg)
 
             if progress_callback is not None:
                 progress_callback(int(100 * offset / byte_array_len), False)

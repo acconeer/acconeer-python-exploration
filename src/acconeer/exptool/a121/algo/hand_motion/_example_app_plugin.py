@@ -174,7 +174,8 @@ class PlotPlugin(PgPlotPlugin):
     def handle_message(self, message: backend.GeneralMessage) -> None:
         if isinstance(message, backend.PlotMessage):
             if not isinstance(message.result, ModeHandlerResult):
-                raise RuntimeError(f"Unexpected result type: {type(message.result)}")
+                msg = f"Unexpected result type: {type(message.result)}"
+                raise RuntimeError(msg)
 
             self._plot_job = message.result
         elif isinstance(message, SetupMessage):

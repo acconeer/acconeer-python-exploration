@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -56,7 +56,8 @@ def parse_rss_version(rss_version: str) -> tuple[str, Version]:
     )
     match = re.fullmatch(pattern, rss_version)
     if not match:
-        raise ValueError("Not a valid RSS version")
+        msg = "Not a valid RSS version"
+        raise ValueError(msg)
 
     groups = match.groupdict()
 

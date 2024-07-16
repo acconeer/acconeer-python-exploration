@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -203,7 +203,8 @@ class PlotPlugin:
             elif o.sensor_position == Processor._SENSOR_POSITION_RIGHT:
                 x += self.sensor_half_spacing_m
             else:
-                raise ValueError("Invalid sensor position.")
+                msg = "Invalid sensor position."
+                raise ValueError(msg)
 
             self.obstacle_location_half_curve[i].setData(x, y)
 

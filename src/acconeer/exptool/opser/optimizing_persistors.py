@@ -86,7 +86,8 @@ class RaggedNumpyArrayPersistor(core.Persistor):
             raise core.TypeMissmatchError
 
         if max(np.ndim(array) for array in data) > 1:
-            raise core.SaveError("Only 1-dimensional arrays can be ragged.")
+            msg = "Only 1-dimensional arrays can be ragged."
+            raise core.SaveError(msg)
 
         try:
             (dtype,) = {arr.dtype for arr in data if arr is not None}

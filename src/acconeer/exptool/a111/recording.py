@@ -83,14 +83,16 @@ class Recorder:
             raise TypeError(msg)
 
         if not isinstance(sensor_config, configbase.SensorConfig):
-            raise TypeError("Unexpected sensor config type")
+            msg = "Unexpected sensor config type"
+            raise TypeError(msg)
 
         if isinstance(processing_config, configbase.ProcessingConfig):
             processing_config_dump = processing_config._dumps()
         elif processing_config is None:
             processing_config_dump = None
         else:
-            raise TypeError("Unexpected processing config type")
+            msg = "Unexpected processing config type"
+            raise TypeError(msg)
 
         self.record = Record(
             mode=mode,
@@ -137,9 +139,11 @@ def save(filename: Union[str, Path], record: Record):
     elif filename.lower().endswith(".npz"):
         return save_npz(filename, record)
     elif filename.lower().endswith(".npy"):
-        raise ValueError("Unknown file format '.npy', perhaps you meant '.npz'?")
+        msg = "Unknown file format '.npy', perhaps you meant '.npz'?"
+        raise ValueError(msg)
     else:
-        raise ValueError("Unknown file format")
+        msg = "Unknown file format"
+        raise ValueError(msg)
 
 
 def pack(record: Record) -> dict:
@@ -204,7 +208,8 @@ def load(filename: Union[str, Path]) -> Record:
     elif filename.lower().endswith(".npz"):
         return load_npz(filename)
     else:
-        raise ValueError("Unknown file format")
+        msg = "Unknown file format"
+        raise ValueError(msg)
 
 
 def unpack(packed: dict) -> Record:
@@ -260,9 +265,8 @@ def load_h5(filename: Union[str, Path]) -> Record:
 
     with h5py.File(filename, "r") as f:
         if "generation" in f:
-            raise Exception(
-                f"The file '{filename}' is not an A111 record, try a121.load_record instead"
-            )
+            msg = f"The file '{filename}' is not an A111 record, try a121.load_record instead"
+            raise Exception(msg)
         packed = {k: v[()] for k, v in f.items()}
 
     for k, v in packed.items():

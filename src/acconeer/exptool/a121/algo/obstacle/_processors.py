@@ -315,7 +315,8 @@ class Processor(ProcessorBase[ProcessorResult]):
         self.temperature_filter_factor: float = 1 - np.exp(-TEMPERATURE_FILTER_CONSTANT)
 
         if self.sensor_config.sweep_rate is None:
-            raise ValueError("The obstacle detector needs the sweep_rate set.")
+            msg = "The obstacle detector needs the sweep_rate set."
+            raise ValueError(msg)
 
         self.dv = (
             PERCEIVED_WAVELENGTH
@@ -442,7 +443,8 @@ class Processor(ProcessorBase[ProcessorResult]):
         elif method == PeakSortingMethod.STRONGEST:
             quantity_to_sort = np.array([-target.strength for target in targets])
         else:
-            raise ValueError("Unknown peak sorting method")
+            msg = "Unknown peak sorting method"
+            raise ValueError(msg)
 
         return [targets[i] for i in quantity_to_sort.argsort()]
 

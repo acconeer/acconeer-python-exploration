@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -87,9 +87,8 @@ class H5Saver(
                 self._create_result_datasets(result_group, single_metadata)
 
         if (calibrations is None) != (calibrations_provided is None):
-            raise ValueError(
-                "'calibrations_provided' must be provided if 'calibrations' is provided"
-            )
+            msg = "'calibrations_provided' must be provided if 'calibrations' is provided"
+            raise ValueError(msg)
 
         if calibrations is not None and calibrations_provided is not None:
             calibrations_group = group.create_group("calibrations")

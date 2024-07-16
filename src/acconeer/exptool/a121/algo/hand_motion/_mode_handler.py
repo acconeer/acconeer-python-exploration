@@ -133,7 +133,8 @@ class ModeHandler(Controller[ModeHandlerConfig, ModeHandlerResult]):
     ) -> None:
         """Start application."""
         if self.started:
-            raise RuntimeError("Already started")
+            msg = "Already started"
+            raise RuntimeError(msg)
 
         if _algo_group is None and isinstance(recorder, a121.H5Recorder):
             _algo_group = recorder.require_algo_group("hand_motion")
@@ -165,14 +166,16 @@ class ModeHandler(Controller[ModeHandlerConfig, ModeHandlerResult]):
     def stop(self) -> Any:
         """Stop application."""
         if not self.started:
-            raise RuntimeError("Already stopped")
+            msg = "Already stopped"
+            raise RuntimeError(msg)
 
         if self.use_presence_detection and self.presence_detector.started:
             recorder_result = self.presence_detector.stop()
         elif self.hand_motion_app.started:
             recorder_result = self.hand_motion_app.stop()
         else:
-            raise RuntimeError("No active session to stop.")
+            msg = "No active session to stop."
+            raise RuntimeError(msg)
 
         self.started = False
 
@@ -181,7 +184,8 @@ class ModeHandler(Controller[ModeHandlerConfig, ModeHandlerResult]):
     def get_next(self) -> ModeHandlerResult:
         """Get next result."""
         if not self.started:
-            raise RuntimeError("Not started")
+            msg = "Not started"
+            raise RuntimeError(msg)
 
         if self.app_mode == AppMode.PRESENCE:
             presence_result = self.presence_detector.get_next()
@@ -190,7 +194,8 @@ class ModeHandler(Controller[ModeHandlerConfig, ModeHandlerResult]):
             hand_motion_result = self.hand_motion_app.get_next()
             result = self._determine_mode_swap(app_result=hand_motion_result)
         else:
-            raise RuntimeError("Invalid app")
+            msg = "Invalid app"
+            raise RuntimeError(msg)
 
         return result
 
@@ -223,7 +228,8 @@ class ModeHandler(Controller[ModeHandlerConfig, ModeHandlerResult]):
                 example_app_result=app_result,
             )
         else:
-            raise RuntimeError("Invalid app mode")
+            msg = "Invalid app mode"
+            raise RuntimeError(msg)
 
         if self.app_mode != current_app_mode:
             self._swap_mode()
@@ -251,7 +257,8 @@ class ModeHandler(Controller[ModeHandlerConfig, ModeHandlerResult]):
             self.hand_motion_app.start()
             self.hand_motion_timer = 0
         else:
-            raise RuntimeError("Invalid app")
+            msg = "Invalid app"
+            raise RuntimeError(msg)
 
 
 def get_default_config() -> ModeHandlerConfig:

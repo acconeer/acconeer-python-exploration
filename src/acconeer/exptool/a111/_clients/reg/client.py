@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import abc
@@ -52,9 +52,11 @@ class RegBaseClient(BaseClient):
 
     def _setup_session(self, config):
         if len(config.sensor) > 1:
-            raise ValueError("the register protocol does not support multiple sensors")
+            msg = "the register protocol does not support multiple sensors"
+            raise ValueError(msg)
         if config.sensor[0] != 1:
-            raise ValueError("the register protocol currently only supports using sensor 1")
+            msg = "the register protocol currently only supports using sensor 1"
+            raise ValueError(msg)
 
         mode = config.mode
         self._mode = mode
@@ -126,7 +128,8 @@ class RegBaseClient(BaseClient):
             if (status & mask) == val:
                 return
 
-        raise ClientError("timeout while waiting for status")
+        msg = "timeout while waiting for status"
+        raise ClientError(msg)
 
     def _get_supported_modes(self):
         supported_modes = set()
@@ -207,7 +210,8 @@ class UARTClient(RegBaseClient):
                 log.debug("handshake succeeded at {} baud".format(baudrate))
                 break
         else:
-            raise ClientError("could not connect, no response")
+            msg = "could not connect, no response"
+            raise ClientError(msg)
 
         use_baudrate = (
             self.override_baudrate
@@ -256,7 +260,8 @@ class UARTClient(RegBaseClient):
         packet = self._recv_packet(allow_recovery_skip=True)
 
         if not isinstance(packet, protocol.StreamData):
-            raise ClientError("got unexpected type of frame")
+            msg = "got unexpected type of frame"
+            raise ClientError(msg)
 
         info = {}
         for addr, enc_val in packet.result_info:
@@ -293,9 +298,11 @@ class UARTClient(RegBaseClient):
             if isinstance(res, protocol.RegWriteResponse):
                 break
             if not isinstance(res, protocol.StreamData):
-                raise ClientError("got unexpected packet while stopping session")
+                msg = "got unexpected packet while stopping session"
+                raise ClientError(msg)
         else:
-            raise ClientError("timeout while stopping session")
+            msg = "timeout while stopping session"
+            raise ClientError(msg)
 
         self._link.timeout = self._link.DEFAULT_TIMEOUT
 
@@ -314,7 +321,8 @@ class UARTClient(RegBaseClient):
 
         res = self._recv_packet()
         if not isinstance(res, protocol.BufferReadResponse):
-            raise ClientError("got unexpected type of frame")
+            msg = "got unexpected type of frame"
+            raise ClientError(msg)
 
         log.debug("recv buf r res: addr: 0x{:02x} len: {}".format(addr, len(res.buffer)))
 
@@ -335,7 +343,8 @@ class UARTClient(RegBaseClient):
 
         res = self._recv_packet()
         if not isinstance(res, protocol.RegReadResponse):
-            raise ClientError("got unexpected type of frame")
+            msg = "got unexpected type of frame"
+            raise ClientError(msg)
 
         enc_val = res.reg_val.val
 
@@ -359,9 +368,11 @@ class UARTClient(RegBaseClient):
         if expect_response:
             res = self._recv_packet()
             if not isinstance(res, protocol.RegWriteResponse):
-                raise ClientError("got unexpected packet (expected reg write response)")
+                msg = "got unexpected packet (expected reg write response)"
+                raise ClientError(msg)
             if res.reg_val != rrv:
-                raise ClientError("reg write failed")
+                msg = "reg write failed"
+                raise ClientError(msg)
 
             log.debug("recv reg w res: ok")
 
@@ -376,7 +387,8 @@ class UARTClient(RegBaseClient):
         packet_len = int.from_bytes(buf_1[1:], protocol.BO)
 
         if start_marker != protocol.START_MARKER:
-            raise ClientError("got invalid frame (incorrect start marker)")
+            msg = "got invalid frame (incorrect start marker)"
+            raise ClientError(msg)
 
         buf_2 = self._link.recv(packet_len + 2)
         packet = buf_2[:-1]
@@ -384,7 +396,8 @@ class UARTClient(RegBaseClient):
 
         if end_marker != protocol.END_MARKER:
             if not allow_recovery_skip:
-                raise ClientError("got invalid frame (incorrect end marker)")
+                msg = "got invalid frame (incorrect end marker)"
+                raise ClientError(msg)
 
             log.debug("got invalid frame (incorrect end marker), attempting recovery")
 
@@ -396,7 +409,8 @@ class UARTClient(RegBaseClient):
             while True:
                 si = buf_2.find(buf_1, si, ei)
                 if si < 0:
-                    raise ClientError("got invalid frame and could not recover")
+                    msg = "got invalid frame and could not recover"
+                    raise ClientError(msg)
 
                 sub_len_diff = expected_sub_len - (len(buf_2) - si)
 
@@ -456,7 +470,8 @@ class PollingUARTClient(UARTClient):
                 break
             else:
                 if (time() - poll_t) > self._link.timeout:
-                    raise ClientError("gave up polling")
+                    msg = "gave up polling"
+                    raise ClientError(msg)
 
                 continue
 
@@ -539,7 +554,8 @@ class SPIClient(RegBaseClient):
     def _get_next(self):
         ret_cmd, ret_args = self._data_queue.get()
         if ret_cmd == "error":
-            raise ClientError("exception raised in SPI communcation process")
+            msg = "exception raised in SPI communcation process"
+            raise ClientError(msg)
         elif ret_cmd != "get_next":
             raise ClientError
         info, buffer = ret_args
@@ -603,14 +619,16 @@ class SPIClient(RegBaseClient):
                 if ret_cmd == cmd:
                     break
                 elif ret_cmd == "error":
-                    raise ClientError("exception raised in SPI communcation process")
+                    msg = "exception raised in SPI communcation process"
+                    raise ClientError(msg)
                 elif ret_cmd != "get_next":
                     raise ClientError
             ret_args = None
         else:
             ret_cmd, ret_args = self._data_queue.get()
             if ret_cmd == "error":
-                raise ClientError("exception raised in SPI communcation process")
+                msg = "exception raised in SPI communcation process"
+                raise ClientError(msg)
             elif ret_cmd != cmd:
                 raise ClientError
         return ret_args
@@ -659,7 +677,8 @@ class SPICommProcess(mp.Process):
                 elif cmd == "disconnect":
                     break
             else:
-                raise ClientError("unknown cmd {}".format(cmd))
+                msg = "unknown cmd {}".format(cmd)
+                raise ClientError(msg)
 
     def poll(self):
         while self.cmd_q.empty():
@@ -678,7 +697,8 @@ class SPICommProcess(mp.Process):
                 break
             else:
                 if (time() - poll_t) > self.poll_timeout:
-                    raise ClientError("gave up polling")
+                    msg = "gave up polling"
+                    raise ClientError(msg)
 
                 continue
 

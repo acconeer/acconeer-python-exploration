@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -45,7 +45,8 @@ def main():
             elif result.example_app_result.detection_state == DetectionState.DETECTION:
                 print("Hand motion detected")
             else:
-                raise RuntimeError("Invalid detection state")
+                msg = "Invalid detection state"
+                raise RuntimeError(msg)
 
     print("Disconnecting...")
 

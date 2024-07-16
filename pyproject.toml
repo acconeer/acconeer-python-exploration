@@ -208,8 +208,15 @@ namespace-packages = ["src/acconeer"]
 preview = true
 explicit-preview-rules = true
 # "extend" here adds to the ruff defaults, rather than replacing.
-# Q = flake8-quotes, TID = flake8-tidy-imports, I = isort, FA = flake8-future-annotations, NPY = Numpy specific rules
-extend-select = ["Q", "TID", "I", "FA", "NPY"]
+# See the full list on https://docs.astral.sh/ruff/rules
+#
+# Q = flake8-quotes
+# TID = flake8-tidy-imports
+# I = isort
+# FA = flake8-future-annotations
+# NPY = Numpy specific rules
+# EM = flake8-errmsg
+extend-select = ["Q", "TID", "I", "FA", "NPY", "EM"]
 # E741 = Ambiguous variable names, e.g. I vs l
 extend-ignore = ["E741"]
 

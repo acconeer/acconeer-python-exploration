@@ -118,7 +118,8 @@ class SessionConfig:
 
         if extended is not None:
             if not extended and must_be_extended:
-                raise ValueError("Must be extended since multiple sensor configs are given")
+                msg = "Must be extended since multiple sensor configs are given"
+                raise ValueError(msg)
 
     @property
     def extended(self) -> bool:
@@ -150,7 +151,8 @@ class SessionConfig:
 
     def _assert_not_extended(self) -> None:
         if self.extended:
-            raise RuntimeError("This operation requires SessionConfig not to be extended.")
+            msg = "This operation requires SessionConfig not to be extended."
+            raise RuntimeError(msg)
 
     def _collect_validation_results(self) -> list[ValidationResult]:
         validation_results = []
@@ -331,7 +333,8 @@ def _validate_groups_structure(groups: list[dict[int, SensorConfig]]) -> None:
 
         for sensor_id, entry in group.items():
             if not isinstance(sensor_id, (int, np.int64, np.int32)):
-                raise ValueError(f"{type(sensor_id)} not int")
+                msg = f"{type(sensor_id)} not int"
+                raise ValueError(msg)
 
             if not isinstance(entry, SensorConfig):
                 raise ValueError

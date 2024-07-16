@@ -328,7 +328,8 @@ class SensorConfigEditor(DataEditor[Optional[a121.SensorConfig]]):
 
     def _update_sensor_config_aspect(self, aspect: str, value: Any) -> None:
         if self._sensor_config is None:
-            raise TypeError("SensorConfig is None")
+            msg = "SensorConfig is None"
+            raise TypeError(msg)
 
         config = copy.deepcopy(self._sensor_config)
 

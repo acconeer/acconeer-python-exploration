@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -36,12 +36,14 @@ class RefAppConfig(DetectorConfig):
     @start_m.validator
     def _(self, _: Any, value: float) -> None:
         if value < Detector.MIN_DIST_M:
-            raise ValueError(f"Cannot start measurements closer than {Detector.MIN_DIST_M}m")
+            msg = f"Cannot start measurements closer than {Detector.MIN_DIST_M}m"
+            raise ValueError(msg)
 
     @end_m.validator
     def _(self, _: Any, value: float) -> None:
         if value > Detector.MAX_DIST_M:
-            raise ValueError(f"Cannot measure further than {Detector.MAX_DIST_M}m")
+            msg = f"Cannot measure further than {Detector.MAX_DIST_M}m"
+            raise ValueError(msg)
 
     def to_detector_config(self) -> DetectorConfig:
         return DetectorConfig(
@@ -122,7 +124,8 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         self, recorder: Optional[a121.Recorder] = None, algo_group: Optional[h5py.Group] = None
     ) -> None:
         if self.started:
-            raise RuntimeError("Already started")
+            msg = "Already started"
+            raise RuntimeError(msg)
 
         if recorder is not None:
             if isinstance(recorder, a121.H5Recorder):
@@ -138,7 +141,8 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
 
     def get_next(self) -> RefAppResult:
         if not self.started:
-            raise RuntimeError("Not started")
+            msg = "Not started"
+            raise RuntimeError(msg)
 
         result = self._detector.get_next()
 
@@ -160,7 +164,8 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
 
     def stop(self) -> Any:
         if not self.started:
-            raise RuntimeError("Already stopped")
+            msg = "Already stopped"
+            raise RuntimeError(msg)
 
         recorder_result = self._detector.stop()
 

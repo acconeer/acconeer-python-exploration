@@ -274,7 +274,8 @@ class Processor:
         elif self.peak_sorting_method == PeakSorting.STRONGEST_FLAT_REFLECTOR:
             quantity_to_sort = -amp * r
         else:
-            raise Exception("Unknown peak sorting method")
+            msg = "Unknown peak sorting method"
+            raise Exception(msg)
 
         return [peak_indexes[i] for i in quantity_to_sort.argsort()]
 

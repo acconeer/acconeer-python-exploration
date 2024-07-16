@@ -149,7 +149,8 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
         self, recorder: Optional[a121.Recorder] = None, _algo_group: Optional[h5py.Group] = None
     ) -> None:
         if self.started:
-            raise RuntimeError("Already started")
+            msg = "Already started"
+            raise RuntimeError(msg)
 
         self._reinitialize_state_variables()
 
@@ -191,7 +192,8 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
 
     def get_next(self) -> ExampleAppResult:
         if not self.started:
-            raise RuntimeError("Not started")
+            msg = "Not started"
+            raise RuntimeError(msg)
 
         result = self.client.get_next()
         assert isinstance(result, a121.Result)
@@ -237,7 +239,8 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
 
     def stop_detector(self) -> Any:
         if not self.started:
-            raise RuntimeError("Already stopped")
+            msg = "Already stopped"
+            raise RuntimeError(msg)
 
         self.client.stop_session()
         self.started = False

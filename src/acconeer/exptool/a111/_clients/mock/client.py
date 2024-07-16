@@ -54,7 +54,8 @@ class MockClient(BaseClient):
         try:
             mock_class = MOCK_CLASS_MAP[config.mode]
         except KeyError as e:
-            raise ClientError("mode not supported") from e
+            msg = "mode not supported"
+            raise ClientError(msg) from e
 
         self._mocker = mock_class(config)
         info = self._mocker.session_info

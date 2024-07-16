@@ -128,7 +128,8 @@ class Processor(ProcessorBase[ProcessorResult]):
             self.time_series_length = self.sweeps_per_frame
         else:
             if sensor_config.sweeps_per_frame > processor_config.time_series_length:
-                raise ValueError("time_series_length must be >= sweeps_per_frame")
+                msg = "time_series_length must be >= sweeps_per_frame"
+                raise ValueError(msg)
 
             self.time_series_length = processor_config.time_series_length
 
@@ -168,7 +169,8 @@ class Processor(ProcessorBase[ProcessorResult]):
         self.cfar_win_length = processor_config.cfar_win
 
         if not processor_config.cfar_sensitivity > 0:
-            raise ValueError("cfar_sensitivity must be > 0")
+            msg = "cfar_sensitivity must be > 0"
+            raise ValueError(msg)
 
         self.cfar_sensitivity = processor_config.cfar_sensitivity
 

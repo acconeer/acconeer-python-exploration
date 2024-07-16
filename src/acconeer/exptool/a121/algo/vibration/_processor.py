@@ -311,7 +311,8 @@ class Processor(ProcessorBase[ProcessorResult]):
                 z_abs * self.psd_to_radians_conversion_factor * self.radians_to_displacement * 2.0
             )
         else:
-            raise RuntimeError("Invalid reported displacement")
+            msg = "Invalid reported displacement"
+            raise RuntimeError(msg)
 
         if not self.has_init:
             self.lp_displacements = displacements

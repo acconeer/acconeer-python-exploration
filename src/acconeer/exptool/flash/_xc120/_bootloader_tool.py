@@ -111,7 +111,8 @@ class BootloaderTool(DeviceFlasherBase):
         if len(found_ports) > 1 and search_port is not None:
             found_ports = [port for port in all_ports if port.device == search_port]
             if len(found_ports) < 1:
-                raise FlashException("Couldn't find a device on the specified port")
+                msg = "Couldn't find a device on the specified port"
+                raise FlashException(msg)
             return found_ports[0].device
         elif len(found_ports) > 0:
             return found_ports[0].device
@@ -153,7 +154,8 @@ class BootloaderTool(DeviceFlasherBase):
                 retries -= 1
 
         if not port_ok:
-            raise FlashException(f"Device port {device_port} cannot be opened")
+            msg = f"Device port {device_port} cannot be opened"
+            raise FlashException(msg)
 
     @staticmethod
     def _is_usb_dfu_device(device_port):
@@ -203,7 +205,8 @@ class BootloaderTool(DeviceFlasherBase):
                 ser.close()
 
             else:
-                raise FlashException("Device not found")
+                msg = "Device not found"
+                raise FlashException(msg)
 
             # Wait for DFU device to appear
             retries = 5
@@ -222,7 +225,8 @@ class BootloaderTool(DeviceFlasherBase):
                 retries -= 1
 
             if not device_found:
-                raise FlashException("DFU device not found")
+                msg = "DFU device not found"
+                raise FlashException(msg)
 
     @staticmethod
     def _try_open_port(serial_port):
@@ -237,7 +241,8 @@ class BootloaderTool(DeviceFlasherBase):
                 retries -= 1
 
         if ser is None:
-            raise FlashException(f"Flash failed, {serial_port} cannot be opened")
+            msg = f"Flash failed, {serial_port} cannot be opened"
+            raise FlashException(msg)
 
         return ser
 
@@ -258,7 +263,8 @@ class BootloaderTool(DeviceFlasherBase):
                 pid=usb_dfu.pid,
             )
         else:
-            raise FlashException("Flash failed, device not found")
+            msg = "Flash failed, device not found"
+            raise FlashException(msg)
 
         with ImageFlasher(serial_dev) as image_flasher:
             image_flasher.set_progress_callback(progress_callback)

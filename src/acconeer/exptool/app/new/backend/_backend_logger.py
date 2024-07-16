@@ -21,7 +21,8 @@ class BackendLogger:
 
     def _log(self, log_level: str, log_string: str) -> None:
         if not BackendLogger._callback:
-            raise BackendLoggerError("BackendLogger not initialized")
+            msg = "BackendLogger not initialized"
+            raise BackendLoggerError(msg)
         BackendLogger._callback(
             LogMessage(module_name=self.name, log_level=log_level, log_string=log_string)
         )

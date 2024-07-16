@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -26,4 +26,5 @@ def h5_file_factory(path_or_file: PathOrH5File, h5_file_mode: str) -> Tuple[h5py
         path = path_or_file
         return h5py.File(path, mode=h5_file_mode), True
     else:
-        raise TypeError(f"`path_or_file` was of unexpected type: {type(path_or_file)}")
+        msg = f"`path_or_file` was of unexpected type: {type(path_or_file)}"
+        raise TypeError(msg)

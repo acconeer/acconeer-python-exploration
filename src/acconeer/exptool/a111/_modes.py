@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import enum
@@ -29,4 +29,5 @@ def get_mode(mode):
         except KeyError:
             pass
 
-    raise ValueError("unknown mode")
+    msg = "unknown mode"
+    raise ValueError(msg)

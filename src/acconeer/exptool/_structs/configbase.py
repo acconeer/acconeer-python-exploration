@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import enum
@@ -63,7 +63,8 @@ class Parameter:
 
         if kwargs:
             a_key = next(iter(kwargs.keys()))
-            raise TypeError("Got unexpected keyword argument ({})".format(a_key))
+            msg = "Got unexpected keyword argument ({})".format(a_key)
+            raise TypeError(msg)
 
         if not self.visible:
             self._pidget_class = None
@@ -133,7 +134,8 @@ class ConstantParameter(Parameter):
         return self.value
 
     def __set__(self, obj, value):
-        raise AttributeError("Unsettable parameter")
+        msg = "Unsettable parameter"
+        raise AttributeError(msg)
 
 
 class ValueParameter(Parameter):
@@ -238,7 +240,8 @@ class EnumParameter(ValueParameter):
             return value
 
         if not isinstance(value, str):
-            raise ValueError("Must be a {} or str (member name)".format(self.enum.__name__))
+            msg = "Must be a {} or str (member name)".format(self.enum.__name__)
+            raise ValueError(msg)
 
         try:
             return self.enum[value.upper()]
@@ -275,7 +278,8 @@ class IntParameter(NumberParameter):
 
         limits = kwargs.get("limits", None)
         if self.valid_values is not None and limits is not None:
-            raise ValueError("valid_values and limits can not both be set on the same parameter")
+            msg = "valid_values and limits can not both be set on the same parameter"
+            raise ValueError(msg)
 
         if self.valid_values is not None:
             kwargs.setdefault("_pidget_class", "IntComboBoxPidget")
@@ -286,24 +290,29 @@ class IntParameter(NumberParameter):
 
     def _sanitize(self, value):
         if isinstance(value, float) and not value.is_integer():
-            raise ValueError("Not an integer")
+            msg = "Not an integer"
+            raise ValueError(msg)
 
         try:
             value = int(value)
         except ValueError:
-            raise ValueError("Not a valid integer")
+            msg = "Not a valid integer"
+            raise ValueError(msg)
 
         if self.limits is not None:
             lower, upper = self.limits
 
             if lower is not None and value < lower:
-                raise ValueError("Given value is too low ({} < {})".format(value, lower))
+                msg = "Given value is too low ({} < {})".format(value, lower)
+                raise ValueError(msg)
             if upper is not None and value > upper:
-                raise ValueError("Given value is too high ({} > {})".format(value, upper))
+                msg = "Given value is too high ({} > {})".format(value, upper)
+                raise ValueError(msg)
 
         if self.valid_values is not None:
             if value not in self.valid_values:
-                raise ValueError("Given value ({}) is not a valid value".format(value))
+                msg = "Given value ({}) is not a valid value".format(value)
+                raise ValueError(msg)
 
         return value
 
@@ -333,7 +342,8 @@ class FloatParameter(NumberParameter):
         try:
             value = float(value)
         except ValueError:
-            raise ValueError("Not a valid number")
+            msg = "Not a valid number"
+            raise ValueError(msg)
 
         value = round(value, self.decimals)
 
@@ -341,9 +351,11 @@ class FloatParameter(NumberParameter):
             lower, upper = self.limits
 
             if lower is not None and value < lower:
-                raise ValueError("Given value is too low ({} < {})".format(value, lower))
+                msg = "Given value is too low ({} < {})".format(value, lower)
+                raise ValueError(msg)
             if upper is not None and value > upper:
-                raise ValueError("Given value is too high ({} > {})".format(value, upper))
+                msg = "Given value is too high ({} > {})".format(value, upper)
+                raise ValueError(msg)
 
         return value
 
@@ -358,16 +370,19 @@ class FloatRangeParameter(FloatParameter):
         try:
             values = list(arg)
         except (ValueError, TypeError):
-            raise ValueError("Not a valid range")
+            msg = "Not a valid range"
+            raise ValueError(msg)
 
         if len(values) != 2:
-            raise ValueError("Given range does not have two values")
+            msg = "Given range does not have two values"
+            raise ValueError(msg)
 
         for i in range(2):
             values[i] = super()._sanitize(values[i])
 
         if values[0] > values[1]:
-            raise ValueError("Invalid range")
+            msg = "Invalid range"
+            raise ValueError(msg)
 
         return np.array(values)
 
@@ -385,7 +400,8 @@ class SensorParameter(ValueParameter):
         elif isinstance(arg, list) and all([isinstance(e, int) for e in arg]):
             arg = copy(arg)
         else:
-            raise ValueError("sensor(s) must be an int or a list of ints")
+            msg = "sensor(s) must be an int or a list of ints"
+            raise ValueError(msg)
 
         return arg
 
@@ -412,7 +428,8 @@ class ClassParameter(Parameter):
         return obj.__dict__[key]
 
     def __set__(self, obj, value):
-        raise AttributeError("Unsettable parameter")
+        msg = "Unsettable parameter"
+        raise AttributeError(msg)
 
     def __delete__(self, obj):
         obj.__dict__.pop(self.instance_attr_key, None)
@@ -440,7 +457,8 @@ def get_virtual_parameter_class(base_class):
 
         def __set__(self, obj, value):
             if self.set_fun is None:
-                raise AttributeError("Unsettable parameter")
+                msg = "Unsettable parameter"
+                raise AttributeError(msg)
 
             self.set_fun(obj, value)
 
@@ -492,7 +510,8 @@ class Config(metaclass=ConfigMeta):
 
         version = d.pop("VERSION", None)
         if version != self.VERSION:
-            raise ValueError("Configuration version mismatch")
+            msg = "Configuration version mismatch"
+            raise ValueError(msg)
 
         params = dict(self._get_keys_and_params())
         for k, v in d.items():

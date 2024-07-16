@@ -1675,7 +1675,8 @@ class GUI(QMainWindow):
         try:
             f = float(val)
             if is_positive and f <= 0:
-                raise ValueError("Not positive")
+                msg = "Not positive"
+                raise ValueError(msg)
             return f
         except Exception:
             return False

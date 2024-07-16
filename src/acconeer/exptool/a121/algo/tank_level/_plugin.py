@@ -223,7 +223,8 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
             )
             self._ref_app_instance.calibrate()
         except Exception as exc:
-            raise HandledException("Failed to calibrate detector") from exc
+            msg = "Failed to calibrate detector"
+            raise HandledException(msg) from exc
         finally:
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
 

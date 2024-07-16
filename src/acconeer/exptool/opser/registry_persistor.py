@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -36,7 +36,8 @@ class RegistryPersistor(core.Persistor):
         try:
             return cls._REGISTRY[__persistor.__name__].PRIORITY + 1
         except KeyError:
-            raise RuntimeError(f"Persistor {__persistor} is not in the registry")
+            msg = f"Persistor {__persistor} is not in the registry"
+            raise RuntimeError(msg)
 
     @classmethod
     def _get_applicable_persistors(cls, __type: type) -> t.List[t.Type[core.Persistor]]:
@@ -59,7 +60,8 @@ class RegistryPersistor(core.Persistor):
         persistor_classes = self._get_applicable_persistors(self.type_tree.data)
 
         if not persistor_classes:
-            raise core.SaveError(f"No applicable persistors for instance {instance!r:.100}")
+            msg = f"No applicable persistors for instance {instance!r:.100}"
+            raise core.SaveError(msg)
 
         errors = []
         for persistor_class in persistor_classes:
@@ -71,8 +73,9 @@ class RegistryPersistor(core.Persistor):
             else:
                 return
 
+        msg = f"Could not save instance of type '{type(instance)}' (with expected type {self.type_tree.data}) using any of the persistors {persistor_classes}."
         raise core.SaveErrorGroup(
-            f"Could not save instance of type '{type(instance)}' (with expected type {self.type_tree.data}) using any of the persistors {persistor_classes}.",
+            msg,
             errors,
         )
 
@@ -80,9 +83,8 @@ class RegistryPersistor(core.Persistor):
         persistor_classes = self._get_applicable_persistors(self.type_tree.data)
 
         if not persistor_classes:
-            raise core.LoadError(
-                f"No applicable persistors for expected type {self.type_tree.data}"
-            )
+            msg = f"No applicable persistors for expected type {self.type_tree.data}"
+            raise core.LoadError(msg)
 
         errors = []
         for persistor_class in persistor_classes:
@@ -94,7 +96,8 @@ class RegistryPersistor(core.Persistor):
             else:
                 return res
 
+        msg = f"Could not load an instance of type {self.type_tree.data} with any of the persistors {persistor_classes}."
         raise core.LoadErrorGroup(
-            f"Could not load an instance of type {self.type_tree.data} with any of the persistors {persistor_classes}.",
+            msg,
             errors,
         )

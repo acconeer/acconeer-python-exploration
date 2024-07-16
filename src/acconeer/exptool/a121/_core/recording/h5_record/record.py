@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -150,7 +150,8 @@ class H5SessionRecord(SessionRecord):
     def _get_calibrations_group(self) -> h5py.Group:
         if "calibrations" in self._group.keys():
             return self._group["calibrations"]
-        raise H5RecordException("No calibration in h5 file")
+        msg = "No calibration in h5 file"
+        raise H5RecordException(msg)
 
     def _iterate_calibrations(self) -> Iterator[Tuple[int, h5py.Group]]:
         """Iterates over "Calibration" items in this record.

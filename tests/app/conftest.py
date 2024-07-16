@@ -131,16 +131,17 @@ def assert_messages() -> t.Callable[..., None]:
                 )
 
             if time() - start_time > timeout:
-                raise TimeoutError(f"Did not find the message within time {timeout}s")
+                msg = f"Did not find the message within time {timeout}s"
+                raise TimeoutError(msg)
 
             if received_message in not_received:
                 if received_message == Tasks.FAILED_CLOSED_TASK:
                     assert isinstance(received_message, ClosedTask)
-                    raise AssertionError(
-                        f"Found failed task\n{received_message.traceback_format_exc}"
-                    )
+                    msg = f"Found failed task\n{received_message.traceback_format_exc}"
+                    raise AssertionError(msg)
                 else:
-                    raise AssertionError(f"Found message {received_message}")
+                    msg = f"Found message {received_message}"
+                    raise AssertionError(msg)
 
             if received_message in not_yet_seen_messages:
                 not_yet_seen_messages.remove(received_message)

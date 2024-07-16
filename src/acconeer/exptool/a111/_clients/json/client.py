@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import enum
@@ -57,7 +57,8 @@ class JsonProtocolBase:
         try:
             header, _ = self._recv_frame()
         except links.LinkError as e:
-            raise ClientError("no response from server") from e
+            msg = "no response from server"
+            raise ClientError(msg) from e
 
         log.debug("connected and got a response")
 
@@ -98,9 +99,11 @@ class JsonProtocolBase:
 
         status = header["status"]
         if status == "end":
-            raise ClientError("session ended")
+            msg = "session ended"
+            raise ClientError(msg)
         elif status != "ok":
-            raise ClientError("server error")
+            msg = "server error"
+            raise ClientError(msg)
 
         info = self.decode_stream_header(header)
         data = self.decode_stream_payload(payload)
@@ -161,7 +164,8 @@ class JsonProtocolStreamingServer(JsonProtocolBase):
             else:
                 raise SessionSetupError
         elif header["status"] != "ok":
-            raise ClientError("got unexpected header")
+            msg = "got unexpected header"
+            raise ClientError(msg)
 
         log.debug("session initialized")
 
@@ -299,10 +303,12 @@ class JsonProtocolExplorationServer(JsonProtocolBase):
         try:
             header, _ = self._recv_frame()
         except links.LinkError as e:
-            raise ClientError("no response from server") from e
+            msg = "no response from server"
+            raise ClientError(msg) from e
 
         if header["status"] != "ok":
-            raise ClientError(f"system_info error {header}")
+            msg = f"system_info error {header}"
+            raise ClientError(msg)
 
         system_info = header["system_info"]
         return system_info
@@ -313,7 +319,8 @@ class JsonProtocolExplorationServer(JsonProtocolBase):
         try:
             header, _ = self._recv_frame()
         except links.LinkError as e:
-            raise ClientError("no response from server") from e
+            msg = "no response from server"
+            raise ClientError(msg) from e
 
         if header["status"] == "ok":
             self._link.baudrate = baudrate
@@ -394,7 +401,8 @@ class JsonProtocolExplorationServer(JsonProtocolBase):
             else:
                 raise SessionSetupError
         elif header["status"] != "ok":
-            raise ClientError("got unexpected header")
+            msg = "got unexpected header"
+            raise ClientError(msg)
 
         log.debug("session initialized")
 

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -85,7 +85,8 @@ def autodetermine_client_info(client_info: ClientInfo) -> ClientInfo:
     except CommDeviceError as exc:
         error_message += f"\nSerial: {str(exc)}"
 
-    raise LinkError(f"Cannot auto detect:{error_message}")
+    msg = f"Cannot auto detect:{error_message}"
+    raise LinkError(msg)
 
 
 def ensure_connected_link(client_info: ClientInfo) -> tuple[BufferedLink, ClientInfo]:

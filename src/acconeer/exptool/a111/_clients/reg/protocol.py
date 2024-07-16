@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from collections import namedtuple
@@ -46,7 +46,8 @@ MAIN_BUFFER_ADDR = 0xE8
 
 def unpack_packet(packet):
     if len(packet) < 1:
-        raise ProtocolError("package is too short")
+        msg = "package is too short"
+        raise ProtocolError(msg)
 
     packet_type = packet[0]
     segment = packet[1:]
@@ -60,12 +61,14 @@ def unpack_packet(packet):
     elif packet_type == STREAM_PACKET:
         return unpack_stream_data_segment(segment)
     else:
-        raise ProtocolError("unknown packet type")
+        msg = "unknown packet type"
+        raise ProtocolError(msg)
 
 
 def unpack_reg_val(packed):
     if len(packed) != ADDR_SIZE + REG_SIZE:
-        raise ProtocolError("unexpected package length")
+        msg = "unexpected package length"
+        raise ProtocolError(msg)
 
     reg_addr = packed[0]
     enc_val = packed[1:]
@@ -95,7 +98,8 @@ def unpack_stream_data_segment(segment):
     rest = segment
     while len(rest) > 0:
         if len(rest) < 1 + LEN_FIELD_SIZE:
-            raise ProtocolError("invalid package length")
+            msg = "invalid package length"
+            raise ProtocolError(msg)
 
         part_type = rest[0]
         data_start_index = 1 + LEN_FIELD_SIZE
@@ -107,7 +111,8 @@ def unpack_stream_data_segment(segment):
         if part_type == STREAM_RESULT_INFO:
             s = ADDR_SIZE + REG_SIZE
             if part_len % s != 0:
-                raise ProtocolError("invalid package length")
+                msg = "invalid package length"
+                raise ProtocolError(msg)
 
             result_info = []
             num_regs = part_len // s
@@ -119,14 +124,16 @@ def unpack_stream_data_segment(segment):
         elif part_type == STREAM_BUFFER:
             buffer = part_data
         else:
-            raise ProtocolError("unknown stream part type")
+            msg = "unknown stream part type"
+            raise ProtocolError(msg)
 
     return StreamData(result_info, buffer)
 
 
 def pack_reg_val(reg_val):
     if len(reg_val.val) != REG_SIZE:
-        raise ProtocolError("register value must be {} bytes".format(REG_SIZE))
+        msg = "register value must be {} bytes".format(REG_SIZE)
+        raise ProtocolError(msg)
     packed = bytearray()
     packed.extend(reg_val.addr.to_bytes(ADDR_SIZE, BO))
     packed.extend(reg_val.val)
@@ -153,7 +160,8 @@ def pack_packet(packet):
         packet_data.extend(packet.addr.to_bytes(ADDR_SIZE, BO))
         packet_data.extend([0, 0])
     else:
-        raise TypeError("unknown type of packet")
+        msg = "unknown type of packet"
+        raise TypeError(msg)
 
     packet_bytes = bytearray()
     packet_bytes.append(packet_type)
@@ -163,17 +171,21 @@ def pack_packet(packet):
 
 def extract_packet_from_frame(frame):
     if len(frame) < MIN_FRAME_SIZE:
-        raise ProtocolError("invalid frame (frame too short)")
+        msg = "invalid frame (frame too short)"
+        raise ProtocolError(msg)
     if frame[0] != START_MARKER:
-        raise ProtocolError("invalid frame (incorrect start marker)")
+        msg = "invalid frame (incorrect start marker)"
+        raise ProtocolError(msg)
     if frame[-1] != END_MARKER:
-        raise ProtocolError("invalid frame (incorrect start marker)")
+        msg = "invalid frame (incorrect start marker)"
+        raise ProtocolError(msg)
 
     packet_len = int.from_bytes(frame[1 : 1 + LEN_FIELD_SIZE], BO)
     packet = frame[1 + LEN_FIELD_SIZE : -1]
 
     if len(packet) - 1 != packet_len:
-        raise ProtocolError("invalid frame (packet length mismatch)")
+        msg = "invalid frame (packet length mismatch)"
+        raise ProtocolError(msg)
 
     return packet
 

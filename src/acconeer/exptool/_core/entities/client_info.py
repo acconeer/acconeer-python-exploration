@@ -24,7 +24,8 @@ class ConnectionTypeBase(abc.ABC):
     def _register(cls, subclass: Type[ConnectionTypeBase]) -> Type[ConnectionTypeBase]:
         """Registers a subclass"""
         if not issubclass(subclass, cls):
-            raise TypeError(f"{subclass.__name__!r} needs to be a subclass of {cls.__name__}.")
+            msg = f"{subclass.__name__!r} needs to be a subclass of {cls.__name__}."
+            raise TypeError(msg)
         cls.__registry.append(subclass)
         return subclass
 
@@ -114,7 +115,8 @@ class USBInfo(ConnectionTypeBase):
             if isinstance(usb_device, bool):
                 if usb_device:
                     return ClientInfo(usb=USBInfo())
-                raise ValueError("usb_device=False is not valid")
+                msg = "usb_device=False is not valid"
+                raise ValueError(msg)
 
             if isinstance(usb_device, str):
                 return ClientInfo(usb=USBInfo(serial_number=usb_device))
@@ -169,7 +171,8 @@ class MockInfo(ConnectionTypeBase):
             if mock:
                 return ClientInfo(mock=MockInfo())
 
-            raise ValueError("mock=False is not valid")
+            msg = "mock=False is not valid"
+            raise ValueError(msg)
 
         raise ClientInfoCreationError()
 
@@ -272,7 +275,8 @@ class ClientInfo:
                 d_only_v5_keys = {k: d.get(k) for k in v5_keys}
                 d = cls._migrate_pre_v6_dict(d_only_v5_keys)
             else:
-                raise TypeError(f"Cannot load the dict {d} into a ClientInfo.")
+                msg = f"Cannot load the dict {d} into a ClientInfo."
+                raise TypeError(msg)
 
         serial = SerialInfo(**d["serial"]) if d.get("serial") is not None else None
         usb = USBInfo(**d["usb"]) if d.get("usb") is not None else None

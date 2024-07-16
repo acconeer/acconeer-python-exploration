@@ -268,7 +268,8 @@ class SubsweepConfig:
         if not (
             is_divisor_of(SPARSE_IQ_PPC, step_length) or is_multiple_of(SPARSE_IQ_PPC, step_length)
         ):
-            raise ValueError(f"Step length must be a divisor or multiple of {SPARSE_IQ_PPC}")
+            msg = f"Step length must be a divisor or multiple of {SPARSE_IQ_PPC}"
+            raise ValueError(msg)
 
     def to_dict(self) -> dict[str, t.Any]:
         return {k.strip("_"): v for k, v in attrs.asdict(self).items()}

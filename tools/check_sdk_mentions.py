@@ -26,7 +26,8 @@ def get_single_match_in_file(pattern: str, file: Path) -> str:
     matches = re.findall(pattern=pattern, string=file.read_text())
 
     if len(matches) != 1:
-        raise Exception(f"Multiple versions or no version was found in {file}")
+        msg = f"Multiple versions or no version was found in {file}"
+        raise Exception(msg)
 
     return matches[0]
 

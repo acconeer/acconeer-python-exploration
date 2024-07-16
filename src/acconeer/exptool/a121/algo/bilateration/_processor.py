@@ -100,7 +100,8 @@ class Processor:
         sensor_ids: t.List[int],
     ):
         if len(sensor_ids) != 2:
-            raise ValueError("Number of sensor ids must equal two.")
+            msg = "Number of sensor ids must equal two."
+            raise ValueError(msg)
         processor_config.validate(session_config)
         assert session_config.update_rate is not None  # Should never happen, checked in validate
         self.update_rate = session_config.update_rate

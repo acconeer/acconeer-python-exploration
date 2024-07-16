@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import numpy as np
@@ -25,7 +25,8 @@ class MultiClientWrapper(BaseClient):
         expected_sensors = [i + 1 for i in range(len(self.clients))]
 
         if config.sensor != expected_sensors:
-            raise ClientError("Invalid sensor selection for multi client wrapper")
+            msg = "Invalid sensor selection for multi client wrapper"
+            raise ClientError(msg)
 
         config.sensor = 1
 

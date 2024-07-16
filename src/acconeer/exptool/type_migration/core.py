@@ -104,7 +104,8 @@ def _add_ignored_completer(f: t.Callable[[_T], _R]) -> _Transform[_T, te.Never, 
     Used in the non-contextual 'load' and 'epoch'
     """
     if not callable(f):
-        raise TypeError("f must be a callable")
+        msg = "f must be a callable"
+        raise TypeError(msg)
 
     def wrapper(__x: _T, _: Completer[t.Any]) -> _R:
         return f(__x)
@@ -141,7 +142,8 @@ def _as_result(
 
 
 def _null_completer(typ: type) -> t.Any:
-    raise RuntimeError(f"No completion for {typ}")
+    msg = f"No completion for {typ}"
+    raise RuntimeError(msg)
 
 
 class MigrationError(Exception):
@@ -152,10 +154,12 @@ def _inbounds_validator(_ignored1: t.Any, _ignored2: t.Any, value: t.Any) -> Non
     (transform, ancestor) = value
 
     if not callable(transform):
-        raise TypeError("The first element of the tuple needs to be a callable")
+        msg = "The first element of the tuple needs to be a callable"
+        raise TypeError(msg)
 
     if not isinstance(ancestor, Epoch):
-        raise TypeError("The second element of the tuple needs to be an Epoch")
+        msg = "The second element of the tuple needs to be an Epoch"
+        raise TypeError(msg)
 
 
 @attrs.frozen
@@ -257,13 +261,15 @@ class Epoch(t.Generic[_HeadT, _ReqCtxT, _MigT]):
         raises `MigrationError` if migration was not possible
         """
         if not self._is_supported(type(obj)):
-            raise TypeError(f"Cannot migrate objects of type {type(obj)}")
+            msg = f"Cannot migrate objects of type {type(obj)}"
+            raise TypeError(msg)
 
         for res in self._migrate_results(obj, completer):
             if isinstance(res, r.Ok):
                 return res.ok_value
 
-        raise MigrationError(f"Failed during migration of object {obj!r}")
+        msg = f"Failed during migration of object {obj!r}"
+        raise MigrationError(msg)
 
     def nop(self) -> te.Self:
         """Does nothing."""

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import multiprocessing as mp
@@ -79,7 +79,8 @@ def pg_process_program(q, exit_event, updater, max_freq, setup_style, allow_subs
     elif setup_style == "widget":
         updater.setup(win)
     else:
-        raise ValueError(f"setup_style ({setup_style!r}) needs to be 'layout' or 'widget'.")
+        msg = f"setup_style ({setup_style!r}) needs to be 'layout' or 'widget'."
+        raise ValueError(msg)
 
     win.show()
     app.processEvents()

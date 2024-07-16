@@ -6,4 +6,5 @@ if os.name == "nt":
     from .winusb import *
     from .winusbpy import *
 else:
-    raise ImportError("WinUsbPy only works on Windows platform")
+    msg = "WinUsbPy only works on Windows platform"
+    raise ImportError(msg)

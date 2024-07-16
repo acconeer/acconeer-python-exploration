@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -19,7 +19,8 @@ log = logging.getLogger(__name__)
 def list_flattener(list_or_num: Union[list, float]):
     if isinstance(list_or_num, list):
         if len(list_or_num) != 1:
-            raise ValueError(f"argument {list_or_num} needs to be a length 1 list or a number.")
+            msg = f"argument {list_or_num} needs to be a length 1 list or a number."
+            raise ValueError(msg)
         return list_or_num[0]
     return list_or_num
 
@@ -52,13 +53,15 @@ class ObstacleDetectionCalibration(algo.Calibration):
     @static_pwl_amp.validator
     def check_static_list(self, attribute, list_o_floats):
         if len(list_o_floats) != 5:
-            raise ValueError(f"{attribute.name} is supposed have length = 5 ")
+            msg = f"{attribute.name} is supposed have length = 5 "
+            raise ValueError(msg)
 
     @moving_pwl_dist.validator
     @moving_pwl_amp.validator
     def check_moving_list(self, attribute, list_o_floats):
         if attribute.name.startswith("moving") and len(list_o_floats) != 2:
-            raise ValueError(f"{attribute.name} is supposed have length = 2 ")
+            msg = f"{attribute.name} is supposed have length = 2 "
+            raise ValueError(msg)
 
     def save(self, path: algo._Path):
         self.validate_path(path)

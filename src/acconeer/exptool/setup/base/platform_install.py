@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -42,6 +42,7 @@ class PlatformInstall(SetupGroup):
     def register(cls, subclass: Type[PlatformInstall]) -> Type[PlatformInstall]:
         """Registers a subclass"""
         if not issubclass(subclass, cls):
-            raise TypeError(f"{subclass.__name__!r} needs to be a subclass of {cls.__name__}.")
+            msg = f"{subclass.__name__!r} needs to be a subclass of {cls.__name__}."
+            raise TypeError(msg)
         cls.__registry[subclass.get_key()] = subclass
         return subclass

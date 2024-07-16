@@ -24,7 +24,8 @@ def worker_tcp_port(worker_id: str) -> int:
         offset = int(worker_id[2:])
         return 6111 + offset
     else:
-        raise ValueError(f"Unexpected {worker_id=}")
+        msg = f"Unexpected {worker_id=}"
+        raise ValueError(msg)
 
 
 @pytest.fixture(scope="function")

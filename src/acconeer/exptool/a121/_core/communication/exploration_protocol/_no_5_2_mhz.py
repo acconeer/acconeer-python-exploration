@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -21,8 +21,7 @@ class ExplorationProtocol_No_5_2MHz_PRF(ExplorationProtocol_No_15_6MHz_PRF):
     ) -> bytes:
         for sensor_config in iterate_extended_structure_values(session_config.groups):
             if any(ssc.prf == PRF.PRF_5_2_MHz for ssc in sensor_config.subsweeps):
-                raise ExplorationProtocolError(
-                    "Connected Exploration server does not support 5.2MHz PRF."
-                )
+                msg = "Connected Exploration server does not support 5.2MHz PRF."
+                raise ExplorationProtocolError(msg)
 
         return super().setup_command(session_config, calibrations)

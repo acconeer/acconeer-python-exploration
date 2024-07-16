@@ -73,7 +73,8 @@ def flash_image(image_path, flash_device, device_name=None, progress_callback=No
     if flash_device:
         serial_device_name = device_name or flash_device.name
         if serial_device_name is None:
-            raise FlashException("Unknown device type")
+            msg = "Unknown device type"
+            raise FlashException(msg)
         serial_device_name = serial_device_name.upper()
         if (
             isinstance(flash_device, comm_devices.USBDevice)
@@ -90,9 +91,11 @@ def flash_image(image_path, flash_device, device_name=None, progress_callback=No
                 flash_device, serial_device_name, image_path, progress_callback
             )
         else:
-            raise FlashException(f"No flash support device {str(flash_device)}")
+            msg = f"No flash support device {str(flash_device)}"
+            raise FlashException(msg)
     else:
-        raise FlashException("No devices found, try connecting a device before flashing.")
+        msg = "No devices found, try connecting a device before flashing."
+        raise FlashException(msg)
 
 
 def _find_flash_device(
@@ -139,11 +142,12 @@ def _find_flash_device(
         print(f"Flashing {flash_device}")
 
     if flash_device is None:
-        raise FlashException(
+        msg = (
             "Device couldn't be autodetected\n"
             "Specify the device by using the"
             " --port, --device, --interface or --serial-number flags."
         )
+        raise FlashException(msg)
 
     return flash_device
 
@@ -173,7 +177,8 @@ def get_flash_download_name(device, device_name):
     name = device_name or device.name
     if name in EVK_TO_PRODUCT_MAP.keys():
         return EVK_TO_PRODUCT_MAP[name]
-    raise FlashException(f"Unknown device {name}")
+    msg = f"Unknown device {name}"
+    raise FlashException(msg)
 
 
 def get_boot_description(flash_device, device_name):

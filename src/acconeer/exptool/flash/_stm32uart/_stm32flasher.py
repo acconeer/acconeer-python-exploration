@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -44,7 +44,8 @@ class Stm32UartFlasher(DeviceFlasherBase):
     @staticmethod
     def flash(serial_device, device_name, image_path, progress_callback=None):
         if device_name not in DEVICE_NAME_TO_ID:
-            raise Stm32DeviceException(f"Unknown device '{device_name}'")
+            msg = f"Unknown device '{device_name}'"
+            raise Stm32DeviceException(msg)
 
         device_chip_id = DEVICE_NAME_TO_ID[device_name]
 
@@ -52,7 +53,8 @@ class Stm32UartFlasher(DeviceFlasherBase):
         flasher.sync()
         chip_id = flasher.get_id()
         if chip_id != device_chip_id:
-            raise Stm32DeviceException(f"Incorrect STM32 chip_id 0x{chip_id:x}")
+            msg = f"Incorrect STM32 chip_id 0x{chip_id:x}"
+            raise Stm32DeviceException(msg)
 
         with open(image_path, "rb") as image_file:
             image_data = image_file.read()
@@ -98,13 +100,16 @@ class Stm32FlashProtocol:
             if reply in [self.ACK, self.NACK]:
                 return reply
             else:
-                raise Stm32FlashException(f"Unknown reply from STM32 bootloader [0x{reply:x}]")
-        raise Stm32FlashException("Device did not reply any data")
+                msg = f"Unknown reply from STM32 bootloader [0x{reply:x}]"
+                raise Stm32FlashException(msg)
+        msg = "Device did not reply any data"
+        raise Stm32FlashException(msg)
 
     def _wait_for_ack(self):
         reply = self._wait_for_ack_or_nack()
         if reply == self.NACK:
-            raise Stm32FlashException("Device replied NACK to command")
+            msg = "Device replied NACK to command"
+            raise Stm32FlashException(msg)
 
     def _command(self, cmd_byte):
         cmd_xor_byte = cmd_byte ^ 0xFF
@@ -159,9 +164,8 @@ class Stm32FlashProtocol:
                 return
             except Stm32FlashException:
                 pass
-        raise Stm32FlashException(
-            f"DFU synchronization failed for '{self._port}', make sure device is in DFU mode"
-        )
+        msg = f"DFU synchronization failed for '{self._port}', make sure device is in DFU mode"
+        raise Stm32FlashException(msg)
 
     def get_id(self):
         GET_ID = 0x02

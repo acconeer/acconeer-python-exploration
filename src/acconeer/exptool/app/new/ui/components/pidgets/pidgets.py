@@ -61,12 +61,14 @@ class PidgetFactory(abc.ABC):
     @name_label_text.validator
     def check_for_whitespaces(self, attribute: Any, value: str) -> None:
         if value != value.strip():
-            raise ValueError("Labels cannot start or end with a whitespace")
+            msg = "Labels cannot start or end with a whitespace"
+            raise ValueError(msg)
 
     @name_label_text.validator
     def check_label_text_format(self, attribute: Any, value: str) -> None:
         if len(value) > 0 and value[-1] != ":":
-            raise ValueError("Labels have to end with ':'")
+            msg = "Labels have to end with ':'"
+            raise ValueError(msg)
 
 
 class Pidget(DataEditor[Any]):
@@ -248,7 +250,8 @@ class FloatSliderPidgetFactory(FloatPidgetFactory):
     def __attrs_post_init__(self) -> None:
         if self.log_scale:
             if self.limits[0] <= 0:
-                raise ValueError("Lower limit must be > 0 when using log scale")
+                msg = "Lower limit must be > 0 when using log scale"
+                raise ValueError(msg)
 
     def create(self, parent: QWidget) -> FloatSliderPidget:  # type: ignore[override]
         return FloatSliderPidget(self, parent)
@@ -519,7 +522,8 @@ class CheckboxPidgetFactory(PidgetFactory):
     @name_label_text.validator
     def check_for_whitespaces(self, attribute: Any, value: str) -> None:
         if value != value.strip():
-            raise ValueError("Labels cannot start or end with a whitespace")
+            msg = "Labels cannot start or end with a whitespace"
+            raise ValueError(msg)
 
 
 class CheckboxPidget(Pidget):
@@ -582,7 +586,8 @@ class ComboboxPidget(Pidget, Generic[T]):
         with QtCore.QSignalBlocker(self):
             index = self._combobox.findData(param)
             if index == -1:
-                raise ValueError(f"Data item {param} could not be found in {self}.")
+                msg = f"Data item {param} could not be found in {self}."
+                raise ValueError(msg)
             self._combobox.setCurrentIndex(index)
 
     def get_data(self) -> T:
@@ -646,7 +651,8 @@ class EnumPidgetFactory(ComboboxPidgetFactory[EnumT]):
 
     def __attrs_post_init__(self) -> None:
         if self.label_mapping.keys() != set(self.enum_type):
-            raise ValueError("label_mapping does not match enum_type")
+            msg = "label_mapping does not match enum_type"
+            raise ValueError(msg)
 
         items = [(v, k) for k, v in self.label_mapping.items()]
 
@@ -714,7 +720,8 @@ class OptionalEnumPidget(OptionalPidget):
         with QtCore.QSignalBlocker(self):
             index = self._combobox.findData(param)
             if index == -1:
-                raise ValueError(f"Data item {param} could not be found in {self}.")
+                msg = f"Data item {param} could not be found in {self}."
+                raise ValueError(msg)
             self._combobox.setCurrentIndex(index)
 
 

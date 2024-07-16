@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -48,7 +48,8 @@ class EnvelopeCalibrationMapper(CalibrationMapper):
         calibration: Optional[EnvelopeCalibration],
     ) -> EnvelopeCalibration:
         if calibration is None:
-            raise ValueError("Calibration cannot be None in this context.")
+            msg = "Calibration cannot be None in this context."
+            raise ValueError(msg)
 
         return calibration
 

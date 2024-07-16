@@ -230,10 +230,12 @@ class Processor(ProcessorBase[ProcessorResult]):
             n = a.shape[axis]
 
         if ddof < 0:
-            raise ValueError("ddof must be greater than or equal to 0")
+            msg = "ddof must be greater than or equal to 0"
+            raise ValueError(msg)
 
         if n <= ddof:
-            raise ValueError("n must be greater than ddof")
+            msg = "n must be greater than ddof"
+            raise ValueError(msg)
 
         return np.mean(np.abs(a), axis=axis) * sqrt(n / (n - ddof))  # type: ignore[no-any-return]
 
@@ -289,7 +291,8 @@ class Processor(ProcessorBase[ProcessorResult]):
         """
 
         if self.inter_frame_presence_timeout is None:
-            raise ValueError("inter_frame_presence_timeout must be set")
+            msg = "inter_frame_presence_timeout must be set"
+            raise ValueError(msg)
 
         scaling_factor = np.exp(
             np.maximum(self.negative_count - self.inter_frame_presence_timeout * self.f, 0)
@@ -305,7 +308,8 @@ class Processor(ProcessorBase[ProcessorResult]):
         """
 
         if self.inter_frame_presence_timeout is None:
-            raise ValueError("inter_frame_presence_timeout must be set")
+            msg = "inter_frame_presence_timeout must be set"
+            raise ValueError(msg)
 
         scaling_factor = np.exp(
             np.maximum(self.negative_count - self.inter_frame_presence_timeout * self.f, 0)

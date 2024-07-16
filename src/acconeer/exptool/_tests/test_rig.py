@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import tempfile
@@ -52,9 +52,8 @@ class ProcessingTestModule:
                 try:
                     f.create_dataset(name=k, data=output[k], track_times=False, compression="gzip")
                 except TypeError as te:
-                    raise TypeError(
-                        f"Could not create dataset with name: {k}, data={output[k]}"
-                    ) from te
+                    msg = f"Could not create dataset with name: {k}, data={output[k]}"
+                    raise TypeError(msg) from te
 
     def load_output(self, file):
         output = {}

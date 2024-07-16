@@ -147,7 +147,8 @@ class TableConverter:
         elif isinstance(record, a121.Record):
             return A121RecordTableConverter(record)
         else:
-            raise ValueError(f"Passed record ({record}) was of unexpected type.")
+            msg = f"Passed record ({record}) was of unexpected type."
+            raise ValueError(msg)
 
 
 class A111RecordTableConverter(TableConverter):
@@ -178,10 +179,11 @@ class A111RecordTableConverter(TableConverter):
 
         num_sensors = record.data.shape[1]
         if sensor_index >= num_sensors:
-            raise ValueError(
+            msg = (
                 f"Invalid sensor index specified (index={sensor_index}). "
                 f"Valid indices for this input file is one of {list(range(num_sensors))}"
             )
+            raise ValueError(msg)
 
         data = record.data[:, sensor_index, :]
         dest_rows = []
@@ -511,7 +513,8 @@ def load_file(input_file: str) -> tuple[Union[et.a111.recording.Record, a121.Rec
     except Exception:
         pass
 
-    raise Exception("The specified file was neither A111 or A121. Cannot load.")
+    msg = "The specified file was neither A111 or A121. Cannot load."
+    raise Exception(msg)
 
 
 def get_default_sensor_id_or_index(namespace: argparse.Namespace, generation: str) -> int:

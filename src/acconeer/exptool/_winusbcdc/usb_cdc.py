@@ -70,7 +70,8 @@ class ComPort:
         self.pid = pid
 
         if not (vid and pid):
-            raise AttributeError("Must provide vid & pid of device to connect to")
+            msg = "Must provide vid & pid of device to connect to"
+            raise AttributeError(msg)
 
         self.winusbpy = WinUsbPy()
         self._rxremaining = b""

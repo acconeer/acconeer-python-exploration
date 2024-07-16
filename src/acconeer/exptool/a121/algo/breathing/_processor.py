@@ -506,7 +506,8 @@ class Processor(ProcessorBase[ProcessorResult]):
             processor_result.breathing_result = self.breathing_processor.process(result)
 
         else:
-            raise NotImplementedError("Invalid app state")
+            msg = "Invalid app state"
+            raise NotImplementedError(msg)
 
     def _base_presence_distance_to_point(self) -> int:
         """Calculates the closest point of a distance in meters"""

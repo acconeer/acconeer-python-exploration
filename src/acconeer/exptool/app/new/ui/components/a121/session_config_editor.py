@@ -392,9 +392,8 @@ class SessionConfigEditor(DataEditor[Optional[a121.SessionConfig]]):
 
     def _handle_validation_result(self, result: a121.ValidationResult) -> bool:
         if self._session_config is None:
-            raise RuntimeError(
-                "SessionConfigEditor's config is None while ValidationResults are being handled."
-            )
+            msg = "SessionConfigEditor's config is None while ValidationResults are being handled."
+            raise RuntimeError(msg)
 
         result_handled = False
 
@@ -409,7 +408,8 @@ class SessionConfigEditor(DataEditor[Optional[a121.SessionConfig]]):
 
     def _update_update_rate(self, value: Any) -> None:
         if self._session_config is None:
-            raise TypeError("SessionConfig is None")
+            msg = "SessionConfig is None"
+            raise TypeError(msg)
 
         config = copy.deepcopy(self._session_config)
 
@@ -429,7 +429,8 @@ class SessionConfigEditor(DataEditor[Optional[a121.SessionConfig]]):
 
     def _update_sensor_ids(self, sensor_ids: list[int]) -> None:
         if self._session_config is None:
-            raise TypeError("SessionConfig is None")
+            msg = "SessionConfig is None"
+            raise TypeError(msg)
 
         config = copy.deepcopy(self._session_config)
 
@@ -448,7 +449,8 @@ class SessionConfigEditor(DataEditor[Optional[a121.SessionConfig]]):
         (first_config, *other_configs) = utils.iterate_extended_structure_values(config.groups)
 
         if any(sc != first_config for sc in other_configs):
-            raise ValueError("SessionConfig contains more than 1 unique SensorConfig")
+            msg = "SessionConfig contains more than 1 unique SensorConfig"
+            raise ValueError(msg)
 
         return first_config
 

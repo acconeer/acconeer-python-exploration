@@ -51,7 +51,8 @@ class _TaskDescriptor(t.Generic[_P, _R]):
             raise RuntimeError
 
         if args != ():
-            raise ValueError("An RPC must be called with kwargs only.")
+            msg = "An RPC must be called with kwargs only."
+            raise ValueError(msg)
 
         task_sender((self._task_name, kwargs))
 

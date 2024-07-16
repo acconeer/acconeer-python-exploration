@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -17,7 +17,8 @@ def _processor_getter(
     metadata: t.Union[a121.Metadata, t.List[t.Dict[int, a121.Metadata]]],
 ) -> Processor:
     if isinstance(metadata, list):
-        raise RuntimeError("Metadata is unexpectedly extended")
+        msg = "Metadata is unexpectedly extended"
+        raise RuntimeError(msg)
 
     return Processor(
         sensor_config=session_config.sensor_config,

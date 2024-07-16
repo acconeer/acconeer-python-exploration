@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -143,7 +143,8 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         self, recorder: Optional[a121.Recorder] = None, algo_group: Optional[h5py.Group] = None
     ) -> None:
         if self.started:
-            raise RuntimeError("Already started")
+            msg = "Already started"
+            raise RuntimeError(msg)
 
         self.metadata = self.client.setup_session(
             a121.SessionConfig({self.sensor_id: self.sensor_config})
@@ -177,7 +178,8 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
 
     def get_next(self) -> RefAppResult:
         if not self.started:
-            raise RuntimeError("Not started")
+            msg = "Not started"
+            raise RuntimeError(msg)
 
         result = self.client.get_next()
         assert not isinstance(result, list)
@@ -195,7 +197,8 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
 
     def stop(self) -> Any:
         if not self.started:
-            raise RuntimeError("Already stopped")
+            msg = "Already stopped"
+            raise RuntimeError(msg)
 
         self.client.stop_session()
         recorder = self.client.detach_recorder()

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import ctypes
@@ -201,7 +201,8 @@ def _load_dll():
             lib_path = glob(os.path.join(bin_dir, sub_dir, "libft4222.so*"))[0]
             dll = ctypes.CDLL(lib_path)
         except (IndexError, OSError):
-            raise OSError(f"Unsupported machine type: '{machine_type}'") from None
+            msg = f"Unsupported machine type: '{machine_type}'"
+            raise OSError(msg) from None
 
         funs = {name: getattr(dll, name) for name in FUN_ARGTYPES.keys()}
     elif system == "windows":
@@ -217,7 +218,8 @@ def _load_dll():
             dll = ft4222_dll if prefix == "ft4222" else ft_dll
             funs[name] = getattr(dll, name)
     else:
-        raise RuntimeError("OS not supported")
+        msg = "OS not supported"
+        raise RuntimeError(msg)
 
     for name, argtypes in FUN_ARGTYPES.items():
         fun = funs[name]
@@ -236,7 +238,8 @@ def check_status(status):
             msg = status.name
             err = status.value
 
-        raise LibFT4222Error("Error {}: {}".format(err, msg))
+        msg = "Error {}: {}".format(err, msg)
+        raise LibFT4222Error(msg)
 
 
 def get_enum_val(x):

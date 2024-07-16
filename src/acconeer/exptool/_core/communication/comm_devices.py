@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -227,13 +227,15 @@ def get_usb_device_by_serial(serial: str, only_accessible: bool = False) -> USBD
         for device in usb_devices:
             if serial == device.serial:
                 return device
-    raise ValueError(f"Could not find usb device with serial number '{serial}'")
+    msg = f"Could not find usb device with serial number '{serial}'"
+    raise ValueError(msg)
 
 
 def get_one_usb_device(only_accessible: bool = False) -> USBDevice:
     usb_devices = get_usb_devices(only_accessible=only_accessible)
     if not usb_devices:
-        raise CommDeviceError("No USB devices detected. Cannot auto detect.")
+        msg = "No USB devices detected. Cannot auto detect."
+        raise CommDeviceError(msg)
     elif len(usb_devices) > 1:
         devices_string = "".join([f" - {dev}\n" for dev in usb_devices])
         raise CommDeviceError(
@@ -249,7 +251,8 @@ def get_one_serial_device() -> SerialDevice:
     ]
 
     if not acconeer_serial_devices:
-        raise CommDeviceError("No serial devices detected. Cannot auto detect.")
+        msg = "No serial devices detected. Cannot auto detect."
+        raise CommDeviceError(msg)
     elif len(acconeer_serial_devices) > 1:
         devices_string = "".join([f" - {dev}\n" for dev in acconeer_serial_devices])
         raise CommDeviceError(

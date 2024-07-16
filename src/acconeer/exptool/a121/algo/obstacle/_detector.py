@@ -235,11 +235,14 @@ class Detector:
 
     def _validate_ready_for_calibration(self) -> None:
         if self.started:
-            raise RuntimeError("Already started")
+            msg = "Already started"
+            raise RuntimeError(msg)
         if self.processor_specs is None:
-            raise ValueError("Processor specification not defined")
+            msg = "Processor specification not defined"
+            raise ValueError(msg)
         if self.session_config is None:
-            raise ValueError("Session config not defined")
+            msg = "Session config not defined"
+            raise ValueError(msg)
 
     def calibrate_detector(self) -> None:
         """Run the required detector calibration routines, based on the detector config."""
@@ -259,10 +262,12 @@ class Detector:
         _algo_group: Optional[h5py.Group] = None,
     ) -> None:
         if self.started:
-            raise RuntimeError("Already started")
+            msg = "Already started"
+            raise RuntimeError(msg)
 
         if not self.detector_status.ready_to_start:
-            raise RuntimeError("Not ready to start")
+            msg = "Not ready to start"
+            raise RuntimeError(msg)
 
         sensor_config = self._get_sensor_config(self.detector_config)
 
@@ -369,7 +374,8 @@ class Detector:
 
     def get_next(self) -> DetectorResult:
         if not self.started:
-            raise RuntimeError("Not started")
+            msg = "Not started"
+            raise RuntimeError(msg)
 
         results = self.client.get_next()
         assert isinstance(results, list)
@@ -529,7 +535,8 @@ class Detector:
     def stop(self) -> Any:
         """Stops the measurement session."""
         if not self.started:
-            raise RuntimeError("Already stopped")
+            msg = "Already stopped"
+            raise RuntimeError(msg)
 
         self.client.stop_session()
 

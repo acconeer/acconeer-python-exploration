@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -56,7 +56,8 @@ class ExplorationProtocol(CommunicationProtocol[SessionConfig]):
             else:
                 return response
 
-        raise RuntimeError(f"Could not parse response with header:\n{header}")
+        msg = f"Could not parse response with header:\n{header}"
+        raise RuntimeError(msg)
 
     @classmethod
     def setup_command(

@@ -274,7 +274,8 @@ def test_input_output(
                 for _ in r.session(idx).extended_results
             ]
         else:
-            raise AttributeError("Algorithm does not have process() or get_next()")
+            msg = "Algorithm does not have process() or get_next()"
+            raise AttributeError(msg)
 
     if should_update_outputs:
         with contextlib.suppress(FileNotFoundError):

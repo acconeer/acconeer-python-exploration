@@ -88,7 +88,8 @@ class Processor(ExtendedProcessorBase[ProcessorResult]):
             elif amplitude_method == AmplitudeMethod.FFT_MAX:
                 ampls = abs_z_ft.max(axis=0)
             else:
-                raise RuntimeError(f"Unknown AmplitudeMethod: {amplitude_method}")
+                msg = f"Unknown AmplitudeMethod: {amplitude_method}"
+                raise RuntimeError(msg)
 
             phases = np.angle(subframe.mean(axis=0))
 

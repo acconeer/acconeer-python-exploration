@@ -43,7 +43,8 @@ def unextend(structure: list[dict[int, T]]) -> T:
         (entry,) = group.values()
         return entry
     except Exception as e:
-        raise ValueError(f"Could not unextend the structure {structure}") from e
+        msg = f"Could not unextend the structure {structure}"
+        raise ValueError(msg) from e
 
 
 def convert_value(value: Number, *, factory: Callable[[Number], T]) -> T:
@@ -57,7 +58,8 @@ def convert_value(value: Number, *, factory: Callable[[Number], T]) -> T:
 
         return converted_value
     except ValueError:
-        raise TypeError(f"{value} cannot be converted with {factory}")
+        msg = f"{value} cannot be converted with {factory}"
+        raise TypeError(msg)
 
 
 def _check_bounds(
@@ -186,7 +188,8 @@ def zip_extended_structures(
                 ),
             )
     except (KeyError, IndexError):
-        raise ValueError("Structure of arguments are not the same.")
+        msg = "Structure of arguments are not the same."
+        raise ValueError(msg)
 
     return create_extended_structure(iter(res))
 
@@ -219,7 +222,8 @@ def zip3_extended_structures(
                 ),
             )
     except (KeyError, IndexError):
-        raise ValueError("Structure of arguments are not the same.")
+        msg = "Structure of arguments are not the same."
+        raise ValueError(msg)
 
     return create_extended_structure(iter(res))
 
@@ -280,11 +284,13 @@ def transpose_extended_structures(
     """'Transposes' a list of extended structures to create an extended structure of lists"""
 
     if not structures:
-        raise ValueError("'structures' cannot be empty")
+        msg = "'structures' cannot be empty"
+        raise ValueError(msg)
 
     shapes = [extended_structure_shape(s) for s in structures]
     if not all(shape == shapes[0] for shape in shapes):
-        raise ValueError("All extended structures needs to have the same structure.")
+        msg = "All extended structures needs to have the same structure."
+        raise ValueError(msg)
 
     product: list[dict[int, list[ValueT]]] = map_over_extended_structure(
         lambda _: list(), structures[0]
@@ -346,7 +352,8 @@ def parse_rss_version(rss_version: str) -> packaging.version.Version:
     (release_line, version) = version_parsing.parse_rss_version(rss_version)
 
     if release_line != "a121":
-        raise ValueError("Not a valid RSS A121 version")
+        msg = "Not a valid RSS A121 version"
+        raise ValueError(msg)
 
     return version
 
@@ -365,7 +372,8 @@ def no_dynamic_member_creation(cls: Type[T]) -> Type[T]:
         @wraps(func)
         def setattr(self, key, value):  # type: ignore
             if hasattr(self, "__frozen") and not hasattr(self, key):
-                raise AttributeError(f'Invalid attribute "{key}" for {self!r}')
+                msg = f'Invalid attribute "{key}" for {self!r}'
+                raise AttributeError(msg)
             else:
                 func(self, key, value)
 

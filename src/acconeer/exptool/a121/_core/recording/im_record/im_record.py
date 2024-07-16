@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -47,13 +47,15 @@ class InMemorySessionRecord(SessionRecord):
     @property
     def calibrations(self) -> dict[int, SensorCalibration]:
         if self._calibrations is None:
-            raise InMemoryRecordException("No calibration in record")
+            msg = "No calibration in record"
+            raise InMemoryRecordException(msg)
         return self._calibrations
 
     @property
     def calibrations_provided(self) -> dict[int, bool]:
         if self._calibrations_provided is None:
-            raise InMemoryRecordException("No calibration in record")
+            msg = "No calibration in record"
+            raise InMemoryRecordException(msg)
         return self._calibrations_provided
 
     def _get_result_for_all_entries(self, frame_no: int) -> list[dict[int, Result]]:

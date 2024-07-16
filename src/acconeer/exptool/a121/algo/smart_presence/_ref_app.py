@@ -207,7 +207,8 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         self, recorder: Optional[a121.Recorder] = None, algo_group: Optional[h5py.Group] = None
     ) -> None:
         if self.started:
-            raise RuntimeError("Already started")
+            msg = "Already started"
+            raise RuntimeError(msg)
 
         self.nominal_detector_config = self.config.nominal_config
 
@@ -335,7 +336,8 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
 
     def get_next(self) -> RefAppResult:
         if not self.started:
-            raise RuntimeError("Not started")
+            msg = "Not started"
+            raise RuntimeError(msg)
 
         result = self.detector.get_next()
         processor_result = self.ref_app_processor.process(result)
@@ -431,7 +433,8 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
 
     def stop(self) -> Any:
         if not self.started:
-            raise RuntimeError("Already stopped")
+            msg = "Already stopped"
+            raise RuntimeError(msg)
 
         recorder_result = self.detector.stop()
 

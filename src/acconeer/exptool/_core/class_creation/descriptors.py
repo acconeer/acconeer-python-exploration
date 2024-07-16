@@ -88,7 +88,8 @@ def delegate_field(
             A delegating property
     """
     if not isinstance(descriptor, Descriptor):
-        raise TypeError(f"Passed object {descriptor} is not a descriptor")
+        msg = f"Passed object {descriptor} is not a descriptor"
+        raise TypeError(msg)
 
     def getter(obj: t.Any) -> _T:
         with _more_helpful_attribute_error(error_format, delegate_name, descriptor):

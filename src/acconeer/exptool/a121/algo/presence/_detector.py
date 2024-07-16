@@ -135,7 +135,8 @@ class DetectorConfig(AlgoConfigBase):
                 is_divisor_of(SPARSE_IQ_PPC, step_length)
                 or is_multiple_of(SPARSE_IQ_PPC, step_length)
             ):
-                raise ValueError(f"step_length must be a divisor or multiple of {SPARSE_IQ_PPC}")
+                msg = f"step_length must be a divisor or multiple of {SPARSE_IQ_PPC}"
+                raise ValueError(msg)
 
     def _collect_validation_results(self) -> list[a121.ValidationResult]:
         validation_results: list[a121.ValidationResult] = []
@@ -259,7 +260,8 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
         _algo_group: Optional[h5py.Group] = None,
     ) -> None:
         if self.started:
-            raise RuntimeError("Already started")
+            msg = "Already started"
+            raise RuntimeError(msg)
 
         sensor_config = self._get_sensor_config(self.config)
         self.session_config = a121.SessionConfig(
@@ -395,7 +397,8 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
 
     def get_next(self) -> DetectorResult:
         if not self.started:
-            raise RuntimeError("Not started")
+            msg = "Not started"
+            raise RuntimeError(msg)
 
         result = self.client.get_next()
         assert isinstance(result, a121.Result)
@@ -419,7 +422,8 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
 
     def stop_detector(self) -> Any:
         if not self.started:
-            raise RuntimeError("Already stopped")
+            msg = "Already stopped"
+            raise RuntimeError(msg)
 
         self.client.stop_session()
         self.started = False

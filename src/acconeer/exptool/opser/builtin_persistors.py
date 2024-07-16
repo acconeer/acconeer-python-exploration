@@ -305,9 +305,8 @@ class UnionPersistor(core.Persistor):
             else:
                 return
 
-        raise core.SaveErrorGroup(
-            f"Could not save instance {data!r:.100}... of type {type(data)}", errors
-        )
+        msg = f"Could not save instance {data!r:.100}... of type {type(data)}"
+        raise core.SaveErrorGroup(msg, errors)
 
     def load(self) -> t.Any:
         errors = []
@@ -321,7 +320,8 @@ class UnionPersistor(core.Persistor):
                 return res
 
         child_types = tuple(st.data for st in self.type_tree.children.values())
-        raise core.LoadErrorGroup(f"Could not load any of {child_types} from {self.group}", errors)
+        msg = f"Could not load any of {child_types} from {self.group}"
+        raise core.LoadErrorGroup(msg, errors)
 
 
 @RegistryPersistor.register_persistor

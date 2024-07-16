@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -33,7 +33,8 @@ class SocketLink(BufferedLink):
         except OSError as e:
             self._sock.close()
             self._sock = None
-            raise LinkError("failed to connect") from e
+            msg = "failed to connect"
+            raise LinkError(msg) from e
 
         self._buf = bytearray()
 
@@ -62,7 +63,8 @@ class SocketLink(BufferedLink):
                 break
 
             if time() - t0 > self._timeout:
-                raise LinkError("recv timeout")
+                msg = "recv timeout"
+                raise LinkError(msg)
 
             try:
                 r = self._sock.recv(self._CHUNK_SIZE)

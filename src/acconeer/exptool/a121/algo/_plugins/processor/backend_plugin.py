@@ -199,7 +199,8 @@ class GenericProcessorBackendPluginBase(
 
     def end_session(self) -> None:
         if self.client is None:
-            raise RuntimeError("Client is not attached. Can not 'stop'.")
+            msg = "Client is not attached. Can not 'stop'."
+            raise RuntimeError(msg)
 
         self.client.stop_session()
 
@@ -234,7 +235,8 @@ class ProcessorBackendPluginBase(
 ):
     def _validate_session_config(self, session_config: a121.SessionConfig) -> None:
         if session_config.extended:
-            raise ValueError("Extended session configs are not supported.")
+            msg = "Extended session configs are not supported."
+            raise ValueError(msg)
 
     @is_task
     def restore_defaults(self) -> None:
@@ -255,7 +257,8 @@ class ProcessorBackendPluginBase(
 
     def get_next(self) -> None:
         if self._processor_instance is None:
-            raise RuntimeError("Processor is None. 'start' needs to be called before 'get_next'")
+            msg = "Processor is None. 'start' needs to be called before 'get_next'"
+            raise RuntimeError(msg)
 
         assert self.client
         result = self.client.get_next()
@@ -299,7 +302,8 @@ class ExtendedProcessorBackendPluginBase(
 
     def get_next(self) -> None:
         if self._processor_instance is None:
-            raise RuntimeError("Processor is None. 'start' needs to be called before 'get_next'")
+            msg = "Processor is None. 'start' needs to be called before 'get_next'"
+            raise RuntimeError(msg)
 
         assert self.client
         result = self.client.get_next()

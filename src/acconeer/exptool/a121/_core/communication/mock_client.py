@@ -223,7 +223,8 @@ class MockClient(Client, register=True):
         calibrations: Optional[dict[int, SensorCalibration]] = None,
     ) -> Union[Metadata, list[dict[int, Metadata]]]:
         if self.session_is_started:
-            raise ClientError("Session is currently running, can't setup.")
+            msg = "Session is currently running, can't setup."
+            raise ClientError(msg)
 
         if isinstance(config, SensorConfig):
             config = SessionConfig(config)
@@ -258,7 +259,8 @@ class MockClient(Client, register=True):
         self._assert_session_setup()
 
         if self.session_is_started:
-            raise ClientError("Session is already started.")
+            msg = "Session is already started."
+            raise ClientError(msg)
 
         self._recorder_start_session()
         self._session_is_started = True
@@ -269,10 +271,12 @@ class MockClient(Client, register=True):
         self._assert_session_started()
 
         if self._metadata is None:
-            raise RuntimeError(f"{self} has no metadata")
+            msg = f"{self} has no metadata"
+            raise RuntimeError(msg)
 
         if self._session_config is None:
-            raise RuntimeError(f"{self} has no session config")
+            msg = f"{self} has no session config"
+            raise RuntimeError(msg)
 
         extended_results = self._session_config_to_result(self.session_config)
 
@@ -292,7 +296,8 @@ class MockClient(Client, register=True):
 
     def close(self) -> None:
         if not self._connected:
-            raise ClientError("Client is already closed")
+            msg = "Client is already closed"
+            raise ClientError(msg)
 
         if self.session_is_started:
             self.stop_session()

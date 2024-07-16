@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import enum
@@ -198,10 +198,12 @@ def get_reg(value, mode=None):
                 matches.append(reg)
 
     if len(matches) < 1:
-        raise ValueError("unknown reg: {}".format(value))
+        msg = "unknown reg: {}".format(value)
+        raise ValueError(msg)
 
     if len(matches) > 1:
-        raise ValueError("ambiguous reg: {}".format(value))
+        msg = "ambiguous reg: {}".format(value)
+        raise ValueError(msg)
 
     return matches[0]
 

@@ -63,7 +63,8 @@ class PyUsbCdc:
         self._rxremaining = b""
 
         if not (vid and pid):
-            raise AttributeError("Must provide vid & pid of device to connect to")
+            msg = "Must provide vid & pid of device to connect to"
+            raise AttributeError(msg)
 
         if start:
             self.open()
@@ -89,7 +90,8 @@ class PyUsbCdc:
             if self._dev.is_kernel_driver_active(0):
                 self._dev.detach_kernel_driver(0)
         except usb.core.USBError:
-            raise UsbPortError("Could not access USB device, are USB permissions setup correctly?")
+            msg = "Could not access USB device, are USB permissions setup correctly?"
+            raise UsbPortError(msg)
 
         # The XC120 USB device only has one config
         config = self._dev[0]
@@ -106,7 +108,8 @@ class PyUsbCdc:
 
     def read(self, size=None):
         if not self.is_open:
-            raise UsbPortError("Port is not open")
+            msg = "Port is not open"
+            raise UsbPortError(msg)
 
         rx = [self._rxremaining]
         length = len(self._rxremaining)
@@ -150,7 +153,8 @@ class PyUsbCdc:
 
     def write(self, data):
         if not self.is_open:
-            raise UsbPortError("Port is not open")
+            msg = "Port is not open"
+            raise UsbPortError(msg)
         self._dev.write(self._cdc_data_out_ep, data)
 
     def reset_input_buffer(self):
@@ -167,7 +171,8 @@ class PyUsbCdc:
 
     def send_break(self, duration=0.25):
         if not self.is_open:
-            raise UsbPortError("Port is not open")
+            msg = "Port is not open"
+            raise UsbPortError(msg)
         self._dev.ctrl_transfer(
             CTRL_TYPE_CLASS | CTRL_RECIPIENT_INTERFACE,
             self.USB_CDC_CMD_SEND_BREAK,

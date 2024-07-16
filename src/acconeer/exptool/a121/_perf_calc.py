@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -132,7 +132,8 @@ class _SessionPerformanceCalc:
     @property
     def update_duration(self) -> float:
         if self.extended_metadata is None:
-            raise ValueError("Metadata is None")
+            msg = "Metadata is None"
+            raise ValueError(msg)
 
         extended_structures = zip_extended_structures(
             self.session_config.groups, self.extended_metadata
@@ -185,7 +186,8 @@ class _SensorPerformanceCalc:
             return self.sensor_config.sweep_rate
         else:
             if self.metadata is None:
-                raise ValueError("Metadata is None")
+                msg = "Metadata is None"
+                raise ValueError(msg)
             return self.metadata.max_sweep_rate
 
     @property
@@ -195,7 +197,8 @@ class _SensorPerformanceCalc:
     @property
     def sweep_active_duration(self) -> float:
         if self.metadata is None:
-            raise ValueError("Metadata is None")
+            msg = "Metadata is None"
+            raise ValueError(msg)
         return 1 / self.metadata.max_sweep_rate
 
     @property

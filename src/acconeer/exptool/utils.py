@@ -169,7 +169,8 @@ def get_module_version(module: ModuleType) -> str:
     if hasattr(module, "__version__"):
         return str(module.__version__)
     else:
-        raise AttributeError(f"Unknown module version for {module.__name__}")
+        msg = f"Unknown module version for {module.__name__}"
+        raise AttributeError(msg)
 
 
 def color_cycler(i=0):

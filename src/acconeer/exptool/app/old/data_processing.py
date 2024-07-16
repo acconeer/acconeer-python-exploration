@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import json
@@ -74,7 +74,8 @@ class DataProcessing:
                     self.calibration,
                 )
             except TypeError as te:
-                raise TypeError(f"Could not instantiate {ext.__name__}") from te
+                msg = f"Could not instantiate {ext.__name__}"
+                raise TypeError(msg) from te
             self.first_run = False
 
         out_data = self.external.process(in_data, in_info)

@@ -65,7 +65,8 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
             self._replaying_client = None
 
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
-            raise HandledException("Could not load from file") from exc
+            msg = "Could not load from file"
+            raise HandledException(msg) from exc
 
         self._replaying_client = ApplicationClient.wrap_a121(replaying_client, self.callback)
 
@@ -108,7 +109,8 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
     def idle(self) -> bool:
         if self._started:
             if self.client is None:
-                raise RuntimeError("Client is not attached. Can not 'get_next'.")
+                msg = "Client is not attached. Can not 'get_next'."
+                raise RuntimeError(msg)
 
             try:
                 self.get_next()
@@ -121,7 +123,8 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
                 except Exception:
                     pass
 
-                raise HandledException("Failed to get_next") from exc
+                msg = "Failed to get_next"
+                raise HandledException(msg) from exc
 
             return True
         else:
@@ -160,10 +163,12 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
             raise RuntimeError
 
         if self.client is None:
-            raise RuntimeError("Client is not attached. Can not 'start'.")
+            msg = "Client is not attached. Can not 'start'."
+            raise RuntimeError(msg)
 
         if not self.client.connected:
-            raise RuntimeError("Client is not connected. Can not 'start'.")
+            msg = "Client is not connected. Can not 'start'."
+            raise RuntimeError(msg)
 
         self.callback(GeneralMessage(name="saveable_file", data=None))
         if with_recorder:
@@ -179,7 +184,8 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
             if recorder is not None:
                 recorder.close()
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
-            raise HandledException("Could not start") from exc
+            msg = "Could not start"
+            raise HandledException(msg) from exc
 
         self._started = True
 
@@ -197,7 +203,8 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
         try:
             self.end_session()
         except Exception as exc:
-            raise HandledException("Failure when stopping session") from exc
+            msg = "Failure when stopping session"
+            raise HandledException(msg) from exc
         finally:
             if self._recorder is not None:
                 assert self._recorder.path is not None

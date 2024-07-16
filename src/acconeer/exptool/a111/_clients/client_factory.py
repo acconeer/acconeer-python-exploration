@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -46,7 +46,8 @@ class ClientFactory:
         if link == Link.SPI:
             return SPIClient(**kwargs)
 
-        raise ValueError(f"Could not determine client type. Unrecognized link: {link}")
+        msg = f"Could not determine client type. Unrecognized link: {link}"
+        raise ValueError(msg)
 
     @classmethod
     def _check_conflicting_kwargs(cls, **kwargs):
@@ -96,9 +97,8 @@ class ClientFactory:
             # SocketClient auto-detects the protocol.
             return SocketClient(host, **kwargs)
         else:
-            raise ValueError(
-                f"Could not determine client type. link=socket, protocol={protocol}, host={host}"
-            )
+            msg = f"Could not determine client type. link=socket, protocol={protocol}, host={host}"
+            raise ValueError(msg)
 
     @classmethod
     def _try_get_serial_client(
@@ -115,9 +115,8 @@ class ClientFactory:
         if protocol == Protocol.EXPLORATION:
             return SocketClient(host=port, serial_link=True, **kwargs)
 
-        raise ValueError(
-            f"Could not determine client type. link=serial, protocol={protocol}, port={port}"
-        )
+        msg = f"Could not determine client type. link=serial, protocol={protocol}, port={port}"
+        raise ValueError(msg)
 
     @classmethod
     def _handle_passed_host(cls, host: Optional[str]) -> str:
@@ -160,6 +159,7 @@ class ClientFactory:
             )
 
         if len(acconeer_module_ports) == 0:
-            raise ValueError("Could not auto-detect any Acconeer modules.")
+            msg = "Could not auto-detect any Acconeer modules."
+            raise ValueError(msg)
 
         return acconeer_module_ports[0]

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -40,7 +40,8 @@ def unwrap_ticks(
         return [], None
 
     if any(tick < 0 or tick >= limit for tick in ticks):
-        raise ValueError("Tick value out of bounds")
+        msg = "Tick value out of bounds"
+        raise ValueError(msg)
 
     if (max(ticks) - min(ticks)) > limit // 2:
         ticks = [tick + limit if tick < limit // 2 else tick for tick in ticks]

@@ -82,7 +82,8 @@ def serialized_attrs_instance_has_diverged(attrs_instance: Any) -> bool:
     # TODO: Should end up in the `Config` ABC
     attrs_class = type(attrs_instance)
     if not attrs.has(attrs_class):
-        raise TypeError(f"Cannot check object of type {attrs_class!r}. It's not an attrs-class.")
+        msg = f"Cannot check object of type {attrs_class!r}. It's not an attrs-class."
+        raise TypeError(msg)
 
     for attribute in attrs_instance.__attrs_attrs__:
         try:
@@ -270,7 +271,8 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
             )
             self._detector_instance.calibrate_detector()
         except Exception as exc:
-            raise HandledException("Failed to calibrate detector") from exc
+            msg = "Failed to calibrate detector"
+            raise HandledException(msg) from exc
         finally:
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
 
@@ -439,7 +441,8 @@ class PlotPlugin(PgPlotPlugin):
             elif o.sensor_position == Processor._SENSOR_POSITION_RIGHT:
                 x += self.sensor_half_spacing_m
             else:
-                raise ValueError("Invalid sensor position.")
+                msg = "Invalid sensor position."
+                raise ValueError(msg)
 
             self.obstacle_location_half_curve[i].setData(x, y)
 

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -68,11 +68,11 @@ class MessageStream:
                 self._message_handler(message)
 
             if deadline is not None and time.monotonic() > deadline:
-                raise MessageStreamError(
-                    f"Deadline was reached without finding message of type {message_type.__name__!r}"
-                )
+                msg = f"Deadline was reached without finding message of type {message_type.__name__!r}"
+                raise MessageStreamError(msg)
 
-        raise MessageStreamError("No messages to consume")
+        msg = "No messages to consume"
+        raise MessageStreamError(msg)
 
     def _get_stream(self) -> t.Iterator[Message]:
         """returns an iterator of parsed messages"""

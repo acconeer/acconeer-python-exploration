@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import tempfile
@@ -124,7 +124,8 @@ def save_output(file, output):
             try:
                 f.create_dataset(name=k, data=output[k], track_times=False)
             except TypeError as te:
-                raise TypeError(f'Key "{k}" is probably of wrong type ({type(output[k])})') from te
+                msg = f'Key "{k}" is probably of wrong type ({type(output[k])})'
+                raise TypeError(msg) from te
 
 
 def load_output(file):

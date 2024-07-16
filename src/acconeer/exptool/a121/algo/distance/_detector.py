@@ -167,9 +167,8 @@ class SingleSensorContext(AlgoBase):
             elif isinstance(v, (np.ndarray, float, int, np.integer)):
                 group.create_dataset(k, data=v, track_times=False)
             else:
-                raise RuntimeError(
-                    f"Unexpected {type(self).__name__} field '{k}' of type '{type(v)}'"
-                )
+                msg = f"Unexpected {type(self).__name__} field '{k}' of type '{type(v)}'"
+                raise RuntimeError(msg)
 
         if self.recorded_thresholds_mean_sweep is not None:
             recorded_thresholds_mean_sweep_group = group.create_group(
@@ -230,7 +229,8 @@ class SingleSensorContext(AlgoBase):
 
         unknown_keys = set(group.keys()) - set(attrs.fields_dict(SingleSensorContext).keys())
         if unknown_keys:
-            raise Exception(f"Unknown field(s) in stored context: {unknown_keys}")
+            msg = f"Unknown field(s) in stored context: {unknown_keys}"
+            raise Exception(msg)
 
         field_map = {
             "loopback_peak_location_m": None,
@@ -384,12 +384,14 @@ class DetectorConfig(AlgoConfigBase):
     @start_m.validator
     def _(self, _: Any, value: float) -> None:
         if value < Detector.MIN_DIST_M:
-            raise ValueError(f"Cannot start measurements closer than {Detector.MIN_DIST_M}m")
+            msg = f"Cannot start measurements closer than {Detector.MIN_DIST_M}m"
+            raise ValueError(msg)
 
     @end_m.validator
     def _(self, _: Any, value: float) -> None:
         if value > Detector.MAX_DIST_M:
-            raise ValueError(f"Cannot measure further than {Detector.MAX_DIST_M}m")
+            msg = f"Cannot measure further than {Detector.MAX_DIST_M}m"
+            raise ValueError(msg)
 
     def _collect_validation_results(self) -> list[a121.ValidationResult]:
         validation_results: list[a121.ValidationResult] = []
@@ -527,11 +529,14 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
 
     def _validate_ready_for_calibration(self) -> None:
         if self.started:
-            raise RuntimeError("Already started")
+            msg = "Already started"
+            raise RuntimeError(msg)
         if self.processor_specs is None:
-            raise ValueError("Processor specification not defined")
+            msg = "Processor specification not defined"
+            raise ValueError(msg)
         if self.session_config is None:
-            raise ValueError("Session config not defined")
+            msg = "Session config not defined"
+            raise ValueError(msg)
 
     def calibrate_detector(self) -> None:
         """Run the required detector calibration routines, based on the detector config."""
@@ -927,12 +932,14 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         """Method for setting up measurement session."""
 
         if self.started:
-            raise RuntimeError("Already started")
+            msg = "Already started"
+            raise RuntimeError(msg)
 
         status = self.get_detector_status(self.config, self.context, self.sensor_ids)
 
         if not status.ready_to_start:
-            raise RuntimeError(f"Not ready to start ({status.detector_state.name})")
+            msg = f"Not ready to start ({status.detector_state.name})"
+            raise RuntimeError(msg)
         specs = self._add_context_to_processor_spec(self.processor_specs)
 
         sensor_calibration = self._get_sensor_calibrations(self.context)
@@ -983,7 +990,8 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
     def get_next(self) -> Dict[int, DetectorResult]:
         """Called from host to get next measurement."""
         if not self.started:
-            raise RuntimeError("Not started")
+            msg = "Not started"
+            raise RuntimeError(msg)
 
         assert self.aggregators is not None
 
@@ -1023,7 +1031,8 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
     def stop(self) -> Any:
         """Stops the measurement session."""
         if not self.started:
-            raise RuntimeError("Already stopped")
+            msg = "Already stopped"
+            raise RuntimeError(msg)
 
         self.client.stop_session()
         recorder = self.client.detach_recorder()
@@ -1536,7 +1545,8 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
             if spec.processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
                 close_range_specs.append(spec)
         if len(close_range_specs) != NUM_CLOSE_RANGE_SPECS:
-            raise ValueError("Incorrect subsweep config for close range measurement")
+            msg = "Incorrect subsweep config for close range measurement"
+            raise ValueError(msg)
 
         return close_range_specs
 

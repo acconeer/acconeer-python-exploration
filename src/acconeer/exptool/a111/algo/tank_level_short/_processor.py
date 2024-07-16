@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import numpy as np
@@ -182,7 +182,8 @@ class Processor:
         elif profile == sensor_config.Profile.PROFILE_2:
             width = 40
         else:
-            raise ValueError("Illegal profile ({}) for this detector".format(profile))
+            msg = "Illegal profile ({}) for this detector".format(profile)
+            raise ValueError(msg)
         return width
 
     def update_processing_config(self, processing_config):

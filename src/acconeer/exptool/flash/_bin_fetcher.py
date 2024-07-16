@@ -133,7 +133,8 @@ def download(
     link = soup.findAll("a", {"href": lambda l: l and page_device in l})
 
     if not link:
-        raise Exception(f"No download found for device '{device}'")
+        msg = f"No download found for device '{device}'"
+        raise Exception(msg)
 
     response = session.get(url=link[0]["href"])
     soup = BeautifulSoup(response.content, "html.parser")
@@ -142,7 +143,8 @@ def download(
         "a", {"href": lambda l: l and device in l and "exploration_server" in l}
     )
     if not zip_url:
-        raise Exception(f"No image found for device '{device}'")
+        msg = f"No image found for device '{device}'"
+        raise Exception(msg)
     zip_url = zip_url[0]["href"]
 
     log.debug("File to download: {}".format(zip_url))
@@ -172,11 +174,13 @@ def download(
             for fileName in listOfFileNames:
                 if fileName.endswith(".bin"):
                     if bin_found:
-                        raise Exception("Multiple images in directory")
+                        msg = "Multiple images in directory"
+                        raise Exception(msg)
                     bin_path = zipObject.extract(fileName, os.path.join(path, tmp_dir))
                     bin_found = True
             if bin_found is False:
-                raise Exception("No images found in directory")
+                msg = "No images found in directory"
+                raise Exception(msg)
 
         dst_path = os.path.join(path, os.path.basename(bin_path))
         shutil.move(bin_path, dst_path)

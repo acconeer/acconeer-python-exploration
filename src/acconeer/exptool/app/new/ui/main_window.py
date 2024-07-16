@@ -108,7 +108,8 @@ class _PagedLayout(QSplitter):
     def setCurrentWidget(self, widget: QWidget) -> None:
         idx = self._page_widget.indexOf(widget)
         if idx == -1:
-            raise ValueError(f"Passed widget is not part of {type(self).__name__}")
+            msg = f"Passed widget is not part of {type(self).__name__}"
+            raise ValueError(msg)
 
         self._index_button_group.button(idx).click()
 

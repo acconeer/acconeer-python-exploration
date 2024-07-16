@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import configparser
@@ -47,10 +47,12 @@ def check(filename):
     with open(filename, "r", newline="") as f:
         for i, line in enumerate(f):
             if line.endswith("\r") or line.endswith("\r\n"):
-                raise Exception("Carriage returns are not allowed")
+                msg = "Carriage returns are not allowed"
+                raise Exception(msg)
 
             if not line.endswith("\n"):
-                raise Exception("Missing newline at end of file")
+                msg = "Missing newline at end of file"
+                raise Exception(msg)
 
             try:
                 last_char = line[-2]
@@ -58,12 +60,14 @@ def check(filename):
                 last_is_empty = True
             else:
                 if last_char.isspace():
-                    raise Exception("Trailing whitespace at end of line {}".format(i + 1))
+                    msg = "Trailing whitespace at end of line {}".format(i + 1)
+                    raise Exception(msg)
 
                 last_is_empty = False
 
     if last_is_empty:
-        raise Exception("Trailing newlines at end of file")
+        msg = "Trailing newlines at end of file"
+        raise Exception(msg)
 
 
 if __name__ == "__main__":

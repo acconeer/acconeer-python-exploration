@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import abc
@@ -20,7 +20,8 @@ class BaseClient(abc.ABC):
 
         if kwargs:
             a_key = next(iter(kwargs.keys()))
-            raise TypeError("Got unexpected keyword argument ({})".format(a_key))
+            msg = "Got unexpected keyword argument ({})".format(a_key)
+            raise TypeError(msg)
 
         self._connected = False
         self._session_setup_done = False
@@ -34,7 +35,8 @@ class BaseClient(abc.ABC):
         :rtype: dict
         """
         if self._connected:
-            raise ClientError("already connected")
+            msg = "already connected"
+            raise ClientError(msg)
 
         info = self._connect()
         self._connected = True
@@ -46,7 +48,8 @@ class BaseClient(abc.ABC):
             try:
                 sensor = info.get("sensor")
                 if sensor and sensor != "a111":
-                    raise ClientError(f"Wrong sensor version, expected a111 but got {sensor}")
+                    msg = f"Wrong sensor version, expected a111 but got {sensor}"
+                    raise ClientError(msg)
                 log.info("reported version: {}".format(info["version_str"]))
 
                 if info["strict_version"] < version.parse(SDK_VERSION):
@@ -78,13 +81,15 @@ class BaseClient(abc.ABC):
             self._check_config(config)
 
         if self._streaming_started:
-            raise ClientError("can't setup session while streaming")
+            msg = "can't setup session while streaming"
+            raise ClientError(msg)
 
         if not self._connected:
             self.connect()
 
         if check_config and config.mode not in self.supported_modes:
-            raise ClientError("Unsupported mode")
+            msg = "Unsupported mode"
+            raise ClientError(msg)
 
         session_info = self._setup_session(config)
         self._session_setup_done = True
@@ -106,7 +111,8 @@ class BaseClient(abc.ABC):
         :rtype: dict or None
         """
         if self._streaming_started:
-            raise ClientError("already streaming")
+            msg = "already streaming"
+            raise ClientError(msg)
 
         if config is None:
             ret = None
@@ -114,7 +120,8 @@ class BaseClient(abc.ABC):
             ret = self.setup_session(config, check_config=check_config)
 
         if not self._session_setup_done:
-            raise ClientError("session needs to be set up before starting stream")
+            msg = "session needs to be set up before starting stream"
+            raise ClientError(msg)
 
         self._start_session()
         self._streaming_started = True
@@ -153,7 +160,8 @@ class BaseClient(abc.ABC):
         :rtype: tuple[union[list, dict], np.ndarray]
         """
         if not self._streaming_started:
-            raise ClientError("must be streaming to get next")
+            msg = "must be streaming to get next"
+            raise ClientError(msg)
 
         return self._get_next()
 
@@ -163,7 +171,8 @@ class BaseClient(abc.ABC):
         This function will block until the server has confirmed that the session has ended.
         """
         if not self._streaming_started:
-            raise ClientError("not streaming")
+            msg = "not streaming"
+            raise ClientError(msg)
 
         self._stop_session()
         self._streaming_started = False
@@ -174,7 +183,8 @@ class BaseClient(abc.ABC):
         if a session is started.
         """
         if not self._connected:
-            raise ClientError("not connected")
+            msg = "not connected"
+            raise ClientError(msg)
 
         if self._streaming_started:
             self.stop_session()

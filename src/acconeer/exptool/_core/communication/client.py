@@ -38,9 +38,8 @@ class ClientABCWithGoodError(abc.ABC):
             return super().__new__(cls)
         except TypeError:  # te here is the "Can't instantiate ..."-error
             if cls == Client:
-                raise ClientCreationError(
-                    "Client cannot be instantiated, use Client.open()"
-                ) from None
+                msg = "Client cannot be instantiated, use Client.open()"
+                raise ClientCreationError(msg) from None
             else:
                 raise
 
@@ -74,7 +73,8 @@ class Client(
         Open a new client
         """
         if len([e for e in [ip_address, serial_port, usb_device, mock] if e is not None]) > 1:
-            raise ValueError("Only one connection can be selected")
+            msg = "Only one connection can be selected"
+            raise ValueError(msg)
 
         for subclass in cls.__registry:
             try:
@@ -119,10 +119,12 @@ class Client(
 
     def attach_recorder(self, recorder: _RecorderT) -> None:
         if self.session_is_started:
-            raise ClientError("Cannot attach a recorder when session is started.")
+            msg = "Cannot attach a recorder when session is started."
+            raise ClientError(msg)
 
         if not self.connected:
-            raise ClientError("Cannot attach a recorder to a closed client")
+            msg = "Cannot attach a recorder to a closed client"
+            raise ClientError(msg)
 
         if self._recorder is not None:
             raise ClientError(
@@ -147,10 +149,12 @@ class Client(
 
     def detach_recorder(self) -> t.Optional[_RecorderT]:
         if self.session_is_started:
-            raise ClientError("Cannot detach a recorder when session is started.")
+            msg = "Cannot detach a recorder when session is started."
+            raise ClientError(msg)
 
         if not self.connected:
-            raise ClientError("Cannot detach a recorder from a closed client")
+            msg = "Cannot detach a recorder from a closed client"
+            raise ClientError(msg)
 
         if self._recorder is None:
             return None
@@ -218,17 +222,20 @@ class Client(
 
     def _assert_connected(self) -> None:
         if not self.connected:
-            raise ClientError("Client is not connected.")
+            msg = "Client is not connected."
+            raise ClientError(msg)
 
     def _assert_session_setup(self) -> None:
         self._assert_connected()
         if not self.session_is_setup:
-            raise ClientError("Session is not set up.")
+            msg = "Session is not set up."
+            raise ClientError(msg)
 
     def _assert_session_started(self) -> None:
         self._assert_session_setup()
         if not self.session_is_started:
-            raise ClientError("Session is not started.")
+            msg = "Session is not started."
+            raise ClientError(msg)
 
     def __enter__(self) -> te.Self:
         return self

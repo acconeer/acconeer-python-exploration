@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -102,9 +102,8 @@ class ExtendedMetadataView(QWidget):
             if isinstance(metadata_view, MetadataView):
                 metadata_view.set_data(metadata)
             else:
-                raise RuntimeError(
-                    "ExtendedMetadataView contains child widgets that are not MetadataViews."
-                )
+                msg = "ExtendedMetadataView contains child widgets that are not MetadataViews."
+                raise RuntimeError(msg)
 
 
 class MetadataView(QGroupBox):

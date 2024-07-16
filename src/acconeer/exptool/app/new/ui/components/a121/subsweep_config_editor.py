@@ -210,7 +210,8 @@ class SubsweepConfigEditor(DataEditor[Optional[a121.SubsweepConfig]]):
 
     def _update_subsweep_config_aspect(self, aspect: str, value: Any) -> None:
         if self._subsweep_config is None:
-            raise TypeError("SubsweepConfig is None")
+            msg = "SubsweepConfig is None"
+            raise TypeError(msg)
 
         config = copy.deepcopy(self._subsweep_config)
 

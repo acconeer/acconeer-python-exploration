@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -40,10 +40,12 @@ class USBLink(BufferedLink):
         if self._vid and self._pid:
             self._port = port_type(vid=self._vid, pid=self._pid, serial=self._serial, start=False)
         else:
-            raise LinkError("Must have vid and pid for usb device")
+            msg = "Must have vid and pid for usb device"
+            raise LinkError(msg)
 
         if not self._port.open():
-            raise LinkError(f"Unable to connect to port (vid={self._vid}, pid={self._pid}")
+            msg = f"Unable to connect to port (vid={self._vid}, pid={self._pid}"
+            raise LinkError(msg)
 
         self._buf = bytearray()
         self.send_break()
@@ -57,7 +59,8 @@ class USBLink(BufferedLink):
         t0 = time()
         while len(self._buf) < num_bytes:
             if time() - t0 > self._timeout:
-                raise LinkError("recv timeout")
+                msg = "recv timeout"
+                raise LinkError(msg)
 
             try:
                 r = bytearray(self._port.read())
@@ -80,7 +83,8 @@ class USBLink(BufferedLink):
                 break
 
             if time() - t0 > self._timeout:
-                raise LinkError("recv timeout")
+                msg = "recv timeout"
+                raise LinkError(msg)
 
             try:
                 r = bytearray(self._port.read())

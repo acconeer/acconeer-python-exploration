@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -59,17 +59,20 @@ class _ReplayingClient(Client, register=False):
 
     def _assert_connected(self) -> None:
         if not self.connected:
-            raise ClientError("Client is not connected.")
+            msg = "Client is not connected."
+            raise ClientError(msg)
 
     def _assert_session_setup(self) -> None:
         self._assert_connected()
         if not self.session_is_setup:
-            raise ClientError("Session is not set up.")
+            msg = "Session is not set up."
+            raise ClientError(msg)
 
     def _assert_session_started(self) -> None:
         self._assert_session_setup()
         if not self.session_is_started:
-            raise ClientError("Session is not started.")
+            msg = "Session is not started."
+            raise ClientError(msg)
 
     def _open(self) -> None:
         pass
@@ -97,7 +100,8 @@ class _ReplayingClient(Client, register=False):
 
     def get_next(self) -> Union[Result, list[dict[int, Result]]]:  # type: ignore[override]
         if not self.session_is_setup:
-            raise ClientError("Session is not set up.")
+            msg = "Session is not set up."
+            raise ClientError(msg)
 
         assert self._result_iterator is not None
 

@@ -59,9 +59,8 @@ def _to_group_factory_mapping(
     if isinstance(first_key, str):
         return {FlatPidgetGroup(): cast(PidgetFactoryMapping, factory_mapping)}
 
-    raise RuntimeError(
-        "factory_mapping was neither a PidgetFactoryMappingi nor a PidgetGroupFactoryMapping"
-    )
+    msg = "factory_mapping was neither a PidgetFactoryMappingi nor a PidgetGroupFactoryMapping"
+    raise RuntimeError(msg)
 
 
 class AttrsConfigEditor(DataEditor[Optional[T]]):

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -116,7 +116,8 @@ class ExplorationClient(Client, register=True):
 
         if self._server_info.connected_sensors == []:
             self._link.disconnect()
-            raise ClientError("Exploration server is running but no sensors are detected.")
+            msg = "Exploration server is running but no sensors are detected."
+            raise ClientError(msg)
 
         if _override_protocol is None:
             most_suitable_protocol = get_exploration_protocol(self.server_info.parsed_rss_version)
@@ -141,7 +142,8 @@ class ExplorationClient(Client, register=True):
         sensor = system_info_response.system_info.get("sensor")
         if sensor != "a121":
             self.close()
-            raise ClientError(f"Wrong sensor version, expected a121 but got {sensor}")
+            msg = f"Wrong sensor version, expected a121 but got {sensor}"
+            raise ClientError(msg)
 
         self._server_stream.send_command(self._protocol.get_sensor_info_command())
         sensor_info_response = self._server_stream.wait_for_message(
@@ -174,9 +176,11 @@ class ExplorationClient(Client, register=True):
         if overridden_baudrate is not None and max_baudrate is not None:
             # Valid Baudrate?
             if overridden_baudrate > max_baudrate:
-                raise ClientError(f"Cannot set a baudrate higher than {max_baudrate}")
+                msg = f"Cannot set a baudrate higher than {max_baudrate}"
+                raise ClientError(msg)
             elif overridden_baudrate < DEFAULT_BAUDRATE:
-                raise ClientError(f"Cannot set a baudrate lower than {DEFAULT_BAUDRATE}")
+                msg = f"Cannot set a baudrate lower than {DEFAULT_BAUDRATE}"
+                raise ClientError(msg)
             baudrate_to_use = overridden_baudrate
 
         # Do not change baudrate if DEFAULT_BAUDRATE
@@ -194,7 +198,8 @@ class ExplorationClient(Client, register=True):
         calibrations: Optional[dict[int, SensorCalibration]] = None,
     ) -> Union[Metadata, list[dict[int, Metadata]]]:
         if self.session_is_started:
-            raise ClientError("Session is currently running, can't setup.")
+            msg = "Session is currently running, can't setup."
+            raise ClientError(msg)
 
         if isinstance(config, SensorConfig):
             config = SessionConfig(config)
@@ -227,19 +232,22 @@ class ExplorationClient(Client, register=True):
         if type(message) is messages.LogMessage:
             self._log_queue.append(message.message)
         elif type(message) is a121_messages.EmptyResultMessage:
-            raise RuntimeError("Received an empty Result from Server.")
+            msg = "Received an empty Result from Server."
+            raise RuntimeError(msg)
         elif type(message) is messages.ErroneousMessage:
             last_error = ""
             for log in self._log_queue:
                 if log.level == "ERROR" and "exploration_server" not in log.module:
                     last_error = f" ({log.log})"
-            raise ServerError(f"{message}{last_error}")
+            msg = f"{message}{last_error}"
+            raise ServerError(msg)
 
     def start_session(self) -> None:
         self._assert_session_setup()
 
         if self.session_is_started:
-            raise ClientError("Session is already started.")
+            msg = "Session is already started."
+            raise ClientError(msg)
 
         assert self._session_config is not None
 
@@ -268,13 +276,16 @@ class ExplorationClient(Client, register=True):
         result_message = self._server_stream.wait_for_message(a121_messages.ResultMessage)
 
         if self._metadata is None:
-            raise RuntimeError(f"{self} has no metadata")
+            msg = f"{self} has no metadata"
+            raise RuntimeError(msg)
 
         if self._server_info is None:
-            raise RuntimeError(f"{self} has no system info")
+            msg = f"{self} has no system info"
+            raise RuntimeError(msg)
 
         if self._session_config is None:
-            raise RuntimeError(f"{self} has no session config")
+            msg = f"{self} has no session config"
+            raise RuntimeError(msg)
 
         extended_results = result_message.get_extended_results(
             tps=self._server_info.ticks_per_second,

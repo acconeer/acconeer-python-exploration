@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -144,7 +144,8 @@ class H5Recorder(recorder.Recorder[_ConfigT, _MetadataT, _ResultT, _ServerInfoT]
         server_info: _ServerInfoT,
     ) -> None:
         if "client_info" in self.file or "server_info" in self.file:
-            raise RuntimeError("It's not allowed to call '_start' once.")
+            msg = "It's not allowed to call '_start' once."
+            raise RuntimeError(msg)
 
         self.file.create_dataset(
             "client_info",
@@ -166,7 +167,8 @@ class H5Recorder(recorder.Recorder[_ConfigT, _MetadataT, _ResultT, _ServerInfoT]
 
     def _sample(self, result: _ResultT) -> None:
         if self._current_session_group is None:
-            raise RuntimeError("No session group selected yet. This should not happen.")
+            msg = "No session group selected yet. This should not happen."
+            raise RuntimeError(msg)
 
         self._saver._sample(self._current_session_group, results=[result])
 
@@ -195,7 +197,8 @@ class H5Recorder(recorder.Recorder[_ConfigT, _MetadataT, _ResultT, _ServerInfoT]
         if "key" in group:
             existing_key = bytes(group["key"][()]).decode()
             if existing_key != key:
-                raise Exception(f"Algo group key mismatch: got '{key}' but had '{existing_key}'")
+                msg = f"Algo group key mismatch: got '{key}' but had '{existing_key}'"
+                raise Exception(msg)
         else:
             group.create_dataset(
                 "key",

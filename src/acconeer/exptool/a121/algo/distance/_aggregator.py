@@ -149,7 +149,8 @@ class Aggregator:
         elif method == PeakSortingMethod.STRONGEST:
             quantity_to_sort = -strengths
         else:
-            raise ValueError("Unknown peak sorting method")
+            msg = "Unknown peak sorting method"
+            raise ValueError(msg)
         return (
             np.array([dists[i] for i in quantity_to_sort.argsort()]),
             np.array([strengths[i] for i in quantity_to_sort.argsort()]),

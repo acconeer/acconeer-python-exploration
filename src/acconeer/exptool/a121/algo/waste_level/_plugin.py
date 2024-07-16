@@ -63,10 +63,12 @@ class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, ProcessorResult]
     @classmethod
     def get_processor(cls, state: ProcessorBackendPluginSharedState[ProcessorConfig]) -> Processor:
         if state.metadata is None:
-            raise RuntimeError("metadata is None")
+            msg = "metadata is None"
+            raise RuntimeError(msg)
 
         if isinstance(state.metadata, list):
-            raise RuntimeError("metadata is unexpectedly extended")
+            msg = "metadata is unexpectedly extended"
+            raise RuntimeError(msg)
 
         return Processor(
             sensor_config=state.session_config.sensor_config,
@@ -141,7 +143,8 @@ class PlotPlugin(PgPlotPlugin):
             self._plot_job = message.result
         elif isinstance(message, SetupMessage):
             if isinstance(message.metadata, list):
-                raise RuntimeError("Metadata is unexpectedly extended")
+                msg = "Metadata is unexpectedly extended"
+                raise RuntimeError(msg)
 
             self.setup(
                 metadata=message.metadata,

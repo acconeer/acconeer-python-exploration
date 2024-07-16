@@ -392,11 +392,13 @@ class AppModel(QObject):
                 elif message.recipient == "view_plugin":
                     self.sig_message_view_plugin.emit(message)
                 else:
-                    raise RuntimeError(f"Got message with unknown recipient '{message.recipient}'")
+                    msg = f"Got message with unknown recipient '{message.recipient}'"
+                    raise RuntimeError(msg)
             else:
                 self._handle_backend_general_message(message)
         else:
-            raise RuntimeError(f"Got message of unknown type '{type(message)}'")
+            msg = f"Got message of unknown type '{type(message)}'"
+            raise RuntimeError(msg)
 
     def _handle_backend_general_message(self, message: GeneralMessage) -> None:
         if message.exception:
@@ -408,7 +410,8 @@ class AppModel(QObject):
             if isinstance(server_info, a121.ServerInfo):
                 self._a121_server_info = server_info
             else:
-                raise TypeError(f"Unexpected server_info type: {type(server_info)}")
+                msg = f"Unexpected server_info type: {type(server_info)}"
+                raise TypeError(msg)
 
             self.broadcast()
         elif message.name == "saveable_file":
@@ -432,7 +435,8 @@ class AppModel(QObject):
         elif message.name == "frame_count":
             self.sig_frame_count.emit(message.data)
         else:
-            raise RuntimeError(f"Got unknown general message '{message.name}'")
+            msg = f"Got unknown general message '{message.name}'"
+            raise RuntimeError(msg)
 
     def _update_saveable_file(self, path: Optional[Path]) -> None:
         if self.saveable_file is not None:
@@ -625,9 +629,8 @@ class AppModel(QObject):
         if generation == PluginGeneration.A121:
             factory = a121.Client.open
         else:
-            raise NotImplementedError(
-                f"Don't know how to construct a client for generation {generation}"
-            )
+            msg = f"Don't know how to construct a client for generation {generation}"
+            raise NotImplementedError(msg)
 
         return functools.partial(factory, **open_kwargs)
 

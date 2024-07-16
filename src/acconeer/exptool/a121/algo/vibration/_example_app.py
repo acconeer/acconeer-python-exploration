@@ -181,7 +181,8 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
         self, recorder: Optional[a121.Recorder] = None, _algo_group: Optional[h5py.Group] = None
     ) -> None:
         if self.started:
-            raise RuntimeError("Already started")
+            msg = "Already started"
+            raise RuntimeError(msg)
 
         sensor_config = self._get_sensor_config(self.config)
         self.session_config = a121.SessionConfig(
@@ -270,7 +271,8 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
 
     def get_next(self) -> ExampleAppResult:
         if not self.started:
-            raise RuntimeError("Not started")
+            msg = "Not started"
+            raise RuntimeError(msg)
 
         result = self.client.get_next()
         assert isinstance(result, a121.Result)
@@ -294,7 +296,8 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
 
     def stop(self) -> Any:
         if not self.started:
-            raise RuntimeError("Already stopped")
+            msg = "Already stopped"
+            raise RuntimeError(msg)
 
         self.client.stop_session()
         recorder = self.client.detach_recorder()

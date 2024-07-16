@@ -259,7 +259,8 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         algo_group: Optional[h5py.Group] = None,
     ) -> None:
         if self.started:
-            raise RuntimeError("Already started")
+            msg = "Already started"
+            raise RuntimeError(msg)
 
         self.metadata = self.client.setup_session(self.session_config)
         assert isinstance(self.metadata, a121.Metadata)
@@ -419,7 +420,8 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
 
     def get_next(self) -> RefAppResult:
         if not self.started:
-            raise RuntimeError("Not started")
+            msg = "Not started"
+            raise RuntimeError(msg)
 
         result = self.client.get_next()
 
@@ -466,7 +468,8 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
 
     def stop(self) -> Any:
         if not self.started:
-            raise RuntimeError("Already stopped")
+            msg = "Already stopped"
+            raise RuntimeError(msg)
 
         self.client.stop_session()
         recorder = self.client.detach_recorder()

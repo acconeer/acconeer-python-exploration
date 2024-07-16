@@ -332,7 +332,8 @@ class PluginPlotArea(QFrame):
         if isinstance(app_model.plugin, PluginSpecBase):
             self._on_app_model_load_plugin(app_model.plugin)
         elif app_model.plugin is not None:
-            raise RuntimeError(f"{type(app_model.plugin)} is not a PluginSpecBase.")
+            msg = f"{type(app_model.plugin)} is not a PluginSpecBase."
+            raise RuntimeError(msg)
 
     def timerEvent(self, event: QtCore.QTimerEvent) -> None:
         self.plot_plugin.draw()
@@ -388,7 +389,8 @@ class PluginControlArea(QWidget):
         if isinstance(app_model.plugin, PluginSpecBase):
             self._on_app_model_load_plugin(app_model.plugin)
         elif app_model.plugin is not None:
-            raise RuntimeError(f"{type(app_model.plugin)} is not a PluginSpecBase.")
+            msg = f"{type(app_model.plugin)} is not a PluginSpecBase."
+            raise RuntimeError(msg)
 
     def _on_app_model_load_plugin(self, plugin_spec: Optional[PluginSpecBase]) -> None:
         log.debug(

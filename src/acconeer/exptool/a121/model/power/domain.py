@@ -91,7 +91,8 @@ class EnergyRegion(te.Protocol):
         regions = tuple(regions)
 
         if len(regions) == 0:
-            raise ValueError("Cannot join an empty sequence.")
+            msg = "Cannot join an empty sequence."
+            raise ValueError(msg)
         elif len(regions) == 1:
             (region,) = regions
             return region

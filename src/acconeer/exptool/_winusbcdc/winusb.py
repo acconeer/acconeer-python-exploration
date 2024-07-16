@@ -9,17 +9,20 @@ class WinUSBApi(object):
         try:
             self._kernel32 = windll.kernel32
         except WindowsError:
-            raise WinUSBError("Kernel32 dll is not present. Are you really using Windows?")
+            msg = "Kernel32 dll is not present. Are you really using Windows?"
+            raise WinUSBError(msg)
 
         try:
             self._winusb = windll.winusb
         except WindowsError:
-            raise WinUSBError("WinUsb dll is not present")
+            msg = "WinUsb dll is not present"
+            raise WinUSBError(msg)
 
         try:
             self._setupapi = windll.SetupApi
         except WindowsError:
-            raise WinUSBError("SetupApi dll is not present")
+            msg = "SetupApi dll is not present"
+            raise WinUSBError(msg)
 
         self._winusb_functions_dict = get_winusb_functions(self._winusb)
         self._kernel32_functions_dict = get_kernel32_functions(self._kernel32)

@@ -149,11 +149,11 @@ class SensorConfig:
         prf: Optional[PRF] = None,
     ) -> None:
         if subsweeps is not None and num_subsweeps is not None:
-            raise ValueError(
-                "It is not allowed to pass both `subsweeps` and `num_subsweeps`. Choose one."
-            )
+            msg = "It is not allowed to pass both `subsweeps` and `num_subsweeps`. Choose one."
+            raise ValueError(msg)
         if subsweeps == []:
-            raise ValueError("Cannot pass an empty `subsweeps` list.")
+            msg = "Cannot pass an empty `subsweeps` list."
+            raise ValueError(msg)
 
         no_subsweep_param_passed = (
             start_point is None

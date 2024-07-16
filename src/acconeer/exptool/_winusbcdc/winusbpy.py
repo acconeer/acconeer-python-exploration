@@ -183,7 +183,8 @@ class WinUsbPy(object):
 
         result_winusb = [self.api.exec_function_winusb(WinUsb_Free, h) for h in self.handle_winusb]
         if 0 in result_winusb:
-            raise RuntimeError("Unable to close winusb handle")
+            msg = "Unable to close winusb handle"
+            raise RuntimeError(msg)
         self.handle_winusb = []
         return result_file != 0
 

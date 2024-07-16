@@ -68,9 +68,8 @@ class Model:
         get_connection_warning: Callable[[packaging.version.Version], Optional[str]],
     ) -> None:
         if self.client is not None:
-            raise RuntimeError(
-                "Model already has a Client. The current Client needs to be disconnected first."
-            )
+            msg = "Model already has a Client. The current Client needs to be disconnected first."
+            raise RuntimeError(msg)
 
         self.task_callback(ConnectionStateMessage(state=ConnectionState.CONNECTING))
 
@@ -103,7 +102,8 @@ class Model:
     @is_task
     def disconnect_client(self) -> None:
         if self.client is None:
-            raise RuntimeError("Backend has no client to disconnect.")
+            msg = "Backend has no client to disconnect."
+            raise RuntimeError(msg)
 
         self.task_callback(ConnectionStateMessage(state=ConnectionState.DISCONNECTING))
 

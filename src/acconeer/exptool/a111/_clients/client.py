@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -68,7 +68,8 @@ class Client:
         elif isinstance(self.subclient, SocketClient):
             return Link.SOCKET
         else:
-            raise ValueError(f"Unknown subclient type: {type(self.subclient)}")
+            msg = f"Unknown subclient type: {type(self.subclient)}"
+            raise ValueError(msg)
 
     def connect(self) -> dict:
         """Initiates a connection with the device.

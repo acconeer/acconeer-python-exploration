@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -104,7 +104,8 @@ class Client(
         self._assert_session_setup()
 
         if not self._sensor_calibrations:
-            raise ClientError("Server did not provide calibration")
+            msg = "Server did not provide calibration"
+            raise ClientError(msg)
 
         return self._sensor_calibrations
 

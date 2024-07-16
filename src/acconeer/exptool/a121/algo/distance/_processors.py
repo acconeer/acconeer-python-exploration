@@ -187,7 +187,8 @@ class Processor(ProcessorBase[ProcessorResult]):
             and processor_config.processor_mode is not ProcessorMode.LEAKAGE_CALIBRATION
         ):
             if context.direct_leakage is None or context.phase_jitter_comp_ref is None:
-                raise ValueError("Sufficient processor context not provided")
+                msg = "Sufficient processor context not provided"
+                raise ValueError(msg)
 
         # range_subsweep_indexes holds the subsweep indexes corresponding to range measurements.
         # - Far range - all subsweeps are range measurements.
@@ -256,7 +257,8 @@ class Processor(ProcessorBase[ProcessorResult]):
         standard deviations.
         """
         if sensitivity < 0.0 or 1.0 < sensitivity:
-            raise ValueError("Sensitivity outside of valid interval(0.0 <= Sensitivity <= 1.0).")
+            msg = "Sensitivity outside of valid interval(0.0 <= Sensitivity <= 1.0)."
+            raise ValueError(msg)
 
         return 8.0 - 7.0 * sensitivity
 
@@ -389,7 +391,8 @@ class Processor(ProcessorBase[ProcessorResult]):
         lb_angle: npt.NDArray[np.float64],
     ) -> npt.NDArray[np.complex128]:
         if context.direct_leakage is None or context.phase_jitter_comp_ref is None:
-            raise ValueError("Sufficient context not provided")
+            msg = "Sufficient context not provided"
+            raise ValueError(msg)
 
         adjusted_leakage = context.direct_leakage * np.exp(
             -1j * (context.phase_jitter_comp_ref - lb_angle)
@@ -403,7 +406,8 @@ class Processor(ProcessorBase[ProcessorResult]):
                 self.context.recorded_threshold_mean_sweep is None
                 or self.context.recorded_threshold_noise_std is None
             ):
-                raise ValueError("Missing recorded threshold inputs in context")
+                msg = "Missing recorded threshold inputs in context"
+                raise ValueError(msg)
         elif self.threshold_method == ThresholdMethod.FIXED:
             self.threshold = np.full(
                 self.num_points_cropped, self.processor_config.fixed_threshold_value

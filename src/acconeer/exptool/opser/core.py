@@ -65,7 +65,8 @@ class TypeMissmatchError(SaveError):
     @classmethod
     def wrong_type_encountered(cls, instance: t.Any, path: str, *expected_types: type) -> te.Self:
         if expected_types == ():
-            raise ValueError("Gotta specify at least one expected type")
+            msg = "Gotta specify at least one expected type"
+            raise ValueError(msg)
 
         if len(expected_types) == 1:
             (expected_type,) = expected_types
@@ -280,7 +281,8 @@ def create_type_tree(__type: TypeLike, attr_path: str = "") -> Node:
     :returns: The root of the type tree.
     """
     if isinstance(__type, t.TypeVar):
-        raise NotImplementedError("Cannot resolve type variables of generic classes")
+        msg = "Cannot resolve type variables of generic classes"
+        raise NotImplementedError(msg)
 
     if is_ndarray(__type):
         hints = {}
@@ -320,7 +322,8 @@ def create_type_tree(__type: TypeLike, attr_path: str = "") -> Node:
     try:
         return Node(__type, {name: create_type_tree(hint) for name, hint in hints.items()})
     except RecursionError:
-        raise TypeError(f"{__type} is recursive. Recursively defined classes are not supported")
+        msg = f"{__type} is recursive. Recursively defined classes are not supported"
+        raise TypeError(msg)
 
 
 def sanitize_instance(instance: t.Any, type_tree: Node, attr_path: str = "") -> None:
@@ -350,7 +353,8 @@ def sanitize_instance(instance: t.Any, type_tree: Node, attr_path: str = "") -> 
                 else:
                     break
             else:
-                raise TypeMissmatchErrorGroup("No Union members were sanitary", errors)
+                msg = "No Union members were sanitary"
+                raise TypeMissmatchErrorGroup(msg, errors)
 
             return
 
@@ -376,7 +380,8 @@ def sanitize_instance(instance: t.Any, type_tree: Node, attr_path: str = "") -> 
 
         if origin is tuple:
             if ... in type_args:
-                raise NotImplementedError("Tuple with ellipsis (...) is not supported")
+                msg = "Tuple with ellipsis (...) is not supported"
+                raise NotImplementedError(msg)
 
             children = type_tree.children.items()
 
@@ -387,11 +392,11 @@ def sanitize_instance(instance: t.Any, type_tree: Node, attr_path: str = "") -> 
             return
 
         else:
-            raise ValueError(
-                f"Unexpected generic type '{current_type}' (origin={origin}, type_args={type_args})"
-            )
+            msg = f"Unexpected generic type '{current_type}' (origin={origin}, type_args={type_args})"
+            raise ValueError(msg)
 
-        raise RuntimeError("Fell through instance sanitization")
+        msg = "Fell through instance sanitization"
+        raise RuntimeError(msg)
     elif is_subclass(current_type, numbers.Number) and isinstance(instance, numbers.Number):
         return
     elif is_class(current_type):

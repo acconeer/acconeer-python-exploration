@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -18,7 +18,8 @@ def get_exploration_protocol(rss_version: Optional[Version] = None) -> Type[Expl
         return ExplorationProtocol
 
     if rss_version <= Version("0.2.0"):
-        raise ExplorationProtocolError("Unsupported RSS version")
+        msg = "Unsupported RSS version"
+        raise ExplorationProtocolError(msg)
 
     if rss_version < Version("0.4.3.dev280"):
         return ExplorationProtocol_NoCalibrationReuse
