@@ -113,7 +113,7 @@ def pg_process_program(q, exit_event, updater, max_freq, setup_style, allow_subs
     try:
         while True:
             q.get(timeout=0.001)
-    except Exception:
+    except Exception:  # noqa: S110
         pass
 
 

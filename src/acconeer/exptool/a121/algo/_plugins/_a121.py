@@ -13,6 +13,7 @@ import h5py
 from acconeer.exptool import a121
 from acconeer.exptool.app.new import (
     ApplicationClient,
+    BackendLogger,
     BackendPlugin,
     GeneralMessage,
     HandledException,
@@ -46,6 +47,7 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
         self._live_client = None
         self._replaying_client = None
         self._opened_record = None
+        self._logger = BackendLogger.getLogger(__name__)
 
     @is_task
     def load_from_file(self, *, path: Path) -> None:
@@ -120,8 +122,8 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
             except Exception as exc:
                 try:
                     self.stop_session()
-                except Exception:
-                    pass
+                except Exception as e:
+                    self._logger.exception(e)
 
                 msg = "Failed to get_next"
                 raise HandledException(msg) from exc

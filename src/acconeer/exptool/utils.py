@@ -68,7 +68,7 @@ def timestamp():
     return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 
-def config_logging(args=None, level=logging.WARN):
+def config_logging(args=None, level=logging.WARNING):
     fmt = "{asctime}.{msecs:03.0f} | {levelname:<7} | {processName:<16} | {name:<36} | {message}"
     datefmt = "%H:%M:%S"
 

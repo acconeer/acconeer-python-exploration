@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from enum import Enum, auto
 from typing import Any, Callable, Mapping, Optional
@@ -588,13 +589,10 @@ class ViewPlugin(A121ViewPluginBase):
             assert not_handled == []
 
     def _update_sensor_configs_view(self, config: DetectorConfig, sensor_ids: list[int]) -> None:
-        try:
+        with contextlib.suppress(Exception):
             session_config, _ = Detector._detector_to_session_config_and_processor_specs(
                 config, sensor_ids
             )
-        except Exception:
-            pass  # Since the session config is read only there is no gain in handling this error
-        else:
             tab_visible = [False, False]
             for group in session_config.groups:
                 for _, sensor_config in group.items():

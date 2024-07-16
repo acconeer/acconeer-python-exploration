@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import logging
 from typing import Any, Callable, Optional, TypeVar
 
 import packaging.version
@@ -12,12 +11,10 @@ from acconeer.exptool import _core as core
 from acconeer.exptool.app.new._enums import ConnectionState, PluginState
 from acconeer.exptool.app.new._exceptions import HandledException
 
+from ._backend_logger import BackendLogger
 from ._backend_plugin import BackendPlugin
 from ._message import ConnectionStateMessage, GeneralMessage, Message, PluginStateMessage
 from ._tasks import Task, get_task, get_task_names, is_task
-
-
-log = logging.getLogger(__name__)
 
 
 _AnyClient = core.Client[Any, Any, Any, Any, Any]
@@ -36,6 +33,7 @@ class Model:
         self.backend_plugin = None
         self.client = None
         self.task_callback = task_callback
+        self._logger = BackendLogger.getLogger(__name__)
 
     def idle(self) -> bool:
         if self.backend_plugin is None:
@@ -79,13 +77,7 @@ class Model:
             self.client = None
             self.task_callback(ConnectionStateMessage(state=ConnectionState.DISCONNECTED))
 
-            msg = "Failed to connect"
-
-            try:
-                msg += f":\n{exc}"
-            except Exception:
-                pass
-
+            msg = f"Failed to connect:\n{exc}"
             raise HandledException(msg)
 
         if self.backend_plugin is not None:
@@ -112,8 +104,8 @@ class Model:
 
         try:
             self.client.close()
-        except Exception:
-            pass
+        except Exception as e:
+            self._logger.exception(e)
 
         self.client = None
 
@@ -127,11 +119,11 @@ class Model:
         self.task_callback(PluginStateMessage(state=PluginState.LOADING))
 
         self.backend_plugin = plugin_factory(self.task_callback, key)
-        log.debug(f"{plugin_factory.__name__} was loaded.")
+        self._logger.info(f"{plugin_factory.__name__} was loaded.")
 
         if self.client is not None and self.client.connected:
             self.backend_plugin.attach_client(client=self.client)
-            log.debug(f"{plugin_factory.__name__} was attached a Client")
+            self._logger.debug(f"{plugin_factory.__name__} was attached a Client")
 
         self.task_callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
 
@@ -145,7 +137,7 @@ class Model:
 
         self.backend_plugin.teardown()
         self.backend_plugin = None
-        log.debug("Current BackendPlugin was torn down")
+        self._logger.debug("Current BackendPlugin was torn down")
 
         if send_callback:
             self.task_callback(PluginStateMessage(state=PluginState.UNLOADED))

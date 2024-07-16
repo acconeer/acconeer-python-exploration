@@ -505,12 +505,12 @@ def _check_files(
 def load_file(input_file: str) -> tuple[Union[et.a111.recording.Record, a121.Record], str]:
     try:
         return a121.load_record(input_file), "a121"
-    except Exception:
+    except Exception:  # noqa: S110
         pass
 
     try:
         return et.a111.recording.load(input_file), "a111"
-    except Exception:
+    except Exception:  # noqa: S110
         pass
 
     msg = "The specified file was neither A111 or A121. Cannot load."

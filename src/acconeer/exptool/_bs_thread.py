@@ -1,9 +1,13 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
+import logging
 import queue
 import time
 from threading import Event, Thread
+
+
+_LOG = logging.getLogger(__name__)
 
 
 class BSThreadDiedException(Exception):
@@ -103,13 +107,13 @@ def _bs_thread_program(q, exit_event, updater):
     if stick is not None:
         try:
             stick.turn_off()
-        except Exception:
-            pass
+        except Exception as e:
+            _LOG.exception(e)
 
     try:
         while True:
             q.get(timeout=0.001)
-    except Exception:
+    except Exception:  # noqa: S110
         pass
 
 

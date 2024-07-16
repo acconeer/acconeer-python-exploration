@@ -332,5 +332,5 @@ class BLCommunication:
         self._send_packet(ResetRequestPacket())
         try:
             self._ser.read()  # Dummy read to make sure the previous write is finished
-        except Exception:
+        except Exception:  # noqa: S110
             pass

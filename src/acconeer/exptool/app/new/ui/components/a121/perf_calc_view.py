@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -95,11 +95,7 @@ class PerfCalcView(QGroupBox):
         try:
             self._update(session_config, metadata)
         except Exception:
-            pass
-        else:
-            return
-
-        self.average_current.setText("-")
+            self.average_current.setText("-")
 
     def _update(
         self,
