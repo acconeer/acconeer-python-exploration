@@ -204,7 +204,7 @@ def _load_dll():
             msg = f"Unsupported machine type: '{machine_type}'"
             raise OSError(msg) from None
 
-        funs = {name: getattr(dll, name) for name in FUN_ARGTYPES.keys()}
+        funs = {name: getattr(dll, name) for name in FUN_ARGTYPES}
     elif system == "windows":
         try:
             ft_dll = ctypes.WinDLL(os.path.join(bin_dir, "amd64", "ftd2xx.dll"))
@@ -213,7 +213,7 @@ def _load_dll():
             ft_dll = ctypes.WinDLL(os.path.join(bin_dir, "i386", "ftd2xx.dll"))
             ft4222_dll = ctypes.CDLL(os.path.join(bin_dir, "i386", "LibFT4222.dll"))
         funs = {}
-        for name in FUN_ARGTYPES.keys():
+        for name in FUN_ARGTYPES:
             prefix = name.split("_")[0].lower()
             dll = ft4222_dll if prefix == "ft4222" else ft_dll
             funs[name] = getattr(dll, name)

@@ -78,14 +78,14 @@ def flash_image(image_path, flash_device, device_name=None, progress_callback=No
         serial_device_name = serial_device_name.upper()
         if (
             isinstance(flash_device, comm_devices.USBDevice)
-            and flash_device.pid in PRODUCT_PID_TO_FLASH_MAP.keys()
+            and flash_device.pid in PRODUCT_PID_TO_FLASH_MAP
         ):
             PRODUCT_PID_TO_FLASH_MAP[flash_device.pid].flash(
                 flash_device, serial_device_name, image_path, progress_callback
             )
         elif (
             isinstance(flash_device, comm_devices.SerialDevice)
-            and serial_device_name in PRODUCT_NAME_TO_FLASH_MAP.keys()
+            and serial_device_name in PRODUCT_NAME_TO_FLASH_MAP
         ):
             PRODUCT_NAME_TO_FLASH_MAP[serial_device_name].flash(
                 flash_device, serial_device_name, image_path, progress_callback
@@ -118,9 +118,8 @@ def _find_flash_device(
 
     if port is not None:
         for device in all_devices:
-            if isinstance(device, comm_devices.SerialDevice):
-                if port == device.port:
-                    return device
+            if isinstance(device, comm_devices.SerialDevice) and port == device.port:
+                return device
 
     for device in all_devices:
         if device_name is not None and device.name != device_name:
@@ -175,7 +174,7 @@ def get_flash_known_devices():
 
 def get_flash_download_name(device, device_name):
     name = device_name or device.name
-    if name in EVK_TO_PRODUCT_MAP.keys():
+    if name in EVK_TO_PRODUCT_MAP:
         return EVK_TO_PRODUCT_MAP[name]
     msg = f"Unknown device {name}"
     raise FlashException(msg)
@@ -185,10 +184,10 @@ def get_boot_description(flash_device, device_name):
     flash_device_name = device_name or flash_device.name
     product = None
 
-    if flash_device_name in EVK_TO_PRODUCT_MAP.keys():
+    if flash_device_name in EVK_TO_PRODUCT_MAP:
         product = EVK_TO_PRODUCT_MAP[flash_device_name]
 
-    if product in PRODUCT_NAME_TO_FLASH_MAP.keys():
+    if product in PRODUCT_NAME_TO_FLASH_MAP:
         return PRODUCT_NAME_TO_FLASH_MAP[product].get_boot_description(product)
 
     return None
@@ -223,16 +222,15 @@ def _fetch_and_flash(args):
         else:
             print("[OK]")
 
-    if new_login:
-        if _query_yes_no(
-            "\nWe use cookies to optimize the service of our applications."
-            "\n\nCookie Policy: https://acconeer.com/cookie-policy-eu/"
-            "\nPrivacy Statement: https://developer.acconeer.com/privacy-policy/"
-            "\n\nSelecting yes to the following question will store a cookie on "
-            "your computer:"
-            "\nRemember me?"
-        ):
-            save_cookies(cookies)
+    if new_login and _query_yes_no(
+        "\nWe use cookies to optimize the service of our applications."
+        "\n\nCookie Policy: https://acconeer.com/cookie-policy-eu/"
+        "\nPrivacy Statement: https://developer.acconeer.com/privacy-policy/"
+        "\n\nSelecting yes to the following question will store a cookie on "
+        "your computer:"
+        "\nRemember me?"
+    ):
+        save_cookies(cookies)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         print("Preparing license agreement... ", end="", flush=True)

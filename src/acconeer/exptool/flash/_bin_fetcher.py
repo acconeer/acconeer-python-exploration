@@ -101,9 +101,7 @@ def get_content(
     with requests.Session() as session:
         response = session.get(url=REFERER_URL, cookies=cookies.get_dict())
 
-        if response.url == REQUEST_URL:
-            return False, session, response
-        elif response.headers.get("Expires") is None:
+        if response.url == REQUEST_URL or response.headers.get("Expires") is None:
             return False, session, response
         elif response.headers.get("Expires") is not None:
             return True, session, response

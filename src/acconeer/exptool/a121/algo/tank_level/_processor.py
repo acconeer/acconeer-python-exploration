@@ -167,9 +167,7 @@ class Processor:
                 peak_detected = True
                 if filtered_level < 0:
                     peak_status = ProcessorLevelStatus.OUT_OF_RANGE
-                elif filtered_level > self.tank_range_end_m - self.tank_range_start_m:
-                    peak_status = ProcessorLevelStatus.OVERFLOW
-                elif (
+                elif filtered_level > self.tank_range_end_m - self.tank_range_start_m or (
                     filtered_level <= self.tank_range_end_m - self.tank_range_start_m
                     and self.peak_status_list.count(True) > len(self.peak_status_list) / 2
                 ):

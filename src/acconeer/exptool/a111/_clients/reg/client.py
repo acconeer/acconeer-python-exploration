@@ -245,9 +245,8 @@ class UARTClient(RegBaseClient):
         else:
             self._link.timeout = self._link.DEFAULT_TIMEOUT
 
-        if self._data_rate is not None:
-            if self._data_rate > 2 / 3 * self._link.baudrate:
-                log.warning("data rate might be too high")
+        if self._data_rate is not None and self._data_rate > 2 / 3 * self._link.baudrate:
+            log.warning("data rate might be too high")
 
         return ret
 

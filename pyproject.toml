@@ -218,16 +218,19 @@ explicit-preview-rules = true
 # EM = flake8-errmsg
 # S11[02] = flake8-bandit, Log exception instead of try-except-(pass|continue)
 # LOG = flake8-logging
-extend-select = ["Q", "TID", "I", "FA", "NPY", "EM", "S110", "S112", "LOG"]
+# SIM = flake8-simplify
+extend-select = ["Q", "TID", "I", "FA", "NPY", "EM", "S110", "S112", "LOG", "SIM"]
 # E741 = Ambiguous variable names, e.g. I vs l
-extend-ignore = ["E741"]
+# SIM108 = Has a tendancy to create ternary one-liners.
+# SIM105 = try-except-pass is handled with S110
+extend-ignore = ["E741", "SIM108", "SIM105"]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401", "E402"]
 "src/acconeer/exptool/_winusbcdc/*" = ["F40", "E501"]
-"examples/*" = ["S11"]
-"src/acconeer/exptool/app/old/*" = ["S11"]
-"src/acconeer/exptool/a111/*" = ["S11"]
+"examples/*" = ["S11", "SIM"]
+"src/acconeer/exptool/app/old/*" = ["S11", "SIM"]
+"src/acconeer/exptool/a111/*" = ["S11", "SIM"]
 
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "parents"

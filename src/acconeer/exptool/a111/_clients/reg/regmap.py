@@ -1,6 +1,7 @@
 # Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
+import contextlib
 import enum
 import importlib.resources
 import operator
@@ -193,9 +194,8 @@ def get_reg(value, mode=None):
     matches = []
 
     for reg in REGISTERS:
-        if match_fun(reg):
-            if mode is None or reg.modes is None or mode in reg.modes:
-                matches.append(reg)
+        if match_fun(reg) and (mode is None or reg.modes is None or mode in reg.modes):
+            matches.append(reg)
 
     if len(matches) < 1:
         msg = "unknown reg: {}".format(value)
@@ -278,10 +278,8 @@ def load_yaml():
         else:  # assumed to be a list
             modes = []
             for m in raw_modes:
-                try:
+                with contextlib.suppress(ValueError):
                     modes.append(get_mode(m))
-                except ValueError:
-                    pass
 
             if len(modes) == 0:
                 continue
@@ -293,7 +291,7 @@ def load_yaml():
         except ValueError:
             stripped_name = full_name
         else:
-            if prefix in PREFIX_TO_MODE_MAP.keys():
+            if prefix in PREFIX_TO_MODE_MAP:
                 mode = PREFIX_TO_MODE_MAP[prefix]
 
                 if mode is None:

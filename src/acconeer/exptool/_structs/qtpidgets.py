@@ -1,5 +1,7 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
+
+import contextlib
 
 import numpy as np
 
@@ -181,10 +183,8 @@ class PidgetStub(Pidget):
         self.alert_frame.show()
 
     def _subwidget_event_handler(self, val):
-        try:
+        with contextlib.suppress(ValueError):
             super()._subwidget_event_handler(val)
-        except ValueError:
-            pass  # TODO
 
 
 class ComboBoxPidget(PidgetStub):
@@ -322,9 +322,8 @@ class IntSpinBoxPidget(PidgetStub):
         self._subwidget_event_handler(val)
 
     def __spin_box_event_handler(self, val):
-        if self.param.is_optional:
-            if not self.checkbox.isChecked():
-                val = None
+        if self.param.is_optional and not self.checkbox.isChecked():
+            val = None
 
         self._subwidget_event_handler(val)
 
@@ -431,9 +430,8 @@ class FloatSpinBoxPidget(PidgetStub):
         self._subwidget_event_handler(val)
 
     def __spin_box_event_handler(self, val):
-        if self.param.is_optional:
-            if not self.checkbox.isChecked():
-                val = None
+        if self.param.is_optional and not self.checkbox.isChecked():
+            val = None
 
         self._subwidget_event_handler(val)
 

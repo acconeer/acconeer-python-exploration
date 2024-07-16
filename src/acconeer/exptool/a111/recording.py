@@ -226,7 +226,7 @@ def unpack(packed: dict) -> Record:
         if a.type is str:
             kwargs[k] = packed[k]
         elif a.type == Optional[str]:
-            kwargs[k] = packed.get(k, None)
+            kwargs[k] = packed.get(k)
 
     try:
         mode = _modes.get_mode(packed["mode"])
@@ -239,7 +239,7 @@ def unpack(packed: dict) -> Record:
     kwargs["session_info"] = json.loads(packed["session_info"])
     kwargs["data_info"] = json.loads(packed["data_info"])
 
-    kwargs["sample_times"] = packed.get("sample_times", None)
+    kwargs["sample_times"] = packed.get("sample_times")
 
     assert len(kwargs["data"]) == len(kwargs["data_info"])
 

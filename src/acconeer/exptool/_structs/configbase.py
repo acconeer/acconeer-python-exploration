@@ -309,10 +309,9 @@ class IntParameter(NumberParameter):
                 msg = "Given value is too high ({} > {})".format(value, upper)
                 raise ValueError(msg)
 
-        if self.valid_values is not None:
-            if value not in self.valid_values:
-                msg = "Given value ({}) is not a valid value".format(value)
-                raise ValueError(msg)
+        if self.valid_values is not None and value not in self.valid_values:
+            msg = "Given value ({}) is not a valid value".format(value)
+            raise ValueError(msg)
 
         return value
 

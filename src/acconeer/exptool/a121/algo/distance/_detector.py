@@ -96,7 +96,7 @@ class DetectorContext(AlgoBase):
     def from_h5(cls, group: h5py.Group) -> DetectorContext:
         context_dict = {}
 
-        for key in group.keys():
+        for key in group.keys():  # noqa: SIM118
             if cls._GROUP_NAME in key:
                 sensor_id = int(key.split("_")[-1])
                 context_dict[sensor_id] = SingleSensorContext.from_h5(group[key])

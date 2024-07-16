@@ -562,7 +562,7 @@ class Detector:
             config=config, sensor_ids=self.sensor_ids
         )
 
-        if not (self.context.calibration_session_config == self.session_config):
+        if self.context.calibration_session_config != self.session_config:
             self.detector_status.detector_state = DetailedStatus.CALIBRATION_MISSING
             self.detector_status.ready_to_start = False
 

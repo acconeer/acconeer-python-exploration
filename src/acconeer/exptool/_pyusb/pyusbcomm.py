@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import time
 
 import usb.core
@@ -22,11 +23,11 @@ class PyUsbComm:
     def iterate_devices(self):
         dev = usb.core.find(find_all=True)
         for cfg in dev:
-            serial_number = None
             try:
                 serial_number = cfg.serial_number
             except ValueError:
-                pass
+                serial_number = None
+
             yield (cfg.idVendor, cfg.idProduct, serial_number)
 
     def is_accessible(self, vid, pid):
@@ -73,12 +74,10 @@ class PyUsbCdc:
         def match(dev):
             if self.vid == dev.idVendor and self.pid == dev.idProduct:
                 if self.serial is not None:
-                    try:
+                    with contextlib.suppress(ValueError):
                         serial_number = dev.serial_number
-                    except ValueError:
-                        pass
-                    if serial_number and serial_number == self.serial:
-                        return True
+                        if serial_number and serial_number == self.serial:
+                            return True
                 else:
                     return True
             return False
@@ -117,14 +116,12 @@ class PyUsbCdc:
         end_timeout = time.monotonic() + self.USB_MESSAGE_TIMEOUT
         if size:
             while length < size:
-                try:
+                with contextlib.suppress(usb.core.USBTimeoutError):
                     c = self._dev.read(
                         self._cdc_data_in_ep.bEndpointAddress,
                         self._cdc_data_in_ep.wMaxPacketSize,
                         timeout=self.USB_PACKET_TIMEOUT_MS,
                     )
-                except usb.core.USBTimeoutError:
-                    pass
                 if c is not None and len(c):
                     rx.append(c)
                     length += len(c)
@@ -132,14 +129,12 @@ class PyUsbCdc:
                     break
         else:
             c = None
-            try:
+            with contextlib.suppress(usb.core.USBTimeoutError):
                 c = self._dev.read(
                     self._cdc_data_in_ep.bEndpointAddress,
                     self._cdc_data_in_ep.wMaxPacketSize,
                     timeout=self.USB_MESSAGE_TIMEOUT_MS,
                 )
-            except usb.core.USBTimeoutError:
-                pass
             if c is not None and len(c):
                 rx.append(c)
         chunk = b"".join(rx)

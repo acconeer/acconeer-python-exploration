@@ -148,7 +148,7 @@ class H5SessionRecord(SessionRecord):
                 yield (group_id, sensor_id, entry_group)
 
     def _get_calibrations_group(self) -> h5py.Group:
-        if "calibrations" in self._group.keys():
+        if "calibrations" in self._group.keys():  # noqa: SIM118
             return self._group["calibrations"]
         msg = "No calibration in h5 file"
         raise H5RecordException(msg)

@@ -147,9 +147,9 @@ class Processor:
             self.sensor_spacing_m,
         )
         # Truncate list to a known max length.
-        if self._MAX_NUM_OBJECTS < len(distances_left_cleaned):
+        if len(distances_left_cleaned) > self._MAX_NUM_OBJECTS:
             distances_left_cleaned = distances_left_cleaned[self._MAX_NUM_OBJECTS :]
-        if self._MAX_NUM_OBJECTS < len(distances_right_cleaned):
+        if len(distances_right_cleaned) > self._MAX_NUM_OBJECTS:
             distances_right_cleaned = distances_right_cleaned[self._MAX_NUM_OBJECTS :]
         # Update kalman filters.
         self.left_sensor_kfs = self._update_kalman_filters(

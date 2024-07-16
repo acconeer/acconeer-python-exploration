@@ -243,7 +243,7 @@ class ClientInfo:
                 if serial_port is None
                 else {
                     "port": serial_port,
-                    "override_baudrate": d.get("override_baudrate", None),
+                    "override_baudrate": d.get("override_baudrate"),
                 }
             ),
             "usb": (

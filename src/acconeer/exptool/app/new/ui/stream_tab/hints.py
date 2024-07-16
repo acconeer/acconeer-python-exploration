@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -103,14 +103,11 @@ class UnflashedDeviceHint(HintObject):
         ):
             return True
 
-        if (
+        return (
             app_model.usb_connection_device is not None
             and app_model.connection_interface == ConnectionInterface.USB
             and app_model.usb_connection_device.unflashed
-        ):
-            return True
-
-        return False
+        )
 
 
 class InaccessibleDeviceHint(HintObject):
@@ -125,14 +122,11 @@ class InaccessibleDeviceHint(HintObject):
 
     @staticmethod
     def _should_show(app_model: AppModel) -> bool:
-        if (
+        return (
             app_model.usb_connection_device is not None
             and app_model.connection_interface == ConnectionInterface.USB
             and not app_model.usb_connection_device.accessible
-        ):
-            return True
-
-        return False
+        )
 
 
 class HintWidget(QWidget):

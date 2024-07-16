@@ -348,10 +348,9 @@ class BaseServiceConfig(BaseSessionConfig):
                 alerts.append(cb.Error("power_save_mode", "Unavailable when sensor driven"))
 
         psms = [__class__.PowerSaveMode.HIBERNATE, __class__.PowerSaveMode.OFF]
-        if self.power_save_mode in psms:
-            if self.asynchronous_measurement:
-                msg = "PSM hibernate/off is always synchronous"
-                alerts.append(cb.Info("asynchronous_measurement", msg))
+        if self.power_save_mode in psms and self.asynchronous_measurement:
+            msg = "PSM hibernate/off is always synchronous"
+            alerts.append(cb.Info("asynchronous_measurement", msg))
 
         return alerts
 
@@ -704,9 +703,8 @@ class SparseServiceConfig(_MURCapable, BaseServiceConfig):
     def check(self):
         alerts = super().check()
 
-        if self.sampling_mode == __class__.SamplingMode.B:
-            if self.sweeps_per_frame > 64:
-                alerts.append(cb.Error("sweeps_per_frame", "Must be < 64 with sampling mode B"))
+        if self.sampling_mode == __class__.SamplingMode.B and self.sweeps_per_frame > 64:
+            alerts.append(cb.Error("sweeps_per_frame", "Must be < 64 with sampling mode B"))
 
         if self.sweep_rate is not None and self.update_rate is not None:
             max_frame_rate = self.sweep_rate / self.sweeps_per_frame

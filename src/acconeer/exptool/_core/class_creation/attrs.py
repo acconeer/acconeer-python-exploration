@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -25,11 +25,7 @@ def _dict_wrapper(f: Callable[[_S, _T], bool]) -> Callable[[dict[_U, _S], dict[_
         if a.keys() != b.keys():
             return False
 
-        for key in a:
-            if not f(a[key], b[key]):
-                return False
-
-        return True
+        return all(f(a[key], b[key]) for key in a)
 
     return wrapper
 

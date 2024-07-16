@@ -453,7 +453,7 @@ class PlotPlugin(PgPlotPlugin):
 
         sectors.reverse()
 
-        if not start_m == zone_limits[0]:
+        if start_m != zone_limits[0]:
             start_limit_text = pg.TextItem(html=range_html, anchor=(0.5, 0.5), angle=25)
             start_range_html = range_html.format(f"{start_m}")
             start_limit_text.setHtml(start_range_html)

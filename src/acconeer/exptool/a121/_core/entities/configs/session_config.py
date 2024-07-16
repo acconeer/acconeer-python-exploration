@@ -116,10 +116,9 @@ class SessionConfig:
         else:
             self._extended = extended
 
-        if extended is not None:
-            if not extended and must_be_extended:
-                msg = "Must be extended since multiple sensor configs are given"
-                raise ValueError(msg)
+        if extended is not None and not extended and must_be_extended:
+            msg = "Must be extended since multiple sensor configs are given"
+            raise ValueError(msg)
 
     @property
     def extended(self) -> bool:

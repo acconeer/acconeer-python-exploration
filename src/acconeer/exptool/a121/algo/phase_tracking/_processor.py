@@ -137,8 +137,9 @@ class Processor(ProcessorBase[ProcessorResult]):
             # Reset estimate if this is the first amplitude above the threshold(length of
             # distance_history is 0) or distance between the current and previous peak location
             # is large, indicating new object with greater peak.
-            if self.distance_history.shape[0] == 0 or 0.1 < np.abs(
-                peak_loc_m - self.prev_peak_loc_m
+            if (
+                self.distance_history.shape[0] == 0
+                or np.abs(peak_loc_m - self.prev_peak_loc_m) > 0.1
             ):
                 self.distance_history = np.array([0.0])
 

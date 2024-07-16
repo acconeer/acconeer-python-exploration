@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -442,10 +442,10 @@ class FlashMainWidget(QWidget):
         flash_device_name: Optional[str] = device_name or flash_device.name
         product: Optional[str] = None
 
-        if flash_device_name in EVK_TO_PRODUCT_MAP.keys():
+        if flash_device_name in EVK_TO_PRODUCT_MAP:
             product = EVK_TO_PRODUCT_MAP[flash_device_name]
 
-        if product in PRODUCT_NAME_TO_FLASH_MAP.keys():
+        if product in PRODUCT_NAME_TO_FLASH_MAP:
             return PRODUCT_NAME_TO_FLASH_MAP[product].get_boot_description(product)
 
         return None

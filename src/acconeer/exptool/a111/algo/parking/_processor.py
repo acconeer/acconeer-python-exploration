@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import numpy as np
@@ -68,7 +68,7 @@ class Processor:
         sweep = data
 
         valid_leak_setup = (
-            0 <= self.leak_sample_index
+            self.leak_sample_index >= 0
             and self.leak_sample_index < self.leak_end_index
             and self.leak_sample_index < len(sweep)
         )

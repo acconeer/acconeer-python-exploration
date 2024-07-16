@@ -163,10 +163,9 @@ class _EditableTitleBarLabel(QWidget):
     def _on_edit_title(self) -> None:
         text, ok = QInputDialog.getText(self, "Edit title", "Title:", text=self.text())
 
-        if ok and text:
-            if text != self.text():
-                text = self._broker.change_id(text, self.text())
-                self._broker.offer_event(ChangeIdEvent(self.text(), text))
+        if ok and text and text != self.text():
+            text = self._broker.change_id(text, self.text())
+            self._broker.offer_event(ChangeIdEvent(self.text(), text))
 
     def text(self) -> str:
         return self.label.text()[3:-3]
@@ -324,13 +323,11 @@ class _InputDockWidget(_DockWidget):
         self.setTitleBarWidget(title_bar)
 
     def handle_event(self, event: t.Any) -> None:
-        if isinstance(event, _SpawnInputEvent):
-            if not event.compare_configs:
-                self.close()
-        if isinstance(event, ChangeIdEvent):
-            if self._id == event.old_id:
-                self._id = event.new_id
-                self.window_title = f"{self._fixed_title} - {self._id}"
+        if isinstance(event, _SpawnInputEvent) and not event.compare_configs:
+            self.close()
+        if isinstance(event, ChangeIdEvent) and self._id == event.old_id:
+            self._id = event.new_id
+            self.window_title = f"{self._fixed_title} - {self._id}"
 
     def close(self) -> bool:
         self.uninstall_function()

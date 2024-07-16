@@ -149,7 +149,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         # welch
         self.update_index = 0
         self.segment_length = self.time_series_length // 4
-        if not np.mod(self.segment_length, 2) == 0:
+        if np.mod(self.segment_length, 2) != 0:
             self.segment_length += 1
 
         self.middle_idx = int(np.around(self.segment_length / 2))

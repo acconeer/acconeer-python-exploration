@@ -172,15 +172,14 @@ class DetectorConfig(AlgoConfigBase):
                     )
                 )
 
-        if frame_rate is not None and max_frame_rate is not None:
-            if frame_rate > max_frame_rate:
-                validation_results.append(
-                    a121.ValidationError(
-                        self,
-                        "frame_rate",
-                        f"Frame rate is too high, max frame rate is approx {max_frame_rate}",
-                    )
+        if frame_rate is not None and max_frame_rate is not None and frame_rate > max_frame_rate:
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "frame_rate",
+                    f"Frame rate is too high, max frame rate is approx {max_frame_rate}",
                 )
+            )
 
         # Figure out buffer size and warn about that.
 

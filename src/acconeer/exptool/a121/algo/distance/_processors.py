@@ -185,10 +185,9 @@ class Processor(ProcessorBase[ProcessorResult]):
         if (
             processor_config.measurement_type is MeasurementType.CLOSE_RANGE
             and processor_config.processor_mode is not ProcessorMode.LEAKAGE_CALIBRATION
-        ):
-            if context.direct_leakage is None or context.phase_jitter_comp_ref is None:
-                msg = "Sufficient processor context not provided"
-                raise ValueError(msg)
+        ) and (context.direct_leakage is None or context.phase_jitter_comp_ref is None):
+            msg = "Sufficient processor context not provided"
+            raise ValueError(msg)
 
         # range_subsweep_indexes holds the subsweep indexes corresponding to range measurements.
         # - Far range - all subsweeps are range measurements.
@@ -256,7 +255,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         0 sensitivity corresponds to 15 standard deviations. 1 sensitivity corresponds to 2
         standard deviations.
         """
-        if sensitivity < 0.0 or 1.0 < sensitivity:
+        if sensitivity < 0.0 or sensitivity > 1.0:
             msg = "Sensitivity outside of valid interval(0.0 <= Sensitivity <= 1.0)."
             raise ValueError(msg)
 
@@ -330,9 +329,11 @@ class Processor(ProcessorBase[ProcessorResult]):
         next_expected_start_point = None
 
         for c in subsweep_configs:
-            if next_expected_start_point is not None:
-                if c.start_point != next_expected_start_point:
-                    raise ValueError
+            if (
+                next_expected_start_point is not None
+                and c.start_point != next_expected_start_point
+            ):
+                raise ValueError
 
             next_expected_start_point = c.start_point + c.num_points * step_length
 
@@ -713,10 +714,9 @@ class Processor(ProcessorBase[ProcessorResult]):
         if abs_sweep.shape[0] < 6:
             return False
 
-        if np.sum(abs_sweep[0:3]) >= np.sum(abs_sweep[3:6]) and abs_sweep[0] >= threshold[0]:
-            return True
-        else:
-            return False
+        return bool(
+            np.sum(abs_sweep[0:3]) >= np.sum(abs_sweep[3:6]) and abs_sweep[0] >= threshold[0]
+        )
 
 
 def calculate_bg_noise_std(

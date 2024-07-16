@@ -440,29 +440,19 @@ class AppModel(QObject):
 
     def _update_saveable_file(self, path: Optional[Path]) -> None:
         if self.saveable_file is not None:
-            try:
-                self.saveable_file.unlink()
-            except FileNotFoundError:
-                # If the file we want to remove does not exist, that is fine.
-                pass
+            self.saveable_file.unlink(missing_ok=True)
 
         self.saveable_file = path
         self.broadcast()
 
     def _is_serial_device_unflashed(self, serial_device: Optional[SerialDevice]) -> bool:
-        if serial_device and serial_device.unflashed:
-            return True
-        return False
+        return bool(serial_device and serial_device.unflashed)
 
     def _is_usb_device_unflashed(self, usb_device: Optional[USBDevice]) -> bool:
-        if usb_device and usb_device.unflashed:
-            return True
-        return False
+        return bool(usb_device and usb_device.unflashed)
 
     def _is_usb_device_inaccessible(self, usb_device: Optional[USBDevice]) -> bool:
-        if usb_device and not usb_device.accessible:
-            return True
-        return False
+        return bool(usb_device and not usb_device.accessible)
 
     def _handle_port_update(
         self,

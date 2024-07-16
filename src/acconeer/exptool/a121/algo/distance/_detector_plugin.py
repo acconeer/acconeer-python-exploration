@@ -364,7 +364,7 @@ class PlotPlugin(PgPlotPlugin):
         num_minor_peaks = min(len(distances) - 1, self._MAX_NUM_MINOR_PEAKS)
         new_history = np.full(self._MAX_NUM_MINOR_PEAKS, fill_value=np.nan)
         self.minor_peaks_history = np.roll(self.minor_peaks_history, shift=-1)
-        if 0 < num_minor_peaks:
+        if num_minor_peaks > 0:
             new_history[:num_minor_peaks] = np.array(distances[1 : 1 + num_minor_peaks])
         self.minor_peaks_history[:, -1] = new_history
 
@@ -412,7 +412,7 @@ class PlotPlugin(PgPlotPlugin):
         else:
             self.main_peak_history_curve.setData([0])
 
-        if 0 < strengths.size:
+        if strengths.size > 0:
             string_to_display = "Main peak strength : {:.1f} dB".format(strengths[0])
             self.history_plot_legend.addItem(self.main_peak_history_curve, string_to_display)
 

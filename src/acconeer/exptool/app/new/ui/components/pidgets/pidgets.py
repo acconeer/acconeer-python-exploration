@@ -248,10 +248,9 @@ class FloatSliderPidgetFactory(FloatPidgetFactory):
     limit_texts: Optional[Tuple[Optional[str], Optional[str]]] = None
 
     def __attrs_post_init__(self) -> None:
-        if self.log_scale:
-            if self.limits[0] <= 0:
-                msg = "Lower limit must be > 0 when using log scale"
-                raise ValueError(msg)
+        if self.log_scale and self.limits[0] <= 0:
+            msg = "Lower limit must be > 0 when using log scale"
+            raise ValueError(msg)
 
     def create(self, parent: QWidget) -> FloatSliderPidget:  # type: ignore[override]
         return FloatSliderPidget(self, parent)

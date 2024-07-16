@@ -1,6 +1,7 @@
 # Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
+import contextlib
 import multiprocessing as mp
 import queue
 import signal
@@ -90,10 +91,8 @@ def plot_process_program(q, exit_event, fig_updater, interval):
     fig_updater.setup(fig)
     anim = FuncAnimation(fig, anim_func, interval=0, blit=True)  # noqa: F841
 
-    try:
+    with contextlib.suppress(AttributeError):
         plt.show()
-    except AttributeError:
-        pass
 
 
 class PlotProccessDiedException(Exception):

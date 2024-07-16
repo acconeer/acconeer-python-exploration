@@ -206,9 +206,7 @@ def insert_packet_into_frame(packet):
 def decode_output_buffer(buffer, mode, sweeps_per_frame=None):
     mode = get_mode(mode)
 
-    if mode == Mode.POWER_BINS:
-        return np.frombuffer(buffer, dtype="<u2").astype("float")
-    elif mode == Mode.ENVELOPE:
+    if mode == Mode.POWER_BINS or mode == Mode.ENVELOPE:
         return np.frombuffer(buffer, dtype="<u2").astype("float")
     elif mode == Mode.IQ:
         data = np.frombuffer(buffer, dtype="<i2").astype("float")

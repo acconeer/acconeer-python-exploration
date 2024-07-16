@@ -119,13 +119,11 @@ class ExampleAppConfig(AlgoConfigBase):
 
     @step_length.validator
     def _validate_step_length(self, _: Any, step_length: int) -> None:
-        if step_length is not None:
-            if not (
-                is_divisor_of(SPARSE_IQ_PPC, step_length)
-                or is_multiple_of(SPARSE_IQ_PPC, step_length)
-            ):
-                msg = f"step_length must be a divisor or multiple of {SPARSE_IQ_PPC}"
-                raise ValueError(msg)
+        if step_length is not None and not (
+            is_divisor_of(SPARSE_IQ_PPC, step_length) or is_multiple_of(SPARSE_IQ_PPC, step_length)
+        ):
+            msg = f"step_length must be a divisor or multiple of {SPARSE_IQ_PPC}"
+            raise ValueError(msg)
 
     def _collect_validation_results(self) -> list[a121.ValidationResult]:
         validation_results: list[a121.ValidationResult] = []

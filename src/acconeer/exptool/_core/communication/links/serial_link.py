@@ -59,7 +59,7 @@ class SerialLink(BaseSerialLink):
         assert self._ser is not None
         data = bytearray(self._ser.read(num_bytes))
 
-        if not len(data) == num_bytes:
+        if len(data) != num_bytes:
             msg = "recv timeout"
             raise LinkError(msg)
 

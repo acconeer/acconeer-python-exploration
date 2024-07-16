@@ -61,7 +61,7 @@ class McuMgrUartFlasher(DeviceFlasherBase):
             f"instructions for {device_name}."
         )
 
-        if device_name in DFU_BOOT_DESCRIPTION.keys():
+        if device_name in DFU_BOOT_DESCRIPTION:
             description = (
                 f"<p>To flash the {device_name} it needs to be put in bootloader mode:</p>"
                 f"{DFU_BOOT_DESCRIPTION[device_name]}"

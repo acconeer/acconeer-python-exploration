@@ -39,10 +39,9 @@ class MockClient(BaseClient):
 
         update_rate_limit = 100
 
-        if config.mode == Mode.SPARSE:
-            if config.sweep_rate is not None:
-                sparse_frame_rate_limit = config.sweep_rate / config.sweeps_per_frame
-                update_rate_limit = min(update_rate_limit, sparse_frame_rate_limit)
+        if config.mode == Mode.SPARSE and config.sweep_rate is not None:
+            sparse_frame_rate_limit = config.sweep_rate / config.sweeps_per_frame
+            update_rate_limit = min(update_rate_limit, sparse_frame_rate_limit)
 
         if config.update_rate is None:
             self._update_rate = update_rate_limit
