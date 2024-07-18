@@ -82,13 +82,28 @@ def is_task(m: t.Callable[C[t.Any, _P], _R]) -> _TaskDescriptor[_P, _R]:
     return _TaskDescriptor(m)
 
 
+def _has_task_marker(obj: object) -> bool:
+    return getattr(obj, "is_task", False)
+
+
 def get_task(obj: t.Any, name: str) -> t.Optional[t.Callable[..., t.Any]]:
     """
     Gets the task method "<name>" of the obj.
     If obj does not have a task named "<name>", None is returned.
     """
     task_method = getattr(obj, name, None)
-    if getattr(task_method, "is_task", False):
+    if _has_task_marker(task_method):
         return task_method
     else:
         return None
+
+
+def get_task_names(obj: object) -> list[str]:
+    """
+    Gets the names of all tasks defined on 'obj'
+    """
+    return [
+        name
+        for name in dir(obj)
+        if _has_task_marker(getattr(obj, name, None)) and not name.startswith("_task_method_")
+    ]

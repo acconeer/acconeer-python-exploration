@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from acconeer.exptool.app.new._exceptions import HandledException
 
 from ._backend_plugin import BackendPlugin
 from ._message import ConnectionStateMessage, GeneralMessage, Message, PluginStateMessage
-from ._tasks import Task, get_task, is_task
+from ._tasks import Task, get_task, get_task_names, is_task
 
 
 log = logging.getLogger(__name__)
@@ -56,7 +56,10 @@ class Model:
             plugin_task(**kwargs)
             return
 
-        raise RuntimeError(f"'{name}' is not a task")
+        defined_tasks = get_task_names(self.backend_plugin) + get_task_names(self)
+        task_list = ", ".join(defined_tasks)
+        msg = f"'{name}' is not a task. Available tasks are: {task_list}."
+        raise RuntimeError(msg)
 
     @is_task
     def connect_client(
@@ -124,7 +127,7 @@ class Model:
         self.task_callback(PluginStateMessage(state=PluginState.LOADING))
 
         self.backend_plugin = plugin_factory(self.task_callback, key)
-        log.info(f"{plugin_factory.__name__} was loaded.")
+        log.debug(f"{plugin_factory.__name__} was loaded.")
 
         if self.client is not None and self.client.connected:
             self.backend_plugin.attach_client(client=self.client)

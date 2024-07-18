@@ -216,7 +216,14 @@ class AppModel(QObject):
 
     saveable_file: Optional[Path]
 
-    def __init__(self, backend: Backend, plugins: list[PluginSpec]) -> None:
+    def __init__(
+        self,
+        backend: Backend,
+        plugins: list[PluginSpec],
+        force_autoconnect: bool = False,
+        socket_autoconnect: Optional[str] = None,
+        simulated_autocconnect: bool = False,
+    ) -> None:
         super().__init__()
         self._backend = backend
         self._listener = _BackendListeningThread(self._backend, self)
@@ -226,6 +233,7 @@ class AppModel(QObject):
         self._port_updater.sig_update.connect(self._handle_port_update)
 
         self._backend_task_callbacks: dict[UUID, Any] = {}
+        self._force_autoconnect = force_autoconnect
 
         self._a121_server_info: Optional[a121.ServerInfo] = None
 
@@ -250,6 +258,15 @@ class AppModel(QObject):
         self.available_usb_devices = []
 
         self.saveable_file = None
+
+        if socket_autoconnect is not None:
+            self.set_connection_interface(ConnectionInterface.SOCKET)
+            self.set_socket_connection_ip(socket_autoconnect)
+            self.connect_client(auto=True)
+
+        if simulated_autocconnect:
+            self.set_connection_interface(ConnectionInterface.SIMULATED)
+            self.connect_client(auto=True)
 
     @property
     def plugin_state(self) -> PluginState:
@@ -586,7 +603,8 @@ class AppModel(QObject):
             self._connection_warning, Version(a121.SDK_VERSION)
         )
         task_putter = functools.partial(
-            self.put_task, on_error=self._failed_autoconnect if auto else self.emit_error
+            self.put_task,
+            on_error=self._failed_autoconnect if auto else self.emit_error,
         )
 
         Model.connect_client.rpc(
@@ -674,7 +692,11 @@ class AppModel(QObject):
 
     @property
     def autoconnect_enabled(self) -> bool:
-        return self._persistent_state.autoconnect_enabled
+        return self.autoconnect_forced or self._persistent_state.autoconnect_enabled
+
+    @property
+    def autoconnect_forced(self) -> bool:
+        return self._force_autoconnect
 
     @property
     def overridden_baudrate(self) -> Optional[int]:
@@ -775,25 +797,26 @@ class AppModel(QObject):
             self.emit_error(HandledException("This app can currently only load A121 files"))
             return
 
-        try:
-            plugin = self._find_plugin(findings.key, self.plugin_generation)
-        except Exception:
-            log.debug(f"Could not find plugin '{findings.key}'")
+        if findings.key is None:
+            plugin = self.find_plugin("sparse_iq", self.plugin_generation)  # noqa: F841
+        else:
+            plugin = self.find_plugin(findings.key, self.plugin_generation)
 
-            # TODO: Don't hardcode
-            plugin = self._find_plugin("sparse_iq", self.plugin_generation)  # noqa: F841
+            if plugin is None:
+                log.debug(f"Could not find plugin '{findings.key}'")
+                return
 
         self.load_plugin(plugin)
         BackendPlugin.load_from_file.rpc(self.put_task, path=path)
 
-    def _find_plugin(self, find_key: Optional[str], generation: PluginGeneration) -> PluginSpec:
-        if find_key is None:
-            raise Exception
-
+    def find_plugin(self, plugin_key: str, generation: PluginGeneration) -> Optional[PluginSpec]:
         return next(
-            plugin
-            for plugin in self.plugins
-            if plugin.key == find_key and plugin.generation == generation
+            (
+                plugin
+                for plugin in self.plugins
+                if plugin.key == plugin_key and plugin.generation == generation
+            ),
+            None,
         )
 
     @property

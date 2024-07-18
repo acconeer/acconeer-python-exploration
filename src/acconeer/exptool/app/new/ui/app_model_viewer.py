@@ -61,6 +61,7 @@ class _CurrentStateView(QTextEdit):
                     f"serial_connection_device: {app_model.serial_connection_device}",
                     f"overridden_baudrate:      {app_model.overridden_baudrate}",
                     f"usb_connection_device:    {app_model.usb_connection_device}",
+                    f"autoconnect_enabled:      {app_model.autoconnect_enabled}",
                     "",
                     "backend_plugin_state:",
                     *self._stringify_backend_state(app_model.backend_plugin_state),

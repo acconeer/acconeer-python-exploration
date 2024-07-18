@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -184,11 +184,18 @@ class _ConnectSettingsDialog(QDialog):
         super().__init__(parent)
 
         self.app_model = app_model
-        app_model.sig_notify.connect(self._on_app_model_update)
 
         self.auto_connect_check_box = QCheckBox("Auto-connect", self)
-        self.auto_connect_check_box.setToolTip("Enables auto-connect of device")
-        self.auto_connect_check_box.stateChanged.connect(self._auto_connect_on_state_changed)
+        if self.app_model.autoconnect_forced:
+            self.auto_connect_check_box.setToolTip(
+                "This option is overriden by the '--autoconnect' option"
+            )
+            self.auto_connect_check_box.setDisabled(True)
+        else:
+            self.auto_connect_check_box.setToolTip("Enables auto-connect of device")
+
+            self.auto_connect_check_box.stateChanged.connect(self._auto_connect_on_state_changed)
+            app_model.sig_notify.connect(self._on_app_model_update)
 
         layout = QVBoxLayout(self)
         layout.addWidget(_ConnectSettingsBaudrate(app_model, self))

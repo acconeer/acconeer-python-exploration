@@ -54,6 +54,14 @@ class PluginState(Enum):
         }
 
     @property
+    def is_busy(self) -> bool:
+        return self in {
+            self.LOADED_STARTING,
+            self.LOADED_BUSY,
+            self.LOADED_STOPPING,
+        }
+
+    @property
     def is_steady(self) -> bool:
         return self in {
             self.UNLOADED,

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -51,5 +51,5 @@ class BackendLogger:
         if not logger:
             logger = BackendLogger(name)
             BackendLogger._instances[name] = logger
-            logger.info(f"BackendLogger for {name} initialized")
+            logger.debug(f"BackendLogger for {name} initialized")
         return logger
