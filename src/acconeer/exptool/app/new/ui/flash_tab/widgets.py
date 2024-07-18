@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QLabel,
     QLineEdit,
+    QMessageBox,
     QPushButton,
     QSizePolicy,
     QStackedWidget,
@@ -28,7 +29,7 @@ from PySide6.QtWidgets import (
 
 from acconeer.exptool._core.communication.comm_devices import CommDevice
 from acconeer.exptool.app import resources
-from acconeer.exptool.app.new._enums import ConnectionInterface
+from acconeer.exptool.app.new._enums import ConnectionInterface, ConnectionState
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.ui import utils as ui_utils
 from acconeer.exptool.app.new.ui.device_comboboxes import SerialPortComboBox, USBDeviceComboBox
@@ -336,6 +337,27 @@ class FlashMainWidget(QWidget):
     def _flash(self) -> None:
         assert self.bin_file is not None
         assert self.flash_device is not None
+
+        if self.app_model.connection_state is not ConnectionState.DISCONNECTED:
+            retcode = QMessageBox.warning(
+                self,
+                "Sensor Connected",
+                "Exploration Tool is connected to a sensor that needs to be disconnect before flashing.\n\nDisconnect the sensor?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes,
+            )
+
+            user_accepted = retcode & QMessageBox.StandardButton.Yes > 0
+            if user_accepted:
+                self.app_model.disconnect_client()
+                _ = QMessageBox.information(
+                    self,
+                    "Sensor Disconnecting ...",
+                    "Disconnecting the sensor. Press the <b>Flash</b> button again.",
+                    QMessageBox.StandardButton.Ok,
+                    QMessageBox.StandardButton.Ok,
+                )
+            return
 
         boot_description = self._get_boot_description(self.flash_device, self.device_name)
         if boot_description:
