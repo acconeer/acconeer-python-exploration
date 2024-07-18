@@ -1,5 +1,7 @@
 # Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
+import os
+
 
 project = "acconeer-python-exploration"
 copyright = "2019-2024, Acconeer AB"
@@ -132,6 +134,17 @@ html_last_updated_fmt = "%Y-%m-%d"
 
 
 htmlhelp_basename = "acconeer-python-exploration-docs"
+
+### RTD Addons migration (See https://about.readthedocs.com/blog/2024/07/addons-by-default/)
+
+# Set canonical URL from the Read the Docs Domain
+html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "")
+
+# Tell Jinja2 templates the build is running on Read the Docs
+if os.environ.get("READTHEDOCS", "") == "True":
+    if "html_context" not in globals():
+        html_context = {}
+    html_context["READTHEDOCS"] = True
 
 
 ############################ LaTeX Builder Options #############################
