@@ -1,11 +1,11 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
 
 import typing as t
 
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import (
     QButtonGroup,
@@ -114,6 +114,8 @@ class _PagedLayout(QSplitter):
 
 
 class MainWindow(QMainWindow):
+    sig_closing = Signal()
+
     def __init__(self, app_model: AppModel) -> None:
         super().__init__()
 
@@ -145,3 +147,7 @@ class MainWindow(QMainWindow):
 
     def on_app_model_error(self, exception: Exception, traceback_str: t.Optional[str]) -> None:
         ExceptionWidget(self, exc=exception, traceback_str=traceback_str).exec()
+
+    def closeEvent(self, *args: t.Any, **kwargs: t.Any) -> None:
+        self.sig_closing.emit()
+        return super().closeEvent(*args, **kwargs)

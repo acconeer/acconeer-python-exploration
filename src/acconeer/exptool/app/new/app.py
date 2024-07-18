@@ -75,6 +75,7 @@ def main() -> None:
     if args.amv:
         app_model_viewer = AppModelViewer(model)
         app_model_viewer.show()
+        mw.sig_closing.connect(app_model_viewer.close)
 
     model.broadcast()
 
