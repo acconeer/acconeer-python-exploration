@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -10,10 +10,12 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.ui import utils
 
+from .ui_plugin_base import UiPluginBase
 
-class ViewPluginBase(QWidget):
+
+class ViewPluginBase(UiPluginBase):
     def __init__(self, app_model: AppModel) -> None:
-        super().__init__()
+        super().__init__(app_model)
 
         self.app_model = app_model
 

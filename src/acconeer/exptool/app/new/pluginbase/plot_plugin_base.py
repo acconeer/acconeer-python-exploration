@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -7,18 +7,20 @@ import abc
 import logging
 import typing as t
 
-from PySide6.QtWidgets import QVBoxLayout, QWidget
+from PySide6.QtWidgets import QVBoxLayout
 
 import pyqtgraph as pg
 
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.backend import GeneralMessage
 
+from .ui_plugin_base import UiPluginBase
+
 
 log = logging.getLogger(__name__)
 
 
-class PlotPluginBase(QWidget):
+class PlotPluginBase(UiPluginBase):
     """
     A basic widget with the following signals connected:
 
@@ -31,7 +33,7 @@ class PlotPluginBase(QWidget):
     """
 
     def __init__(self, app_model: AppModel) -> None:
-        super().__init__()
+        super().__init__(app_model)
 
         self.app_model = app_model
 

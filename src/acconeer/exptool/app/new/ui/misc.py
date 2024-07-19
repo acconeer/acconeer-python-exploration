@@ -1,9 +1,12 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
 
-from typing import Optional
+import contextlib
+import logging
+import traceback
+from typing import Iterator, Optional
 
 import pyperclip
 
@@ -13,10 +16,13 @@ from PySide6.QtWidgets import QFrame, QHBoxLayout, QMessageBox, QPushButton, QWi
 from acconeer.exptool.app.new._exceptions import HandledException
 
 
+_LOG = logging.getLogger(__name__)
+
+
 class ExceptionWidget(QMessageBox):
     def __init__(
         self,
-        parent: QWidget,
+        parent: Optional[QWidget],
         *,
         exc: Exception,
         traceback_str: Optional[str] = None,
@@ -44,6 +50,15 @@ class ExceptionWidget(QMessageBox):
             self.addButton(copy_button, QMessageBox.ButtonRole.ActionRole)
             copy_button.clicked.disconnect()
             copy_button.clicked.connect(self._on_copy_clicked)
+
+    @classmethod
+    @contextlib.contextmanager
+    def context(cls) -> Iterator[None]:
+        try:
+            yield
+        except Exception as e:
+            _LOG.debug("Exception raised in MainThread:", exc_info=True)
+            cls(parent=None, exc=e, traceback_str=traceback.format_exc()).exec()
 
     def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
         super().resizeEvent(event)
