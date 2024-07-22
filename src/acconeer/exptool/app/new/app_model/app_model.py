@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import functools
 import json
 import logging
@@ -11,7 +12,17 @@ import shutil
 import time
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 from uuid import UUID
 
 import attrs
@@ -47,6 +58,7 @@ from acconeer.exptool.app.new.backend import (
     StatusFileAccessMessage,
     StatusMessage,
     Task,
+    TimingMessage,
     _RateStats,
 )
 from acconeer.exptool.app.new.storage import get_config_dir, remove_temp_dir
@@ -204,6 +216,8 @@ class AppModel(QObject):
     sig_backend_state_changed = Signal(object)
     sig_resource_tab_input_block_requested = Signal(object)
     """Emit a config object to spawn an input block in the resource tab"""
+    sig_timing = Signal(tuple)
+    """Signals the elapsed time of different things: tuple[<name>, <start time (s)>, <end time (s)>]"""
 
     plugins: list[PluginSpec]
     plugin: Optional[PluginSpec]
@@ -233,6 +247,7 @@ class AppModel(QObject):
         self._port_updater.sig_update.connect(self._handle_port_update)
 
         self._backend_task_callbacks: dict[UUID, Any] = {}
+        self._backend_task_send_timestamps: dict[UUID, float] = {}
         self._force_autoconnect = force_autoconnect
 
         self._a121_server_info: Optional[a121.ServerInfo] = None
@@ -267,6 +282,13 @@ class AppModel(QObject):
         if simulated_autocconnect:
             self.set_connection_interface(ConnectionInterface.SIMULATED)
             self.connect_client(auto=True)
+
+    @contextlib.contextmanager
+    def report_timing(self, name: str) -> Iterator[None]:
+        start = time.perf_counter()
+        yield
+        end = time.perf_counter()
+        self.sig_timing.emit((name, start, end))
 
     @property
     def plugin_state(self) -> PluginState:
@@ -338,6 +360,7 @@ class AppModel(QObject):
             "on_ok": on_ok,
             "on_error": on_error or self.emit_error,
         }
+        self._backend_task_send_timestamps[key] = time.perf_counter()
 
         (name, _) = task
         log.debug(f"Put backend task with name: '{name}', key: {key.time_low}")
@@ -346,6 +369,9 @@ class AppModel(QObject):
         log.debug(f"Got backend closed task: {closed_task.key.time_low}")
 
         callbacks = self._backend_task_callbacks.pop(closed_task.key)
+        task_send_timestamp = self._backend_task_send_timestamps.pop(closed_task.key)
+        task_roundtrip = ("Task Roundtrip", task_send_timestamp, time.perf_counter())
+        self.sig_timing.emit(task_roundtrip)
 
         if closed_task.exception:
             f = callbacks["on_error"]
@@ -396,6 +422,8 @@ class AppModel(QObject):
                     raise RuntimeError(msg)
             else:
                 self._handle_backend_general_message(message)
+        elif isinstance(message, TimingMessage):
+            self.sig_timing.emit((message.name, message.start, message.end))
         else:
             msg = f"Got message of unknown type '{type(message)}'"
             raise RuntimeError(msg)

@@ -4,16 +4,23 @@
 from __future__ import annotations
 
 import abc
+import time
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Callable, Generic, Optional, TypeVar
+from typing import Any, Callable, Generic, Iterator, Optional, TypeVar
 
 import h5py
 
 from acconeer.exptool.app.new import PluginGeneration
 from acconeer.exptool.app.new.storage import get_config_dir
 
-from ._message import BackendPluginStateMessage, Message, StatusFileAccessMessage, StatusMessage
+from ._message import (
+    BackendPluginStateMessage,
+    Message,
+    StatusFileAccessMessage,
+    StatusMessage,
+    TimingMessage,
+)
 from ._tasks import is_task
 
 
@@ -31,7 +38,7 @@ class BackendPlugin(abc.ABC, Generic[StateT]):
         self.generation = generation
 
     @contextmanager
-    def h5_cache_file(self, write: bool = False) -> h5py.File:
+    def h5_cache_file(self, write: bool = False) -> Iterator[h5py.File]:
         file_path = (get_config_dir() / "plugin" / self.generation.value / self.key).with_suffix(
             ".h5"
         )
@@ -43,6 +50,13 @@ class BackendPlugin(abc.ABC, Generic[StateT]):
         h5_file = h5py.File(file_path, file_mode)
         yield h5_file
         h5_file.close()
+
+    @contextmanager
+    def report_timing(self, name: str) -> Iterator[None]:
+        start = time.perf_counter()
+        yield
+        end = time.perf_counter()
+        self.callback(TimingMessage(name=name, start=start, end=end))
 
     @is_task
     @abc.abstractmethod

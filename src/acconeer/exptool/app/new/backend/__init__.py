@@ -16,6 +16,7 @@ from ._message import (
     RecipientLiteral,
     StatusFileAccessMessage,
     StatusMessage,
+    TimingMessage,
 )
 from ._model import Model
 from ._rate_calc import _RateCalculator, _RateStats

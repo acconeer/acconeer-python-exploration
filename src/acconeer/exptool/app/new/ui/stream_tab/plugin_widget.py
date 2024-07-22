@@ -336,7 +336,9 @@ class PluginPlotArea(QFrame):
             raise RuntimeError(msg)
 
     def timerEvent(self, event: QtCore.QTimerEvent) -> None:
-        self.plot_plugin.draw()
+        plugin_class_name = type(self.plot_plugin).__name__
+        with self.app_model.report_timing(f"{plugin_class_name}.draw()"):
+            self.plot_plugin.draw()
 
     def _on_app_model_load_plugin(self, plugin: Optional[PluginSpecBase]) -> None:
         log.debug(

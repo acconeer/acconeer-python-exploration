@@ -57,6 +57,13 @@ class LogMessage(Message):
 
 
 @attrs.frozen(kw_only=True, slots=False)
+class TimingMessage(Message):
+    name: str
+    start: float
+    end: float
+
+
+@attrs.frozen(kw_only=True, slots=False)
 class GeneralMessage(Message):
     name: str = attrs.field()
     recipient: Optional[RecipientLiteral] = attrs.field(default=None)

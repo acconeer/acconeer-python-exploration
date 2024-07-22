@@ -3,7 +3,9 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Optional, TypeVar
+import contextlib
+import time
+from typing import Any, Callable, Iterator, Optional, TypeVar
 
 import packaging.version
 
@@ -13,7 +15,13 @@ from acconeer.exptool.app.new._exceptions import HandledException
 
 from ._backend_logger import BackendLogger
 from ._backend_plugin import BackendPlugin
-from ._message import ConnectionStateMessage, GeneralMessage, Message, PluginStateMessage
+from ._message import (
+    ConnectionStateMessage,
+    GeneralMessage,
+    Message,
+    PluginStateMessage,
+    TimingMessage,
+)
 from ._tasks import Task, get_task, get_task_names, is_task
 
 
@@ -39,25 +47,38 @@ class Model:
         if self.backend_plugin is None:
             return False
 
-        return self.backend_plugin.idle()
+        backend_plugin_class_name = type(self.backend_plugin).__name__
+        with self.report_timing(f"{backend_plugin_class_name}.idle()"):
+            return self.backend_plugin.idle()
 
     def execute_task(self, task: Task) -> None:
         (name, kwargs) = task
 
         builtin_task = get_task(self, name)
         if builtin_task is not None:
-            builtin_task(**kwargs)
+            with self.report_timing(f"Backend.{name}()"):
+                builtin_task(**kwargs)
             return
 
-        plugin_task = get_task(self.backend_plugin, name)
-        if plugin_task is not None:
-            plugin_task(**kwargs)
-            return
+        if self.backend_plugin is not None:
+            backend_plugin_class_name = type(self.backend_plugin).__name__
+            plugin_task = get_task(self.backend_plugin, name)
+            if plugin_task is not None:
+                with self.report_timing(f"{backend_plugin_class_name}.{name}()"):
+                    plugin_task(**kwargs)
+                return
 
         defined_tasks = get_task_names(self.backend_plugin) + get_task_names(self)
         task_list = ", ".join(defined_tasks)
         msg = f"'{name}' is not a task. Available tasks are: {task_list}."
         raise RuntimeError(msg)
+
+    @contextlib.contextmanager
+    def report_timing(self, name: str) -> Iterator[None]:
+        start = time.perf_counter()
+        yield
+        end = time.perf_counter()
+        self.task_callback(TimingMessage(name=name, start=start, end=end))
 
     @is_task
     def connect_client(

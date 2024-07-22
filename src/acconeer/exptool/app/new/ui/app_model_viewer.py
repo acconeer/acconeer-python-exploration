@@ -4,10 +4,12 @@
 from __future__ import annotations
 
 import re
+import time
 from typing import Any, Optional
 
-from PySide6.QtCore import SignalInstance
-from PySide6.QtGui import QStandardItem, QStandardItemModel
+from PySide6.QtCharts import QChartView, QLineSeries
+from PySide6.QtCore import Qt, SignalInstance
+from PySide6.QtGui import QPen, QStandardItem, QStandardItemModel
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QPushButton,
@@ -123,9 +125,94 @@ class _SignalLog(QWidget):
         return item
 
 
+class _TimingPlot(QChartView):
+    def __init__(
+        self,
+        app_model: AppModel,
+        capture_len_s: int = 60,
+    ) -> None:
+        super().__init__()
+        self._capture_len_s = capture_len_s
+        self._timing_start = time.perf_counter()
+
+        self._app_model = app_model
+        self._app_model.sig_timing.connect(self.plot)
+        self.reset()
+
+    def reset(self) -> None:
+        self._timing_start = time.perf_counter()
+        self.chart().removeAllSeries()
+
+        reference_60_hz = QLineSeries()
+        reference_60_hz.setName("Reference: 60Hz")
+        pen = QPen(Qt.PenStyle.DashLine)
+        pen.setColor("red")
+        reference_60_hz.setPen(pen)
+        reference_60_hz.append(0, 1000 / 60)
+        reference_60_hz.append(self._capture_len_s, 1000 / 60)
+        self.chart().addSeries(reference_60_hz)
+
+    @property
+    def _timing_series(self) -> list[QLineSeries]:
+        return [
+            s
+            for s in self.chart().series()
+            if isinstance(s, QLineSeries)
+            # if "reference" not in s.name().lower()
+        ]
+
+    def plot(self, name_and_times: tuple[str, float, float]) -> None:
+        name, start, end = name_and_times
+        timestamp = start - self._timing_start
+
+        if timestamp > self._capture_len_s:
+            self.reset()
+            self.plot(name_and_times)
+            return
+
+        duration_ms = 1000 * (end - start)
+
+        timing_series = self._timing_series
+        queried_series = next((s for s in timing_series if s.name() == name), None)
+
+        if queried_series is None:
+            new_series = QLineSeries()
+            new_series.setName(name)
+            new_series.append(timestamp, duration_ms)
+            self.chart().addSeries(new_series)
+        else:
+            queried_series.append(timestamp, duration_ms)
+
+        if timing_series != []:
+            max_y = max(p.y() for s in timing_series for p in s.points())
+        else:
+            max_y = 0
+
+        self.chart().createDefaultAxes()
+        self.chart().axisX().setTitleText("Time (s)")
+        self.chart().axisY().setTitleText("Elapsed time (ms)")
+        self.chart().axisX().setRange(0, self._capture_len_s)
+        self.chart().axisY().setRange(0, max(1.1 * max_y, 1))
+        self.chart().update()
+
+
+class _TimingMonitor(QWidget):
+    def __init__(self, app_model: AppModel) -> None:
+        super().__init__()
+        plot = _TimingPlot(app_model)
+        reset_button = QPushButton("Reset")
+        reset_button.clicked.connect(plot.reset)
+
+        layout = QVBoxLayout()
+        layout.addWidget(reset_button)
+        layout.addWidget(plot)
+        self.setLayout(layout)
+
+
 class AppModelViewer(QTabWidget):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__()
         self.addTab(_CurrentStateView(app_model), "Current State")
         self.addTab(_SignalLog(app_model), "Signal Log")
+        self.addTab(_TimingMonitor(app_model), "Timing Monitor")
         self.setMinimumSize(500, 500)
