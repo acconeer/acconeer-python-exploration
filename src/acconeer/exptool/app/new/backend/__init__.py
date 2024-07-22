@@ -2,7 +2,7 @@
 # All rights reserved
 
 from ._application_client import ApplicationClient
-from ._backend import Backend, ClosedTask
+from ._backend import Backend, ClosedTask, GenBackend, MpBackend
 from ._backend_logger import BackendLogger
 from ._backend_plugin import BackendPlugin
 from ._message import (

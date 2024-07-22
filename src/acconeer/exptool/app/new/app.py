@@ -23,7 +23,7 @@ from acconeer.exptool.utils import config_logging
 
 from ._enums import ConnectionState, PluginGeneration, PluginState
 from .app_model import AppModel
-from .backend import Backend
+from .backend import Backend, GenBackend, MpBackend
 from .plugin_loader import import_and_register_plugin_module, load_plugins
 from .storage import remove_config_dir, remove_temp_dir
 from .ui import AppModelViewer, MainWindow
@@ -85,7 +85,11 @@ def main() -> None:
         print(f"ERROR: Available plugin keys: {plugin_keys}")
         sys.exit(1)
 
-    backend = Backend()
+    backend: Backend
+    if args.same_process:
+        backend = GenBackend()
+    else:
+        backend = MpBackend()
     backend.start()
 
     model = AppModel(
@@ -265,6 +269,11 @@ class _ExptoolArgumentParser(argparse.ArgumentParser):
         )
 
         dbg_group = self.add_argument_group(title="debugging")
+        dbg_group.add_argument(
+            "--same-process",
+            action="store_true",
+            help="Run the application backend in the main thread. Deteriorates performance but enables backend plugin debugging (e.g. with breakpoint())",
+        )
         dbg_group.add_argument(
             "--amv",
             action="store_true",

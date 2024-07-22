@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ import time
 import traceback
 import uuid
 from multiprocessing.synchronize import Event as mp_EventType  # NOTE! this is not mp.Event.
-from typing import Optional, Tuple, Union
+from typing import Generator, Optional, Tuple, Union
 
 import attrs
 import psutil
@@ -39,7 +39,9 @@ ToBackendQueueItem = Union[
 FromBackendQueueItem = Union[Message, ClosedTask]
 
 
-class Backend:
+class MpBackend:
+    """Application backend implemented with ``multiprocessing`` (runs in a separate process)"""
+
     def __init__(self) -> None:
         self._recv_queue: mp.Queue[FromBackendQueueItem] = mp.Queue()
         self._send_queue: mp.Queue[ToBackendQueueItem] = mp.Queue()
@@ -88,13 +90,79 @@ class Backend:
         return self._recv_queue.get(timeout=timeout)
 
 
+class GenBackend:
+    """Application backend implemented with a generator (runs in a main process)"""
+
+    def __init__(self) -> None:
+        self._recv_queue: mp.Queue[FromBackendQueueItem] = mp.Queue()
+        self._send_queue: mp.Queue[ToBackendQueueItem] = mp.Queue()
+        self._stop_event = mp.Event()
+        self._generator = process_generator(
+            self._send_queue,
+            self._recv_queue,
+            self._stop_event,
+            cpu_msg_interval_s=0.5,
+            recv_queue_block=False,
+        )
+
+    def start(self) -> None:
+        log.debug("Backend starting ...")
+        _ = next(self._generator, None)
+
+    def stop(self) -> None:
+        log.debug("Backend stopping ...")
+        self._stop_event.set()
+        self._send(("stop", None))
+
+    def put_task(self, task: Task) -> uuid.UUID:
+        key = uuid.uuid4()
+        self._send(("task", (key, task)))
+        return key
+
+    def _send(self, item: ToBackendQueueItem) -> None:
+        self._send_queue.put(item)
+
+    def recv(self, timeout: Optional[float] = None) -> FromBackendQueueItem:
+        _ = next(self._generator, None)
+        return self._recv_queue.get(timeout=timeout)
+
+    def recv_nowait(self) -> Optional[FromBackendQueueItem]:
+        _ = next(self._generator, None)
+        try:
+            return self._recv_queue.get_nowait()
+        except queue.Empty:
+            return None
+
+
+Backend = Union[MpBackend, GenBackend]
+
+
 def process_program(
     recv_queue: mp.Queue[ToBackendQueueItem],
     send_queue: mp.Queue[FromBackendQueueItem],
     stop_event: mp_EventType,
 ) -> None:
-    MAX_POLL_INTERVAL = 0.5
+    # Continuously consumes from the generator,
+    # making the 'yield' not have any effect
+    for _ in process_generator(
+        recv_queue,
+        send_queue,
+        stop_event,
+        cpu_msg_interval_s=0.5,
+        recv_queue_block=True,
+        recv_queue_timeout_s=0.5,
+    ):
+        pass
 
+
+def process_generator(
+    recv_queue: mp.Queue[ToBackendQueueItem],
+    send_queue: mp.Queue[FromBackendQueueItem],
+    stop_event: mp_EventType,
+    cpu_msg_interval_s: float,
+    recv_queue_block: bool,
+    recv_queue_timeout_s: Optional[float] = None,
+) -> Generator[None, None, None]:
     process = psutil.Process()
     process.cpu_percent()
     last_cpu_msg_time = time.monotonic()
@@ -106,8 +174,9 @@ def process_program(
         model_wants_to_idle = False
 
         while not stop_event.is_set():
+            yield
             now = time.monotonic()
-            if now - last_cpu_msg_time > MAX_POLL_INTERVAL:
+            if now - last_cpu_msg_time > cpu_msg_interval_s:
                 last_cpu_msg_time = now
                 cpu_percent = round(process.cpu_percent())
                 send_queue.put(
@@ -121,7 +190,7 @@ def process_program(
 
             if not model_wants_to_idle:
                 try:
-                    msg = recv_queue.get(timeout=MAX_POLL_INTERVAL)
+                    msg = recv_queue.get(block=recv_queue_block, timeout=recv_queue_timeout_s)
                 except queue.Empty:
                     continue
 

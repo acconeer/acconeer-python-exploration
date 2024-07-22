@@ -15,6 +15,7 @@ from acconeer.exptool.app.new.app_model import PluginSpec
 from acconeer.exptool.app.new.backend import (
     Backend,
     GeneralMessage,
+    MpBackend,
     PluginStateMessage,
     Task,
 )
@@ -87,7 +88,7 @@ class TestBackendPlugins:
         plugin: PluginSpec,
         extra_tasks: t.Iterable[Task],
     ) -> t.Iterator[Backend]:
-        b = CaptureSaveableFile.wrap(Backend())
+        b = CaptureSaveableFile.wrap(MpBackend())
         b.start()
         b.put_task(tasks.CONNECT_CLIENT_TASK[plugin.generation])
         assert_messages(b, received=[tasks.SUCCESSFULLY_CLOSED_TASK])

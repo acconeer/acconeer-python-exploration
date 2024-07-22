@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -8,7 +8,12 @@ import dirty_equals as de
 import pytest
 
 from acconeer.exptool.app.new import ConnectionState, PluginGeneration, PluginState
-from acconeer.exptool.app.new.backend import Backend, ConnectionStateMessage, PluginStateMessage
+from acconeer.exptool.app.new.backend import (
+    Backend,
+    ConnectionStateMessage,
+    MpBackend,
+    PluginStateMessage,
+)
 
 
 @pytest.fixture(params=list(PluginGeneration))
@@ -187,7 +192,7 @@ class TestDisconnectedUnloadedBackend(DisconnectedBackend, UnloadedBackend):
 
     @pytest.fixture
     def backend(self) -> t.Iterator[Backend]:
-        b = Backend()
+        b = MpBackend()
         b.start()
         yield b
         b.stop()
@@ -202,7 +207,7 @@ class TestConnectedUnloadedBackend(ConnectedBackend, UnloadedBackend):
     def backend(
         self, tasks: t.Any, assert_messages: t.Callable[..., None], generation: PluginGeneration
     ) -> t.Iterator[Backend]:
-        b = Backend()
+        b = MpBackend()
         b.start()
         b.put_task(tasks.CONNECT_CLIENT_TASK[generation])
         assert_messages(b, received=[tasks.SUCCESSFULLY_CLOSED_TASK])
@@ -217,7 +222,7 @@ class TestDisconnectedLoadedBackend(DisconnectedBackend, LoadedBackend):
 
     @pytest.fixture
     def backend(self, tasks: t.Any, assert_messages: t.Callable[..., None]) -> t.Iterator[Backend]:
-        b = Backend()
+        b = MpBackend()
         b.start()
         b.put_task(tasks.LOAD_PLUGIN_TASK)
         assert_messages(b, received=[tasks.SUCCESSFULLY_CLOSED_TASK])
@@ -234,7 +239,7 @@ class TestConnectedLoadedBackend(ConnectedBackend, LoadedBackend):
     def backend(
         self, tasks: t.Any, assert_messages: t.Callable[..., None], generation: PluginGeneration
     ) -> t.Iterator[Backend]:
-        b = Backend()
+        b = MpBackend()
         b.start()
         b.put_task(tasks.CONNECT_CLIENT_TASK[generation])
         assert_messages(b, received=[tasks.SUCCESSFULLY_CLOSED_TASK])
