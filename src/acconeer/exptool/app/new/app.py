@@ -79,7 +79,7 @@ def main() -> None:
     plugins = load_plugins()
     plugin_keys = [p.key for p in plugins]
 
-    if args.plugin_key not in plugin_keys:
+    if args.plugin_key is not None and args.plugin_key not in plugin_keys:
         parser.print_usage()
         print(f"ERROR: Could not find plugin with key {args.plugin_key!r}")
         print(f"ERROR: Available plugin keys: {plugin_keys}")
