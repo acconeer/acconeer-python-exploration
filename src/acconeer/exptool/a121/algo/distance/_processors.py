@@ -38,6 +38,8 @@ DEFAULT_FIXED_AMPLITUDE_THRESHOLD_VALUE = 100.0
 DEFAULT_FIXED_STRENGTH_THRESHOLD_VALUE = 0.0
 DEFAULT_THRESHOLD_SENSITIVITY = 0.5
 
+NARROW_DISTANCE_FILTER_BREAKPOINT = 40  # corresponding to 0.1m
+
 
 class MeasurementType(AlgoParamEnum):
     CLOSE_RANGE = enum.auto()
@@ -231,7 +233,11 @@ class Processor(ProcessorBase[ProcessorResult]):
             self.start_point_cropped + np.arange(self.num_points_cropped) * self.step_length
         ) * self.metadata.base_step_length_m
 
-        (self.b, self.a) = get_distance_filter_coeffs(self.profile, self.step_length)
+        (self.b, self.a) = get_distance_filter_coeffs(
+            self.profile,
+            self.step_length,
+            narrow_filter=self.start_point < NARROW_DISTANCE_FILTER_BREAKPOINT,
+        )
 
         self.processor_mode = processor_config.processor_mode
         self.threshold_method = processor_config.threshold_method
@@ -724,7 +730,8 @@ def calculate_bg_noise_std(
 ) -> float:
     profile = subsweep_config.profile
     step_length = subsweep_config.step_length
-    (B, A) = get_distance_filter_coeffs(profile, step_length)
+    narrow_filter = subsweep_config.start_point < NARROW_DISTANCE_FILTER_BREAKPOINT
+    (B, A) = get_distance_filter_coeffs(profile, step_length, narrow_filter)
     filt_margin = get_distance_filter_edge_margin(profile, step_length)
 
     sweep = subframe.squeeze(axis=0)

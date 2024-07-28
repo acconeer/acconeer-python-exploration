@@ -219,7 +219,7 @@ def calculate_loopback_peak_location(result: a121.Result, config: a121.SensorCon
     Calculate the distance tot peak of the loopback using interpolation.
     """
 
-    (B, A) = get_distance_filter_coeffs(config.profile, config.step_length)
+    (B, A) = get_distance_filter_coeffs(config.profile, config.step_length, narrow_filter=True)
     sweep = np.squeeze(result.frame, axis=0)
     abs_sweep = np.abs(filtfilt(B, A, sweep))
     peak_idx = [int(np.argmax(abs_sweep))]
@@ -337,11 +337,19 @@ def get_temperature_adjustment_factors(
     return (signal_adjustment_factor, deviation_adjustment_factor)
 
 
-def get_distance_filter_coeffs(profile: a121.Profile, step_length: int) -> Any:
+def get_distance_filter_coeffs(
+    profile: a121.Profile, step_length: int, narrow_filter: bool = False
+) -> Any:
     """Calculates the IIR coefficients corresponding to a matched filter, based on the profile and
     the step length.
+
+    Narrow filter increase the bandwidth of the filter, yielding a less smeared envelope after
+    filtering.
     """
+    NARROW_FILTER_MULTIPLIER = 2.0
     wnc = APPROX_BASE_STEP_LENGTH_M * step_length / (ENVELOPE_FWHM_M[profile])
+    if narrow_filter:
+        wnc *= NARROW_FILTER_MULTIPLIER
     return butter(N=2, Wn=wnc)
 
 
