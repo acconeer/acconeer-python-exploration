@@ -98,7 +98,7 @@ def assert_messages() -> t.Callable[..., None]:
         backend: Backend,
         *,
         received: list[t.Union[Message, ClosedTask]],
-        not_received: t.Iterable[t.Union[Message, ClosedTask]] = tuple(),
+        not_received: t.Iterable[t.Union[Message, ClosedTask]] = (Tasks.FAILED_CLOSED_TASK,),
         max_num_messages: int = 30,
         recv_timeout: float = 2.0,
         timeout: float = 10.0,
