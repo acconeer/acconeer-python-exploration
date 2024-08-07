@@ -94,6 +94,8 @@ Constant False Alarm Rate (CFAR) threshold (default)
     The main advantage is that the memory consumption is minimal.
     The sensitivity of the threshold is controlled through :attr:`~acconeer.exptool.a121.algo.distance.DetectorConfig.threshold_sensitivity`.
     As the CFAR threshold is formed based on each momentary sweep, any temperature effects on the signal are implicitly accounted for by the algorithm.
+    When measuring close to the sensor, the direct leakage will strongly affect the CFAR threshold, and therefore the CFAR threshold is one-sided close to the sensor.
+    This means that the threshold only includes neighbors further away from the sensor.
 
 Reflector Shape
 ---------------

@@ -439,6 +439,25 @@ class Processor(ProcessorBase[ProcessorResult]):
                 self.profile, self.step_length
             )
 
+            # breakpoint_lim defines at what distance cfar should go from being calculated
+            # one-sided to symmetrical. One-sided is used to avoid introducing the direct leakage
+            # in the threshold. The limit is based on a multiple of the envelope width.
+            breakpoint_lim = (
+                int(
+                    round(
+                        (ENVELOPE_FWHM_M[a121.Profile.PROFILE_1] * 3) / APPROX_BASE_STEP_LENGTH_M
+                    )
+                )
+                + self.cfar_margin
+            )
+
+            if breakpoint_lim >= self.start_point:
+                self.one_sided_breakpoint_in_sweep: Optional[int] = (
+                    (breakpoint_lim - self.start_point) // self.step_length
+                ) + 1
+            else:
+                self.one_sided_breakpoint_in_sweep = None
+
         self.offset_m = get_distance_offset(
             self.context.loopback_peak_location_m, self.profile, self.context.reference_temperature
         )
@@ -573,6 +592,7 @@ class Processor(ProcessorBase[ProcessorResult]):
                 self.guard_half_length,
                 self.num_stds_in_threshold,
                 self.cfar_abs_noise,
+                self.one_sided_breakpoint_in_sweep,
             )
         elif (
             self.threshold_method == ThresholdMethod.FIXED
@@ -649,6 +669,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         guard_half_length: int,
         num_stds: float,
         abs_noise_std: npt.NDArray[np.float64],
+        one_sided_breakpoint_in_sweep: Optional[int] = None,
     ) -> npt.NDArray[np.float64]:
         """Calculate CFAR threshold.
 
@@ -660,6 +681,9 @@ class Processor(ProcessorBase[ProcessorResult]):
 
         For each point, the threshold is calculated as the average of the points located in the
         segments to the left and to the right.
+
+        One-sided theshold is applied for all points below one_sided_breakpoint_in_sweep. The
+        purpose is to avoid the influence of direct leakage in the threshold.
         """
 
         threshold = np.full(abs_sweep.shape, np.nan)
@@ -667,10 +691,12 @@ class Processor(ProcessorBase[ProcessorResult]):
         sweep_len_without_margins = abs_sweep.shape[0] - 2 * margin
 
         filt_abs_sweep = np.convolve(abs_sweep, np.ones(window_length), "valid") / window_length
-        threshold[margin:-margin] = (
-            filt_abs_sweep[:sweep_len_without_margins]
-            + filt_abs_sweep[-sweep_len_without_margins:]
-        ) / 2
+        left_cfar_component = filt_abs_sweep[:sweep_len_without_margins] / 2
+        right_cfar_component = filt_abs_sweep[-sweep_len_without_margins:] / 2
+        if one_sided_breakpoint_in_sweep is not None:
+            left_cfar_component[:one_sided_breakpoint_in_sweep] = 0
+
+        threshold[margin:-margin] = left_cfar_component + right_cfar_component
 
         threshold += abs_noise_std * num_stds
         return threshold
