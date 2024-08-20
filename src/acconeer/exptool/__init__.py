@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from . import a111, utils
@@ -8,6 +8,8 @@ from .pg_process import PGProccessDiedException, PGProcess
 
 
 try:
+    # hatch-vcs/setuptools_scm generated version file
     from ._version import __version__
-except ImportError:
-    __version__ = "0.0.0"
+except ImportError as ie:
+    msg = "Could not locate version file. Try reinstalling acconeer-exptool."
+    raise ImportError(msg) from ie

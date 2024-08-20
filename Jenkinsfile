@@ -60,6 +60,14 @@ def getCronTriggers(String branchName) {
     return pipelineTriggers(triggers)
 }
 
+def hatchWrap (command) {
+    // Ensure the presence of '_version.py'
+    // (See https://github.com/ofek/hatch-vcs?tab=readme-ov-file#write-version-to-file)
+    sh 'hatch build --hooks-only'
+    // Run a hatch command
+    sh "hatch ${command}"
+}
+
 BuildScope getBuildScope() {
     if (currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').isEmpty()) {
         // currentBuild was not triggered by a cron timer
@@ -122,7 +130,7 @@ try {
 
                 buildDocker(path: 'docker').inside(dockerArgs(env)) {
                     sh 'python3 -V'
-                    sh 'hatch fmt --check'
+                    hatchWrap 'fmt --check'
                 }
             }
         }
@@ -139,8 +147,8 @@ try {
 
                     buildDocker(path: 'docker').inside(dockerArgs(env)) {
                         sh 'python3 -V'
-                        sh 'hatch build'
-                        sh 'hatch run docs:build'
+                        hatchWrap 'build'
+                        hatchWrap 'run docs:build'
                     }
                     archiveArtifacts artifacts: 'dist/*', allowEmptyArchive: true
                     archiveArtifacts artifacts: 'docs/_build/latex/*.pdf', allowEmptyArchive: true
@@ -157,7 +165,7 @@ try {
                     printNodeInfo()
                     checkoutAndCleanup()
                     buildDocker(path: 'docker').inside(dockerArgs(env)) {
-                        sh 'hatch run mypy:check --no-incremental'
+                        hatchWrap 'run mypy:check --no-incremental'
                     }
                 }
             }
@@ -183,7 +191,7 @@ try {
                     }
                     stage("Model Regression Tests (rss=${modelTestA121RssVersion})") {
                         buildDocker(path: 'docker').inside(dockerArgs(env)) {
-                            sh 'hatch test -py=3.8 tests/model'
+                            hatchWrap 'test -py=3.8 tests/model'
                         }
                     }
                 }
@@ -201,7 +209,7 @@ try {
                     buildDocker(path: 'docker').inside(dockerArgs(env)) {
                         isolatedTestPythonVersions.each { v -> sh "python${v} -V" }
                         String versionSelection = "-py=" + isolatedTestPythonVersions.join(",")
-                        sh "hatch test ${versionSelection} --parallel tests/unit tests/processing tests/app src/acconeer/exptool"
+                        hatchWrap "test ${versionSelection} --parallel tests/unit tests/processing tests/app src/acconeer/exptool"
                     }
                 }
             }
@@ -237,7 +245,7 @@ try {
                     stage("Run integration tests (py=${integrationTestPythonVersions}, rss=${rssVersionName})") {
                         buildDocker(path: 'docker').inside(dockerArgs(env)) {
                             String versionSelection = "-py=" + integrationTestPythonVersions.join(",")
-                            sh "hatch test ${versionSelection} tests/integration/a121"
+                            hatchWrap "test ${versionSelection} tests/integration/a121"
                         }
                     }
                 }
@@ -268,7 +276,7 @@ try {
                         buildDocker(path: 'docker').inside(dockerArgs(env)) {
                             integrationTestPythonVersions.each { v -> sh "python${v} -V" }
                             String versionSelection = "-py=" + integrationTestPythonVersions.join(",")
-                            sh "hatch test ${versionSelection} tests/integration/a111"
+                            hatchWrap "test ${versionSelection} tests/integration/a111"
                         }
                     }
                 }
