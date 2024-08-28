@@ -8,6 +8,7 @@ import abc
 import argparse
 import json
 import typing as t
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, Tuple, Union, cast
 
@@ -126,7 +127,7 @@ class ConvertToCsvArgumentParser(argparse.ArgumentParser):
 
 class TableConverter:
     @abc.abstractmethod
-    def convert(self, sensor: int) -> Union[npt.NDArray[t.Any], list[npt.NDArray[t.Any]]]:
+    def convert(self, sensor: int) -> list[npt.NDArray[t.Any]]:
         pass
 
     @abc.abstractmethod
@@ -138,7 +139,11 @@ class TableConverter:
         pass
 
     @abc.abstractmethod
-    def get_configs(self, session_index: int) -> dict[str, t.Any]:
+    def get_configs(self, session_index: int = 0) -> dict[str, t.Any]:
+        pass
+
+    @abc.abstractmethod
+    def get_time(self) -> list[list[str]]:
         pass
 
     @abc.abstractmethod
@@ -167,20 +172,20 @@ class A111RecordTableConverter(TableConverter):
     def __init__(self, record: et.a111.recording.Record) -> None:
         self._record = record
 
-    def get_metadata_rows(self, sensor: int) -> list[npt.NDArray[t.Any]]:
+    def get_metadata_rows(self, sensor: int) -> list[t.Any]:
         depths = et.a111.get_range_depths(self._record.sensor_config, self._record.session_info)
         num_points = len(depths)
         rounded_depths = np.round(depths, decimals=6)
 
         if self._record.mode != et.a111.Mode.SPARSE:
-            return [rounded_depths]
+            return [[], rounded_depths]
         else:
             spf = self._record.sensor_config.sweeps_per_frame
             sweep_numbers = np.repeat(range(spf), repeats=num_points).astype(int)
             depths_header = np.tile(rounded_depths, spf)
             return [sweep_numbers, depths_header]
 
-    def convert(self, sensor: int) -> npt.NDArray[t.Any]:
+    def convert(self, sensor: int) -> list[npt.NDArray[t.Any]]:
         """Converts data of a single sensor
 
         :param sensor: The sensor index
@@ -204,7 +209,7 @@ class A111RecordTableConverter(TableConverter):
             row = np.ndarray.flatten(x)
             dest_rows.append([self.format_cell_value(v) for v in row])
 
-        return np.array(dest_rows)
+        return [np.array(dest_rows)]
 
     def get_environment(self) -> dict[str, t.Any]:
         environment_dict = {
@@ -225,6 +230,12 @@ class A111RecordTableConverter(TableConverter):
             **sensor_config,
             **processing_config_dict,
         }
+
+    def get_time(self) -> list[list[str]]:
+        data_time = self._record.sample_times
+        converted_times_list = [datetime.fromtimestamp(ts) for ts in data_time]
+        formatted_times = [time.strftime("%H:%M:%S.%f")[:-4] for time in converted_times_list]
+        return [formatted_times]
 
     def print_information(self, verbose: bool = False) -> None:
         config = self.get_configs()
@@ -447,21 +458,58 @@ class A121RecordTableConverter(TableConverter):
         return sparse_iq_list
 
     def get_metadata_rows(self, sensor: int) -> list[t.Any]:
-        sensor_configs = self._unique_sensor_configs_of_sensor_id(sensor)
-        metadatas = self._unique_metadatas_of_sensor_id(sensor)
-
+        sensor_ids = self.get_configs()["sensor_ids"]
         sweeps_numbers = []
         depths_headers = []
-        for metadata, sensor_config in zip(metadatas, sensor_configs):
-            depths = algo.get_distances_m(sensor_config, metadata)
-            depths_header = np.tile(depths, sensor_config.sweeps_per_frame)
-            depths_headers.append(depths_header)
-            for subsweep in sensor_config.subsweeps:
-                sweeps_number = np.repeat(
-                    range(sensor_config.sweeps_per_frame), repeats=subsweep.num_points
-                ).astype(int)
-                sweeps_numbers.append(sweeps_number)
+        for session_index in list(range(self._record.num_sessions)):
+            for sensor_id in sensor_ids:
+                sensor_configs = self._unique_sensor_configs_of_sensor_id(
+                    sensor_id, session_index=session_index
+                )
+                metadatas = self._unique_metadatas_of_sensor_id(
+                    sensor_id, session_index=session_index
+                )
+                for metadata, sensor_config in zip(metadatas, sensor_configs):
+                    depths = algo.get_distances_m(sensor_config, metadata)
+                    depths_header = np.tile(depths, sensor_config.sweeps_per_frame)
+                    depths_headers.append(depths_header.tolist())
+                    for subsweep in sensor_config.subsweeps:
+                        sweeps_number = np.repeat(
+                            range(sensor_config.sweeps_per_frame), repeats=subsweep.num_points
+                        ).astype(int)
+                        sweeps_numbers.append(sweeps_number.tolist())
         return [sweeps_numbers, depths_headers]
+
+    def get_time_single_session(self, session_index: int) -> list[list[str]]:
+        # Sensor results as a concatenate results of multiple or single configs
+        sensor_ids = self.get_configs()["sensor_ids"]
+        initial_timestamp = self._record.timestamp
+        initial_time = datetime.strptime(initial_timestamp, "%Y-%m-%dT%H:%M:%S")
+
+        # Sensor results as a concatenate results of multiple or single configs
+        formatted_times_multi_sensor = []
+        for sensor_id in sensor_ids:
+            seconds_list = []
+            sensor_results = self._results_of_sensor_id(sensor_id, session_index=session_index)
+            for result in sensor_results:
+                # Take tick_time
+                seconds_list.append(result.tick_time)
+                # Add seconds to the initial time and store the results
+                resulting_times = [initial_time + timedelta(seconds=sec) for sec in seconds_list]
+                # Format the resulting times to 'HH:MM:SS.s' format
+                formatted_times = [time.strftime("%H:%M:%S.%f")[:-4] for time in resulting_times]
+            formatted_times_multi_sensor.append(formatted_times)
+        return formatted_times_multi_sensor
+
+    def get_time(self) -> list[list[str]]:
+        # Get time multiple session
+        formatted_times_multi_sensor_session = []
+        for session_index in list(range(self._record.num_sessions)):
+            formatted_times_multi_sensor = self.get_time_single_session(
+                session_index=session_index
+            )
+            formatted_times_multi_sensor_session.extend(formatted_times_multi_sensor)
+        return formatted_times_multi_sensor_session
 
     def print_information(self, verbose: bool = False) -> None:
         print("=== Server info " + "=" * 44)
@@ -554,7 +602,7 @@ class ArgumentsChecker:
 
     def load_file(self) -> tuple[Union[et.a111.recording.Record, a121.Record], str]:
         try:
-            return a121.load_record(self.input_path), "a121"
+            return a121.open_record(self.input_path), "a121"
         except Exception:  # noqa: S110
             pass
 
@@ -587,7 +635,9 @@ def get_processed_data(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
     df_app_config = pd.DataFrame()
     df_processed_data = pd.DataFrame()
 
-    load_algo_and_client: Dict[str, t.Callable[[h5py.File], Tuple[pd.DataFrame, pd.DataFrame]]] = {
+    load_algo_and_client: Dict[
+        str, t.Callable[[h5py.File], Tuple[Dict[str, list[t.Any]], Dict[str, t.Any]]]
+    ] = {
         "breathing": get_processed_data_breathing,
         "bilateration": get_processed_data_bilateration,
         "distance_detector": get_processed_data_distance,
@@ -607,13 +657,36 @@ def get_processed_data(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
 
     for key, func in load_algo_and_client.items():
         if key == app_key:
-            df_processed_data, df_app_config = func(h5_file)
+            dict_processed_data, dict_app_config = func(h5_file)
             break
+
+    flattened_config: Dict[t.Any, t.Any] = {}
+
+    # Iterate over each key-value pair in the original dictionary
+    for key, value in dict_app_config.items():
+        if isinstance(value, dict):
+            # Flatten config from a config recursively and convert it into readable table formating
+            # e.g. Dict : {.... 'presence_config' : {'intra enable' : True ....}}
+            # into Dict : {.... 'presence_config' : None, 'intra enable' : True ....}}
+            flattened_config[key] = None
+            for sub_key, sub_value in value.items():
+                flattened_config[sub_key] = sub_value
+        else:
+            # If it's not a dictionary, add it directly to the result
+            flattened_config[key] = value
+    df_processed_data = pd.DataFrame(dict_processed_data)
+
+    # Convert the flattened dictionary to a DataFrame with 'Key' and 'Value' columns
+    df_app_config = pd.DataFrame(
+        [{"Key": key, "Value": value} for key, value in flattened_config.items()]
+    )
 
     return df_processed_data, df_app_config
 
 
-def get_processed_data_parking(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def get_processed_data_parking(
+    h5_file: h5py.File,
+) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
     processed_data_list = []
 
     # Record file extraction
@@ -621,11 +694,12 @@ def get_processed_data_parking(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.Dat
     num_frames = record.num_frames
     sensor_id, RefAppConfig, RefAppContext = parking._ref_app._load_algo_data(h5_file["algo"])
 
-    # Create DataFrames from configurations and sensor id
-    df_sensor_id = pd.DataFrame({"sensor_id": sensor_id}.items())
-    df_config = pd.DataFrame([[k, v] for k, v in RefAppConfig.to_dict().items()])
-    df_context = pd.DataFrame([[k, v] for k, v in RefAppContext.to_dict().items()])
-    df_algo_data = pd.concat([df_sensor_id, df_config, df_context], axis=0, ignore_index=True)
+    # Create dict from configurations and sensor id
+    dict_algo_data = {
+        **{"sensor_id": sensor_id},
+        **(RefAppConfig.to_dict()),
+        **(RefAppContext.to_dict()),
+    }
 
     # Client and aggregator preparation
     client = _ReplayingClient(record, realtime_replay=False)
@@ -662,21 +736,22 @@ def get_processed_data_parking(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.Dat
 
     # Creates DataFrames from processed data and keys
     keys = ["car_detected", "obstruction_detected"]
-    df_processed_data = pd.DataFrame(
-        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
-    )
-    return df_processed_data, df_algo_data
+    dict_processed_data = {
+        k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
+    }
+
+    return dict_processed_data, dict_algo_data
 
 
-def get_processed_data_waste_level(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def get_processed_data_waste_level(
+    h5_file: h5py.File,
+) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
     record = H5Record(h5_file)
     processed_data_list = []
     processor_config = waste_level._processor._load_algo_data(h5_file["algo"])
 
-    # Create DataFrames from configurations and sensor id
-    df_sensor_id = pd.DataFrame({"sensor_id": record.sensor_id}.items())
-    df_config = pd.DataFrame([[k, v] for k, v in processor_config.to_dict().items()])
-    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
+    # Create dict from configurations and sensor id
+    dict_algo_data = {**{"sensor_id": record.sensor_id}, **(processor_config.to_dict())}
 
     # Record file extraction
     num_frames = record.num_frames
@@ -706,24 +781,23 @@ def get_processed_data_waste_level(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd
 
     print("Disconnecting...")
 
-    # Creates DataFrames from processed data and keys
+    # Creates dict from processed data and keys
     keys = ["level_percent", "level_m"]
-    df_processed_data = pd.DataFrame(
-        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
-    )
-    return df_processed_data, df_algo_data
+    dict_processed_data = {
+        k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
+    }
+
+    return dict_processed_data, dict_algo_data
 
 
-def get_processed_data_breathing(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def get_processed_data_breathing(
+    h5_file: h5py.File,
+) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
     processed_data_list = []
     sensor_id, ref_app_config = breathing._ref_app._load_algo_data(h5_file["algo"])
 
-    # Create DataFrames from configurations and sensor id
-    df_sensor_id = pd.DataFrame(({"sensor_id": sensor_id}).items())
-    df_config = pd.DataFrame([[k, v] for k, v in ref_app_config.to_dict().items()])
-
-    # Concatenate along columns
-    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
+    # Create Dict from configurations and sensor id
+    dict_algo_data = {**{"sensor_id": sensor_id}, **(ref_app_config.to_dict())}
 
     # Client preparation
     record = H5Record(h5_file)
@@ -754,13 +828,18 @@ def get_processed_data_breathing(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.D
 
     # Creates DataFrames from processed data and keys
     keys = ["rate", "motion", "presence_dist"]
-    df_processed_data = pd.DataFrame(
-        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
-    )
-    return df_processed_data, df_algo_data
+
+    # Creates Dict from processed data and keys
+    dict_processed_data = {
+        k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
+    }
+
+    return dict_processed_data, dict_algo_data
 
 
-def get_processed_data_obstacle(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def get_processed_data_obstacle(
+    h5_file: h5py.File,
+) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
     processed_data_list = []
 
     # Client preparation
@@ -770,10 +849,12 @@ def get_processed_data_obstacle(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.Da
         h5_file["algo"]
     )
 
-    # Create DataFrames from configurations, sensor id, and detector context
-    df_sensor_id = pd.DataFrame({"sensor_ids": sensor_ids}.items())
-    df_config = pd.DataFrame([[k, v] for k, v in detector_config.to_dict().items()])
-    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
+    # Create Dict from configurations, sensor id, and detector context
+    dict_algo_data = {
+        **{"sensor_ids": sensor_ids},
+        **(detector_config.to_dict()),
+        **(detector_context.to_dict()),
+    }
 
     # Record file extraction
     num_frames = record.num_frames
@@ -787,7 +868,7 @@ def get_processed_data_obstacle(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.Da
 
     detector.start()
     try:
-        for idx, result in enumerate(record.results):
+        for idx, results in enumerate(record.results):
             processed_data = detector.get_next()
 
             # Put the result in row
@@ -805,16 +886,18 @@ def get_processed_data_obstacle(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.Da
 
     print("Disconnecting...")
 
-    # Creates DataFrames from processed data and keys
+    # Creates Dict from processed data and keys
     keys = ["close_proximity_trig", "current_velocity"]
-    df_processed_data = pd.DataFrame(
-        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
-    )
+    dict_processed_data = {
+        k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
+    }
 
-    return df_processed_data, df_algo_data
+    return dict_processed_data, dict_algo_data
 
 
-def get_processed_data_bilateration(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def get_processed_data_bilateration(
+    h5_file: h5py.File,
+) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
     processed_data_list = []
 
     # Client preparation
@@ -826,14 +909,13 @@ def get_processed_data_bilateration(h5_file: h5py.File) -> Tuple[pd.DataFrame, p
         processor_config,
         context,
     ) = bilateration._processor._load_algo_data(h5_file["algo"])
-    detector_config_dict = detector_config.to_dict()
-    processor_config_dict = processor_config.to_dict()
-    config = {**detector_config_dict, **processor_config_dict}
 
-    # Create DataFrames from configurations, sensor id, and detector context
-    df_sensor_id = pd.DataFrame({"sensor_ids": sensor_ids}.items())
-    df_config = pd.DataFrame([[k, v] for k, v in config.items()])
-    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
+    # Create Dict from configurations, sensor id, and detector context
+    dict_algo_data = {
+        **{"sensor_id": sensor_ids},
+        **(detector_config.to_dict()),
+        **(processor_config.to_dict()),
+    }
 
     # Record file extraction
     num_frames = record.num_frames
@@ -870,24 +952,22 @@ def get_processed_data_bilateration(h5_file: h5py.File) -> Tuple[pd.DataFrame, p
 
     # Creates DataFrames from processed data and keys
     keys = ["distances", "points"]
-    df_processed_data = pd.DataFrame(
-        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
-    )
+    dict_processed_data = {
+        k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
+    }
 
-    return df_processed_data, df_algo_data
+    return dict_processed_data, dict_algo_data
 
 
-def get_processed_data_hand_motion(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def get_processed_data_hand_motion(
+    h5_file: h5py.File,
+) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
     processed_data_list = []
     num_frames = 0
     sensor_id, ModeHandlerConfig = hand_motion._mode_handler._load_algo_data(h5_file["algo"])
 
     # Create DataFrames from configurations, sensor id, and detector context
-    df_sensor_id = pd.DataFrame(({"sensor_id": sensor_id}).items())
-    df_config = pd.DataFrame([[k, v] for k, v in ModeHandlerConfig.to_dict().items()])
-
-    # Concatenate along columns
-    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
+    dict_algo_data = {**{"sensor_id": sensor_id}, **(ModeHandlerConfig.to_dict())}
 
     # Client preparation
     record = H5Record(h5_file)
@@ -925,30 +1005,32 @@ def get_processed_data_hand_motion(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd
 
     # Creates DataFrames from processed data and keys
     keys = ["app_mode", "detection_state"]
-    df_processed_data = pd.DataFrame(
-        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
-    )
+    dict_processed_data = {
+        k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
+    }
 
-    return df_processed_data, df_algo_data
+    return dict_processed_data, dict_algo_data
 
 
-def get_processed_data_tank_level(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def get_processed_data_tank_level(
+    h5_file: h5py.File,
+) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
     processed_data_list = []
-    sensor_id, config, tank_level_context = tank_level._ref_app._load_algo_data(h5_file["algo"])
+    sensor_ids, config, tank_level_context = tank_level._ref_app._load_algo_data(h5_file["algo"])
 
     # Create DataFrames from configurations and sensor id
-    df_sensor_id = pd.DataFrame(({"sensor_id": sensor_id}).items())
-    df_config = pd.DataFrame([[k, v] for k, v in config.to_dict().items()])
-
-    # Concatenate along columns
-    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
+    dict_algo_data = {
+        **{"sensor_ids": sensor_ids},
+        **(config.to_dict()),
+        **(tank_level_context.to_dict()),
+    }
 
     # Client preparation
     record = H5Record(h5_file)
     client = _ReplayingClient(record, realtime_replay=False)
     num_frames = record.num_frames
     ref_app = tank_level._ref_app.RefApp(
-        client=client, sensor_id=sensor_id, config=config, context=tank_level_context
+        client=client, sensor_id=sensor_ids, config=config, context=tank_level_context
     )
     ref_app.start()
 
@@ -975,22 +1057,21 @@ def get_processed_data_tank_level(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.
 
     # Creates DataFrames from processed data and keys
     keys = ["level", "peak_detected", "peak_status"]
-    df_processed_data = pd.DataFrame(
-        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
-    )
-    return df_processed_data, df_algo_data
+    dict_processed_data = {
+        k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
+    }
+
+    return dict_processed_data, dict_algo_data
 
 
-def get_processed_data_surface_velocity(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def get_processed_data_surface_velocity(
+    h5_file: h5py.File,
+) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
     processed_data_list = []
     sensor_id, ExampleAppConfig = surface_velocity._example_app._load_algo_data(h5_file["algo"])
 
-    # Create DataFrames from configurations and sensor id
-    df_sensor_id = pd.DataFrame(({"sensor_id": sensor_id}).items())
-    df_config = pd.DataFrame([[k, v] for k, v in ExampleAppConfig.to_dict().items()])
-
-    # Concatenate along columns
-    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
+    # Create Dict from configurations and sensor id
+    dict_algo_data = {**{"sensor_ids": sensor_id}, **(ExampleAppConfig.to_dict())}
 
     # Client preparation
     record = H5Record(h5_file)
@@ -1024,26 +1105,30 @@ def get_processed_data_surface_velocity(h5_file: h5py.File) -> Tuple[pd.DataFram
     client.close()
     print("Disconnecting...")
 
-    # Creates DataFrames from processed data and keys
+    # Creates Dict from processed data and keys
     keys = ["estimated_velocity", "distance"]
-    df_processed_data = pd.DataFrame(
-        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
-    )
-    return df_processed_data, df_algo_data
+    dict_processed_data = {
+        k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
+    }
+
+    return dict_processed_data, dict_algo_data
 
 
-def get_processed_data_presence(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def get_processed_data_presence(
+    h5_file: h5py.File,
+) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
     processed_data_list = []
     sensor_id, detector_config, detector_context = presence._detector._load_algo_data(
         h5_file["algo"]
     )
 
-    # Create DataFrames from configurations, sensor id, and detector context
-    df_sensor_id = pd.DataFrame(({"sensor_id": sensor_id}).items())
-    df_config = pd.DataFrame([[k, v] for k, v in detector_config.to_dict().items()])
-
-    # Concatenate along columns
-    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
+    detector_context_dict = detector_context.to_dict() if detector_context is not None else {}
+    # Create Dict from configurations, sensor id, and detector context
+    dict_algo_data = {
+        **{"sensor_ids": sensor_id},
+        **(detector_config.to_dict()),
+        **detector_context_dict,
+    }
 
     # Client preparation
     record = H5Record(h5_file)
@@ -1077,34 +1162,35 @@ def get_processed_data_presence(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.Da
     client.close()
     print("Disconnecting...")
 
-    # Creates DataFrames from processed data and keys
+    # Creates Dict from processed data and keys
     keys = [
         "Presence",
         f"Intra_presence_score_(threshold_{detector_config.intra_detection_threshold:.1f})",
         f"Inter_presence_score_(threshold_{detector_config.inter_detection_threshold:.1f})",
         "Presence_distance",
     ]
-    df_processed_data = pd.DataFrame(
-        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
-    )
+    dict_processed_data = {
+        k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
+    }
 
-    return df_processed_data, df_algo_data
+    return dict_processed_data, dict_algo_data
 
 
-def get_processed_data_smart_presence(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def get_processed_data_smart_presence(
+    h5_file: h5py.File,
+) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
     processed_data_list = []
     num_frames = 0
     sensor_id, RefAppConfig, RefAppContext = smart_presence._ref_app._load_algo_data(
         h5_file["algo"]
     )
 
-    # Create DataFrames from configurations, sensor id, and detector context
-    df_sensor_id = pd.DataFrame(({"sensor_id": sensor_id}).items())
-    df_config = pd.DataFrame([[k, v] for k, v in RefAppConfig.to_dict().items()])
-    df_context = pd.DataFrame([[k, v] for k, v in RefAppContext.to_dict().items()])
-
-    # Concatenate along columns
-    df_algo_data = pd.concat([df_sensor_id, df_config, df_context], axis=0, ignore_index=True)
+    # Create Dict from configurations, sensor id, and detector context
+    dict_algo_data = {
+        **{"sensor_ids": sensor_id},
+        **(RefAppConfig.to_dict()),
+        **(RefAppContext.to_dict()),
+    }
 
     # Client preparation
     record = H5Record(h5_file)
@@ -1142,28 +1228,28 @@ def get_processed_data_smart_presence(h5_file: h5py.File) -> Tuple[pd.DataFrame,
     print("Disconnecting...")
     client.close()
 
-    # Creates DataFrames from processed data and keys
+    # Creates Dict from processed data and keys
     keys = [
         "Presence",
         "Intra_presence_score",
         "Inter_presence_score",
     ]
-    df_processed_data = pd.DataFrame(
-        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
-    )
+    dict_processed_data = {
+        k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
+    }
 
-    return df_processed_data, df_algo_data
+    return dict_processed_data, dict_algo_data
 
 
-def get_processed_data_touchless_button(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def get_processed_data_touchless_button(
+    h5_file: h5py.File,
+) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
     processed_data_list = []
     record = H5Record(h5_file)
     processor_config = touchless_button._processor._load_algo_data(h5_file["algo"])
 
-    # Create DataFrames from configurations, sensor id, and detector context
-    df_sensor_id = pd.DataFrame({"sensor_id": record.sensor_id}.items())
-    df_config = pd.DataFrame([[k, v] for k, v in processor_config.to_dict().items()])
-    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
+    # Create Dict from configurations and sensor id
+    dict_algo_data = {**{"sensor_ids": record.sensor_id}, **(processor_config.to_dict())}
 
     # Record file extraction
     num_frames = record.num_frames
@@ -1197,23 +1283,22 @@ def get_processed_data_touchless_button(h5_file: h5py.File) -> Tuple[pd.DataFram
 
     # Creates DataFrames from processed data and keys
     keys = ["close_result", "far_result"]
-    df_processed_data = pd.DataFrame(
-        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
-    )
-    return df_processed_data, df_algo_data
+    dict_processed_data = {
+        k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
+    }
+
+    return dict_processed_data, dict_algo_data
 
 
-def get_processed_data_vibration(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def get_processed_data_vibration(
+    h5_file: h5py.File,
+) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
     record = H5Record(h5_file)
     processed_data_list = []
     sensor_id, example_app_config = vibration._load_algo_data(h5_file["algo"])
 
-    # Create DataFrames from configurations and sensor id
-    df_sensor_id = pd.DataFrame(({"sensor_id": sensor_id}).items())
-    df_config = pd.DataFrame([[k, v] for k, v in example_app_config.to_dict().items()])
-
-    # Concatenate along columns
-    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
+    # Create Dict from configurations and sensor id
+    dict_algo_data = {**{"sensor_ids": sensor_id}, **(example_app_config.to_dict())}
 
     # Client preparation
     record = H5Record(h5_file)
@@ -1249,24 +1334,27 @@ def get_processed_data_vibration(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.D
 
     # Creates DataFrames from processed data and keys
     keys = ["max_displacement", "max_sweep_amplitude", "max_displacement_freq"]
-    df_processed_data = pd.DataFrame(
-        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
-    )
-    return df_processed_data, df_algo_data
+    dict_processed_data = {
+        k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
+    }
+
+    return dict_processed_data, dict_algo_data
 
 
-def get_processed_data_distance(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def get_processed_data_distance(
+    h5_file: h5py.File,
+) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
     processed_data_list = []
     sensor_ids, detector_config, detector_context = distance._detector._load_algo_data(
         h5_file["algo"]
     )
 
-    # Create DataFrames from configurations, sensor id, and detector context
-    df_sensor_id = pd.DataFrame(({"sensor_id": sensor_ids}).items())
-    df_config = pd.DataFrame([[k, v] for k, v in detector_config.to_dict().items()])
-
-    # Concatenate along columns
-    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
+    # Create Dict from configurations, sensor id, and detector context
+    dict_algo_data = {
+        **{"sensor_ids": sensor_ids},
+        **(detector_config.to_dict()),
+        **(detector_context.to_dict()),
+    }
 
     # Client preparation
     record = H5Record(h5_file)
@@ -1304,23 +1392,23 @@ def get_processed_data_distance(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.Da
 
     # Creates DataFrames from processed data and keys
     keys = ["distances", "strengths"]
-    df_processed_data = pd.DataFrame(
-        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
-    )
+    dict_processed_data = {
+        k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
+    }
 
-    return df_processed_data, df_algo_data
+    return dict_processed_data, dict_algo_data
 
 
-def get_processed_data_phase_tracking(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def get_processed_data_phase_tracking(
+    h5_file: h5py.File,
+) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
     record = H5Record(h5_file)
     processed_data_list = []
     json_string_config = json.loads(h5_file["algo/processor_config"][()].decode())
     processor_config = phase_tracking.ProcessorConfig(threshold=json_string_config["threshold"])
 
-    # Create DataFrames from configurations and sensor id
-    df_sensor_id = pd.DataFrame({"sensor_id": record.sensor_id}.items())
-    df_config = pd.DataFrame([[k, v] for k, v in processor_config.to_dict().items()])
-    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
+    # Create Dict from configurations and sensor id
+    dict_algo_data = {**{"sensor_ids": record.sensor_id}, **(processor_config.to_dict())}
 
     # Record file extraction
     num_frames = record.num_frames
@@ -1353,22 +1441,20 @@ def get_processed_data_phase_tracking(h5_file: h5py.File) -> Tuple[pd.DataFrame,
 
     # Creates DataFrames from processed data and keys
     keys = ["peak_loc_m", "real_iq_history", "imag_iq_history"]
-    df_processed_data = pd.DataFrame(
-        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
-    )
-    return df_processed_data, df_algo_data
+    dict_processed_data = {
+        k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
+    }
+    return dict_processed_data, dict_algo_data
 
 
-def get_processed_data_speed(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def get_processed_data_speed(
+    h5_file: h5py.File,
+) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
     processed_data_list = []
     sensor_id, detector_config = speed._detector._load_algo_data(h5_file["algo"])
 
     # Create DataFrames from configurations, sensor id, and detector context
-    df_sensor_id = pd.DataFrame(({"sensor_id": sensor_id}).items())
-    df_config = pd.DataFrame([[k, v] for k, v in detector_config.to_dict().items()])
-
-    # Concatenate along columns
-    df_algo_data = pd.concat([df_sensor_id, df_config], axis=0, ignore_index=True)
+    dict_algo_data = {**{"sensor_ids": sensor_id}, **(detector_config.to_dict())}
 
     # Client preparation
     record = H5Record(h5_file)
@@ -1403,11 +1489,11 @@ def get_processed_data_speed(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataF
 
     # Creates DataFrames from processed data and keys
     keys = ["speed_per_depth", "max_speed"]
-    df_processed_data = pd.DataFrame(
-        {k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])}
-    )
+    dict_processed_data = {
+        k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
+    }
 
-    return df_processed_data, df_algo_data
+    return dict_processed_data, dict_algo_data
 
 
 def breathing_result_as_row(processed_data: breathing.RefAppResult) -> list[t.Any]:
@@ -1576,6 +1662,8 @@ def main() -> None:
     try:
         sparse_iq_data = table_converter.convert(sensor=sensor)
         metadata_rows = table_converter.get_metadata_rows(sensor=sensor)
+        record_environtment = table_converter.get_environment()
+        time = table_converter.get_time()
     except Exception as e:
         print(e)
         exit(1)
@@ -1583,20 +1671,27 @@ def main() -> None:
     table_converter.print_information(verbose=input_args.verbose)
     print()
     dict_excel_file = {}
-    if isinstance(sparse_iq_data, np.ndarray):
-        sparse_iq_data = [sparse_iq_data.T]
+
     if input_args.sweep_as_column:
         sparse_iq_data = [np.transpose(arr) for arr in sparse_iq_data]
 
-    if isinstance(record, a121.Record):
+    if isinstance(record, a121.H5Record):
         counter_index = 0
         for session_index in range(record.num_sessions):
             dict_config = table_converter.get_configs(session_index=session_index)
             sensor_ids = dict_config["sensor_ids"]
             # Add sparse IQ data in excel
             for sensor_id in sensor_ids:
+                distance_header = [
+                    f"{round(metadata_rows[1][session_index][i], 3)}m"
+                    for i in range(len(metadata_rows[1][session_index]))
+                ]
                 dict_excel_file[f"Sparse IQ session {session_index} sensor {sensor_id}"] = (
-                    pd.DataFrame(sparse_iq_data[counter_index])
+                    pd.DataFrame(
+                        sparse_iq_data[counter_index],
+                        columns=distance_header,
+                        index=time[counter_index],
+                    )
                 )
                 counter_index = +1
 
@@ -1604,28 +1699,32 @@ def main() -> None:
             dict_excel_file[f"Configurations session {session_index}"] = pd.DataFrame(
                 dict_config.items()
             )
-    else:
-        # Add sparse IQ data in excel
-        dict_excel_file["Sparse IQ data"] = pd.DataFrame(sparse_iq_data[0])
-
-        # Add configurations in excel
-        dict_config = table_converter.get_configs(session_index=0)
-        dict_excel_file["Configurations"] = pd.DataFrame(dict_config.items())
-
-    # Create a Pandas DataFrame from the data
-    dict_excel_file["Metadata"] = pd.DataFrame(metadata_rows)
-
-    # Create a Pandas DataFrame from the environment
-    record_environtment = table_converter.get_environment()
-    dict_excel_file["Environtment"] = pd.DataFrame(record_environtment.items())
-
-    # Create a Pandas DataFrame from processed data
-    if isinstance(record, a121.H5Record):
+        # Create a Pandas DataFrame from processed data
         h5_file = record.file
         df_processed_data, df_app_config = get_processed_data(h5_file)
+        if len(sensor_ids) > 1:
+            df_processed_data.index = pd.Index(time[0])
+        else:
+            df_processed_data.index = pd.Index(sum(time, []))
         dict_excel_file["Application configurations"] = df_app_config
         dict_excel_file["Processed data"] = df_processed_data
         record.close()
+    else:
+        # Add sparse IQ data in excel
+        distance_header = [
+            f"{round(metadata_rows[1][i], 3)}m" for i in range(len(metadata_rows[1]))
+        ]
+        dict_excel_file["Sparse IQ data"] = pd.DataFrame(
+            sparse_iq_data[0], columns=distance_header, index=time[0]
+        )
+
+        # Add configurations in excel
+        dict_config = table_converter.get_configs()
+        dict_excel_file["Configurations"] = pd.DataFrame(dict_config.items())
+
+    # Create a Pandas DataFrame from the environment
+    dict_excel_file["Environtment"] = pd.DataFrame(record_environtment.items())
+
     # Save the DataFrame to a CSV or excel file
     if output_suffix == ".xlsx":
         filepath = output_path / (output_path.stem + output_suffix)

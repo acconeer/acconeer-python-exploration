@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 import sys
@@ -26,8 +26,8 @@ def test_csv_conversion_is_exact(test_file):
 
     data = record.data.squeeze()
     assert data.ndim == 2
-
-    csv_table = A111RecordTableConverter(record).convert(0)
+    # A111 provide 1D of list, following A121 format as sparse iq lists of multiple sessions and sensors
+    csv_table = A111RecordTableConverter(record).convert(0)[0]
 
     assert data.shape == csv_table.shape
 
