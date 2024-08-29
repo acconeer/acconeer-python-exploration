@@ -158,10 +158,10 @@ class TableConverter:
             return str(v)
 
     @classmethod
-    def from_record(cls, record: Union[et.a111.recording.Record, a121.Record]) -> TableConverter:
+    def from_record(cls, record: Union[et.a111.recording.Record, a121.H5Record]) -> TableConverter:
         if isinstance(record, et.a111.recording.Record):
             return A111RecordTableConverter(record)
-        elif isinstance(record, a121.Record):
+        elif isinstance(record, a121.H5Record):
             return A121RecordTableConverter(record)
         else:
             msg = f"Passed record ({record}) was of unexpected type."
@@ -303,7 +303,7 @@ class A111RecordTableConverter(TableConverter):
 
 
 class A121RecordTableConverter(TableConverter):
-    def __init__(self, record: a121.Record) -> None:
+    def __init__(self, record: a121.H5Record) -> None:
         self._record = record
 
     def _results_of_sensor_id(self, sensor_id: int, session_index: int = 0) -> list[a121.Result]:
@@ -600,9 +600,11 @@ class ArgumentsChecker:
         self.record, self.generation = self.load_file()
         self.sensor = self.get_default_sensor_id_or_index()
 
-    def load_file(self) -> tuple[Union[et.a111.recording.Record, a121.Record], str]:
+    def load_file(self) -> tuple[Union[et.a111.recording.Record, a121.H5Record], str]:
         try:
-            return a121.open_record(self.input_path), "a121"
+            x = a121.open_record(self.input_path)
+            assert isinstance(x, H5Record)
+            return x, "a121"
         except Exception:  # noqa: S110
             pass
 
@@ -630,58 +632,68 @@ class ArgumentsChecker:
             return 1 if self.generation == "a121" else 0
 
 
-def get_processed_data(h5_file: h5py.File) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    app_key = h5_file["algo/key"][()].decode()
-    df_app_config = pd.DataFrame()
-    df_processed_data = pd.DataFrame()
+class A121ProcessedData:
+    def __init__(self, record: a121.H5Record) -> None:
+        self._record = record
+        self.h5_file = record.file
+        self.num_frames: int = 0
+        for session_index in range(self._record.num_sessions):
+            self.num_frames = self.num_frames + self._record.session(session_index).num_frames
+        self.client = _ReplayingClient(self._record, realtime_replay=False)
+        self.app_key = self.h5_file["algo/key"][()].decode()
 
-    load_algo_and_client: Dict[
-        str, t.Callable[[h5py.File], Tuple[Dict[str, list[t.Any]], Dict[str, t.Any]]]
-    ] = {
-        "breathing": get_processed_data_breathing,
-        "bilateration": get_processed_data_bilateration,
-        "distance_detector": get_processed_data_distance,
-        "obstacle_detector": get_processed_data_obstacle,
-        "hand_motion": get_processed_data_hand_motion,
-        "parking": get_processed_data_parking,
-        "phase_tracking": get_processed_data_phase_tracking,
-        "presence_detector": get_processed_data_presence,
-        "smart_presence": get_processed_data_smart_presence,
-        "speed_detector": get_processed_data_speed,
-        "surface_velocity": get_processed_data_surface_velocity,
-        "waste_level": get_processed_data_waste_level,
-        "tank_level": get_processed_data_tank_level,
-        "touchless_button": get_processed_data_touchless_button,
-        "vibration": get_processed_data_vibration,
-    }
+    def get_processed_data(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        app_key = self.h5_file["algo/key"][()].decode()
+        df_app_config = pd.DataFrame()
+        df_processed_data = pd.DataFrame()
 
-    for key, func in load_algo_and_client.items():
-        if key == app_key:
-            dict_processed_data, dict_app_config = func(h5_file)
-            break
+        load_algo_and_client: Dict[
+            str, t.Callable[[h5py.File], Tuple[Dict[str, list[t.Any]], Dict[str, t.Any]]]
+        ] = {
+            "breathing": get_processed_data_breathing,
+            "bilateration": get_processed_data_bilateration,
+            "distance_detector": get_processed_data_distance,
+            "obstacle_detector": get_processed_data_obstacle,
+            "hand_motion": get_processed_data_hand_motion,
+            "parking": get_processed_data_parking,
+            "phase_tracking": get_processed_data_phase_tracking,
+            "presence_detector": get_processed_data_presence,
+            "smart_presence": get_processed_data_smart_presence,
+            "speed_detector": get_processed_data_speed,
+            "surface_velocity": get_processed_data_surface_velocity,
+            "waste_level": get_processed_data_waste_level,
+            "tank_level": get_processed_data_tank_level,
+            "touchless_button": get_processed_data_touchless_button,
+            "vibration": get_processed_data_vibration,
+        }
 
-    flattened_config: Dict[t.Any, t.Any] = {}
+        for key, func in load_algo_and_client.items():
+            if key == app_key:
+                dict_processed_data, dict_app_config = func(self.h5_file)
+                break
 
-    # Iterate over each key-value pair in the original dictionary
-    for key, value in dict_app_config.items():
-        if isinstance(value, dict):
-            # Flatten config from a config recursively and convert it into readable table formating
-            # e.g. Dict : {.... 'presence_config' : {'intra enable' : True ....}}
-            # into Dict : {.... 'presence_config' : None, 'intra enable' : True ....}}
-            flattened_config[key] = None
-            for sub_key, sub_value in value.items():
-                flattened_config[sub_key] = sub_value
-        else:
-            # If it's not a dictionary, add it directly to the result
-            flattened_config[key] = value
-    df_processed_data = pd.DataFrame(dict_processed_data)
+        flattened_config: Dict[t.Any, t.Any] = {}
 
-    # Convert the flattened dictionary to a DataFrame with 'Key' and 'Value' columns
-    df_app_config = pd.DataFrame(
-        [{"Key": key, "Value": value} for key, value in flattened_config.items()]
-    )
+        # Iterate over each key-value pair in the original dictionary
+        for key, value in dict_app_config.items():
+            if isinstance(value, dict):
+                # Flatten config from a config recursively and convert it into readable table formating
+                # e.g. Dict : {.... 'presence_config' : {'intra enable' : True ....}}
+                # into Dict : {.... 'presence_config' : None, 'intra enable' : True ....}}
+                flattened_config[key] = None
+                for sub_key, sub_value in value.items():
+                    flattened_config[sub_key] = sub_value
+            else:
+                # If it's not a dictionary, add it directly to the result
+                flattened_config[key] = value
+        df_processed_data = pd.DataFrame(dict_processed_data)
 
-    return df_processed_data, df_app_config
+        # Convert the flattened dictionary to a DataFrame with 'Key' and 'Value' columns
+        df_app_config = pd.DataFrame(
+            [{"Key": key, "Value": value} for key, value in flattened_config.items()]
+        )
+
+        return df_processed_data, df_app_config
 
 
 def get_processed_data_parking(
@@ -1700,8 +1712,8 @@ def main() -> None:
                 dict_config.items()
             )
         # Create a Pandas DataFrame from processed data
-        h5_file = record.file
-        df_processed_data, df_app_config = get_processed_data(h5_file)
+        table_convert_processed_data = A121ProcessedData(record)
+        df_processed_data, df_app_config = table_convert_processed_data.get_processed_data()
         if len(sensor_ids) > 1:
             df_processed_data.index = pd.Index(time[0])
         else:
