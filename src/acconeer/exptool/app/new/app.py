@@ -142,6 +142,11 @@ def main() -> None:
         print(f"ERROR: Available plugin keys: {plugin_keys}")
         sys.exit(1)
 
+    if args.plugin_key is not None and args.generation_str is None:
+        parser.print_usage()
+        print("ERROR: Must specify '--generation' when specifying '--plugin-key'.")
+        sys.exit(1)
+
     backend: Backend
     if args.same_process:
         backend = GenBackend()
