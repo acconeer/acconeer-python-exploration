@@ -138,6 +138,7 @@ class DetectorConfig(AlgoConfigBase):
 
     def _collect_validation_results(self) -> list[a121.ValidationResult]:
         validation_results: list[a121.ValidationResult] = []
+        bad_sensor_config = False
 
         if self.sweeps_per_frame <= Processor.NOISE_ESTIMATION_DIFF_ORDER:
             validation_results.append(
@@ -154,6 +155,20 @@ class DetectorConfig(AlgoConfigBase):
                     self, "end_m", "End point must be further or equal to start point"
                 )
             )
+            bad_sensor_config = True
+
+        if self.end_m > int(a121.PRF.PRF_5_2_MHz.mmd):
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "end_m",
+                    f"End of range is too far (max: {int(a121.PRF.PRF_5_2_MHz.mmd)} m), "
+                    + "try to decrease the end point.",
+                )
+            )
+            bad_sensor_config = True
+
+        if bad_sensor_config:
             # Return to avoid calling get_sensor_config with bad config.
             return validation_results
 
