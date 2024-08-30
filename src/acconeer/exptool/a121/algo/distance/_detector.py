@@ -70,6 +70,7 @@ class SubsweepGroupPlan:
     breakpoints: list[int] = attrs.field()
     profile: a121.Profile = attrs.field()
     hwaas: list[int] = attrs.field()
+    prf: Optional[a121.PRF] = attrs.field()
 
 
 Plan = Dict[MeasurementType, List[SubsweepGroupPlan]]
@@ -292,6 +293,13 @@ class SingleSensorContext(AlgoBase):
         return SingleSensorContext(**context_dict)
 
 
+def optional_prf_converter(prf: Optional[a121.PRF]) -> Optional[a121.PRF]:
+    if prf is None:
+        return None
+
+    return a121.PRF(prf)
+
+
 @attributes_doc
 @attrs.mutable(kw_only=True)
 class DetectorConfig(AlgoConfigBase):
@@ -317,6 +325,15 @@ class DetectorConfig(AlgoConfigBase):
     leakage is used to maximize SNR.
 
     A lower profile improves the radial resolution.
+    """
+
+    prf: Optional[a121.PRF] = attrs.field(default=None, converter=optional_prf_converter)
+    """Specify PRF used for all subsweeps
+
+    If no argument is provided, the highest possible PRF for the range is used.
+    Override to avoid false peaks in the case of strong reflectors outside of the measurement range.
+
+    A lower PRF will increase MUR and increase measurement time
     """
 
     close_range_leakage_cancellation: bool = attrs.field(default=False)
@@ -1336,6 +1353,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
             breakpoints=extended_breakpoints,
             profile=profile,
             hwaas=hwaas,
+            prf=config.prf,
         )
 
     @classmethod
@@ -1479,7 +1497,9 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                 hwaas=plan.hwaas[0],
                 receiver_gain=5,
                 phase_enhancement=True,
-                prf=select_prf(plan.breakpoints[1], plan.profile),
+                prf=select_prf(plan.breakpoints[1], plan.profile)
+                if plan.prf is None
+                else plan.prf,
             )
         )
         return a121.SensorConfig(subsweeps=subsweeps, sweeps_per_frame=10)
@@ -1506,7 +1526,9 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                         hwaas=plan.hwaas[bp_idx],
                         receiver_gain=10,
                         phase_enhancement=True,
-                        prf=select_prf(plan.breakpoints[bp_idx + 1], plan.profile),
+                        prf=select_prf(plan.breakpoints[bp_idx + 1], plan.profile)
+                        if plan.prf is None
+                        else plan.prf,
                     )
                 )
                 subsweep_indexes.append(subsweep_idx)

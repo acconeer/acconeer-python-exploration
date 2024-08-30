@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- A121 Distance: PRF override configuration
 
 ### Changed
 
