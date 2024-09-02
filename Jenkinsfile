@@ -151,7 +151,6 @@ try {
                         hatchWrap 'run docs:build'
                     }
                     archiveArtifacts artifacts: 'dist/*', allowEmptyArchive: true
-                    archiveArtifacts artifacts: 'docs/_build/latex/*.pdf', allowEmptyArchive: true
                     stash includes: 'dist/**', name: 'dist'
                 }
             }
