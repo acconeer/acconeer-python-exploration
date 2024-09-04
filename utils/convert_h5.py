@@ -676,14 +676,14 @@ class A121ProcessedData:
         ] = {
             "breathing": self.get_processed_data_breathing,
             "bilateration": self.get_processed_data_bilateration,
-            "distance_detector": get_processed_data_distance,
+            "distance_detector": self.get_processed_data_distance,
             "obstacle_detector": self.get_processed_data_obstacle,
             "hand_motion": self.get_processed_data_hand_motion,
             "parking": self.get_processed_data_parking,
-            "phase_tracking": get_processed_data_phase_tracking,
+            "phase_tracking": self.get_processed_data_phase_tracking,
             "presence_detector": self.get_processed_data_presence,
             "smart_presence": self.get_processed_data_smart_presence,
-            "speed_detector": get_processed_data_speed,
+            "speed_detector": self.get_processed_data_speed,
             "surface_velocity": self.get_processed_data_surface_velocity,
             "waste_level": self.get_processed_data_waste_level,
             "tank_level": self.get_processed_data_tank_level,
@@ -1355,160 +1355,160 @@ class A121ProcessedData:
 
         return dict_processed_data, dict_algo_data
 
+    def get_processed_data_distance(
+        self,
+        h5_file: h5py.File,
+    ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
+        processed_data_list = []
+        sensor_ids, detector_config, detector_context = distance._detector._load_algo_data(
+            h5_file["algo"]
+        )
 
-def get_processed_data_distance(
-    h5_file: h5py.File,
-) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
-    processed_data_list = []
-    sensor_ids, detector_config, detector_context = distance._detector._load_algo_data(
-        h5_file["algo"]
-    )
+        # Create Dict from configurations, sensor id, and detector context
+        dict_algo_data = {
+            **{"sensor_ids": sensor_ids},
+            **(detector_config.to_dict()),
+            **(detector_context.to_dict()),
+        }
 
-    # Create Dict from configurations, sensor id, and detector context
-    dict_algo_data = {
-        **{"sensor_ids": sensor_ids},
-        **(detector_config.to_dict()),
-        **(detector_context.to_dict()),
-    }
+        # Client preparation
+        detector = distance.Detector(
+            client=self.client,
+            sensor_ids=sensor_ids,
+            detector_config=detector_config,
+            context=detector_context,
+        )
+        detector.start()
 
-    # Client preparation
-    record = H5Record(h5_file)
-    client = _ReplayingClient(record, realtime_replay=False)
-    num_frames = record.num_frames
-    detector = distance.Detector(
-        client=client,
-        sensor_ids=sensor_ids,
-        detector_config=detector_config,
-        context=detector_context,
-    )
-    detector.start()
+        try:
+            for idx in range(self.num_frames):
+                processed_data = detector.get_next()
 
-    try:
-        for idx in range(record.num_frames):
-            processed_data = detector.get_next()
+                # Put the result in row
+                processed_data_row = distance_result_as_row(
+                    processed_data=processed_data, sensor_ids=sensor_ids
+                )
+                processed_data_list.append(processed_data_row)
 
-            # Put the result in row
-            processed_data_row = distance_result_as_row(
-                processed_data=processed_data, sensor_ids=sensor_ids
-            )
-            processed_data_list.append(processed_data_row)
+                # Print progressing time every 5%
+                print(f"... {idx / self.num_frames:.0%}") if (
+                    idx % int(0.05 * self.num_frames)
+                ) == 0 else None
 
-            # Print progressing time every 5%
-            print(f"... {idx / num_frames:.0%}") if (idx % int(0.05 * num_frames)) == 0 else None
+        except KeyboardInterrupt:
+            print("Conversion aborted")
+        else:
+            print("Processing data is finished. . .")
 
-    except KeyboardInterrupt:
-        print("Conversion aborted")
-    else:
-        print("Processing data is finished. . .")
+        detector.stop()
+        self.client.close()
+        print("Disconnecting...")
 
-    detector.stop()
-    client.close()
-    print("Disconnecting...")
+        # Creates DataFrames from processed data and keys
+        keys = ["distances", "strengths"]
+        dict_processed_data = {
+            k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
+        }
 
-    # Creates DataFrames from processed data and keys
-    keys = ["distances", "strengths"]
-    dict_processed_data = {
-        k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
-    }
+        return dict_processed_data, dict_algo_data
 
-    return dict_processed_data, dict_algo_data
+    def get_processed_data_phase_tracking(
+        self,
+        h5_file: h5py.File,
+    ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
+        processed_data_list = []
+        json_string_config = json.loads(h5_file["algo/processor_config"][()].decode())
+        processor_config = phase_tracking.ProcessorConfig(
+            threshold=json_string_config["threshold"]
+        )
 
+        # Create Dict from configurations and sensor id
+        dict_algo_data = {**{"sensor_ids": self._record.sensor_id}, **(processor_config.to_dict())}
 
-def get_processed_data_phase_tracking(
-    h5_file: h5py.File,
-) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
-    record = H5Record(h5_file)
-    processed_data_list = []
-    json_string_config = json.loads(h5_file["algo/processor_config"][()].decode())
-    processor_config = phase_tracking.ProcessorConfig(threshold=json_string_config["threshold"])
+        # Record file extraction
+        sensor_config = self._record.session_config.sensor_config
+        metadata = self._record.metadata
 
-    # Create Dict from configurations and sensor id
-    dict_algo_data = {**{"sensor_ids": record.sensor_id}, **(processor_config.to_dict())}
+        processor = phase_tracking.Processor(
+            sensor_config=sensor_config,
+            metadata=metadata,
+            processor_config=processor_config,
+            context=phase_tracking.ProcessorContext(),
+        )
+        try:
+            for idx, result in enumerate(self._record.results):
+                processed_data = processor.process(result)
 
-    # Record file extraction
-    num_frames = record.num_frames
-    sensor_config = record.session_config.sensor_config
-    metadata = record.metadata
+                # Put the result in row
+                processed_data_row = phase_tracking_as_row(processed_data=processed_data)
+                processed_data_list.append(processed_data_row)
 
-    processor = phase_tracking.Processor(
-        sensor_config=sensor_config,
-        metadata=metadata,
-        processor_config=processor_config,
-        context=phase_tracking.ProcessorContext(),
-    )
-    try:
-        for idx, result in enumerate(record.results):
-            processed_data = processor.process(result)
+                # Print progressing time every 5%
+                print(f"... {idx / self.num_frames:.0%}") if (
+                    idx % int(0.05 * self.num_frames)
+                ) == 0 else None
 
-            # Put the result in row
-            processed_data_row = phase_tracking_as_row(processed_data=processed_data)
-            processed_data_list.append(processed_data_row)
+        except KeyboardInterrupt:
+            print("Conversion aborted")
+        else:
+            print("Processing data is finished. . .")
 
-            # Print progressing time every 5%
-            print(f"... {idx / num_frames:.0%}") if (idx % int(0.05 * num_frames)) == 0 else None
+        print("Disconnecting...")
 
-    except KeyboardInterrupt:
-        print("Conversion aborted")
-    else:
-        print("Processing data is finished. . .")
+        # Creates DataFrames from processed data and keys
+        keys = ["peak_loc_m", "real_iq_history", "imag_iq_history"]
+        dict_processed_data = {
+            k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
+        }
+        return dict_processed_data, dict_algo_data
 
-    print("Disconnecting...")
+    def get_processed_data_speed(
+        self,
+        h5_file: h5py.File,
+    ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
+        processed_data_list = []
+        sensor_id, detector_config = speed._detector._load_algo_data(h5_file["algo"])
 
-    # Creates DataFrames from processed data and keys
-    keys = ["peak_loc_m", "real_iq_history", "imag_iq_history"]
-    dict_processed_data = {
-        k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
-    }
-    return dict_processed_data, dict_algo_data
+        # Create DataFrames from configurations, sensor id, and detector context
+        dict_algo_data = {**{"sensor_ids": sensor_id}, **(detector_config.to_dict())}
 
+        # Client preparation
+        detector = speed.Detector(
+            client=self.client,
+            sensor_id=int(sensor_id),
+            detector_config=detector_config,
+        )
+        detector.start()
 
-def get_processed_data_speed(
-    h5_file: h5py.File,
-) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
-    processed_data_list = []
-    sensor_id, detector_config = speed._detector._load_algo_data(h5_file["algo"])
+        try:
+            for idx in range(self.num_frames):
+                processed_data = detector.get_next()
 
-    # Create DataFrames from configurations, sensor id, and detector context
-    dict_algo_data = {**{"sensor_ids": sensor_id}, **(detector_config.to_dict())}
+                # Put the result in row
+                processed_data_row = speed_result_as_row(processed_data=processed_data)
+                processed_data_list.append(processed_data_row)
 
-    # Client preparation
-    record = H5Record(h5_file)
-    client = _ReplayingClient(record, realtime_replay=False)
-    num_frames = record.num_frames
-    detector = speed.Detector(
-        client=client,
-        sensor_id=int(sensor_id),
-        detector_config=detector_config,
-    )
-    detector.start()
+                # Print progressing time every 5%
+                print(f"... {idx / self.num_frames:.0%}") if (
+                    idx % int(0.05 * self.num_frames)
+                ) == 0 else None
 
-    try:
-        for idx in range(record.num_frames):
-            processed_data = detector.get_next()
+        except KeyboardInterrupt:
+            print("Conversion aborted")
+        else:
+            print("Processing data is finished. . .")
 
-            # Put the result in row
-            processed_data_row = speed_result_as_row(processed_data=processed_data)
-            processed_data_list.append(processed_data_row)
+        detector.stop()
+        self.client.close()
+        print("Disconnecting...")
 
-            # Print progressing time every 5%
-            print(f"... {idx / num_frames:.0%}") if (idx % int(0.05 * num_frames)) == 0 else None
+        # Creates DataFrames from processed data and keys
+        keys = ["speed_per_depth", "max_speed"]
+        dict_processed_data = {
+            k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
+        }
 
-    except KeyboardInterrupt:
-        print("Conversion aborted")
-    else:
-        print("Processing data is finished. . .")
-
-    detector.stop()
-    client.close()
-    print("Disconnecting...")
-
-    # Creates DataFrames from processed data and keys
-    keys = ["speed_per_depth", "max_speed"]
-    dict_processed_data = {
-        k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
-    }
-
-    return dict_processed_data, dict_algo_data
+        return dict_processed_data, dict_algo_data
 
 
 def breathing_result_as_row(processed_data: breathing.RefAppResult) -> list[t.Any]:
