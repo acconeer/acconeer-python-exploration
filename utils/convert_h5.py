@@ -306,24 +306,26 @@ class A121RecordTableConverter(TableConverter):
     def __init__(self, record: a121.H5Record) -> None:
         self._record = record
 
-    def _results_of_sensor_id(self, sensor_id: int, session_index: int = 0) -> list[a121.Result]:
+    def _results_of_sensor_id(
+        self, sensor_id: int, group_id: int = 0, session_index: int = 0
+    ) -> list[a121.Result]:
         return [
             ext_result[sensor_id]
             for ext_result_group in self._record.session(session_index).extended_results
-            for ext_result in ext_result_group
-            if sensor_id in ext_result
+            for grid, ext_result in enumerate(ext_result_group)
+            if sensor_id in ext_result and grid == group_id
         ]
 
     def _unique_sensor_configs_of_sensor_id(
-        self, sensor_id: int, session_index: int = 0
+        self, sensor_id: int, group_id: int = 0, session_index: int = 0
     ) -> list[a121.SensorConfig]:
         # FIXME: this is not a `set` as SensorConfig is not hash-able
         sensor_configs = [
             sensor_config
-            for _, sid, sensor_config in _core.utils.iterate_extended_structure(
+            for grid, sid, sensor_config in _core.utils.iterate_extended_structure(
                 self._record.session(session_index).session_config.groups
             )
-            if sid == sensor_id
+            if sid == sensor_id and grid == group_id
         ]
         unique_sensor_configs = []
         for sensor_config in sensor_configs:
@@ -332,22 +334,24 @@ class A121RecordTableConverter(TableConverter):
         return unique_sensor_configs
 
     def _unique_metadatas_of_sensor_id(
-        self, sensor_id: int, session_index: int = 0
+        self, sensor_id: int, group_id: int = 0, session_index: int = 0
     ) -> list[a121._core.entities.containers.metadata.Metadata]:
         extended = self._record.session(session_index).session_config.extended
         metadatas = [
             metadata
-            for _, sid, metadata in _core.utils.iterate_extended_structure(
+            for grid, sid, metadata in _core.utils.iterate_extended_structure(
                 self._record.session(session_index).extended_metadata
             )
-            if sid == sensor_id
+            if sid == sensor_id and grid == group_id
         ]
         unique_metadatas = (
             metadatas if extended else [self._record.session(session_index).metadata]
         )
         return unique_metadatas
 
-    def _get_sparse_iq(self, sensor: int, session_index: int = 0) -> npt.NDArray[t.Any]:
+    def _get_sparse_iq(
+        self, sensor: int, group_id: int = 0, session_index: int = 0
+    ) -> npt.NDArray[t.Any]:
         """This function handles the case where the sensor at "sensor ID" is configured
         with a single/multiple `SensorConfig(s)`, possibly in multiple groups.
 
@@ -356,13 +360,12 @@ class A121RecordTableConverter(TableConverter):
         """
 
         # Sensor results as a concatenate results of multiple or single configs
-        sensor_results = self._results_of_sensor_id(sensor, session_index=session_index)
-        num_sensor_configs = len(
-            self._unique_sensor_configs_of_sensor_id(sensor, session_index=session_index)
+        sensor_results = self._results_of_sensor_id(sensor, group_id, session_index=session_index)
+        num_groups = len(
+            self._unique_sensor_configs_of_sensor_id(sensor, group_id, session_index=session_index)
         )
         rows = []
         row_values = []
-
         # Append 2nd, 3rd, ... configs to the same rows or array with 1st frame
         for index, result in enumerate(sensor_results):
             # Flatten the frame and format each value
@@ -372,7 +375,7 @@ class A121RecordTableConverter(TableConverter):
                 row_values.append(formatted_value)
 
             # Append the row based on the number of configurations
-            if not (index + 1) % num_sensor_configs:
+            if (index + 1) % num_groups == 0:
                 rows.append(row_values)
                 row_values = []
 
@@ -398,12 +401,15 @@ class A121RecordTableConverter(TableConverter):
         sensor_config_with_index: Dict[str, t.Any] = {}
         session_config = self._record.session(session_index).session_config
         sensor_ids = []
+        group_ids = []
         # Create DataFrames from configurations
         for group_id, sensor_id, sensor_config in _core.utils.iterate_extended_structure(
             session_config.groups
         ):
             if sensor_id not in sensor_ids:
                 sensor_ids.append(sensor_id)
+            if group_id not in group_ids:
+                group_ids.append(group_id)
             sensor_config_with_index[f"group_id [{group_id}] sensor_id [{sensor_id}]"] = None
             frame_rate = "Max" if sensor_config.frame_rate is None else sensor_config.frame_rate
             sweep_rate = "Max" if sensor_config.sweep_rate is None else sensor_config.sweep_rate
@@ -432,9 +438,13 @@ class A121RecordTableConverter(TableConverter):
         sensor_ids_dict = {
             "sensor_ids": sensor_ids,
         }
+        group_ids_dict = {
+            "group_ids": group_ids,
+        }
         config_dict = {
             **configs,
             **sensor_ids_dict,
+            **group_ids_dict,
             **group_configs,
             **sensor_config_with_index,
             **subsweep_config_with_index,
@@ -449,56 +459,71 @@ class A121RecordTableConverter(TableConverter):
         """
         sparse_iq_list = []
         sensor_ids = self.get_configs()["sensor_ids"]
+        group_ids = self.get_configs()["group_ids"]
 
         # Sensor results as a concatenate results of multiple or single configs
         for session_index in list(range(self._record.num_sessions)):
             for sensor_id in sensor_ids:
-                sparse_iq_list.append(self._get_sparse_iq(sensor_id, session_index=session_index))
+                for group_id in group_ids:
+                    siq_single_id_multi_group = self._get_sparse_iq(
+                        sensor_id, group_id=group_id, session_index=session_index
+                    )
+                    sparse_iq_list.append(siq_single_id_multi_group)
 
         return sparse_iq_list
 
     def get_metadata_rows(self, sensor: int) -> list[t.Any]:
         sensor_ids = self.get_configs()["sensor_ids"]
+        group_ids = self.get_configs()["group_ids"]
         sweeps_numbers = []
         depths_headers = []
         for session_index in list(range(self._record.num_sessions)):
             for sensor_id in sensor_ids:
-                sensor_configs = self._unique_sensor_configs_of_sensor_id(
-                    sensor_id, session_index=session_index
-                )
-                metadatas = self._unique_metadatas_of_sensor_id(
-                    sensor_id, session_index=session_index
-                )
-                for metadata, sensor_config in zip(metadatas, sensor_configs):
-                    depths = algo.get_distances_m(sensor_config, metadata)
-                    depths_header = np.tile(depths, sensor_config.sweeps_per_frame)
-                    depths_headers.append(depths_header.tolist())
-                    for subsweep in sensor_config.subsweeps:
-                        sweeps_number = np.repeat(
-                            range(sensor_config.sweeps_per_frame), repeats=subsweep.num_points
-                        ).astype(int)
-                        sweeps_numbers.append(sweeps_number.tolist())
+                for group_id in group_ids:
+                    sensor_configs = self._unique_sensor_configs_of_sensor_id(
+                        sensor_id, group_id=group_id, session_index=session_index
+                    )
+                    metadatas = self._unique_metadatas_of_sensor_id(
+                        sensor_id, group_id=group_id, session_index=session_index
+                    )
+                    for metadata, sensor_config in zip(metadatas, sensor_configs):
+                        depths = algo.get_distances_m(sensor_config, metadata)
+                        depths_header = np.tile(depths, sensor_config.sweeps_per_frame)
+                        depths_headers.append(depths_header.tolist())
+                        for subsweep in sensor_config.subsweeps:
+                            sweeps_number = np.repeat(
+                                range(sensor_config.sweeps_per_frame), repeats=subsweep.num_points
+                            ).astype(int)
+                            sweeps_numbers.append(sweeps_number.tolist())
         return [sweeps_numbers, depths_headers]
 
     def get_time_single_session(self, session_index: int) -> list[list[str]]:
         # Sensor results as a concatenate results of multiple or single configs
         sensor_ids = self.get_configs()["sensor_ids"]
+        group_ids = self.get_configs()["group_ids"]
         initial_timestamp = self._record.timestamp
         initial_time = datetime.strptime(initial_timestamp, "%Y-%m-%dT%H:%M:%S")
 
         # Sensor results as a concatenate results of multiple or single configs
         formatted_times_multi_sensor = []
         for sensor_id in sensor_ids:
-            seconds_list = []
-            sensor_results = self._results_of_sensor_id(sensor_id, session_index=session_index)
-            for result in sensor_results:
-                # Take tick_time
-                seconds_list.append(result.tick_time)
-                # Add seconds to the initial time and store the results
-                resulting_times = [initial_time + timedelta(seconds=sec) for sec in seconds_list]
-                # Format the resulting times to 'HH:MM:SS.s' format
-                formatted_times = [time.strftime("%H:%M:%S.%f")[:-4] for time in resulting_times]
-            formatted_times_multi_sensor.append(formatted_times)
+            for group_id in group_ids:
+                seconds_list = []
+                sensor_results = self._results_of_sensor_id(
+                    sensor_id, group_id=group_id, session_index=session_index
+                )
+                for result in sensor_results:
+                    # Take tick_time
+                    seconds_list.append(result.tick_time)
+                    # Add seconds to the initial time and store the results
+                    resulting_times = [
+                        initial_time + timedelta(seconds=sec) for sec in seconds_list
+                    ]
+                    # Format the resulting times to 'HH:MM:SS.s' format
+                    formatted_times = [
+                        time.strftime("%H:%M:%S.%f")[:-4] for time in resulting_times
+                    ]
+                formatted_times_multi_sensor.append(formatted_times)
         return formatted_times_multi_sensor
 
     def get_time(self) -> list[list[str]]:
@@ -656,14 +681,14 @@ class A121ProcessedData:
             "hand_motion": self.get_processed_data_hand_motion,
             "parking": self.get_processed_data_parking,
             "phase_tracking": get_processed_data_phase_tracking,
-            "presence_detector": get_processed_data_presence,
-            "smart_presence": get_processed_data_smart_presence,
+            "presence_detector": self.get_processed_data_presence,
+            "smart_presence": self.get_processed_data_smart_presence,
             "speed_detector": get_processed_data_speed,
-            "surface_velocity": get_processed_data_surface_velocity,
+            "surface_velocity": self.get_processed_data_surface_velocity,
             "waste_level": self.get_processed_data_waste_level,
-            "tank_level": get_processed_data_tank_level,
-            "touchless_button": get_processed_data_touchless_button,
-            "vibration": get_processed_data_vibration,
+            "tank_level": self.get_processed_data_tank_level,
+            "touchless_button": self.get_processed_data_touchless_button,
+            "vibration": self.get_processed_data_vibration,
         }
 
         for key, func in load_algo_and_client.items():
@@ -908,7 +933,7 @@ class A121ProcessedData:
             detector_config,
             processor_config,
             context,
-        ) = bilateration._processor._load_algo_data(h5_file["algo"])
+        ) = bilateration._processor._load_algo_data(self.h5_file["algo"])
 
         # Create Dict from configurations, sensor id, and detector context
         dict_algo_data = {
@@ -1010,334 +1035,325 @@ class A121ProcessedData:
 
         return dict_processed_data, dict_algo_data
 
+    def get_processed_data_tank_level(
+        self,
+        h5_file: h5py.File,
+    ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
+        processed_data_list = []
+        sensor_ids, config, tank_level_context = tank_level._ref_app._load_algo_data(
+            self.h5_file["algo"]
+        )
 
-def get_processed_data_tank_level(
-    h5_file: h5py.File,
-) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
-    processed_data_list = []
-    sensor_ids, config, tank_level_context = tank_level._ref_app._load_algo_data(h5_file["algo"])
+        # Create DataFrames from configurations and sensor id
+        dict_algo_data = {
+            **{"sensor_ids": sensor_ids},
+            **(config.to_dict()),
+            **(tank_level_context.to_dict()),
+        }
 
-    # Create DataFrames from configurations and sensor id
-    dict_algo_data = {
-        **{"sensor_ids": sensor_ids},
-        **(config.to_dict()),
-        **(tank_level_context.to_dict()),
-    }
+        # Client preparation
+        ref_app = tank_level._ref_app.RefApp(
+            client=self.client, sensor_id=sensor_ids, config=config, context=tank_level_context
+        )
+        ref_app.start()
 
-    # Client preparation
-    record = H5Record(h5_file)
-    client = _ReplayingClient(record, realtime_replay=False)
-    num_frames = record.num_frames
-    ref_app = tank_level._ref_app.RefApp(
-        client=client, sensor_id=sensor_ids, config=config, context=tank_level_context
-    )
-    ref_app.start()
+        try:
+            for idx in range(self.num_frames):
+                processed_data = ref_app.get_next()
 
-    try:
-        for idx in range(record.num_frames):
-            processed_data = ref_app.get_next()
-
-            # Put the result in row
-            if processed_data.level is not None:
+                # Put the result in row
                 processed_data_row = tank_level_as_row(processed_data=processed_data)
                 processed_data_list.append(processed_data_row)
 
-            # Print progressing time every 5%
-            print(f"... {idx / num_frames:.0%}") if (idx % int(0.05 * num_frames)) == 0 else None
-
-    except KeyboardInterrupt:
-        print("Conversion aborted")
-    else:
-        print("Processing data is finished. . .")
-
-    ref_app.stop()
-    client.close()
-    print("Disconnecting...")
-
-    # Creates DataFrames from processed data and keys
-    keys = ["level", "peak_detected", "peak_status"]
-    dict_processed_data = {
-        k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
-    }
-
-    return dict_processed_data, dict_algo_data
-
-
-def get_processed_data_surface_velocity(
-    h5_file: h5py.File,
-) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
-    processed_data_list = []
-    sensor_id, ExampleAppConfig = surface_velocity._example_app._load_algo_data(h5_file["algo"])
-
-    # Create Dict from configurations and sensor id
-    dict_algo_data = {**{"sensor_ids": sensor_id}, **(ExampleAppConfig.to_dict())}
-
-    # Client preparation
-    record = H5Record(h5_file)
-    client = _ReplayingClient(record, realtime_replay=False)
-    num_frames = record.num_frames
-
-    example_app = surface_velocity.ExampleApp(
-        client=client,
-        sensor_id=int(sensor_id),
-        example_app_config=ExampleAppConfig,
-    )
-    example_app.start()
-
-    try:
-        for idx in range(record.num_frames):
-            processed_data = example_app.get_next()
-
-            # Put the result in row
-            processed_data_row = surface_velocity_result_as_row(processed_data=processed_data)
-            processed_data_list.append(processed_data_row)
-
-            # Print progressing time every 5%
-            print(f"... {idx / num_frames:.0%}") if (idx % int(0.05 * num_frames)) == 0 else None
-
-    except KeyboardInterrupt:
-        print("Conversion aborted")
-    else:
-        print("Processing data is finished. . .")
-
-    example_app.stop()
-    client.close()
-    print("Disconnecting...")
-
-    # Creates Dict from processed data and keys
-    keys = ["estimated_velocity", "distance"]
-    dict_processed_data = {
-        k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
-    }
-
-    return dict_processed_data, dict_algo_data
-
-
-def get_processed_data_presence(
-    h5_file: h5py.File,
-) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
-    processed_data_list = []
-    sensor_id, detector_config, detector_context = presence._detector._load_algo_data(
-        h5_file["algo"]
-    )
-
-    detector_context_dict = detector_context.to_dict() if detector_context is not None else {}
-    # Create Dict from configurations, sensor id, and detector context
-    dict_algo_data = {
-        **{"sensor_ids": sensor_id},
-        **(detector_config.to_dict()),
-        **detector_context_dict,
-    }
-
-    # Client preparation
-    record = H5Record(h5_file)
-    client = _ReplayingClient(record, realtime_replay=False)
-    num_frames = record.num_frames
-    detector = presence.Detector(
-        client=client,
-        sensor_id=int(sensor_id),
-        detector_config=detector_config,
-        detector_context=detector_context,
-    )
-    detector.start()
-
-    try:
-        for idx in range(record.num_frames):
-            processed_data = detector.get_next()
-
-            # Put the result in row
-            processed_data_row = presence_result_as_row(processed_data=processed_data)
-            processed_data_list.append(processed_data_row)
-
-            # Print progressing time every 5%
-            print(f"... {idx / num_frames:.0%}") if (idx % int(0.05 * num_frames)) == 0 else None
-
-    except KeyboardInterrupt:
-        print("Conversion aborted")
-    else:
-        print("Processing data is finished. . .")
-
-    detector.stop()
-    client.close()
-    print("Disconnecting...")
-
-    # Creates Dict from processed data and keys
-    keys = [
-        "Presence",
-        f"Intra_presence_score_(threshold_{detector_config.intra_detection_threshold:.1f})",
-        f"Inter_presence_score_(threshold_{detector_config.inter_detection_threshold:.1f})",
-        "Presence_distance",
-    ]
-    dict_processed_data = {
-        k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
-    }
-
-    return dict_processed_data, dict_algo_data
-
-
-def get_processed_data_smart_presence(
-    h5_file: h5py.File,
-) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
-    processed_data_list = []
-    num_frames = 0
-    sensor_id, RefAppConfig, RefAppContext = smart_presence._ref_app._load_algo_data(
-        h5_file["algo"]
-    )
-
-    # Create Dict from configurations, sensor id, and detector context
-    dict_algo_data = {
-        **{"sensor_ids": sensor_id},
-        **(RefAppConfig.to_dict()),
-        **(RefAppContext.to_dict()),
-    }
-
-    # Client preparation
-    record = H5Record(h5_file)
-    client = _ReplayingClient(record, realtime_replay=False)
-    for session_index in range(record.num_sessions):
-        num_frames = num_frames + record.session(session_index).num_frames
-    ref_app = smart_presence._ref_app.RefApp(
-        client=client,
-        sensor_id=sensor_id,
-        ref_app_config=RefAppConfig,
-        ref_app_context=RefAppContext,
-    )
-    ref_app.start()
-
-    print("Press Ctrl-C to end session")
-
-    try:
-        for idx in range(num_frames):
-            processed_data = ref_app.get_next()
-
-            # Put the result in row
-            processed_data_row = smart_presence_result_as_row(processed_data=processed_data)
-            processed_data_list.append(processed_data_row)
-
-            # Print progressing time every 5%
-            print(f"... {idx / num_frames:.0%}") if (idx % int(0.05 * num_frames)) == 0 else None
-
-    except KeyboardInterrupt:
-        print("Conversion aborted")
-    else:
-        print("Processing data is finished. . .")
-
-    ref_app.stop()
-
-    print("Disconnecting...")
-    client.close()
-
-    # Creates Dict from processed data and keys
-    keys = [
-        "Presence",
-        "Intra_presence_score",
-        "Inter_presence_score",
-    ]
-    dict_processed_data = {
-        k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
-    }
-
-    return dict_processed_data, dict_algo_data
-
-
-def get_processed_data_touchless_button(
-    h5_file: h5py.File,
-) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
-    processed_data_list = []
-    record = H5Record(h5_file)
-    processor_config = touchless_button._processor._load_algo_data(h5_file["algo"])
-
-    # Create Dict from configurations and sensor id
-    dict_algo_data = {**{"sensor_ids": record.sensor_id}, **(processor_config.to_dict())}
-
-    # Record file extraction
-    num_frames = record.num_frames
-    sensor_config = record.session_config.sensor_config
-    metadata = record.metadata
-
-    processor = touchless_button.Processor(
-        sensor_config=sensor_config,
-        metadata=metadata,
-        processor_config=processor_config,
-    )
-
-    try:
-        for idx, result in enumerate(record.results):
-            processed_data = processor.process(result)
-
-            # Put the result in row
-            processed_data_row = touchless_button_as_row(processed_data=processed_data)
-            processed_data_list.append(processed_data_row)
-
-            # Print progressing time every 5%
-            if (idx % int(0.05 * num_frames)) == 0:
-                print(f"... {idx / num_frames:.0%}")
-
-    except KeyboardInterrupt:
-        print("Conversion aborted")
-    else:
-        print("Processing data is finished. . .")
-
-    print("Disconnecting...")
-
-    # Creates DataFrames from processed data and keys
-    keys = ["close_result", "far_result"]
-    dict_processed_data = {
-        k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
-    }
-
-    return dict_processed_data, dict_algo_data
-
-
-def get_processed_data_vibration(
-    h5_file: h5py.File,
-) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
-    record = H5Record(h5_file)
-    processed_data_list = []
-    sensor_id, example_app_config = vibration._load_algo_data(h5_file["algo"])
-
-    # Create Dict from configurations and sensor id
-    dict_algo_data = {**{"sensor_ids": sensor_id}, **(example_app_config.to_dict())}
-
-    # Client preparation
-    record = H5Record(h5_file)
-    client = _ReplayingClient(record, realtime_replay=False)
-    num_frames = record.num_frames
-
-    example_app = vibration.ExampleApp(
-        client=client,
-        sensor_id=int(sensor_id),
-        example_app_config=example_app_config,
-    )
-    example_app.start()
-
-    try:
-        for idx in range(record.num_frames):
-            processed_data = example_app.get_next()
-
-            # Put the result in row
-            processed_data_row = vibration_as_row(processed_data=processed_data)
-            processed_data_list.append(processed_data_row)
-
-            # Print progressing time every 5%
-            print(f"... {idx / num_frames:.0%}") if (idx % int(0.05 * num_frames)) == 0 else None
-
-    except KeyboardInterrupt:
-        print("Conversion aborted")
-    else:
-        print("Processing data is finished. . .")
-
-    example_app.stop()
-    client.close()
-    print("Disconnecting...")
-
-    # Creates DataFrames from processed data and keys
-    keys = ["max_displacement", "max_sweep_amplitude", "max_displacement_freq"]
-    dict_processed_data = {
-        k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
-    }
-
-    return dict_processed_data, dict_algo_data
+                # Print progressing time every 5%
+                print(f"... {idx / self.num_frames:.0%}") if (
+                    idx % int(0.05 * self.num_frames)
+                ) == 0 else None
+
+        except KeyboardInterrupt:
+            print("Conversion aborted")
+        else:
+            print("Processing data is finished. . .")
+
+        ref_app.stop()
+        self.client.close()
+        print("Disconnecting...")
+
+        # Creates DataFrames from processed data and keys
+        keys = ["level", "peak_detected", "peak_status"]
+        dict_processed_data = {
+            k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
+        }
+
+        return dict_processed_data, dict_algo_data
+
+    def get_processed_data_surface_velocity(
+        self,
+        h5_file: h5py.File,
+    ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
+        processed_data_list = []
+        sensor_id, ExampleAppConfig = surface_velocity._example_app._load_algo_data(
+            self.h5_file["algo"]
+        )
+
+        # Create Dict from configurations and sensor id
+        dict_algo_data = {**{"sensor_ids": sensor_id}, **(ExampleAppConfig.to_dict())}
+
+        # Client preparation
+        example_app = surface_velocity.ExampleApp(
+            client=self.client,
+            sensor_id=int(sensor_id),
+            example_app_config=ExampleAppConfig,
+        )
+        example_app.start()
+
+        try:
+            for idx in range(self.num_frames):
+                processed_data = example_app.get_next()
+
+                # Put the result in row
+                processed_data_row = surface_velocity_result_as_row(processed_data=processed_data)
+                processed_data_list.append(processed_data_row)
+
+                # Print progressing time every 5%
+                print(f"... {idx / self.num_frames:.0%}") if (
+                    idx % int(0.05 * self.num_frames)
+                ) == 0 else None
+
+        except KeyboardInterrupt:
+            print("Conversion aborted")
+        else:
+            print("Processing data is finished. . .")
+
+        example_app.stop()
+        self.client.close()
+        print("Disconnecting...")
+
+        # Creates Dict from processed data and keys
+        keys = ["estimated_velocity", "distance"]
+        dict_processed_data = {
+            k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
+        }
+
+        return dict_processed_data, dict_algo_data
+
+    def get_processed_data_presence(
+        self,
+        h5_file: h5py.File,
+    ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
+        processed_data_list = []
+        sensor_id, detector_config, detector_context = presence._detector._load_algo_data(
+            self.h5_file["algo"]
+        )
+
+        detector_context_dict = detector_context.to_dict() if detector_context is not None else {}
+        # Create Dict from configurations, sensor id, and detector context
+        dict_algo_data = {
+            **{"sensor_ids": sensor_id},
+            **(detector_config.to_dict()),
+            **detector_context_dict,
+        }
+
+        # Client preparation
+        detector = presence.Detector(
+            client=self.client,
+            sensor_id=int(sensor_id),
+            detector_config=detector_config,
+            detector_context=detector_context,
+        )
+        detector.start()
+
+        try:
+            for idx in range(self.num_frames):
+                processed_data = detector.get_next()
+
+                # Put the result in row
+                processed_data_row = presence_result_as_row(processed_data=processed_data)
+                processed_data_list.append(processed_data_row)
+
+                # Print progressing time every 5%
+                print(f"... {idx / self.num_frames:.0%}") if (
+                    idx % int(0.05 * self.num_frames)
+                ) == 0 else None
+
+        except KeyboardInterrupt:
+            print("Conversion aborted")
+        else:
+            print("Processing data is finished. . .")
+
+        detector.stop()
+        self.client.close()
+        print("Disconnecting...")
+
+        # Creates Dict from processed data and keys
+        keys = [
+            "Presence",
+            f"Intra_presence_score_(threshold_{detector_config.intra_detection_threshold:.1f})",
+            f"Inter_presence_score_(threshold_{detector_config.inter_detection_threshold:.1f})",
+            "Presence_distance",
+        ]
+        dict_processed_data = {
+            k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
+        }
+
+        return dict_processed_data, dict_algo_data
+
+    def get_processed_data_smart_presence(
+        self,
+        h5_file: h5py.File,
+    ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
+        processed_data_list = []
+        sensor_id, RefAppConfig, RefAppContext = smart_presence._ref_app._load_algo_data(
+            self.h5_file["algo"]
+        )
+
+        # Create Dict from configurations, sensor id, and detector context
+        dict_algo_data = {
+            **{"sensor_ids": sensor_id},
+            **(RefAppConfig.to_dict()),
+            **(RefAppContext.to_dict()),
+        }
+
+        # Client preparation
+        ref_app = smart_presence._ref_app.RefApp(
+            client=self.client,
+            sensor_id=sensor_id,
+            ref_app_config=RefAppConfig,
+            ref_app_context=RefAppContext,
+        )
+        ref_app.start()
+
+        print("Press Ctrl-C to end session")
+
+        try:
+            for idx in range(self.num_frames):
+                processed_data = ref_app.get_next()
+
+                # Put the result in row
+                processed_data_row = smart_presence_result_as_row(processed_data=processed_data)
+                processed_data_list.append(processed_data_row)
+
+                # Print progressing time every 5%
+                print(f"... {idx / self.num_frames:.0%}") if (
+                    idx % int(0.05 * self.num_frames)
+                ) == 0 else None
+
+        except KeyboardInterrupt:
+            print("Conversion aborted")
+        else:
+            print("Processing data is finished. . .")
+
+        ref_app.stop()
+
+        print("Disconnecting...")
+        self.client.close()
+
+        # Creates Dict from processed data and keys
+        keys = [
+            "Presence",
+            "Intra_presence_score",
+            "Inter_presence_score",
+        ]
+        dict_processed_data = {
+            k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
+        }
+
+        return dict_processed_data, dict_algo_data
+
+    def get_processed_data_touchless_button(
+        self,
+        h5_file: h5py.File,
+    ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
+        processed_data_list = []
+        processor_config = touchless_button._processor._load_algo_data(self.h5_file["algo"])
+
+        # Create Dict from configurations and sensor id
+        dict_algo_data = {**{"sensor_ids": self._record.sensor_id}, **(processor_config.to_dict())}
+
+        # Record file extraction
+        sensor_config = self._record.session_config.sensor_config
+        metadata = self._record.metadata
+
+        processor = touchless_button.Processor(
+            sensor_config=sensor_config,
+            metadata=metadata,
+            processor_config=processor_config,
+        )
+
+        try:
+            for idx, result in enumerate(self._record.results):
+                processed_data = processor.process(result)
+
+                # Put the result in row
+                processed_data_row = touchless_button_as_row(processed_data=processed_data)
+                processed_data_list.append(processed_data_row)
+
+                # Print progressing time every 5%
+                if (idx % int(0.05 * self.num_frames)) == 0:
+                    print(f"... {idx / self.num_frames:.0%}")
+
+        except KeyboardInterrupt:
+            print("Conversion aborted")
+        else:
+            print("Processing data is finished. . .")
+
+        print("Disconnecting...")
+
+        # Creates DataFrames from processed data and keys
+        keys = ["close_result", "far_result"]
+        dict_processed_data = {
+            k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
+        }
+
+        return dict_processed_data, dict_algo_data
+
+    def get_processed_data_vibration(
+        self,
+        h5_file: h5py.File,
+    ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
+        processed_data_list = []
+        sensor_id, example_app_config = vibration._load_algo_data(self.h5_file["algo"])
+
+        # Create Dict from configurations and sensor id
+        dict_algo_data = {**{"sensor_ids": sensor_id}, **(example_app_config.to_dict())}
+
+        # Client preparation
+        example_app = vibration.ExampleApp(
+            client=self.client,
+            sensor_id=int(sensor_id),
+            example_app_config=example_app_config,
+        )
+        example_app.start()
+
+        try:
+            for idx in range(self.num_frames):
+                processed_data = example_app.get_next()
+
+                # Put the result in row
+                processed_data_row = vibration_as_row(processed_data=processed_data)
+                processed_data_list.append(processed_data_row)
+
+                # Print progressing time every 5%
+                print(f"... {idx / self.num_frames:.0%}") if (
+                    idx % int(0.05 * self.num_frames)
+                ) == 0 else None
+
+        except KeyboardInterrupt:
+            print("Conversion aborted")
+        else:
+            print("Processing data is finished. . .")
+
+        example_app.stop()
+        self.client.close()
+        print("Disconnecting...")
+
+        # Creates DataFrames from processed data and keys
+        keys = ["max_displacement", "max_sweep_amplitude", "max_displacement_freq"]
+        dict_processed_data = {
+            k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
+        }
+
+        return dict_processed_data, dict_algo_data
 
 
 def get_processed_data_distance(
@@ -1675,24 +1691,30 @@ def main() -> None:
         sparse_iq_data = [np.transpose(arr) for arr in sparse_iq_data]
 
     if isinstance(record, a121.H5Record):
-        counter_index = 0
-        for session_index in range(record.num_sessions):
+        session_indexes = list(range(record.num_sessions))
+        for session_index in session_indexes:
             dict_config = table_converter.get_configs(session_index=session_index)
-            sensor_ids = dict_config["sensor_ids"]
+            sensor_ids = list(dict_config["sensor_ids"])
+            group_ids = list(dict_config["group_ids"])
             # Add sparse IQ data in excel
             for sensor_id in sensor_ids:
-                distance_header = [
-                    f"{round(metadata_rows[1][session_index][i], 3)}m"
-                    for i in range(len(metadata_rows[1][session_index]))
-                ]
-                dict_excel_file[f"Sparse IQ session {session_index} sensor {sensor_id}"] = (
-                    pd.DataFrame(
+                for group_id in group_ids:
+                    counter_index = (
+                        session_indexes.index(session_index)
+                        + sensor_ids.index(sensor_id)
+                        + group_ids.index(group_id)
+                    )
+                    distance_header = [
+                        f"{round(metadata_rows[1][counter_index][i], 3)}m"
+                        for i in range(len(metadata_rows[1][counter_index]))
+                    ]
+
+                    filename = f"Sparse IQ sesid {session_index} sid {sensor_id} grid {group_id}"
+                    dict_excel_file[filename] = pd.DataFrame(
                         sparse_iq_data[counter_index],
                         columns=distance_header,
                         index=time[counter_index],
                     )
-                )
-                counter_index = +1
 
             # Add configurations in excel
             dict_excel_file[f"Configurations session {session_index}"] = pd.DataFrame(
@@ -1701,7 +1723,8 @@ def main() -> None:
         # Create a Pandas DataFrame from processed data
         table_convert_processed_data = A121ProcessedData(record)
         df_processed_data, df_app_config = table_convert_processed_data.get_processed_data()
-        if len(sensor_ids) > 1:
+
+        if len(sensor_ids) > 1 or len(group_ids) > 1:
             df_processed_data.index = pd.Index(time[0])
         else:
             df_processed_data.index = pd.Index(sum(time, []))
