@@ -12,7 +12,6 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, Tuple, Union, cast
 
-import h5py
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
@@ -131,7 +130,7 @@ class TableConverter:
         pass
 
     @abc.abstractmethod
-    def get_metadata_rows(self, sensor: int) -> list[npt.NDArray[t.Any]]:
+    def get_metadata_rows(self, sensor: int, as_header: bool) -> list[npt.NDArray[t.Any]]:
         pass
 
     @abc.abstractmethod
@@ -147,6 +146,10 @@ class TableConverter:
         pass
 
     @abc.abstractmethod
+    def get_converted_data(self, sensor: int, transpose: bool) -> dict[str, t.Any]:
+        pass
+
+    @abc.abstractmethod
     def print_information(self, verbose: bool = False) -> None:
         pass
 
@@ -156,6 +159,29 @@ class TableConverter:
             return f"{np.real(v):0}{np.imag(v):+}j"
         else:
             return str(v)
+
+    @classmethod
+    def record_from_path(
+        cls, input_path: Union[Path, str]
+    ) -> Union[et.a111.recording.Record, a121.H5Record]:
+        try:
+            x = a121.open_record(input_path)
+            assert isinstance(x, H5Record)
+            return x
+        except Exception:  # noqa: S110
+            pass
+
+        try:
+            return et.a111.recording.load(input_path)
+        except Exception:  # noqa: S110
+            pass
+
+        msg = "The specified file was neither A111 or A121. Cannot load."
+        raise Exception(msg)
+
+    @classmethod
+    def from_path(cls, input_path: Union[Path, str]) -> TableConverter:
+        return cls.from_record(cls.record_from_path(input_path))
 
     @classmethod
     def from_record(cls, record: Union[et.a111.recording.Record, a121.H5Record]) -> TableConverter:
@@ -172,18 +198,23 @@ class A111RecordTableConverter(TableConverter):
     def __init__(self, record: et.a111.recording.Record) -> None:
         self._record = record
 
-    def get_metadata_rows(self, sensor: int) -> list[t.Any]:
+    def get_metadata_rows(self, sensor: int, as_header: bool = False) -> list[t.Any]:
         depths = et.a111.get_range_depths(self._record.sensor_config, self._record.session_info)
         num_points = len(depths)
         rounded_depths = np.round(depths, decimals=6)
 
         if self._record.mode != et.a111.Mode.SPARSE:
-            return [[], rounded_depths]
+            sweep_numbers = []
+            depths_header = rounded_depths.tolist()
         else:
             spf = self._record.sensor_config.sweeps_per_frame
-            sweep_numbers = np.repeat(range(spf), repeats=num_points).astype(int)
-            depths_header = np.tile(rounded_depths, spf)
-            return [sweep_numbers, depths_header]
+            sweep_numbers = (np.repeat(range(spf), repeats=num_points).astype(int)).tolist()
+            depths_header = (np.tile(rounded_depths, spf)).tolist()
+        if as_header:
+            depths_header = [f"{round(depth, 3)}m" for depth in depths_header]
+            sweep_numbers = [f"sweep {sweep_number}" for sweep_number in sweep_numbers]
+
+        return [sweep_numbers, depths_header]
 
     def convert(self, sensor: int) -> list[npt.NDArray[t.Any]]:
         """Converts data of a single sensor
@@ -191,6 +222,7 @@ class A111RecordTableConverter(TableConverter):
         :param sensor: The sensor index
         :returns: 2D NDArray of cell values.
         """
+        self.sensor = sensor
         record = self._record
         sensor_index = sensor
 
@@ -215,6 +247,8 @@ class A111RecordTableConverter(TableConverter):
         environment_dict = {
             "RSS version": self._record.rss_version,
             "acconeer.exptool library version": self._record.lib_version,
+            "mode": self._record.mode,
+            "module": self._record.module_key,
             "Timestamp": self._record.timestamp,
         }
         return environment_dict
@@ -236,6 +270,32 @@ class A111RecordTableConverter(TableConverter):
         converted_times_list = [datetime.fromtimestamp(ts) for ts in data_time]
         formatted_times = [time.strftime("%H:%M:%S.%f")[:-4] for time in converted_times_list]
         return [formatted_times]
+
+    def get_converted_data(self, sensor: int = 0, transpose: bool = False) -> dict[str, t.Any]:
+        """This function provide data ready to be added in the excel file.
+        The output of this function is a dict where
+        :keys   : Sheet name.
+        :values : Pandas Dataframe
+        :returns: Keys.
+        """
+        dict_excel_file = {}
+        sparse_iq_data = self.convert(sensor)
+        metadata_rows = self.get_metadata_rows(sensor=sensor, as_header=True)
+        time = self.get_time()
+        # Add sparse IQ data in excel
+        sparse_id_df = pd.DataFrame(sparse_iq_data[0], columns=metadata_rows[1], index=time[0])
+        if transpose:
+            sparse_id_df = sparse_id_df.transpose()
+        dict_excel_file["Raw data"] = sparse_id_df
+
+        # Add configurations in excel
+        configs = self.get_configs()
+        dict_excel_file["Configurations"] = pd.DataFrame(configs.items())
+
+        # Create a Pandas DataFrame from the environment
+        record_environtment = self.get_environment()
+        dict_excel_file["Environtment"] = pd.DataFrame(record_environtment.items())
+        return dict_excel_file
 
     def print_information(self, verbose: bool = False) -> None:
         config = self.get_configs()
@@ -451,7 +511,7 @@ class A121RecordTableConverter(TableConverter):
         }
         return config_dict
 
-    def convert(self, sensor: int) -> list[npt.NDArray[t.Any]]:
+    def convert(self, sensor: int = 1) -> list[npt.NDArray[t.Any]]:
         """Converts data of a single sensor
 
         :param sensor: The sensor index
@@ -472,7 +532,7 @@ class A121RecordTableConverter(TableConverter):
 
         return sparse_iq_list
 
-    def get_metadata_rows(self, sensor: int) -> list[t.Any]:
+    def get_metadata_rows(self, sensor: int, as_header: bool = False) -> list[t.Any]:
         sensor_ids = self.get_configs()["sensor_ids"]
         group_ids = self.get_configs()["group_ids"]
         sweeps_numbers = []
@@ -495,6 +555,12 @@ class A121RecordTableConverter(TableConverter):
                                 range(sensor_config.sweeps_per_frame), repeats=subsweep.num_points
                             ).astype(int)
                             sweeps_numbers.append(sweeps_number.tolist())
+        if as_header:
+            sweeps_numbers = [f"sweep {sweep_number}" for sweep_number in sweeps_numbers]
+            depths_headers = [
+                [f"{round(depth, 3)}m" for depth in depths_header]
+                for depths_header in depths_headers
+            ]
         return [sweeps_numbers, depths_headers]
 
     def get_time_single_session(self, session_index: int) -> list[list[str]]:
@@ -535,6 +601,61 @@ class A121RecordTableConverter(TableConverter):
             )
             formatted_times_multi_sensor_session.extend(formatted_times_multi_sensor)
         return formatted_times_multi_sensor_session
+
+    def get_converted_data(self, sensor: int = 1, transpose: bool = False) -> dict[str, t.Any]:
+        """This function provide data ready to be added in the excel file.
+        The output of this function is a dict where
+        :keys   : Sheet name.
+        :values : Pandas Dataframe
+        :returns: Keys.
+        """
+        dict_excel_file = {}
+        table_convert_processed_data = A121ProcessedData(self._record)
+        sparse_iq_data = self.convert(sensor=sensor)
+        metadata_rows = self.get_metadata_rows(sensor=sensor, as_header=True)
+        time = self.get_time()
+        # Add sparse IQ data in excel
+
+        num_sessions = table_convert_processed_data._record.num_sessions
+        session_indexes = list(range(num_sessions))
+        for session_index in session_indexes:
+            dict_config = self.get_configs(session_index=session_index)
+            sensor_ids = list(dict_config["sensor_ids"])
+            group_ids = list(dict_config["group_ids"])
+            # Add sparse IQ data in excel
+            for sensor_id in sensor_ids:
+                for group_id in group_ids:
+                    counter_index = (
+                        session_indexes.index(session_index)
+                        + sensor_ids.index(sensor_id)
+                        + group_ids.index(group_id)
+                    )
+                    filename = f"Sparse IQ sesid {session_index} sid {sensor_id} grid {group_id}"
+                    sparse_id_df = pd.DataFrame(
+                        sparse_iq_data[counter_index],
+                        columns=metadata_rows[1][counter_index],
+                        index=time[counter_index],
+                    )
+                    if transpose:
+                        sparse_id_df = sparse_id_df.transpose()
+                    dict_excel_file[filename] = sparse_id_df
+
+            # Add configurations in excel
+            dict_excel_file[f"Configurations session {session_index}"] = pd.DataFrame(
+                dict_config.items()
+            )
+        # Create a Pandas DataFrame from processed data
+        df_processed_data, df_app_config = table_convert_processed_data.get_processed_data()
+
+        if len(sensor_ids) > 1 or len(group_ids) > 1:
+            df_processed_data.index = pd.Index(time[0])
+        else:
+            df_processed_data.index = pd.Index(sum(time, []))
+        dict_excel_file["Application configurations"] = df_app_config
+        dict_excel_file["Processed data"] = df_processed_data
+        record_environtment = self.get_environment()
+        dict_excel_file["Environtment"] = pd.DataFrame(record_environtment.items())
+        return dict_excel_file
 
     def print_information(self, verbose: bool = False) -> None:
         print("=== Server info " + "=" * 44)
@@ -622,57 +743,57 @@ class ArgumentsChecker:
             )
             self.exit_text = exit_text_0 + "\n" + exit_text_1
             self.files_ok = False
-        self.record, self.generation = self.load_file()
         self.sensor = self.get_default_sensor_id_or_index()
-
-    def load_file(self) -> tuple[Union[et.a111.recording.Record, a121.H5Record], str]:
-        try:
-            x = a121.open_record(self.input_path)
-            assert isinstance(x, H5Record)
-            return x, "a121"
-        except Exception:  # noqa: S110
-            pass
-
-        try:
-            return et.a111.recording.load(self.input_path), "a111"
-        except Exception:  # noqa: S110
-            pass
-
-        msg = "The specified file was neither A111 or A121. Cannot load."
-        raise Exception(msg)
 
     def get_default_sensor_id_or_index(self) -> int:
         try:
-            if self.generation == "a121" and isinstance(int(self.args.sensor), int):
-                note_text_0 = str(
-                    "The file from the A121 results includes results from multiple sessions."
-                )
-                note_text_1 = str(
-                    "Specifying the sensor/session id in the arguments does not provide extra information."
-                )
-                note_text = note_text_0 + "\n" + note_text_1
-                print(note_text)
+            note_text_0 = str(
+                "The file from the A121 results includes results from multiple sessions."
+            )
+            note_text_1 = str(
+                "Specifying the sensor/session id in the arguments does not provide extra information."
+            )
+            note_text = note_text_0 + "\n" + note_text_1
+            print(note_text)
             return int(self.args.sensor)
         except AttributeError:
-            return 1 if self.generation == "a121" else 0
+            return 0
 
 
 class A121ProcessedData:
-    def __init__(self, record: a121.H5Record) -> None:
-        self._record = record
-        self.h5_file = record.file
+    _record: a121.H5Record
+
+    def __init__(self, input_record_or_path: Union[a121.H5Record, Path, str]) -> None:
+        if isinstance(input_record_or_path, str):
+            input_path = Path(input_record_or_path)
+            self._record = self.load_file(input_path)
+        elif isinstance(input_record_or_path, Path):
+            input_path = input_record_or_path
+            self._record = self.load_file(input_path)
+        elif isinstance(input_record_or_path, a121.H5Record):
+            self._record = input_record_or_path
+        self.h5_file = self._record.file
         self.num_frames: int = 0
         for session_index in range(self._record.num_sessions):
             self.num_frames = self.num_frames + self._record.session(session_index).num_frames
         self.client = _ReplayingClient(self._record, realtime_replay=False)
         self.app_key = self.h5_file["algo/key"][()].decode()
 
+    def load_file(self, input_path: Path) -> a121.H5Record:
+        try:
+            x = a121.open_record(input_path)
+            assert isinstance(x, H5Record)
+            return x
+        except Exception as e:  # noqa: S110
+            msg = f"Failed to load file: {input_path}"
+            raise RuntimeError(msg) from e
+
     def get_processed_data(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
         df_app_config = pd.DataFrame()
         df_processed_data = pd.DataFrame()
 
         load_algo_and_client: Dict[
-            str, t.Callable[[h5py.File], Tuple[Dict[str, list[t.Any]], Dict[str, t.Any]]]
+            str, t.Callable[[], Tuple[Dict[str, list[t.Any]], Dict[str, t.Any]]]
         ] = {
             "breathing": self.get_processed_data_breathing,
             "bilateration": self.get_processed_data_bilateration,
@@ -693,7 +814,7 @@ class A121ProcessedData:
 
         for key, func in load_algo_and_client.items():
             if key == self.app_key:
-                dict_processed_data, dict_app_config = func(self.h5_file)
+                dict_processed_data, dict_app_config = func()
                 break
 
         flattened_config: Dict[t.Any, t.Any] = {}
@@ -712,6 +833,9 @@ class A121ProcessedData:
                 flattened_config[key] = value
         df_processed_data = pd.DataFrame(dict_processed_data)
 
+        self.client.close()
+        print("Disconnecting...")
+
         # Convert the flattened dictionary to a DataFrame with 'Key' and 'Value' columns
         df_app_config = pd.DataFrame(
             [{"Key": key, "Value": value} for key, value in flattened_config.items()]
@@ -719,9 +843,7 @@ class A121ProcessedData:
 
         return df_processed_data, df_app_config
 
-    def get_processed_data_parking(
-        self, h5_file: h5py.File
-    ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
+    def get_processed_data_parking(self) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
         processed_data_list = []
 
         # Record file extraction
@@ -764,9 +886,6 @@ class A121ProcessedData:
             print("Processing data is finished. . .")
 
         ref_app.stop()
-        self.client.close()
-
-        print("Disconnecting...")
 
         # Creates DataFrames from processed data and keys
         keys = ["car_detected", "obstruction_detected"]
@@ -776,9 +895,7 @@ class A121ProcessedData:
 
         return dict_processed_data, dict_algo_data
 
-    def get_processed_data_waste_level(
-        self, h5_file: h5py.File
-    ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
+    def get_processed_data_waste_level(self) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
         processed_data_list = []
         processor_config = waste_level._processor._load_algo_data(self.h5_file["algo"])
 
@@ -812,8 +929,6 @@ class A121ProcessedData:
         else:
             print("Processing data is finished. . .")
 
-        print("Disconnecting...")
-
         # Creates dict from processed data and keys
         keys = ["level_percent", "level_m"]
         dict_processed_data = {
@@ -822,9 +937,7 @@ class A121ProcessedData:
 
         return dict_processed_data, dict_algo_data
 
-    def get_processed_data_breathing(
-        self, h5_file: h5py.File
-    ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
+    def get_processed_data_breathing(self) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
         processed_data_list = []
         sensor_id, ref_app_config = breathing._ref_app._load_algo_data(self.h5_file["algo"])
 
@@ -855,8 +968,6 @@ class A121ProcessedData:
         else:
             print("Processing data is finished. . .")
 
-        ref_app.stop()
-        self.client.close()
         print("Disconnecting...")
 
         # Creates DataFrames from processed data and keys
@@ -869,10 +980,7 @@ class A121ProcessedData:
 
         return dict_processed_data, dict_algo_data
 
-    def get_processed_data_obstacle(
-        self,
-        h5_file: h5py.File,
-    ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
+    def get_processed_data_obstacle(self) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
         processed_data_list = []
 
         # Client preparation
@@ -912,8 +1020,6 @@ class A121ProcessedData:
         else:
             print("Processing data is finished. . .")
 
-        print("Disconnecting...")
-
         # Creates Dict from processed data and keys
         keys = ["close_proximity_trig", "current_velocity"]
         dict_processed_data = {
@@ -922,10 +1028,7 @@ class A121ProcessedData:
 
         return dict_processed_data, dict_algo_data
 
-    def get_processed_data_bilateration(
-        self,
-        h5_file: h5py.File,
-    ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
+    def get_processed_data_bilateration(self) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
         processed_data_list = []
 
         (
@@ -974,8 +1077,6 @@ class A121ProcessedData:
         else:
             print("Processing data is finished. . .")
 
-        print("Disconnecting...")
-
         # Creates DataFrames from processed data and keys
         keys = ["distances", "points"]
         dict_processed_data = {
@@ -984,10 +1085,7 @@ class A121ProcessedData:
 
         return dict_processed_data, dict_algo_data
 
-    def get_processed_data_hand_motion(
-        self,
-        h5_file: h5py.File,
-    ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
+    def get_processed_data_hand_motion(self) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
         processed_data_list = []
         sensor_id, ModeHandlerConfig = hand_motion._mode_handler._load_algo_data(
             self.h5_file["algo"]
@@ -1024,9 +1122,6 @@ class A121ProcessedData:
         else:
             print("Processing data is finished. . .")
 
-        print("Disconnecting...")
-        self.client.close()
-
         # Creates DataFrames from processed data and keys
         keys = ["app_mode", "detection_state"]
         dict_processed_data = {
@@ -1035,10 +1130,7 @@ class A121ProcessedData:
 
         return dict_processed_data, dict_algo_data
 
-    def get_processed_data_tank_level(
-        self,
-        h5_file: h5py.File,
-    ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
+    def get_processed_data_tank_level(self) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
         processed_data_list = []
         sensor_ids, config, tank_level_context = tank_level._ref_app._load_algo_data(
             self.h5_file["algo"]
@@ -1076,8 +1168,6 @@ class A121ProcessedData:
             print("Processing data is finished. . .")
 
         ref_app.stop()
-        self.client.close()
-        print("Disconnecting...")
 
         # Creates DataFrames from processed data and keys
         keys = ["level", "peak_detected", "peak_status"]
@@ -1089,7 +1179,6 @@ class A121ProcessedData:
 
     def get_processed_data_surface_velocity(
         self,
-        h5_file: h5py.File,
     ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
         processed_data_list = []
         sensor_id, ExampleAppConfig = surface_velocity._example_app._load_algo_data(
@@ -1126,8 +1215,6 @@ class A121ProcessedData:
             print("Processing data is finished. . .")
 
         example_app.stop()
-        self.client.close()
-        print("Disconnecting...")
 
         # Creates Dict from processed data and keys
         keys = ["estimated_velocity", "distance"]
@@ -1137,10 +1224,7 @@ class A121ProcessedData:
 
         return dict_processed_data, dict_algo_data
 
-    def get_processed_data_presence(
-        self,
-        h5_file: h5py.File,
-    ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
+    def get_processed_data_presence(self) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
         processed_data_list = []
         sensor_id, detector_config, detector_context = presence._detector._load_algo_data(
             self.h5_file["algo"]
@@ -1182,8 +1266,6 @@ class A121ProcessedData:
             print("Processing data is finished. . .")
 
         detector.stop()
-        self.client.close()
-        print("Disconnecting...")
 
         # Creates Dict from processed data and keys
         keys = [
@@ -1200,7 +1282,6 @@ class A121ProcessedData:
 
     def get_processed_data_smart_presence(
         self,
-        h5_file: h5py.File,
     ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
         processed_data_list = []
         sensor_id, RefAppConfig, RefAppContext = smart_presence._ref_app._load_algo_data(
@@ -1245,9 +1326,6 @@ class A121ProcessedData:
 
         ref_app.stop()
 
-        print("Disconnecting...")
-        self.client.close()
-
         # Creates Dict from processed data and keys
         keys = [
             "Presence",
@@ -1262,7 +1340,6 @@ class A121ProcessedData:
 
     def get_processed_data_touchless_button(
         self,
-        h5_file: h5py.File,
     ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
         processed_data_list = []
         processor_config = touchless_button._processor._load_algo_data(self.h5_file["algo"])
@@ -1297,8 +1374,6 @@ class A121ProcessedData:
         else:
             print("Processing data is finished. . .")
 
-        print("Disconnecting...")
-
         # Creates DataFrames from processed data and keys
         keys = ["close_result", "far_result"]
         dict_processed_data = {
@@ -1307,10 +1382,7 @@ class A121ProcessedData:
 
         return dict_processed_data, dict_algo_data
 
-    def get_processed_data_vibration(
-        self,
-        h5_file: h5py.File,
-    ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
+    def get_processed_data_vibration(self) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
         processed_data_list = []
         sensor_id, example_app_config = vibration._load_algo_data(self.h5_file["algo"])
 
@@ -1344,8 +1416,6 @@ class A121ProcessedData:
             print("Processing data is finished. . .")
 
         example_app.stop()
-        self.client.close()
-        print("Disconnecting...")
 
         # Creates DataFrames from processed data and keys
         keys = ["max_displacement", "max_sweep_amplitude", "max_displacement_freq"]
@@ -1355,13 +1425,10 @@ class A121ProcessedData:
 
         return dict_processed_data, dict_algo_data
 
-    def get_processed_data_distance(
-        self,
-        h5_file: h5py.File,
-    ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
+    def get_processed_data_distance(self) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
         processed_data_list = []
         sensor_ids, detector_config, detector_context = distance._detector._load_algo_data(
-            h5_file["algo"]
+            self.h5_file["algo"]
         )
 
         # Create Dict from configurations, sensor id, and detector context
@@ -1401,8 +1468,6 @@ class A121ProcessedData:
             print("Processing data is finished. . .")
 
         detector.stop()
-        self.client.close()
-        print("Disconnecting...")
 
         # Creates DataFrames from processed data and keys
         keys = ["distances", "strengths"]
@@ -1414,10 +1479,9 @@ class A121ProcessedData:
 
     def get_processed_data_phase_tracking(
         self,
-        h5_file: h5py.File,
     ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
         processed_data_list = []
-        json_string_config = json.loads(h5_file["algo/processor_config"][()].decode())
+        json_string_config = json.loads(self.h5_file["algo/processor_config"][()].decode())
         processor_config = phase_tracking.ProcessorConfig(
             threshold=json_string_config["threshold"]
         )
@@ -1453,8 +1517,6 @@ class A121ProcessedData:
         else:
             print("Processing data is finished. . .")
 
-        print("Disconnecting...")
-
         # Creates DataFrames from processed data and keys
         keys = ["peak_loc_m", "real_iq_history", "imag_iq_history"]
         dict_processed_data = {
@@ -1462,12 +1524,9 @@ class A121ProcessedData:
         }
         return dict_processed_data, dict_algo_data
 
-    def get_processed_data_speed(
-        self,
-        h5_file: h5py.File,
-    ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
+    def get_processed_data_speed(self) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
         processed_data_list = []
-        sensor_id, detector_config = speed._detector._load_algo_data(h5_file["algo"])
+        sensor_id, detector_config = speed._detector._load_algo_data(self.h5_file["algo"])
 
         # Create DataFrames from configurations, sensor id, and detector context
         dict_algo_data = {**{"sensor_ids": sensor_id}, **(detector_config.to_dict())}
@@ -1499,8 +1558,6 @@ class A121ProcessedData:
             print("Processing data is finished. . .")
 
         detector.stop()
-        self.client.close()
-        print("Disconnecting...")
 
         # Creates DataFrames from processed data and keys
         keys = ["speed_per_depth", "max_speed"]
@@ -1692,7 +1749,7 @@ class DataConverter:
         if self.output_suffix == ".xlsx":
             self._save_to_excel()
         elif self.output_suffix == ".csv":
-            self._save_to_csv(delimiter=",")
+            self._save_to_csv()
         elif self.output_suffix == ".tsv":
             self._save_to_csv(delimiter="\t")
         else:
@@ -1716,7 +1773,7 @@ class DataConverter:
                 )
         print(f"Excel file '{filepath.name}' saved successfully.")
 
-    def _save_to_csv(self, delimiter: str) -> None:
+    def _save_to_csv(self, delimiter: str = ",") -> None:
         """
         Helper function to save DataFrames to CSV or TSV files.
 
@@ -1751,83 +1808,20 @@ def main() -> None:
     else:
         # Create directory if files files is ok
         input_args.output_path.mkdir(parents=True, exist_ok=True)
-    record = input_args.record
     sensor = input_args.sensor
     output_suffix = input_args.output_suffix
     output_path = input_args.output_path
-    table_converter = TableConverter.from_record(record)
+    table_converter = TableConverter.from_path(input_args.input_path)
     try:
-        sparse_iq_data = table_converter.convert(sensor=sensor)
-        metadata_rows = table_converter.get_metadata_rows(sensor=sensor)
-        record_environtment = table_converter.get_environment()
-        time = table_converter.get_time()
+        dict_excel_file = table_converter.get_converted_data(
+            sensor=sensor, transpose=input_args.sweep_as_column
+        )
     except Exception as e:
         print(e)
         exit(1)
 
     table_converter.print_information(verbose=input_args.verbose)
     print()
-    dict_excel_file = {}
-
-    if input_args.sweep_as_column:
-        sparse_iq_data = [np.transpose(arr) for arr in sparse_iq_data]
-
-    if isinstance(record, a121.H5Record):
-        session_indexes = list(range(record.num_sessions))
-        for session_index in session_indexes:
-            dict_config = table_converter.get_configs(session_index=session_index)
-            sensor_ids = list(dict_config["sensor_ids"])
-            group_ids = list(dict_config["group_ids"])
-            # Add sparse IQ data in excel
-            for sensor_id in sensor_ids:
-                for group_id in group_ids:
-                    counter_index = (
-                        session_indexes.index(session_index)
-                        + sensor_ids.index(sensor_id)
-                        + group_ids.index(group_id)
-                    )
-                    distance_header = [
-                        f"{round(metadata_rows[1][counter_index][i], 3)}m"
-                        for i in range(len(metadata_rows[1][counter_index]))
-                    ]
-
-                    filename = f"Sparse IQ sesid {session_index} sid {sensor_id} grid {group_id}"
-                    dict_excel_file[filename] = pd.DataFrame(
-                        sparse_iq_data[counter_index],
-                        columns=distance_header,
-                        index=time[counter_index],
-                    )
-
-            # Add configurations in excel
-            dict_excel_file[f"Configurations session {session_index}"] = pd.DataFrame(
-                dict_config.items()
-            )
-        # Create a Pandas DataFrame from processed data
-        table_convert_processed_data = A121ProcessedData(record)
-        df_processed_data, df_app_config = table_convert_processed_data.get_processed_data()
-
-        if len(sensor_ids) > 1 or len(group_ids) > 1:
-            df_processed_data.index = pd.Index(time[0])
-        else:
-            df_processed_data.index = pd.Index(sum(time, []))
-        dict_excel_file["Application configurations"] = df_app_config
-        dict_excel_file["Processed data"] = df_processed_data
-        record.close()
-    else:
-        # Add sparse IQ data in excel
-        distance_header = [
-            f"{round(metadata_rows[1][i], 3)}m" for i in range(len(metadata_rows[1]))
-        ]
-        dict_excel_file["Sparse IQ data"] = pd.DataFrame(
-            sparse_iq_data[0], columns=distance_header, index=time[0]
-        )
-
-        # Add configurations in excel
-        dict_config = table_converter.get_configs()
-        dict_excel_file["Configurations"] = pd.DataFrame(dict_config.items())
-
-    # Create a Pandas DataFrame from the environment
-    dict_excel_file["Environtment"] = pd.DataFrame(record_environtment.items())
 
     # Prepare data and convert to excel, csv, or tsv
     exported_file = DataConverter(dict_excel_file)
