@@ -873,7 +873,7 @@ class A121ProcessedData:
                 processed_data = ref_app.get_next()
 
                 # Put the result in row
-                processed_data_row = parking_result_as_row(processed_data=processed_data)
+                processed_data_row = self.parking_result_as_row(processed_data=processed_data)
                 processed_data_list.append(processed_data_row)
 
                 # Print progressing time every 5%
@@ -916,7 +916,7 @@ class A121ProcessedData:
                 processed_data = processor.process(result)
 
                 # Put the result in row
-                processed_data_row = waste_level_as_row(processed_data=processed_data)
+                processed_data_row = self.waste_level_as_row(processed_data=processed_data)
                 processed_data_list.append(processed_data_row)
 
                 # Print progressing time every 5%
@@ -955,7 +955,7 @@ class A121ProcessedData:
                 processed_data = ref_app.get_next()
 
                 # Put the result in row
-                processed_data_row = breathing_result_as_row(processed_data=processed_data)
+                processed_data_row = self.breathing_result_as_row(processed_data=processed_data)
                 processed_data_list.append(processed_data_row)
 
                 # Print progressing time every 5%
@@ -1008,7 +1008,7 @@ class A121ProcessedData:
                 processed_data = detector.get_next()
 
                 # Put the result in row
-                processed_data_row = obstacle_as_row(processed_data=processed_data)
+                processed_data_row = self.obstacle_as_row(processed_data=processed_data)
                 processed_data_list.append(processed_data_row)
 
                 # Print progressing time every 5%
@@ -1065,7 +1065,7 @@ class A121ProcessedData:
                 processed_data = processor.process(detector_result)
 
                 # Put the result in row
-                processed_data_row = bilateration_as_row(processed_data=processed_data)
+                processed_data_row = self.bilateration_as_row(processed_data=processed_data)
                 processed_data_list.append(processed_data_row)
 
                 # Print progressing time every 5%
@@ -1109,7 +1109,7 @@ class A121ProcessedData:
                 processed_data = aggregator.get_next()
 
                 # Put the result in row
-                processed_data_row = hand_motion_result_as_row(processed_data=processed_data)
+                processed_data_row = self.hand_motion_result_as_row(processed_data=processed_data)
                 processed_data_list.append(processed_data_row)
 
                 # Print progressing time every 5%
@@ -1154,7 +1154,7 @@ class A121ProcessedData:
                 processed_data = ref_app.get_next()
 
                 # Put the result in row
-                processed_data_row = tank_level_as_row(processed_data=processed_data)
+                processed_data_row = self.tank_level_as_row(processed_data=processed_data)
                 processed_data_list.append(processed_data_row)
 
                 # Print progressing time every 5%
@@ -1201,7 +1201,9 @@ class A121ProcessedData:
                 processed_data = example_app.get_next()
 
                 # Put the result in row
-                processed_data_row = surface_velocity_result_as_row(processed_data=processed_data)
+                processed_data_row = self.surface_velocity_result_as_row(
+                    processed_data=processed_data
+                )
                 processed_data_list.append(processed_data_row)
 
                 # Print progressing time every 5%
@@ -1252,7 +1254,7 @@ class A121ProcessedData:
                 processed_data = detector.get_next()
 
                 # Put the result in row
-                processed_data_row = presence_result_as_row(processed_data=processed_data)
+                processed_data_row = self.presence_result_as_row(processed_data=processed_data)
                 processed_data_list.append(processed_data_row)
 
                 # Print progressing time every 5%
@@ -1311,7 +1313,9 @@ class A121ProcessedData:
                 processed_data = ref_app.get_next()
 
                 # Put the result in row
-                processed_data_row = smart_presence_result_as_row(processed_data=processed_data)
+                processed_data_row = self.smart_presence_result_as_row(
+                    processed_data=processed_data
+                )
                 processed_data_list.append(processed_data_row)
 
                 # Print progressing time every 5%
@@ -1362,7 +1366,7 @@ class A121ProcessedData:
                 processed_data = processor.process(result)
 
                 # Put the result in row
-                processed_data_row = touchless_button_as_row(processed_data=processed_data)
+                processed_data_row = self.touchless_button_as_row(processed_data=processed_data)
                 processed_data_list.append(processed_data_row)
 
                 # Print progressing time every 5%
@@ -1402,7 +1406,7 @@ class A121ProcessedData:
                 processed_data = example_app.get_next()
 
                 # Put the result in row
-                processed_data_row = vibration_as_row(processed_data=processed_data)
+                processed_data_row = self.vibration_as_row(processed_data=processed_data)
                 processed_data_list.append(processed_data_row)
 
                 # Print progressing time every 5%
@@ -1452,7 +1456,7 @@ class A121ProcessedData:
                 processed_data = detector.get_next()
 
                 # Put the result in row
-                processed_data_row = distance_result_as_row(
+                processed_data_row = self.distance_result_as_row(
                     processed_data=processed_data, sensor_ids=sensor_ids
                 )
                 processed_data_list.append(processed_data_row)
@@ -1504,7 +1508,7 @@ class A121ProcessedData:
                 processed_data = processor.process(result)
 
                 # Put the result in row
-                processed_data_row = phase_tracking_as_row(processed_data=processed_data)
+                processed_data_row = self.phase_tracking_as_row(processed_data=processed_data)
                 processed_data_list.append(processed_data_row)
 
                 # Print progressing time every 5%
@@ -1544,7 +1548,7 @@ class A121ProcessedData:
                 processed_data = detector.get_next()
 
                 # Put the result in row
-                processed_data_row = speed_result_as_row(processed_data=processed_data)
+                processed_data_row = self.speed_result_as_row(processed_data=processed_data)
                 processed_data_list.append(processed_data_row)
 
                 # Print progressing time every 5%
@@ -1567,149 +1571,141 @@ class A121ProcessedData:
 
         return dict_processed_data, dict_algo_data
 
+    def breathing_result_as_row(self, processed_data: breathing.RefAppResult) -> list[t.Any]:
+        no_result = "None"
+        rate = (
+            no_result
+            if processed_data.breathing_result is None
+            or processed_data.breathing_result.breathing_rate is None
+            else f"{processed_data.breathing_result.breathing_rate:0.2f}"
+        )
+        motion = (
+            no_result
+            if processed_data.breathing_result is None
+            else f"{processed_data.breathing_result.extra_result.breathing_motion[-1]:0.2f}"
+        )
+        presence_dist = (
+            no_result
+            if not processed_data.presence_result.presence_detected
+            else f"{processed_data.presence_result.presence_distance:0.2f}"
+        )
 
-def breathing_result_as_row(processed_data: breathing.RefAppResult) -> list[t.Any]:
-    no_result = "None"
-    rate = (
-        no_result
-        if processed_data.breathing_result is None
-        or processed_data.breathing_result.breathing_rate is None
-        else f"{processed_data.breathing_result.breathing_rate:0.2f}"
-    )
-    motion = (
-        no_result
-        if processed_data.breathing_result is None
-        else f"{processed_data.breathing_result.extra_result.breathing_motion[-1]:0.2f}"
-    )
-    presence_dist = (
-        no_result
-        if not processed_data.presence_result.presence_detected
-        else f"{processed_data.presence_result.presence_distance:0.2f}"
-    )
+        return [rate, motion, presence_dist]
 
-    return [rate, motion, presence_dist]
+    def obstacle_as_row(self, processed_data: obstacle.DetectorResult) -> list[t.Any]:
+        close_proximity_trig = processed_data.close_proximity_trig
+        current_velocity = processed_data.current_velocity
 
+        return [close_proximity_trig, current_velocity]
 
-def obstacle_as_row(processed_data: obstacle.DetectorResult) -> list[t.Any]:
-    close_proximity_trig = processed_data.close_proximity_trig
-    current_velocity = processed_data.current_velocity
+    def bilateration_as_row(self, processed_data: bilateration.ProcessorResult) -> list[t.Any]:
+        distance = (
+            None
+            if processed_data.objects_without_counterpart == []
+            else processed_data.objects_without_counterpart[0].distance
+        )
+        points = processed_data.points
+        return [distance, points]
 
-    return [close_proximity_trig, current_velocity]
+    def parking_result_as_row(self, processed_data: parking.RefAppResult) -> list[t.Any]:
+        car_detected = processed_data.car_detected
+        obstruction_detected = processed_data.obstruction_detected
 
+        return [car_detected, obstruction_detected]
 
-def bilateration_as_row(processed_data: bilateration.ProcessorResult) -> list[t.Any]:
-    distance = (
-        None
-        if processed_data.objects_without_counterpart == []
-        else processed_data.objects_without_counterpart[0].distance
-    )
-    points = processed_data.points
-    return [distance, points]
+    def phase_tracking_as_row(self, processed_data: phase_tracking.ProcessorResult) -> list[t.Any]:
+        peak_loc_m = processed_data.peak_loc_m
+        real_iq_history = np.real(processed_data.iq_history[0])
+        imag_iq_history = np.imag(processed_data.iq_history[0])
 
+        return [peak_loc_m, real_iq_history, imag_iq_history]
 
-def parking_result_as_row(processed_data: parking.RefAppResult) -> list[t.Any]:
-    car_detected = processed_data.car_detected
-    obstruction_detected = processed_data.obstruction_detected
+    def surface_velocity_result_as_row(
+        self,
+        processed_data: surface_velocity.ExampleAppResult,
+    ) -> list[t.Any]:
+        velocity = f"{processed_data.velocity :.3f}"
+        distance_m = f"{processed_data.distance_m :.3f} m"
 
-    return [car_detected, obstruction_detected]
+        return [velocity, distance_m]
 
+    def presence_result_as_row(self, processed_data: presence.DetectorResult) -> list[t.Any]:
+        presence_detected = "Presence!" if processed_data.presence_detected else "None"
+        intra_presence_score = f"{processed_data.intra_presence_score:.3f}"
+        inter_presence_score = f"{processed_data.inter_presence_score:.3f}"
+        presence_dist = f"{processed_data.presence_distance:.3f} m"
 
-def phase_tracking_as_row(processed_data: phase_tracking.ProcessorResult) -> list[t.Any]:
-    peak_loc_m = processed_data.peak_loc_m
-    real_iq_history = np.real(processed_data.iq_history[0])
-    imag_iq_history = np.imag(processed_data.iq_history[0])
+        return [presence_detected, intra_presence_score, inter_presence_score, presence_dist]
 
-    return [peak_loc_m, real_iq_history, imag_iq_history]
+    def smart_presence_result_as_row(
+        self, processed_data: smart_presence.RefAppResult
+    ) -> list[t.Any]:
+        presence_detected = "Presence!" if processed_data.presence_detected else "None"
+        intra_presence_score = f"{processed_data.intra_presence_score:.3f}"
+        inter_presence_score = f"{processed_data.inter_presence_score:.3f}"
 
+        return [presence_detected, intra_presence_score, inter_presence_score]
 
-def surface_velocity_result_as_row(
-    processed_data: surface_velocity.ExampleAppResult,
-) -> list[t.Any]:
-    velocity = f"{processed_data.velocity :.3f}"
-    distance_m = f"{processed_data.distance_m :.3f} m"
+    def waste_level_as_row(self, processed_data: waste_level.ProcessorResult) -> list[t.Any]:
+        level_percent = f"{processed_data.level_percent}"
+        level_m = f"{processed_data.level_m} m"
 
-    return [velocity, distance_m]
+        return [level_percent, level_m]
 
+    def touchless_button_as_row(
+        self, processed_data: touchless_button.ProcessorResult
+    ) -> list[t.Any]:
+        close_result = False if processed_data.close is None else processed_data.close.detection
+        far_result = False if processed_data.far is None else processed_data.far.detection
 
-def presence_result_as_row(processed_data: presence.DetectorResult) -> list[t.Any]:
-    presence_detected = "Presence!" if processed_data.presence_detected else "None"
-    intra_presence_score = f"{processed_data.intra_presence_score:.3f}"
-    inter_presence_score = f"{processed_data.inter_presence_score:.3f}"
-    presence_dist = f"{processed_data.presence_distance:.3f} m"
+        return [close_result, far_result]
 
-    return [presence_detected, intra_presence_score, inter_presence_score, presence_dist]
+    def distance_result_as_row(
+        self, processed_data: Dict[int, distance._detector.DetectorResult], sensor_ids: list[int]
+    ) -> list[t.Any]:
+        distances = []
+        strengths = []
 
+        for sensor_id in sensor_ids:
+            # Explicitly inform the type checker that distances is not None here
+            # This will pass mypy checker
+            non_null_distances = cast(npt.NDArray[np.float64], processed_data[sensor_id].distances)
+            for distance_result in non_null_distances:
+                distances.append(distance_result)
+            # Explicitly inform the type checker that strengths is not None here
+            non_null_strengths = cast(npt.NDArray[np.float64], processed_data[sensor_id].strengths)
+            for strength_result in non_null_strengths:
+                strengths.append(strength_result)
 
-def smart_presence_result_as_row(processed_data: smart_presence.RefAppResult) -> list[t.Any]:
-    presence_detected = "Presence!" if processed_data.presence_detected else "None"
-    intra_presence_score = f"{processed_data.intra_presence_score:.3f}"
-    inter_presence_score = f"{processed_data.inter_presence_score:.3f}"
+        return [distances, strengths]
 
-    return [presence_detected, intra_presence_score, inter_presence_score]
+    def hand_motion_result_as_row(
+        self, processed_data: hand_motion.ModeHandlerResult
+    ) -> list[t.Any]:
+        app_mode = processed_data.app_mode
+        detection_state = processed_data.detection_state
 
+        return [app_mode, detection_state]
 
-def waste_level_as_row(processed_data: waste_level.ProcessorResult) -> list[t.Any]:
-    level_percent = f"{processed_data.level_percent}"
-    level_m = f"{processed_data.level_m} m"
+    def speed_result_as_row(self, processed_data: speed._detector.DetectorResult) -> list[t.Any]:
+        speed_per_depth = processed_data.speed_per_depth
+        max_speed = processed_data.max_speed
 
-    return [level_percent, level_m]
+        return [speed_per_depth, max_speed]
 
+    def tank_level_as_row(self, processed_data: tank_level._ref_app.RefAppResult) -> list[t.Any]:
+        level = processed_data.level
+        peak_detected = processed_data.peak_detected
+        peak_status = processed_data.peak_status
 
-def touchless_button_as_row(processed_data: touchless_button.ProcessorResult) -> list[t.Any]:
-    close_result = False if processed_data.close is None else processed_data.close.detection
-    far_result = False if processed_data.far is None else processed_data.far.detection
+        return [level, peak_detected, peak_status]
 
-    return [close_result, far_result]
+    def vibration_as_row(self, processed_data: vibration.ExampleAppResult) -> list[t.Any]:
+        max_displacement = processed_data.max_displacement
+        max_sweep_amplitude = processed_data.max_sweep_amplitude
+        max_displacement_freq = processed_data.max_displacement_freq
 
-
-def distance_result_as_row(
-    processed_data: Dict[int, distance._detector.DetectorResult], sensor_ids: list[int]
-) -> list[t.Any]:
-    distances = []
-    strengths = []
-
-    for sensor_id in sensor_ids:
-        # Explicitly inform the type checker that distances is not None here
-        # This will pass mypy checker
-        non_null_distances = cast(npt.NDArray[np.float64], processed_data[sensor_id].distances)
-        for distance_result in non_null_distances:
-            distances.append(distance_result)
-        # Explicitly inform the type checker that strengths is not None here
-        non_null_strengths = cast(npt.NDArray[np.float64], processed_data[sensor_id].strengths)
-        for strength_result in non_null_strengths:
-            strengths.append(strength_result)
-
-    return [distances, strengths]
-
-
-def hand_motion_result_as_row(processed_data: hand_motion.ModeHandlerResult) -> list[t.Any]:
-    app_mode = processed_data.app_mode
-    detection_state = processed_data.detection_state
-
-    return [app_mode, detection_state]
-
-
-def speed_result_as_row(processed_data: speed._detector.DetectorResult) -> list[t.Any]:
-    speed_per_depth = processed_data.speed_per_depth
-    max_speed = processed_data.max_speed
-
-    return [speed_per_depth, max_speed]
-
-
-def tank_level_as_row(processed_data: tank_level._ref_app.RefAppResult) -> list[t.Any]:
-    level = processed_data.level
-    peak_detected = processed_data.peak_detected
-    peak_status = processed_data.peak_status
-
-    return [level, peak_detected, peak_status]
-
-
-def vibration_as_row(processed_data: vibration.ExampleAppResult) -> list[t.Any]:
-    max_displacement = processed_data.max_displacement
-    max_sweep_amplitude = processed_data.max_sweep_amplitude
-    max_displacement_freq = processed_data.max_displacement_freq
-
-    return [max_displacement, max_sweep_amplitude, max_displacement_freq]
+        return [max_displacement, max_sweep_amplitude, max_displacement_freq]
 
 
 class DataConverter:
