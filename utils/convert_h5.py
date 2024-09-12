@@ -1655,6 +1655,88 @@ def vibration_as_row(processed_data: vibration.ExampleAppResult) -> list[t.Any]:
     return [max_displacement, max_sweep_amplitude, max_displacement_freq]
 
 
+class DataConverter:
+    def __init__(self, dict_excel_file: Dict[str, t.Any]):
+        """
+        Initializes the Excel, Csv, and Tsv-Saver class.
+
+        Parameters:
+        dict_excel_file : Dictionary where
+        : keys are sheet names
+        : values are DataFrames format of converter information.
+        """
+        self.dict_excel_file = dict_excel_file
+
+    def save_to_file(self, filepath: Union[Path, str]) -> None:
+        """
+        Saves the DataFrames in the dictionary to an Excel file with multiple sheets.
+
+        Parameters:
+        filepath (str): Path of the output file that include
+        : folder path (parent)
+        : filename (stem)
+        : extension (suffix)
+
+        Returns:
+        None
+        """
+        if isinstance(filepath, str):
+            filepath = Path(filepath)
+
+        # Get file extension (suffix)
+        self.output_stem = filepath.stem
+        self.parent_path = filepath.parent / self.output_stem  # Create folder instead of file
+        self.output_suffix = filepath.suffix
+
+        # Handle based on file extension
+        if self.output_suffix == ".xlsx":
+            self._save_to_excel()
+        elif self.output_suffix == ".csv":
+            self._save_to_csv(delimiter=",")
+        elif self.output_suffix == ".tsv":
+            self._save_to_csv(delimiter="\t")
+        else:
+            msg = f"Unsupported file format: {self.output_suffix}"
+            raise ValueError(msg)
+
+    def _save_to_excel(self) -> None:
+        """
+        Helper function to save DataFrames to an Excel file.
+        """
+        # Save the DataFrame to a CSV or excel file
+        filepath = self.parent_path / (self.output_stem + self.output_suffix)
+        # Write each DataFrame to a separate sheet using to_excel
+        # Default example data frame is written as below
+
+        with pd.ExcelWriter(filepath, engine="xlsxwriter") as writer:
+            # Write each DataFrame to a separate sheet
+            for key, value in self.dict_excel_file.items():
+                pd.DataFrame(value).to_excel(
+                    writer, sheet_name=key, index_label="Index", header=True
+                )
+        print(f"Excel file '{filepath.name}' saved successfully.")
+
+    def _save_to_csv(self, delimiter: str) -> None:
+        """
+        Helper function to save DataFrames to CSV or TSV files.
+
+        Parameters:
+        : delimiter (str): The delimiter to use (',' for CSV and '\t' for TSV).
+
+        Returns:
+        None
+        """
+        # Write each DataFrame to a separate sheet using to_csv
+        for key, value in self.dict_excel_file.items():
+            filepath = self.parent_path / (key + self.output_suffix)
+            pd.DataFrame(value).to_csv(
+                Path(str(filepath)),
+                sep=delimiter,
+                index_label="Index",
+            )
+        print(f"CSV or TSV file '{filepath.name}' saved successfully.")
+
+
 def main() -> None:
     parser = ConvertToCsvArgumentParser()
     args = parser.parse_args()
@@ -1747,27 +1829,9 @@ def main() -> None:
     # Create a Pandas DataFrame from the environment
     dict_excel_file["Environtment"] = pd.DataFrame(record_environtment.items())
 
-    # Save the DataFrame to a CSV or excel file
-    if output_suffix == ".xlsx":
-        filepath = output_path / (output_path.stem + output_suffix)
-        # Write each DataFrame to a separate sheet using to_excel
-        # Default example data frame is written as below
-        with pd.ExcelWriter(filepath, engine="xlsxwriter") as writer:
-            # Write each DataFrame to a separate sheet
-            for key, value in dict_excel_file.items():
-                pd.DataFrame(value).to_excel(
-                    writer, sheet_name=key, index_label="Index", header=True
-                )
-
-    if output_suffix == ".csv" or output_suffix == ".tsv":
-        # Write each DataFrame to a separate sheet using to_csv
-        for key, value in dict_excel_file.items():
-            filepath = output_path / (key + output_suffix)
-            pd.DataFrame(value).to_csv(
-                Path(str(filepath)),
-                sep=input_args.output_csv_separator,
-                index_label="Index",
-            )
+    # Prepare data and convert to excel, csv, or tsv
+    exported_file = DataConverter(dict_excel_file)
+    exported_file.save_to_file(filepath=output_path.with_suffix(output_suffix))
 
     print("Success!")
 
