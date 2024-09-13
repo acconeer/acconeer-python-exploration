@@ -816,6 +816,10 @@ class A121ProcessedData:
             if key == self.app_key:
                 dict_processed_data, dict_app_config = func()
                 break
+        else:
+            no_proc_data = ["Sparse iq only contains sparse iq data and no application config"]
+            dict_processed_data = {}
+            dict_app_config = {"Config": no_proc_data}
 
         flattened_config: Dict[t.Any, t.Any] = {}
 
