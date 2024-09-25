@@ -5,10 +5,25 @@ from __future__ import annotations
 
 import abc
 from enum import Enum
-from typing import Any, Callable, Generic, Mapping, Optional, Sequence, Tuple, Type, TypeVar, cast
+from typing import (
+    Any,
+    Callable,
+    Collection,
+    Generic,
+    Iterable,
+    Mapping,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    cast,
+)
 
 import attrs
 import numpy as np
+import typing_extensions as te
 
 from PySide6 import QtCore, QtGui
 from PySide6.QtWidgets import (
@@ -23,7 +38,6 @@ from PySide6.QtWidgets import (
     QSlider,
     QSpinBox,
     QStackedWidget,
-    QVBoxLayout,
     QWidget,
 )
 
@@ -55,9 +69,6 @@ class PidgetFactory(abc.ABC):
     note_label_text: Optional[str] = None
     hooks: Sequence[PidgetHook] = attrs.field(factory=tuple, converter=_hooks_converter)
 
-    @abc.abstractmethod
-    def create(self, parent: QWidget) -> Pidget: ...
-
     @name_label_text.validator
     def check_for_whitespaces(self, attribute: Any, value: str) -> None:
         if value != value.strip():
@@ -69,6 +80,21 @@ class PidgetFactory(abc.ABC):
         if len(value) > 0 and value[-1] != ":":
             msg = "Labels have to end with ':'"
             raise ValueError(msg)
+
+    @abc.abstractmethod
+    def create(self, parent: QWidget) -> Pidget: ...
+
+    def create_name_label(self, parent: QWidget) -> QLabel:
+        label = QLabel(self.name_label_text, parent=parent)
+        if self.name_label_tooltip is not None:
+            label.setToolTip(self.name_label_tooltip)
+        return label
+
+    def create_note_label(self, parent: QWidget) -> QLabel:
+        label = QLabel(parent=parent)
+        label.setWordWrap(True)
+        label.setContentsMargins(5, 5, 5, 5)
+        return label
 
 
 class Pidget(DataEditor[Any]):
@@ -82,33 +108,80 @@ class Pidget(DataEditor[Any]):
 
     def __init__(self, factory: PidgetFactory, parent: QWidget) -> None:
         super().__init__(parent=parent)
+        self.__note_widget = factory.create_note_label(self)
 
-        self.setLayout(QVBoxLayout(self))
-        self.layout().setContentsMargins(0, 0, 0, 0)
+    def set_standard_layout(
+        self,
+        factory: PidgetFactory,
+        *,
+        first_row_elements: Iterable[
+            Union[
+                QWidget,
+                te.Literal["name_label"],
+            ]
+        ],
+        full_row_widgets: Collection[QWidget] = (),
+        colstretch: tuple[int, ...] = (),
+    ) -> None:
+        """
+        Arranges the element according to a "standard layout"
 
-        self._body_widget = QWidget(self)
-        self.layout().addWidget(self._body_widget)
+        +---------------+-----+-----+-----+
+        |               |     |     |     |
+        |  first_row[0] | fr1 | fr2 | ... |
+        |               |     |     |     |
+        |---------------+-----+-----+-----+
+        |                                 |
+        |            Note label           |
+        |                                 |
+        +---------------------------------+
 
-        self.__label_widget = QLabel(factory.name_label_text, parent=self._body_widget)
-        if factory.name_label_tooltip is not None:
-            self.__label_widget.setToolTip(factory.name_label_tooltip)
+        And if ``full_row_widgets`` is specified:
 
-        self._body_layout = self._create_body_layout(self.__label_widget)
-        self._body_widget.setLayout(self._body_layout)
+        +---------------+-----+-----+-----+
+        |               |     |     |     |
+        |  first_row[0] | fr1 | fr2 | ... |
+        |               |     |     |     |
+        +---------------+-----+-----+-----+
+        |         Full row widget[0]      |
+        +---------------------------------+
+        |         Full row widget[1]      |
+        +---------------------------------+
+        |                ...              |
+        +---------------------------------+
+        |                                 |
+        |            Note label           |
+        |                                 |
+        +---------------------------------+
 
-        self.__note_widget = QLabel(parent=self)
-        self.__note_widget.setWordWrap(True)
-        self.__note_widget.setContentsMargins(5, 5, 5, 5)
-        self.set_note_text(factory.note_label_text)
-        self.layout().addWidget(self.__note_widget)
-
-    def _create_body_layout(self, note_label_widget: QWidget) -> QLayout:
-        """Called by Pidget.__init__"""
-
-        layout = QHBoxLayout(self._body_widget)
+        Special strings can be elements in the ``first_row_widgets``. The strings are
+        replaced with a widget internally.
+        """
+        layout = QGridLayout()
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(note_label_widget)
-        return layout
+
+        name_label = factory.create_name_label(self)
+        self.set_note_text(factory.note_label_text)
+
+        num_name_labels = sum(e == "name_label" for e in first_row_elements)
+        if num_name_labels != 1:
+            msg = "Exactly 1 'name_label' should be specified."
+            raise ValueError(msg)
+
+        first_row_widgets = [(name_label if e == "name_label" else e) for e in first_row_elements]
+
+        for column, widget in enumerate(first_row_widgets):
+            layout.addWidget(widget, 0, column)
+
+        for column, stretch in enumerate(colstretch):
+            layout.setColumnStretch(column, stretch)
+
+        for row, row_widget in enumerate(full_row_widgets, start=1):
+            layout.addWidget(row_widget, row, 0, 1, -1)
+
+        layout.addWidget(self.__note_widget, 1 + len(full_row_widgets), 0, 1, -1)
+
+        self.setLayout(layout)
 
     def set_note_text(
         self, message: Optional[str], criticality: Optional[Criticality] = None
@@ -156,12 +229,16 @@ class IntPidget(Pidget):
         super().__init__(factory, parent)
 
         self._spin_box = _PidgetSpinBox(
-            self._body_widget,
+            self,
             limits=factory.limits,
             suffix=factory.suffix,
         )
         self._spin_box.valueChanged.connect(self.__on_changed)
-        self._body_layout.addWidget(self._spin_box)
+
+        self.set_standard_layout(
+            factory,
+            first_row_elements=["name_label", self._spin_box],
+        )
 
     def set_data(self, value: Any) -> None:
         assert isinstance(value, int)
@@ -186,10 +263,14 @@ class StrPidget(Pidget):
     def __init__(self, factory: StrPidgetFactory, parent: QWidget) -> None:
         super().__init__(factory, parent)
 
-        self._line_edit = QLineEdit(self._body_widget)
+        self._line_edit = QLineEdit(self)
         self._line_edit.setMaximumWidth(WIDGET_WIDTH)
         self._line_edit.editingFinished.connect(self.__on_changed)
-        self._body_layout.addWidget(self._line_edit)
+
+        self.set_standard_layout(
+            factory,
+            first_row_elements=["name_label", self._line_edit],
+        )
 
     def set_data(self, value: Any) -> None:
         assert isinstance(value, str)
@@ -219,13 +300,17 @@ class FloatPidget(Pidget):
         super().__init__(factory, parent)
 
         self._spin_box = _PidgetDoubleSpinBox(
-            self._body_widget,
+            self,
             limits=factory.limits,
             suffix=factory.suffix,
             decimals=factory.decimals,
         )
         self._spin_box.valueChanged.connect(self.__on_changed)
-        self._body_layout.addWidget(self._spin_box)
+
+        self.set_standard_layout(
+            factory,
+            first_row_elements=["name_label", self._spin_box],
+        )
 
     def set_data(self, value: Any) -> None:
         assert isinstance(value, (int, float))
@@ -261,16 +346,14 @@ class FloatSliderPidget(Pidget):
         super().__init__(factory, parent)
 
         self.__spin_box = _PidgetDoubleSpinBox(
-            self._body_widget,
+            self,
             limits=factory.limits,
             suffix=factory.suffix,
             decimals=factory.decimals,
         )
         self.__spin_box.valueChanged.connect(self.__on_spin_box_changed)
-        self._body_layout.addWidget(self.__spin_box, 0, 1)  # type: ignore[call-arg]
 
-        slider_widget = QWidget(self._body_widget)
-        self._body_layout.addWidget(slider_widget, 1, 0, 1, -1)  # type: ignore[call-arg]
+        slider_widget = QWidget(self)
         slider_widget.setLayout(QHBoxLayout(slider_widget))
         slider_widget.layout().setContentsMargins(11, 6, 11, 0)
 
@@ -291,8 +374,7 @@ class FloatSliderPidget(Pidget):
             slider_widget.layout().addWidget(QLabel(str(upper_limit), slider_widget))
 
         if factory.limit_texts is not None:
-            label_text_widget = QWidget(self._body_widget)
-            self._body_layout.addWidget(label_text_widget, 2, 0, 1, -1)  # type: ignore[call-arg]
+            label_text_widget = QWidget(self)
             label_text_widget.setLayout(QHBoxLayout(label_text_widget))
             label_text_widget.layout().setContentsMargins(11, 0, 11, 0)
             label_text_widget.layout().setSpacing(0)
@@ -309,14 +391,15 @@ class FloatSliderPidget(Pidget):
                 label = QLabel(right, label_text_widget)
                 label_text_widget.layout().addWidget(label)
 
-    def _create_body_layout(self, note_label_widget: QWidget) -> QLayout:
-        """Called by Pidget.__init__"""
+            full_row_widgets = [slider_widget, label_text_widget]
+        else:
+            full_row_widgets = [slider_widget]
 
-        layout = QGridLayout(self._body_widget)
-        layout.setContentsMargins(0, 0, 0, 6)
-        layout.setSpacing(0)
-        layout.addWidget(note_label_widget, 0, 0)
-        return layout
+        self.set_standard_layout(
+            factory,
+            first_row_elements=["name_label", self.__spin_box],
+            full_row_widgets=full_row_widgets,
+        )
 
     def set_data(self, value: Any) -> None:
         assert isinstance(value, (int, float))
@@ -352,23 +435,37 @@ class OptionalPidget(Pidget):
     def __init__(self, factory: OptionalPidgetFactory, parent: QWidget) -> None:
         super().__init__(factory, parent)
 
-        self._optional_widget = QWidget(self._body_widget)
-        self._body_layout.addWidget(self._optional_widget)
-
-        self._none_checkbox = QCheckBox(self._optional_widget)
+        self._none_checkbox = QCheckBox(self)
         if factory.checkbox_label_text:
             self._none_checkbox.setText(factory.checkbox_label_text)
 
-        self._optional_layout = self._create_optional_layout(self._none_checkbox)
+    def set_standard_layout(
+        self,
+        factory: PidgetFactory,
+        *,
+        first_row_elements: Iterable[
+            Union[
+                QWidget,
+                te.Literal["name_label", "optional_checkbox"],
+            ]
+        ],
+        full_row_widgets: Collection[QWidget] = (),
+        colstretch: tuple[int, ...] = (),
+    ) -> None:
+        num_optional_checkboxes = sum(e == "optional_checkbox" for e in first_row_elements)
+        if num_optional_checkboxes != 1:
+            msg = "Exactly 1 'optional_checkbox' should be specified."
+            raise ValueError(msg)
 
-    def _create_optional_layout(self, none_checkbox: QWidget) -> QLayout:
-        """Called by OptionalPidget.__init__"""
-
-        layout = QHBoxLayout(self._optional_widget)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addStretch(1)
-        layout.addWidget(none_checkbox)
-        return layout
+        super().set_standard_layout(
+            factory,
+            first_row_elements=[
+                (self._none_checkbox if e == "optional_checkbox" else e)
+                for e in first_row_elements
+            ],
+            full_row_widgets=full_row_widgets,
+            colstretch=colstretch,
+        )
 
     def set_data(self, value: Any) -> None:
         with QtCore.QSignalBlocker(self):
@@ -391,16 +488,21 @@ class OptionalIntPidget(OptionalPidget):
     def __init__(self, factory: OptionalIntPidgetFactory, parent: QWidget) -> None:
         super().__init__(factory, parent)
 
+        self._none_checkbox.stateChanged.connect(self.__on_changed)
+
         self._spin_box = _PidgetSpinBox(
-            self._optional_widget,
+            self,
             limits=factory.limits,
             suffix=factory.suffix,
             init_set_value=factory.init_set_value,
         )
-        self._optional_layout.addWidget(self._spin_box)
-
-        self._none_checkbox.stateChanged.connect(self.__on_changed)
         self._spin_box.valueChanged.connect(self.__on_changed)
+
+        self.set_standard_layout(
+            factory,
+            first_row_elements=["name_label", "optional_checkbox", self._spin_box],
+            colstretch=(1,),
+        )
 
     def __on_changed(self) -> None:
         checked = self._none_checkbox.isChecked()
@@ -452,7 +554,10 @@ class OptionalFloatPidget(OptionalPidget):
     def __init__(self, factory: OptionalFloatPidgetFactory, parent: QWidget) -> None:
         super().__init__(factory, parent)
 
+        self._none_checkbox.stateChanged.connect(self.__on_changed)
+
         self._container = QStackedWidget()
+        self._container.setContentsMargins(0, 0, 0, 0)
         self._spin_box = _PidgetDoubleSpinBox(
             self._container,
             decimals=factory.decimals,
@@ -460,7 +565,7 @@ class OptionalFloatPidget(OptionalPidget):
             suffix=factory.suffix,
             init_set_value=factory.init_set_value,
         )
-
+        self._spin_box.valueChanged.connect(self.__on_changed)
         self._container.addWidget(self._spin_box)
 
         if factory.placeholder_text is None:
@@ -472,9 +577,11 @@ class OptionalFloatPidget(OptionalPidget):
             self._dummy_spin_box.setEnabled(False)
             self._container.addWidget(self._dummy_spin_box)
 
-        self._optional_layout.addWidget(self._container)
-        self._none_checkbox.stateChanged.connect(self.__on_changed)
-        self._spin_box.valueChanged.connect(self.__on_changed)
+        self.set_standard_layout(
+            factory,
+            first_row_elements=["name_label", "optional_checkbox", self._container],
+            colstretch=(1,),
+        )
 
     def __on_changed(self) -> None:
         checked = self._none_checkbox.isChecked()
@@ -529,22 +636,14 @@ class CheckboxPidget(Pidget):
     def __init__(self, factory: CheckboxPidgetFactory, parent: QWidget) -> None:
         super().__init__(factory, parent)
 
-        assert isinstance(self._body_layout, QGridLayout)
-
-        self._checkbox = QCheckBox(self._body_widget)
+        self._checkbox = QCheckBox(self)
         self._checkbox.clicked.connect(self.__on_checkbox_click)
-        self._body_layout.addWidget(self._checkbox, 0, 0)
-        self._body_layout.setColumnStretch(0, 0)
-        self._body_layout.setColumnStretch(1, 1)
 
-    def _create_body_layout(self, note_label_widget: QWidget) -> QLayout:
-        """Called by Pidget.__init__"""
-
-        layout = QGridLayout(self._body_widget)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-        layout.addWidget(note_label_widget, 0, 1)
-        return layout
+        self.set_standard_layout(
+            factory,
+            first_row_elements=[self._checkbox, "name_label"],
+            colstretch=(0, 1),
+        )
 
     def __on_checkbox_click(self, checked: bool) -> None:
         self.sig_update.emit(checked)
@@ -569,13 +668,17 @@ class ComboboxPidget(Pidget, Generic[T]):
     def __init__(self, factory: ComboboxPidgetFactory[T], parent: QWidget) -> None:
         super().__init__(factory, parent)
 
-        self._combobox = PidgetComboBox(self._body_widget)
-        self._body_layout.addWidget(self._combobox)
+        self._combobox = PidgetComboBox(self)
 
         for displayed_text, user_data in factory.items:
             self._combobox.addItem(displayed_text, user_data)
 
         self._combobox.currentIndexChanged.connect(self._emit_data_of_combobox_item)
+
+        self.set_standard_layout(
+            factory,
+            first_row_elements=["name_label", self._combobox],
+        )
 
     def _emit_data_of_combobox_item(self, index: int) -> None:
         data = self._combobox.itemData(index)
@@ -681,8 +784,7 @@ class OptionalEnumPidget(OptionalPidget):
     def __init__(self, factory: OptionalEnumPidgetFactory[EnumT], parent: QWidget) -> None:
         super().__init__(factory, parent)
 
-        self._combobox = PidgetComboBox(self._body_widget)
-        self._body_layout.addWidget(self._combobox)
+        self._combobox = PidgetComboBox(self)
 
         for displayed_text, user_data in factory.items:
             self._combobox.addItem(displayed_text, user_data)
@@ -690,6 +792,12 @@ class OptionalEnumPidget(OptionalPidget):
         self._none_checkbox.stateChanged.connect(self.__emit_data_of_combobox_or_none)
         self._none_checkbox.stateChanged.connect(self.__enable_combobox_if_checked)
         self._combobox.currentIndexChanged.connect(self.__emit_data_of_combobox_or_none)
+
+        self.set_standard_layout(
+            factory,
+            first_row_elements=["name_label", "optional_checkbox", self._combobox],
+            colstretch=(1,),
+        )
 
     def __emit_data_of_combobox_or_none(self) -> None:
         if self._none_checkbox.isChecked():
