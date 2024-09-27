@@ -67,6 +67,7 @@ class PidgetFactory(abc.ABC):
     name_label_text: str = attrs.field()
     name_label_tooltip: Optional[str] = None
     note_label_text: Optional[str] = None
+    extra_widget_factory: Callable[[], Optional[QWidget]] = lambda: None
     hooks: Sequence[PidgetHook] = attrs.field(factory=tuple, converter=_hooks_converter)
 
     @name_label_text.validator
@@ -117,7 +118,7 @@ class Pidget(DataEditor[Any]):
         first_row_elements: Iterable[
             Union[
                 QWidget,
-                te.Literal["name_label"],
+                te.Literal["name_label", "extra_widget"],
             ]
         ],
         full_row_widgets: Collection[QWidget] = (),
@@ -168,10 +169,19 @@ class Pidget(DataEditor[Any]):
             msg = "Exactly 1 'name_label' should be specified."
             raise ValueError(msg)
 
-        first_row_widgets = [(name_label if e == "name_label" else e) for e in first_row_elements]
+        num_extra_widget = sum(e == "extra_widget" for e in first_row_elements)
+        if num_extra_widget > 1:
+            msg = "At most 1 'extra_widget' should be specified."
+            raise ValueError(msg)
 
-        for column, widget in enumerate(first_row_widgets):
-            layout.addWidget(widget, 0, column)
+        for col, elem in enumerate(first_row_elements):
+            if elem == "name_label":
+                layout.addWidget(name_label, 0, col)
+            elif elem == "extra_widget":
+                if (extra_widget := factory.extra_widget_factory()) is not None:
+                    layout.addWidget(extra_widget, 0, col, QtCore.Qt.AlignmentFlag.AlignLeft)
+            else:
+                layout.addWidget(elem, 0, col)
 
         for column, stretch in enumerate(colstretch):
             layout.setColumnStretch(column, stretch)
@@ -237,7 +247,7 @@ class IntPidget(Pidget):
 
         self.set_standard_layout(
             factory,
-            first_row_elements=["name_label", self._spin_box],
+            first_row_elements=["name_label", "extra_widget", self._spin_box],
         )
 
     def set_data(self, value: Any) -> None:
@@ -269,7 +279,7 @@ class StrPidget(Pidget):
 
         self.set_standard_layout(
             factory,
-            first_row_elements=["name_label", self._line_edit],
+            first_row_elements=["name_label", "extra_widget", self._line_edit],
         )
 
     def set_data(self, value: Any) -> None:
@@ -309,7 +319,7 @@ class FloatPidget(Pidget):
 
         self.set_standard_layout(
             factory,
-            first_row_elements=["name_label", self._spin_box],
+            first_row_elements=["name_label", "extra_widget", self._spin_box],
         )
 
     def set_data(self, value: Any) -> None:
@@ -397,7 +407,7 @@ class FloatSliderPidget(Pidget):
 
         self.set_standard_layout(
             factory,
-            first_row_elements=["name_label", self.__spin_box],
+            first_row_elements=["name_label", "extra_widget", self.__spin_box],
             full_row_widgets=full_row_widgets,
         )
 
@@ -446,7 +456,7 @@ class OptionalPidget(Pidget):
         first_row_elements: Iterable[
             Union[
                 QWidget,
-                te.Literal["name_label", "optional_checkbox"],
+                te.Literal["name_label", "extra_widget", "optional_checkbox"],
             ]
         ],
         full_row_widgets: Collection[QWidget] = (),
@@ -500,7 +510,7 @@ class OptionalIntPidget(OptionalPidget):
 
         self.set_standard_layout(
             factory,
-            first_row_elements=["name_label", "optional_checkbox", self._spin_box],
+            first_row_elements=["name_label", "extra_widget", "optional_checkbox", self._spin_box],
             colstretch=(1,),
         )
 
@@ -579,7 +589,12 @@ class OptionalFloatPidget(OptionalPidget):
 
         self.set_standard_layout(
             factory,
-            first_row_elements=["name_label", "optional_checkbox", self._container],
+            first_row_elements=[
+                "name_label",
+                "extra_widget",
+                "optional_checkbox",
+                self._container,
+            ],
             colstretch=(1,),
         )
 
@@ -641,8 +656,8 @@ class CheckboxPidget(Pidget):
 
         self.set_standard_layout(
             factory,
-            first_row_elements=[self._checkbox, "name_label"],
-            colstretch=(0, 1),
+            first_row_elements=[self._checkbox, "name_label", "extra_widget"],
+            colstretch=(0, 0, 1),
         )
 
     def __on_checkbox_click(self, checked: bool) -> None:
@@ -677,7 +692,7 @@ class ComboboxPidget(Pidget, Generic[T]):
 
         self.set_standard_layout(
             factory,
-            first_row_elements=["name_label", self._combobox],
+            first_row_elements=["name_label", "extra_widget", self._combobox],
         )
 
     def _emit_data_of_combobox_item(self, index: int) -> None:
@@ -795,7 +810,7 @@ class OptionalEnumPidget(OptionalPidget):
 
         self.set_standard_layout(
             factory,
-            first_row_elements=["name_label", "optional_checkbox", self._combobox],
+            first_row_elements=["name_label", "extra_widget", "optional_checkbox", self._combobox],
             colstretch=(1,),
         )
 
