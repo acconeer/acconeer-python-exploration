@@ -142,11 +142,11 @@ class TableConverter:
         pass
 
     @abc.abstractmethod
-    def get_time(self) -> list[list[str]]:
+    def get_time(self, as_header: bool = False) -> list[list[str]]:
         pass
 
     @abc.abstractmethod
-    def get_converted_data(self, sensor: int, transpose: bool) -> dict[str, t.Any]:
+    def get_converted_data(self, sensor: int = 1, transpose: bool = False) -> dict[str, t.Any]:
         pass
 
     @abc.abstractmethod
@@ -265,10 +265,13 @@ class A111RecordTableConverter(TableConverter):
             **processing_config_dict,
         }
 
-    def get_time(self) -> list[list[str]]:
+    def get_time(self, as_header: bool = True) -> list[list[str]]:
         data_time = self._record.sample_times
-        converted_times_list = [datetime.fromtimestamp(ts) for ts in data_time]
-        formatted_times = [time.strftime("%H:%M:%S.%f")[:-4] for time in converted_times_list]
+        if as_header:
+            converted_times_list = [datetime.fromtimestamp(ts) for ts in data_time]
+            formatted_times = [time.strftime("%H:%M:%S.%f")[:-4] for time in converted_times_list]
+        else:
+            formatted_times = [str(item) for item in data_time]
         return [formatted_times]
 
     def get_converted_data(self, sensor: int = 0, transpose: bool = False) -> dict[str, t.Any]:
@@ -281,7 +284,7 @@ class A111RecordTableConverter(TableConverter):
         dict_excel_file = {}
         sparse_iq_data = self.convert(sensor)
         metadata_rows = self.get_metadata_rows(sensor=sensor, as_header=True)
-        time = self.get_time()
+        time = self.get_time(as_header=True)
         # Add sparse IQ data in excel
         sparse_id_df = pd.DataFrame(sparse_iq_data[0], columns=metadata_rows[1], index=time[0])
         if transpose:
@@ -363,8 +366,27 @@ class A111RecordTableConverter(TableConverter):
 
 
 class A121RecordTableConverter(TableConverter):
+    sesid_grid_sid_combinations: list[
+        Tuple[int, int, int]
+    ]  # Combination for session, group, and sensor id
+
     def __init__(self, record: a121.H5Record) -> None:
         self._record = record
+        self.sesid_grid_sid_combinations = self._generate_session_group_sensor_id_combination()
+        _, group_ids, sensor_ids = zip(*self.sesid_grid_sid_combinations)
+        self.group_ids: Tuple[int, ...] = tuple(sorted(set(group_ids)))
+        self.sensor_ids: Tuple[int, ...] = tuple(sorted(set(sensor_ids)))
+
+    def _generate_session_group_sensor_id_combination(self) -> list[Tuple[int, int, int]]:
+        sesid_grid_sid_combinations: list[Tuple[int, int, int]] = []
+        for session_index in list(range(self._record.num_sessions)):
+            session_config = self._record.session(session_index).session_config
+            # Create DataFrames from configurations
+            for group_id, sensor_id, _ in _core.utils.iterate_extended_structure(
+                session_config.groups
+            ):
+                sesid_grid_sid_combinations.append((session_index, group_id, sensor_id))
+        return sesid_grid_sid_combinations
 
     def _results_of_sensor_id(
         self, sensor_id: int, group_id: int = 0, session_index: int = 0
@@ -460,16 +482,10 @@ class A121RecordTableConverter(TableConverter):
         subsweep_config_with_index: Dict[str, t.Any] = {}
         sensor_config_with_index: Dict[str, t.Any] = {}
         session_config = self._record.session(session_index).session_config
-        sensor_ids = []
-        group_ids = []
         # Create DataFrames from configurations
         for group_id, sensor_id, sensor_config in _core.utils.iterate_extended_structure(
             session_config.groups
         ):
-            if sensor_id not in sensor_ids:
-                sensor_ids.append(sensor_id)
-            if group_id not in group_ids:
-                group_ids.append(group_id)
             sensor_config_with_index[f"group_id [{group_id}] sensor_id [{sensor_id}]"] = None
             frame_rate = "Max" if sensor_config.frame_rate is None else sensor_config.frame_rate
             sweep_rate = "Max" if sensor_config.sweep_rate is None else sensor_config.sweep_rate
@@ -496,10 +512,10 @@ class A121RecordTableConverter(TableConverter):
             "update_rate": update_rate,
         }
         sensor_ids_dict = {
-            "sensor_ids": sensor_ids,
+            "sensor_ids": self.sensor_ids,
         }
         group_ids_dict = {
-            "group_ids": group_ids,
+            "group_ids": self.group_ids,
         }
         config_dict = {
             **configs,
@@ -518,43 +534,36 @@ class A121RecordTableConverter(TableConverter):
         :returns: list of 2D NDArray of cell values from every session.
         """
         sparse_iq_list = []
-        sensor_ids = self.get_configs()["sensor_ids"]
-        group_ids = self.get_configs()["group_ids"]
 
         # Sensor results as a concatenate results of multiple or single configs
-        for session_index in list(range(self._record.num_sessions)):
-            for sensor_id in sensor_ids:
-                for group_id in group_ids:
-                    siq_single_id_multi_group = self._get_sparse_iq(
-                        sensor_id, group_id=group_id, session_index=session_index
-                    )
-                    sparse_iq_list.append(siq_single_id_multi_group)
+        for session_index, group_id, sensor_id in self.sesid_grid_sid_combinations:
+            siq_single_id_multi_group = self._get_sparse_iq(
+                sensor_id, group_id=group_id, session_index=session_index
+            )
+            sparse_iq_list.append(siq_single_id_multi_group)
 
         return sparse_iq_list
 
     def get_metadata_rows(self, sensor: int, as_header: bool = False) -> list[t.Any]:
-        sensor_ids = self.get_configs()["sensor_ids"]
-        group_ids = self.get_configs()["group_ids"]
         sweeps_numbers = []
         depths_headers = []
-        for session_index in list(range(self._record.num_sessions)):
-            for sensor_id in sensor_ids:
-                for group_id in group_ids:
-                    sensor_configs = self._unique_sensor_configs_of_sensor_id(
-                        sensor_id, group_id=group_id, session_index=session_index
-                    )
-                    metadatas = self._unique_metadatas_of_sensor_id(
-                        sensor_id, group_id=group_id, session_index=session_index
-                    )
-                    for metadata, sensor_config in zip(metadatas, sensor_configs):
-                        depths = algo.get_distances_m(sensor_config, metadata)
-                        depths_header = np.tile(depths, sensor_config.sweeps_per_frame)
-                        depths_headers.append(depths_header.tolist())
-                        for subsweep in sensor_config.subsweeps:
-                            sweeps_number = np.repeat(
-                                range(sensor_config.sweeps_per_frame), repeats=subsweep.num_points
-                            ).astype(int)
-                            sweeps_numbers.append(sweeps_number.tolist())
+
+        for session_index, group_id, sensor_id in self.sesid_grid_sid_combinations:
+            sensor_configs = self._unique_sensor_configs_of_sensor_id(
+                sensor_id, group_id=group_id, session_index=session_index
+            )
+            metadatas = self._unique_metadatas_of_sensor_id(
+                sensor_id, group_id=group_id, session_index=session_index
+            )
+            for metadata, sensor_config in zip(metadatas, sensor_configs):
+                depths = algo.get_distances_m(sensor_config, metadata)
+                depths_header = np.tile(depths, sensor_config.sweeps_per_frame)
+                depths_headers.append(depths_header.tolist())
+                for subsweep in sensor_config.subsweeps:
+                    sweeps_number = np.repeat(
+                        range(sensor_config.sweeps_per_frame), repeats=subsweep.num_points
+                    ).astype(int)
+                    sweeps_numbers.append(sweeps_number.tolist())
         if as_header:
             sweeps_numbers = [f"sweep {sweep_number}" for sweep_number in sweeps_numbers]
             depths_headers = [
@@ -563,44 +572,38 @@ class A121RecordTableConverter(TableConverter):
             ]
         return [sweeps_numbers, depths_headers]
 
-    def get_time_single_session(self, session_index: int) -> list[list[str]]:
+    def _unique_tick_time(
+        self, sensor_id: int, group_id: int = 0, session_index: int = 0
+    ) -> list[float]:
         # Sensor results as a concatenate results of multiple or single configs
-        sensor_ids = self.get_configs()["sensor_ids"]
-        group_ids = self.get_configs()["group_ids"]
+        seconds_list = []
+        sensor_results = self._results_of_sensor_id(
+            sensor_id=sensor_id, group_id=group_id, session_index=session_index
+        )
+        for result in sensor_results:
+            # Take tick_time
+            seconds_list.append(result.tick_time)
+        return seconds_list
+
+    def get_time(self, as_header: bool = False) -> list[list[t.Any]]:
+        # Sensor results as a concatenate results of multiple or single configs
+        formatted_times: list[t.Any] = []
         initial_timestamp = self._record.timestamp
         initial_time = datetime.strptime(initial_timestamp, "%Y-%m-%dT%H:%M:%S")
-
-        # Sensor results as a concatenate results of multiple or single configs
-        formatted_times_multi_sensor = []
-        for sensor_id in sensor_ids:
-            for group_id in group_ids:
-                seconds_list = []
-                sensor_results = self._results_of_sensor_id(
-                    sensor_id, group_id=group_id, session_index=session_index
-                )
-                for result in sensor_results:
-                    # Take tick_time
-                    seconds_list.append(result.tick_time)
-                    # Add seconds to the initial time and store the results
-                    resulting_times = [
-                        initial_time + timedelta(seconds=sec) for sec in seconds_list
-                    ]
-                    # Format the resulting times to 'HH:MM:SS.s' format
-                    formatted_times = [
-                        time.strftime("%H:%M:%S.%f")[:-4] for time in resulting_times
-                    ]
-                formatted_times_multi_sensor.append(formatted_times)
-        return formatted_times_multi_sensor
-
-    def get_time(self) -> list[list[str]]:
-        # Get time multiple session
-        formatted_times_multi_sensor_session = []
-        for session_index in list(range(self._record.num_sessions)):
-            formatted_times_multi_sensor = self.get_time_single_session(
-                session_index=session_index
+        for session_index, group_id, sensor_id in self.sesid_grid_sid_combinations:
+            sec_times = self._unique_tick_time(
+                sensor_id=sensor_id, group_id=group_id, session_index=session_index
             )
-            formatted_times_multi_sensor_session.extend(formatted_times_multi_sensor)
-        return formatted_times_multi_sensor_session
+            # Add seconds to the initial time and convert as header
+            if as_header:
+                formatted_sec_times = [
+                    (initial_time + timedelta(seconds=sec)).strftime("%H:%M:%S.%f")[:-4]
+                    for sec in sec_times
+                ]
+                formatted_times.append(formatted_sec_times)
+            else:
+                formatted_times.append(sec_times)
+        return formatted_times
 
     def get_converted_data(self, sensor: int = 1, transpose: bool = False) -> dict[str, t.Any]:
         """This function provide data ready to be added in the excel file.
@@ -613,32 +616,22 @@ class A121RecordTableConverter(TableConverter):
         table_convert_processed_data = A121ProcessedData(self._record)
         sparse_iq_data = self.convert(sensor=sensor)
         metadata_rows = self.get_metadata_rows(sensor=sensor, as_header=True)
-        time = self.get_time()
+        time = self.get_time(as_header=True)
         # Add sparse IQ data in excel
-
-        num_sessions = table_convert_processed_data._record.num_sessions
-        session_indexes = list(range(num_sessions))
-        for session_index in session_indexes:
+        for counter_index, (session_index, group_id, sensor_id) in enumerate(
+            self.sesid_grid_sid_combinations
+        ):
             dict_config = self.get_configs(session_index=session_index)
-            sensor_ids = list(dict_config["sensor_ids"])
-            group_ids = list(dict_config["group_ids"])
             # Add sparse IQ data in excel
-            for sensor_id in sensor_ids:
-                for group_id in group_ids:
-                    counter_index = (
-                        session_indexes.index(session_index)
-                        + sensor_ids.index(sensor_id)
-                        + group_ids.index(group_id)
-                    )
-                    filename = f"Sparse IQ sesid {session_index} sid {sensor_id} grid {group_id}"
-                    sparse_id_df = pd.DataFrame(
-                        sparse_iq_data[counter_index],
-                        columns=metadata_rows[1][counter_index],
-                        index=time[counter_index],
-                    )
-                    if transpose:
-                        sparse_id_df = sparse_id_df.transpose()
-                    dict_excel_file[filename] = sparse_id_df
+            filename = f"Sparse IQ sesid {session_index} grid {group_id} sid {sensor_id}"
+            sparse_id_df = pd.DataFrame(
+                sparse_iq_data[counter_index],
+                columns=metadata_rows[1][counter_index],
+                index=time[counter_index],
+            )
+            if transpose:
+                sparse_id_df = sparse_id_df.transpose()
+            dict_excel_file[filename] = sparse_id_df
 
             # Add configurations in excel
             dict_excel_file[f"Configurations session {session_index}"] = pd.DataFrame(
@@ -646,8 +639,7 @@ class A121RecordTableConverter(TableConverter):
             )
         # Create a Pandas DataFrame from processed data
         df_processed_data, df_app_config = table_convert_processed_data.get_processed_data()
-
-        if len(sensor_ids) > 1 or len(group_ids) > 1:
+        if len(self.sensor_ids) > 1 or len(self.group_ids) > 1:
             df_processed_data.index = pd.Index(time[0])
         else:
             df_processed_data.index = pd.Index(sum(time, []))
@@ -762,6 +754,7 @@ class ArgumentsChecker:
 
 class A121ProcessedData:
     _record: a121.H5Record
+    num_frames: int
 
     def __init__(self, input_record_or_path: Union[a121.H5Record, Path, str]) -> None:
         if isinstance(input_record_or_path, str):
@@ -774,6 +767,8 @@ class A121ProcessedData:
             self._record = input_record_or_path
         self.h5_file = self._record.file
         self.num_frames: int = 0
+        self.processed_data: Dict[str, list[t.Any]] = {}
+        self.algo_data_as_dict: Dict[str, t.Any] = {}
         for session_index in range(self._record.num_sessions):
             self.num_frames = self.num_frames + self._record.session(session_index).num_frames
         self.client = _ReplayingClient(self._record, realtime_replay=False)
@@ -788,13 +783,19 @@ class A121ProcessedData:
             msg = f"Failed to load file: {input_path}"
             raise RuntimeError(msg) from e
 
+    def progressing_indicator(self, frame_value: int) -> None:
+        """Dynamically updates the progress bar."""
+        # Update the window with progress
+        show_indicate_in_procent = 10
+        interval = int(show_indicate_in_procent * self.num_frames / 100)
+        if frame_value % interval == 0:
+            print(f"... {(frame_value / self.num_frames):.0%}")
+
     def get_processed_data(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
         df_app_config = pd.DataFrame()
         df_processed_data = pd.DataFrame()
 
-        load_algo_and_client: Dict[
-            str, t.Callable[[], Tuple[Dict[str, list[t.Any]], Dict[str, t.Any]]]
-        ] = {
+        load_algo_and_client: Dict[str, t.Callable[[], None]] = {
             "breathing": self.get_processed_data_breathing,
             "bilateration": self.get_processed_data_bilateration,
             "distance_detector": self.get_processed_data_distance,
@@ -814,17 +815,16 @@ class A121ProcessedData:
 
         for key, func in load_algo_and_client.items():
             if key == self.app_key:
-                dict_processed_data, dict_app_config = func()
+                func()
                 break
         else:
             no_proc_data = ["Sparse iq only contains sparse iq data and no application config"]
-            dict_processed_data = {}
-            dict_app_config = {"Config": no_proc_data}
+            self.algo_data_as_dict = {"Config": no_proc_data}
 
         flattened_config: Dict[t.Any, t.Any] = {}
 
         # Iterate over each key-value pair in the original dictionary
-        for key, value in dict_app_config.items():
+        for key, value in self.algo_data_as_dict.items():
             if isinstance(value, dict):
                 # Flatten config from a config recursively and convert it into readable table formating
                 # e.g. Dict : {.... 'presence_config' : {'intra enable' : True ....}}
@@ -835,7 +835,7 @@ class A121ProcessedData:
             else:
                 # If it's not a dictionary, add it directly to the result
                 flattened_config[key] = value
-        df_processed_data = pd.DataFrame(dict_processed_data)
+        df_processed_data = pd.DataFrame(self.processed_data)
 
         self.client.close()
         print("Disconnecting...")
@@ -847,16 +847,14 @@ class A121ProcessedData:
 
         return df_processed_data, df_app_config
 
-    def get_processed_data_parking(self) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
-        processed_data_list = []
-
+    def get_processed_data_parking(self) -> None:
         # Record file extraction
         sensor_id, RefAppConfig, RefAppContext = parking._ref_app._load_algo_data(
             self.h5_file["algo"]
         )
 
         # Create dict from configurations and sensor id
-        dict_algo_data = {
+        self.algo_data_as_dict = {
             **{"sensor_id": sensor_id},
             **(RefAppConfig.to_dict()),
             **(RefAppContext.to_dict()),
@@ -877,12 +875,10 @@ class A121ProcessedData:
                 processed_data = ref_app.get_next()
 
                 # Put the result in row
-                processed_data_row = self.parking_result_as_row(processed_data=processed_data)
-                processed_data_list.append(processed_data_row)
+                self.parking_result_as_row(processed_data=processed_data)
 
-                # Print progressing time every 5%
-                if (idx % int(0.05 * self.num_frames)) == 0:
-                    print(f"... {idx / self.num_frames:.0%}")
+                # Print progressing time
+                self.progressing_indicator(idx)
 
         except KeyboardInterrupt:
             print("Conversion aborted")
@@ -891,20 +887,14 @@ class A121ProcessedData:
 
         ref_app.stop()
 
-        # Creates DataFrames from processed data and keys
-        keys = ["car_detected", "obstruction_detected"]
-        dict_processed_data = {
-            k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
-        }
-
-        return dict_processed_data, dict_algo_data
-
-    def get_processed_data_waste_level(self) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
-        processed_data_list = []
+    def get_processed_data_waste_level(self) -> None:
         processor_config = waste_level._processor._load_algo_data(self.h5_file["algo"])
 
         # Create dict from configurations and sensor id
-        dict_algo_data = {**{"sensor_id": self._record.sensor_id}, **(processor_config.to_dict())}
+        self.algo_data_as_dict = {
+            **{"sensor_id": self._record.sensor_id},
+            **(processor_config.to_dict()),
+        }
 
         # Record file extraction
         sensor_config = self._record.session_config.sensor_config
@@ -920,33 +910,21 @@ class A121ProcessedData:
                 processed_data = processor.process(result)
 
                 # Put the result in row
-                processed_data_row = self.waste_level_as_row(processed_data=processed_data)
-                processed_data_list.append(processed_data_row)
+                self.waste_level_as_row(processed_data=processed_data)
 
-                # Print progressing time every 5%
-                print(f"... {idx / self.num_frames:.0%}") if (
-                    idx % int(0.05 * self.num_frames)
-                ) == 0 else None
+                # Print progressing time
+                self.progressing_indicator(idx)
 
         except KeyboardInterrupt:
             print("Conversion aborted")
         else:
             print("Processing data is finished. . .")
 
-        # Creates dict from processed data and keys
-        keys = ["level_percent", "level_m"]
-        dict_processed_data = {
-            k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
-        }
-
-        return dict_processed_data, dict_algo_data
-
-    def get_processed_data_breathing(self) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
-        processed_data_list = []
+    def get_processed_data_breathing(self) -> None:
         sensor_id, ref_app_config = breathing._ref_app._load_algo_data(self.h5_file["algo"])
 
         # Create Dict from configurations and sensor id
-        dict_algo_data = {**{"sensor_id": sensor_id}, **(ref_app_config.to_dict())}
+        self.algo_data_as_dict = {**{"sensor_id": sensor_id}, **(ref_app_config.to_dict())}
 
         # Client preparation
         ref_app = breathing.RefApp(
@@ -959,13 +937,10 @@ class A121ProcessedData:
                 processed_data = ref_app.get_next()
 
                 # Put the result in row
-                processed_data_row = self.breathing_result_as_row(processed_data=processed_data)
-                processed_data_list.append(processed_data_row)
+                self.breathing_result_as_row(processed_data=processed_data)
 
                 # Print progressing time every 5%
-                print(f"... {idx / self.num_frames:.0%}") if (
-                    idx % int(0.05 * self.num_frames)
-                ) == 0 else None
+                self.progressing_indicator(idx)
 
         except KeyboardInterrupt:
             print("Conversion aborted")
@@ -974,26 +949,14 @@ class A121ProcessedData:
 
         print("Disconnecting...")
 
-        # Creates DataFrames from processed data and keys
-        keys = ["rate", "motion", "presence_dist"]
-
-        # Creates Dict from processed data and keys
-        dict_processed_data = {
-            k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
-        }
-
-        return dict_processed_data, dict_algo_data
-
-    def get_processed_data_obstacle(self) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
-        processed_data_list = []
-
+    def get_processed_data_obstacle(self) -> None:
         # Client preparation
         sensor_ids, detector_config, detector_context = obstacle._detector._load_algo_data(
             self.h5_file["algo"]
         )
 
         # Create Dict from configurations, sensor id, and detector context
-        dict_algo_data = {
+        self.algo_data_as_dict = {
             **{"sensor_ids": sensor_ids},
             **(detector_config.to_dict()),
             **(detector_context.to_dict()),
@@ -1012,29 +975,17 @@ class A121ProcessedData:
                 processed_data = detector.get_next()
 
                 # Put the result in row
-                processed_data_row = self.obstacle_as_row(processed_data=processed_data)
-                processed_data_list.append(processed_data_row)
+                self.obstacle_as_row(processed_data=processed_data)
 
-                # Print progressing time every 5%
-                if (idx % int(0.05 * self.num_frames)) == 0:
-                    print(f"... {idx / self.num_frames:.0%}")
+                # Print progressing time
+                self.progressing_indicator(idx)
 
         except KeyboardInterrupt:
             print("Conversion aborted")
         else:
             print("Processing data is finished. . .")
 
-        # Creates Dict from processed data and keys
-        keys = ["close_proximity_trig", "current_velocity"]
-        dict_processed_data = {
-            k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
-        }
-
-        return dict_processed_data, dict_algo_data
-
-    def get_processed_data_bilateration(self) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
-        processed_data_list = []
-
+    def get_processed_data_bilateration(self) -> None:
         (
             sensor_ids,
             detector_config,
@@ -1043,7 +994,7 @@ class A121ProcessedData:
         ) = bilateration._processor._load_algo_data(self.h5_file["algo"])
 
         # Create Dict from configurations, sensor id, and detector context
-        dict_algo_data = {
+        self.algo_data_as_dict = {
             **{"sensor_id": sensor_ids},
             **(detector_config.to_dict()),
             **(processor_config.to_dict()),
@@ -1069,34 +1020,23 @@ class A121ProcessedData:
                 processed_data = processor.process(detector_result)
 
                 # Put the result in row
-                processed_data_row = self.bilateration_as_row(processed_data=processed_data)
-                processed_data_list.append(processed_data_row)
+                self.bilateration_as_row(processed_data=processed_data)
 
-                # Print progressing time every 5%
-                if (idx % int(0.05 * self.num_frames)) == 0:
-                    print(f"... {idx / self.num_frames:.0%}")
+                # Print progressing time
+                self.progressing_indicator(idx)
 
         except KeyboardInterrupt:
             print("Conversion aborted")
         else:
             print("Processing data is finished. . .")
 
-        # Creates DataFrames from processed data and keys
-        keys = ["distances", "points"]
-        dict_processed_data = {
-            k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
-        }
-
-        return dict_processed_data, dict_algo_data
-
-    def get_processed_data_hand_motion(self) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
-        processed_data_list = []
+    def get_processed_data_hand_motion(self) -> None:
         sensor_id, ModeHandlerConfig = hand_motion._mode_handler._load_algo_data(
             self.h5_file["algo"]
         )
 
         # Create DataFrames from configurations, sensor id, and detector context
-        dict_algo_data = {**{"sensor_id": sensor_id}, **(ModeHandlerConfig.to_dict())}
+        self.algo_data_as_dict = {**{"sensor_id": sensor_id}, **(ModeHandlerConfig.to_dict())}
 
         # Client preparation
         aggregator = hand_motion.ModeHandler(
@@ -1113,35 +1053,23 @@ class A121ProcessedData:
                 processed_data = aggregator.get_next()
 
                 # Put the result in row
-                processed_data_row = self.hand_motion_result_as_row(processed_data=processed_data)
-                processed_data_list.append(processed_data_row)
+                self.hand_motion_result_as_row(processed_data=processed_data)
 
-                # Print progressing time every 5%
-                print(f"... {idx / self.num_frames:.0%}") if (
-                    idx % int(0.05 * self.num_frames)
-                ) == 0 else None
+                # Print progressing time
+                self.progressing_indicator(idx)
 
         except KeyboardInterrupt:
             print("Conversion aborted")
         else:
             print("Processing data is finished. . .")
 
-        # Creates DataFrames from processed data and keys
-        keys = ["app_mode", "detection_state"]
-        dict_processed_data = {
-            k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
-        }
-
-        return dict_processed_data, dict_algo_data
-
-    def get_processed_data_tank_level(self) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
-        processed_data_list = []
+    def get_processed_data_tank_level(self) -> None:
         sensor_ids, config, tank_level_context = tank_level._ref_app._load_algo_data(
             self.h5_file["algo"]
         )
 
         # Create DataFrames from configurations and sensor id
-        dict_algo_data = {
+        self.algo_data_as_dict = {
             **{"sensor_ids": sensor_ids},
             **(config.to_dict()),
             **(tank_level_context.to_dict()),
@@ -1158,13 +1086,10 @@ class A121ProcessedData:
                 processed_data = ref_app.get_next()
 
                 # Put the result in row
-                processed_data_row = self.tank_level_as_row(processed_data=processed_data)
-                processed_data_list.append(processed_data_row)
+                self.tank_level_as_row(processed_data=processed_data)
 
-                # Print progressing time every 5%
-                print(f"... {idx / self.num_frames:.0%}") if (
-                    idx % int(0.05 * self.num_frames)
-                ) == 0 else None
+                # Print progressing time
+                self.progressing_indicator(idx)
 
         except KeyboardInterrupt:
             print("Conversion aborted")
@@ -1173,24 +1098,15 @@ class A121ProcessedData:
 
         ref_app.stop()
 
-        # Creates DataFrames from processed data and keys
-        keys = ["level", "peak_detected", "peak_status"]
-        dict_processed_data = {
-            k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
-        }
-
-        return dict_processed_data, dict_algo_data
-
     def get_processed_data_surface_velocity(
         self,
-    ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
-        processed_data_list = []
+    ) -> None:
         sensor_id, ExampleAppConfig = surface_velocity._example_app._load_algo_data(
             self.h5_file["algo"]
         )
 
         # Create Dict from configurations and sensor id
-        dict_algo_data = {**{"sensor_ids": sensor_id}, **(ExampleAppConfig.to_dict())}
+        self.algo_data_as_dict = {**{"sensor_ids": sensor_id}, **(ExampleAppConfig.to_dict())}
 
         # Client preparation
         example_app = surface_velocity.ExampleApp(
@@ -1205,15 +1121,10 @@ class A121ProcessedData:
                 processed_data = example_app.get_next()
 
                 # Put the result in row
-                processed_data_row = self.surface_velocity_result_as_row(
-                    processed_data=processed_data
-                )
-                processed_data_list.append(processed_data_row)
+                self.surface_velocity_result_as_row(processed_data=processed_data)
 
-                # Print progressing time every 5%
-                print(f"... {idx / self.num_frames:.0%}") if (
-                    idx % int(0.05 * self.num_frames)
-                ) == 0 else None
+                # Print progressing time
+                self.progressing_indicator(idx)
 
         except KeyboardInterrupt:
             print("Conversion aborted")
@@ -1222,23 +1133,14 @@ class A121ProcessedData:
 
         example_app.stop()
 
-        # Creates Dict from processed data and keys
-        keys = ["estimated_velocity", "distance"]
-        dict_processed_data = {
-            k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
-        }
-
-        return dict_processed_data, dict_algo_data
-
-    def get_processed_data_presence(self) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
-        processed_data_list = []
+    def get_processed_data_presence(self) -> None:
         sensor_id, detector_config, detector_context = presence._detector._load_algo_data(
             self.h5_file["algo"]
         )
 
         detector_context_dict = detector_context.to_dict() if detector_context is not None else {}
         # Create Dict from configurations, sensor id, and detector context
-        dict_algo_data = {
+        self.algo_data_as_dict = {
             **{"sensor_ids": sensor_id},
             **(detector_config.to_dict()),
             **detector_context_dict,
@@ -1258,13 +1160,10 @@ class A121ProcessedData:
                 processed_data = detector.get_next()
 
                 # Put the result in row
-                processed_data_row = self.presence_result_as_row(processed_data=processed_data)
-                processed_data_list.append(processed_data_row)
+                self.presence_result_as_row(processed_data=processed_data)
 
-                # Print progressing time every 5%
-                print(f"... {idx / self.num_frames:.0%}") if (
-                    idx % int(0.05 * self.num_frames)
-                ) == 0 else None
+                # Indicate processing time
+                self.progressing_indicator(idx)
 
         except KeyboardInterrupt:
             print("Conversion aborted")
@@ -1273,29 +1172,15 @@ class A121ProcessedData:
 
         detector.stop()
 
-        # Creates Dict from processed data and keys
-        keys = [
-            "Presence",
-            f"Intra_presence_score_(threshold_{detector_config.intra_detection_threshold:.1f})",
-            f"Inter_presence_score_(threshold_{detector_config.inter_detection_threshold:.1f})",
-            "Presence_distance",
-        ]
-        dict_processed_data = {
-            k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
-        }
-
-        return dict_processed_data, dict_algo_data
-
     def get_processed_data_smart_presence(
         self,
-    ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
-        processed_data_list = []
+    ) -> None:
         sensor_id, RefAppConfig, RefAppContext = smart_presence._ref_app._load_algo_data(
             self.h5_file["algo"]
         )
 
         # Create Dict from configurations, sensor id, and detector context
-        dict_algo_data = {
+        self.algo_data_as_dict = {
             **{"sensor_ids": sensor_id},
             **(RefAppConfig.to_dict()),
             **(RefAppContext.to_dict()),
@@ -1317,15 +1202,10 @@ class A121ProcessedData:
                 processed_data = ref_app.get_next()
 
                 # Put the result in row
-                processed_data_row = self.smart_presence_result_as_row(
-                    processed_data=processed_data
-                )
-                processed_data_list.append(processed_data_row)
+                self.smart_presence_result_as_row(processed_data=processed_data)
 
-                # Print progressing time every 5%
-                print(f"... {idx / self.num_frames:.0%}") if (
-                    idx % int(0.05 * self.num_frames)
-                ) == 0 else None
+                # Print progressing time
+                self.progressing_indicator(idx)
 
         except KeyboardInterrupt:
             print("Conversion aborted")
@@ -1334,26 +1214,16 @@ class A121ProcessedData:
 
         ref_app.stop()
 
-        # Creates Dict from processed data and keys
-        keys = [
-            "Presence",
-            "Intra_presence_score",
-            "Inter_presence_score",
-        ]
-        dict_processed_data = {
-            k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
-        }
-
-        return dict_processed_data, dict_algo_data
-
     def get_processed_data_touchless_button(
         self,
-    ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
-        processed_data_list = []
+    ) -> None:
         processor_config = touchless_button._processor._load_algo_data(self.h5_file["algo"])
 
         # Create Dict from configurations and sensor id
-        dict_algo_data = {**{"sensor_ids": self._record.sensor_id}, **(processor_config.to_dict())}
+        self.algo_data_as_dict = {
+            **{"sensor_ids": self._record.sensor_id},
+            **(processor_config.to_dict()),
+        }
 
         # Record file extraction
         sensor_config = self._record.session_config.sensor_config
@@ -1370,32 +1240,21 @@ class A121ProcessedData:
                 processed_data = processor.process(result)
 
                 # Put the result in row
-                processed_data_row = self.touchless_button_as_row(processed_data=processed_data)
-                processed_data_list.append(processed_data_row)
+                self.touchless_button_as_row(processed_data=processed_data)
 
-                # Print progressing time every 5%
-                if (idx % int(0.05 * self.num_frames)) == 0:
-                    print(f"... {idx / self.num_frames:.0%}")
+                # Print progressing time
+                self.progressing_indicator(idx)
 
         except KeyboardInterrupt:
             print("Conversion aborted")
         else:
             print("Processing data is finished. . .")
 
-        # Creates DataFrames from processed data and keys
-        keys = ["close_result", "far_result"]
-        dict_processed_data = {
-            k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
-        }
-
-        return dict_processed_data, dict_algo_data
-
-    def get_processed_data_vibration(self) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
-        processed_data_list = []
+    def get_processed_data_vibration(self) -> None:
         sensor_id, example_app_config = vibration._load_algo_data(self.h5_file["algo"])
 
         # Create Dict from configurations and sensor id
-        dict_algo_data = {**{"sensor_ids": sensor_id}, **(example_app_config.to_dict())}
+        self.algo_data_as_dict = {**{"sensor_ids": sensor_id}, **(example_app_config.to_dict())}
 
         # Client preparation
         example_app = vibration.ExampleApp(
@@ -1410,13 +1269,10 @@ class A121ProcessedData:
                 processed_data = example_app.get_next()
 
                 # Put the result in row
-                processed_data_row = self.vibration_as_row(processed_data=processed_data)
-                processed_data_list.append(processed_data_row)
+                self.vibration_as_row(processed_data=processed_data)
 
-                # Print progressing time every 5%
-                print(f"... {idx / self.num_frames:.0%}") if (
-                    idx % int(0.05 * self.num_frames)
-                ) == 0 else None
+                # Print progressing time
+                self.progressing_indicator(idx)
 
         except KeyboardInterrupt:
             print("Conversion aborted")
@@ -1425,22 +1281,13 @@ class A121ProcessedData:
 
         example_app.stop()
 
-        # Creates DataFrames from processed data and keys
-        keys = ["max_displacement", "max_sweep_amplitude", "max_displacement_freq"]
-        dict_processed_data = {
-            k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
-        }
-
-        return dict_processed_data, dict_algo_data
-
-    def get_processed_data_distance(self) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
-        processed_data_list = []
+    def get_processed_data_distance(self) -> None:
         sensor_ids, detector_config, detector_context = distance._detector._load_algo_data(
             self.h5_file["algo"]
         )
 
         # Create Dict from configurations, sensor id, and detector context
-        dict_algo_data = {
+        self.algo_data_as_dict = {
             **{"sensor_ids": sensor_ids},
             **(detector_config.to_dict()),
             **(detector_context.to_dict()),
@@ -1460,15 +1307,10 @@ class A121ProcessedData:
                 processed_data = detector.get_next()
 
                 # Put the result in row
-                processed_data_row = self.distance_result_as_row(
-                    processed_data=processed_data, sensor_ids=sensor_ids
-                )
-                processed_data_list.append(processed_data_row)
+                self.distance_result_as_row(processed_data=processed_data, sensor_ids=sensor_ids)
 
-                # Print progressing time every 5%
-                print(f"... {idx / self.num_frames:.0%}") if (
-                    idx % int(0.05 * self.num_frames)
-                ) == 0 else None
+                # Print progressing time
+                self.progressing_indicator(idx)
 
         except KeyboardInterrupt:
             print("Conversion aborted")
@@ -1477,25 +1319,19 @@ class A121ProcessedData:
 
         detector.stop()
 
-        # Creates DataFrames from processed data and keys
-        keys = ["distances", "strengths"]
-        dict_processed_data = {
-            k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
-        }
-
-        return dict_processed_data, dict_algo_data
-
     def get_processed_data_phase_tracking(
         self,
-    ) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
-        processed_data_list = []
+    ) -> None:
         json_string_config = json.loads(self.h5_file["algo/processor_config"][()].decode())
         processor_config = phase_tracking.ProcessorConfig(
             threshold=json_string_config["threshold"]
         )
 
         # Create Dict from configurations and sensor id
-        dict_algo_data = {**{"sensor_ids": self._record.sensor_id}, **(processor_config.to_dict())}
+        self.algo_data_as_dict = {
+            **{"sensor_ids": self._record.sensor_id},
+            **(processor_config.to_dict()),
+        }
 
         # Record file extraction
         sensor_config = self._record.session_config.sensor_config
@@ -1512,32 +1348,21 @@ class A121ProcessedData:
                 processed_data = processor.process(result)
 
                 # Put the result in row
-                processed_data_row = self.phase_tracking_as_row(processed_data=processed_data)
-                processed_data_list.append(processed_data_row)
+                self.phase_tracking_as_row(processed_data=processed_data)
 
-                # Print progressing time every 5%
-                print(f"... {idx / self.num_frames:.0%}") if (
-                    idx % int(0.05 * self.num_frames)
-                ) == 0 else None
+                # Print progressing time
+                self.progressing_indicator(idx)
 
         except KeyboardInterrupt:
             print("Conversion aborted")
         else:
             print("Processing data is finished. . .")
 
-        # Creates DataFrames from processed data and keys
-        keys = ["peak_loc_m", "real_iq_history", "imag_iq_history"]
-        dict_processed_data = {
-            k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
-        }
-        return dict_processed_data, dict_algo_data
-
-    def get_processed_data_speed(self) -> Tuple[Dict[str, t.List[t.Any]], Dict[str, t.Any]]:
-        processed_data_list = []
+    def get_processed_data_speed(self) -> None:
         sensor_id, detector_config = speed._detector._load_algo_data(self.h5_file["algo"])
 
         # Create DataFrames from configurations, sensor id, and detector context
-        dict_algo_data = {**{"sensor_ids": sensor_id}, **(detector_config.to_dict())}
+        self.algo_data_as_dict = {**{"sensor_ids": sensor_id}, **(detector_config.to_dict())}
 
         # Client preparation
         detector = speed.Detector(
@@ -1552,13 +1377,10 @@ class A121ProcessedData:
                 processed_data = detector.get_next()
 
                 # Put the result in row
-                processed_data_row = self.speed_result_as_row(processed_data=processed_data)
-                processed_data_list.append(processed_data_row)
+                self.speed_result_as_row(processed_data=processed_data)
 
-                # Print progressing time every 5%
-                print(f"... {idx / self.num_frames:.0%}") if (
-                    idx % int(0.05 * self.num_frames)
-                ) == 0 else None
+                # Print progressing time
+                self.progressing_indicator(idx)
 
         except KeyboardInterrupt:
             print("Conversion aborted")
@@ -1567,15 +1389,7 @@ class A121ProcessedData:
 
         detector.stop()
 
-        # Creates DataFrames from processed data and keys
-        keys = ["speed_per_depth", "max_speed"]
-        dict_processed_data = {
-            k: v for k, v in zip(keys, [list(row) for row in zip(*processed_data_list)])
-        }
-
-        return dict_processed_data, dict_algo_data
-
-    def breathing_result_as_row(self, processed_data: breathing.RefAppResult) -> list[t.Any]:
+    def breathing_result_as_row(self, processed_data: breathing.RefAppResult) -> None:
         no_result = "None"
         rate = (
             no_result
@@ -1594,79 +1408,89 @@ class A121ProcessedData:
             else f"{processed_data.presence_result.presence_distance:0.2f}"
         )
 
-        return [rate, motion, presence_dist]
+        self.processed_data.setdefault("rate", []).append(rate)
+        self.processed_data.setdefault("motion", []).append(motion)
+        self.processed_data.setdefault("presence_dist", []).append(presence_dist)
 
-    def obstacle_as_row(self, processed_data: obstacle.DetectorResult) -> list[t.Any]:
-        close_proximity_trig = processed_data.close_proximity_trig
-        current_velocity = processed_data.current_velocity
+    def obstacle_as_row(self, processed_data: obstacle.DetectorResult) -> None:
+        self.processed_data.setdefault("close_proximity_trig", []).append(
+            processed_data.close_proximity_trig
+        )
+        self.processed_data.setdefault("current_velocity", []).append(
+            processed_data.current_velocity
+        )
 
-        return [close_proximity_trig, current_velocity]
-
-    def bilateration_as_row(self, processed_data: bilateration.ProcessorResult) -> list[t.Any]:
+    def bilateration_as_row(self, processed_data: bilateration.ProcessorResult) -> None:
         distance = (
             None
             if processed_data.objects_without_counterpart == []
             else processed_data.objects_without_counterpart[0].distance
         )
-        points = processed_data.points
-        return [distance, points]
+        self.processed_data.setdefault("distance", []).append(distance)
+        self.processed_data.setdefault("points", []).append(processed_data.points)
 
-    def parking_result_as_row(self, processed_data: parking.RefAppResult) -> list[t.Any]:
-        car_detected = processed_data.car_detected
-        obstruction_detected = processed_data.obstruction_detected
+    def parking_result_as_row(self, processed_data: parking.RefAppResult) -> None:
+        self.processed_data.setdefault("car_detected", []).append(processed_data.car_detected)
+        self.processed_data.setdefault("obstruction_detected", []).append(
+            processed_data.obstruction_detected
+        )
 
-        return [car_detected, obstruction_detected]
-
-    def phase_tracking_as_row(self, processed_data: phase_tracking.ProcessorResult) -> list[t.Any]:
-        peak_loc_m = processed_data.peak_loc_m
-        real_iq_history = np.real(processed_data.iq_history[0])
-        imag_iq_history = np.imag(processed_data.iq_history[0])
-
-        return [peak_loc_m, real_iq_history, imag_iq_history]
+    def phase_tracking_as_row(self, processed_data: phase_tracking.ProcessorResult) -> None:
+        self.processed_data.setdefault("peak_loc_m", []).append(processed_data.peak_loc_m)
+        self.processed_data.setdefault("real_iq_history", []).append(
+            np.real(processed_data.iq_history[0])
+        )
+        self.processed_data.setdefault("imag_iq_history", []).append(
+            np.imag(processed_data.iq_history[0])
+        )
 
     def surface_velocity_result_as_row(
         self,
         processed_data: surface_velocity.ExampleAppResult,
-    ) -> list[t.Any]:
-        velocity = f"{processed_data.velocity :.3f}"
-        distance_m = f"{processed_data.distance_m :.3f} m"
+    ) -> None:
+        self.processed_data.setdefault("velocity", []).append(f"{processed_data.velocity :.3f}")
+        self.processed_data.setdefault("distance_m", []).append(
+            f"{processed_data.distance_m :.3f} m"
+        )
 
-        return [velocity, distance_m]
-
-    def presence_result_as_row(self, processed_data: presence.DetectorResult) -> list[t.Any]:
+    def presence_result_as_row(self, processed_data: presence.DetectorResult) -> None:
         presence_detected = "Presence!" if processed_data.presence_detected else "None"
-        intra_presence_score = f"{processed_data.intra_presence_score:.3f}"
-        inter_presence_score = f"{processed_data.inter_presence_score:.3f}"
-        presence_dist = f"{processed_data.presence_distance:.3f} m"
+        self.processed_data.setdefault("presence_detected", []).append(presence_detected)
+        self.processed_data.setdefault("intra_presence_score", []).append(
+            f"{processed_data.intra_presence_score:.3f}"
+        )
+        self.processed_data.setdefault("inter_presence_score", []).append(
+            f"{processed_data.inter_presence_score:.3f}"
+        )
+        self.processed_data.setdefault("presence_dist", []).append(
+            f"{processed_data.presence_distance:.3f} m"
+        )
 
-        return [presence_detected, intra_presence_score, inter_presence_score, presence_dist]
-
-    def smart_presence_result_as_row(
-        self, processed_data: smart_presence.RefAppResult
-    ) -> list[t.Any]:
+    def smart_presence_result_as_row(self, processed_data: smart_presence.RefAppResult) -> None:
         presence_detected = "Presence!" if processed_data.presence_detected else "None"
-        intra_presence_score = f"{processed_data.intra_presence_score:.3f}"
-        inter_presence_score = f"{processed_data.inter_presence_score:.3f}"
+        self.processed_data.setdefault("presence_detected", []).append(presence_detected)
+        self.processed_data.setdefault("intra_presence_score", []).append(
+            f"{processed_data.intra_presence_score:.3f}"
+        )
+        self.processed_data.setdefault("inter_presence_score", []).append(
+            f"{processed_data.inter_presence_score:.3f}"
+        )
 
-        return [presence_detected, intra_presence_score, inter_presence_score]
+    def waste_level_as_row(self, processed_data: waste_level.ProcessorResult) -> None:
+        self.processed_data.setdefault("level_percent", []).append(
+            f"{processed_data.level_percent}"
+        )
+        self.processed_data.setdefault("level_m", []).append(f"{processed_data.level_m} m")
 
-    def waste_level_as_row(self, processed_data: waste_level.ProcessorResult) -> list[t.Any]:
-        level_percent = f"{processed_data.level_percent}"
-        level_m = f"{processed_data.level_m} m"
-
-        return [level_percent, level_m]
-
-    def touchless_button_as_row(
-        self, processed_data: touchless_button.ProcessorResult
-    ) -> list[t.Any]:
+    def touchless_button_as_row(self, processed_data: touchless_button.ProcessorResult) -> None:
         close_result = False if processed_data.close is None else processed_data.close.detection
         far_result = False if processed_data.far is None else processed_data.far.detection
-
-        return [close_result, far_result]
+        self.processed_data.setdefault("close_result", []).append(close_result)
+        self.processed_data.setdefault("far_result", []).append(far_result)
 
     def distance_result_as_row(
         self, processed_data: Dict[int, distance._detector.DetectorResult], sensor_ids: list[int]
-    ) -> list[t.Any]:
+    ) -> None:
         distances = []
         strengths = []
 
@@ -1681,35 +1505,36 @@ class A121ProcessedData:
             for strength_result in non_null_strengths:
                 strengths.append(strength_result)
 
-        return [distances, strengths]
+        self.processed_data.setdefault("distances", []).append(distances)
+        self.processed_data.setdefault("strengths", []).append(strengths)
 
-    def hand_motion_result_as_row(
-        self, processed_data: hand_motion.ModeHandlerResult
-    ) -> list[t.Any]:
-        app_mode = processed_data.app_mode
-        detection_state = processed_data.detection_state
+    def hand_motion_result_as_row(self, processed_data: hand_motion.ModeHandlerResult) -> None:
+        self.processed_data.setdefault("app_mode", []).append(processed_data.app_mode)
+        self.processed_data.setdefault("processed_data.detection_state", []).append(
+            processed_data.detection_state
+        )
 
-        return [app_mode, detection_state]
+    def speed_result_as_row(self, processed_data: speed._detector.DetectorResult) -> None:
+        self.processed_data.setdefault("speed_per_depth", []).append(
+            processed_data.speed_per_depth
+        )
+        self.processed_data.setdefault("max_speed", []).append(processed_data.max_speed)
 
-    def speed_result_as_row(self, processed_data: speed._detector.DetectorResult) -> list[t.Any]:
-        speed_per_depth = processed_data.speed_per_depth
-        max_speed = processed_data.max_speed
+    def tank_level_as_row(self, processed_data: tank_level._ref_app.RefAppResult) -> None:
+        self.processed_data.setdefault("level", []).append(processed_data.level)
+        self.processed_data.setdefault("peak_detected", []).append(processed_data.peak_detected)
+        self.processed_data.setdefault("peak_status", []).append(processed_data.peak_status)
 
-        return [speed_per_depth, max_speed]
-
-    def tank_level_as_row(self, processed_data: tank_level._ref_app.RefAppResult) -> list[t.Any]:
-        level = processed_data.level
-        peak_detected = processed_data.peak_detected
-        peak_status = processed_data.peak_status
-
-        return [level, peak_detected, peak_status]
-
-    def vibration_as_row(self, processed_data: vibration.ExampleAppResult) -> list[t.Any]:
-        max_displacement = processed_data.max_displacement
-        max_sweep_amplitude = processed_data.max_sweep_amplitude
-        max_displacement_freq = processed_data.max_displacement_freq
-
-        return [max_displacement, max_sweep_amplitude, max_displacement_freq]
+    def vibration_as_row(self, processed_data: vibration.ExampleAppResult) -> None:
+        self.processed_data.setdefault("max_displacement", []).append(
+            processed_data.max_displacement
+        )
+        self.processed_data.setdefault("max_sweep_amplitude", []).append(
+            processed_data.max_sweep_amplitude
+        )
+        self.processed_data.setdefault("max_displacement_freq", []).append(
+            processed_data.max_displacement_freq
+        )
 
 
 class DataConverter:
