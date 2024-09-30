@@ -597,7 +597,7 @@ class ViewPlugin(A121ViewPluginBase):
                     ),
                 ),
                 "use_presence_processor": pidgets.CheckboxPidgetFactory(
-                    name_label_text="Use presence processor to determine distance:",
+                    name_label_text="Use presence processor to determine distance",
                     name_label_tooltip=get_attribute_docstring(
                         RefAppConfig, "use_presence_processor"
                     ),

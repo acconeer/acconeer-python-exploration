@@ -161,12 +161,11 @@ class Pidget(DataEditor[Any]):
         layout = QGridLayout()
         layout.setContentsMargins(0, 0, 0, 0)
 
-        name_label = factory.create_name_label(self)
         self.set_note_text(factory.note_label_text)
 
         num_name_labels = sum(e == "name_label" for e in first_row_elements)
-        if num_name_labels != 1:
-            msg = "Exactly 1 'name_label' should be specified."
+        if num_name_labels > 1:
+            msg = "At most 1 'name_label' should be specified."
             raise ValueError(msg)
 
         num_extra_widget = sum(e == "extra_widget" for e in first_row_elements)
@@ -176,6 +175,7 @@ class Pidget(DataEditor[Any]):
 
         for col, elem in enumerate(first_row_elements):
             if elem == "name_label":
+                name_label = factory.create_name_label(self)
                 layout.addWidget(name_label, 0, col)
             elif elem == "extra_widget":
                 if (extra_widget := factory.extra_widget_factory()) is not None:
@@ -646,18 +646,25 @@ class CheckboxPidgetFactory(PidgetFactory):
             msg = "Labels cannot start or end with a whitespace"
             raise ValueError(msg)
 
+    @name_label_text.validator
+    def check_label_text_format(self, attribute: Any, value: str) -> None:
+        if len(value) > 0 and value[-1] == ":":
+            msg = "Checkbox labels cannot end with ':'"
+            raise ValueError(msg)
+
 
 class CheckboxPidget(Pidget):
     def __init__(self, factory: CheckboxPidgetFactory, parent: QWidget) -> None:
         super().__init__(factory, parent)
 
         self._checkbox = QCheckBox(self)
+        self._checkbox.setText(factory.name_label_text)
         self._checkbox.clicked.connect(self.__on_checkbox_click)
 
         self.set_standard_layout(
             factory,
-            first_row_elements=[self._checkbox, "name_label", "extra_widget"],
-            colstretch=(0, 0, 1),
+            first_row_elements=[self._checkbox, "extra_widget"],
+            colstretch=(0, 1),
         )
 
     def __on_checkbox_click(self, checked: bool) -> None:

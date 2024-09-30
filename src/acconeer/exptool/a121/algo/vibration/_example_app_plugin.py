@@ -344,7 +344,7 @@ class ViewPlugin(A121ViewPluginBase):
                 },
             ),
             "low_frequency_enhancement": pidgets.CheckboxPidgetFactory(
-                name_label_text="Low frequency enhancement:",
+                name_label_text="Low frequency enhancement",
                 name_label_tooltip=get_attribute_docstring(
                     ExampleAppConfig, "low_frequency_enhancement"
                 ),
