@@ -69,7 +69,8 @@ class SubsweepConfig:
 
     The subsweep config represents a 1-1 mapping to the RSS service subsweep config.
 
-    Normally used as a part of the :attr:`SensorConfig`.
+    Normally used as a part of the :attr:`SensorConfig`. Multiple group configurations are required
+    when certain parameters cannot be configured in subsweep config.
     """
 
     MAX_HWAAS = 511
