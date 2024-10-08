@@ -34,7 +34,7 @@ Distance Filter
 As the sensor produce coherent data, samples corresponding to the location of an object will have similar phase, while the phase of free-air measurements will be random.
 By applying a filter in the distance domain, the noise in the free-air regions will be suppressed, resulting in an improved SNR.
 
-The filter is automatically configured based on the detector configuration as a second order Butterworth filter with a cutoff frequency corresponding to a matched filter.
+The filter is automatically configured based on the detector configuration as a first order Butterworth filter with a cutoff frequency corresponding to a matched filter.
 
 Subsweeps
 ---------

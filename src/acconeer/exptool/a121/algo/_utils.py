@@ -350,7 +350,7 @@ def get_distance_filter_coeffs(
     wnc = APPROX_BASE_STEP_LENGTH_M * step_length / (ENVELOPE_FWHM_M[profile])
     if narrow_filter:
         wnc *= NARROW_FILTER_MULTIPLIER
-    return butter(N=2, Wn=wnc)
+    return butter(N=1, Wn=wnc)
 
 
 def get_distance_filter_edge_margin(profile: a121.Profile, step_length: int) -> int:
