@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -24,7 +24,12 @@ CLIENT_INFO_PARAMETRIZE = [
     (
         dict(serial_port="port", override_baudrate=0),
         {
-            "serial": {"port": "port", "override_baudrate": 0, "serial_number": None},
+            "serial": {
+                "port": "port",
+                "override_baudrate": 0,
+                "serial_number": None,
+                "flow_control": True,
+            },
             "usb": None,
             "socket": None,
             "mock": None,

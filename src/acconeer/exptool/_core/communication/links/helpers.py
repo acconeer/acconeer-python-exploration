@@ -36,6 +36,7 @@ def link_factory(client_info: ClientInfo) -> BufferedLink:
     if client_info.serial is not None:
         return ExploreSerialLink(
             port=client_info.serial.port,
+            flowcontrol=client_info.serial.flow_control,
         )
 
     if client_info.usb is not None:

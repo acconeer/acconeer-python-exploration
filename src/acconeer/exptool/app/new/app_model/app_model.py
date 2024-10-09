@@ -176,6 +176,7 @@ class _PersistentState:
     usb_connection_device: Optional[USBDevice] = attrs.field(default=None, converter=_to_usbdevice)
     overridden_baudrate: Optional[int] = attrs.field(default=None)
     autoconnect_enabled: bool = attrs.field(default=False)
+    flow_control_enabled: bool = attrs.field(default=True)
     recording_enabled: bool = attrs.field(default=True)
 
     def to_dict(self) -> dict[str, Any]:
@@ -607,6 +608,7 @@ class AppModel(QObject):
             open_client_parameters = {
                 "serial_port": self.serial_connection_device.port,
                 "override_baudrate": self.overridden_baudrate,
+                "flow_control": self.flow_control_enabled,
             }
         elif (
             self.connection_interface == ConnectionInterface.USB
@@ -720,6 +722,10 @@ class AppModel(QObject):
         return self._force_autoconnect
 
     @property
+    def flow_control_enabled(self) -> bool:
+        return self._persistent_state.flow_control_enabled
+
+    @property
     def overridden_baudrate(self) -> Optional[int]:
         return self._persistent_state.overridden_baudrate
 
@@ -751,6 +757,10 @@ class AppModel(QObject):
 
     def set_autoconnect_enabled(self, autoconnect_enabled: bool) -> None:
         self._persistent_state.autoconnect_enabled = autoconnect_enabled
+        self.broadcast()
+
+    def set_flow_control_enabled(self, flow_control_enabled: bool) -> None:
+        self._persistent_state.flow_control_enabled = flow_control_enabled
         self.broadcast()
 
     def set_overridden_baudrate(self, overridden_baudrate: Optional[int]) -> None:

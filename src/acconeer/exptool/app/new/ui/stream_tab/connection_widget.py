@@ -197,9 +197,13 @@ class _ConnectSettingsDialog(QDialog):
             self.auto_connect_check_box.stateChanged.connect(self._auto_connect_on_state_changed)
             app_model.sig_notify.connect(self._on_app_model_update)
 
+        self.flow_control_check_box = QCheckBox("Flow control", self)
+        self.flow_control_check_box.stateChanged.connect(self._flow_control_on_state_changed)
+
         layout = QVBoxLayout(self)
         layout.addWidget(_ConnectSettingsBaudrate(app_model, self))
         layout.addWidget(self.auto_connect_check_box)
+        layout.addWidget(self.flow_control_check_box)
 
         self.setWindowTitle("Advanced settings")
         self.setMinimumWidth(300)
@@ -208,8 +212,12 @@ class _ConnectSettingsDialog(QDialog):
     def _auto_connect_on_state_changed(self) -> None:
         self.app_model.set_autoconnect_enabled(self.auto_connect_check_box.isChecked())
 
+    def _flow_control_on_state_changed(self) -> None:
+        self.app_model.set_flow_control_enabled(self.flow_control_check_box.isChecked())
+
     def _on_app_model_update(self, app_model: AppModel) -> None:
         self.auto_connect_check_box.setChecked(app_model.autoconnect_enabled)
+        self.flow_control_check_box.setChecked(app_model.flow_control_enabled)
 
 
 class _SimulatedConnectionWidget(AppModelAwareWidget):

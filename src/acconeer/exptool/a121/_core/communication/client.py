@@ -42,6 +42,7 @@ class Client(
         usb_device: t.Optional[t.Union[str, bool]] = None,
         mock: t.Optional[bool] = None,
         override_baudrate: t.Optional[int] = None,
+        flow_control: bool = True,
         generation: t.Optional[str] = "a121",
     ) -> te.Self:
         if generation != "a121":
@@ -54,6 +55,7 @@ class Client(
             usb_device,
             mock,
             override_baudrate,
+            flow_control,
             generation="a121",
         )
 

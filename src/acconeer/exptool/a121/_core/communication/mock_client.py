@@ -89,6 +89,7 @@ class MockClient(Client, register=True):
         usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
         override_baudrate: Optional[int] = None,
+        flow_control: bool = True,
         generation: Optional[str] = "a121",
     ) -> te.Self:
         if generation != "a121":

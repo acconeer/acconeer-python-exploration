@@ -72,6 +72,7 @@ class ExplorationClient(Client, register=True):
         usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
         override_baudrate: Optional[int] = None,
+        flow_control: bool = True,
         generation: Optional[str] = "a121",
     ) -> te.Self:
         if generation != "a121":
@@ -86,6 +87,7 @@ class ExplorationClient(Client, register=True):
             override_baudrate=override_baudrate,
             serial_port=serial_port,
             usb_device=usb_device,
+            flow_control=flow_control,
         )
 
         return cls(client_info=client_info)

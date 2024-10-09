@@ -43,6 +43,7 @@ class ConnectionTypeBase(abc.ABC):
         usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
         override_baudrate: Optional[int] = None,
+        flow_control: bool = True,
     ) -> ClientInfo: ...
 
     def to_dict(self) -> dict[str, Any]:
@@ -71,6 +72,7 @@ class SerialInfo(ConnectionTypeBase):
     port: str
     override_baudrate: Optional[int] = None
     serial_number: Optional[str] = None
+    flow_control: bool = True
 
     @classmethod
     def _from_open(
@@ -81,10 +83,15 @@ class SerialInfo(ConnectionTypeBase):
         usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
         override_baudrate: Optional[int] = None,
+        flow_control: bool = True,
     ) -> ClientInfo:
         if serial_port is not None:
             return ClientInfo(
-                serial=SerialInfo(port=serial_port, override_baudrate=override_baudrate)
+                serial=SerialInfo(
+                    port=serial_port,
+                    override_baudrate=override_baudrate,
+                    flow_control=flow_control,
+                )
             )
 
         raise ClientInfoCreationError()
@@ -110,6 +117,7 @@ class USBInfo(ConnectionTypeBase):
         usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
         override_baudrate: Optional[int] = None,
+        flow_control: bool = True,
     ) -> ClientInfo:
         if usb_device is not None:
             if isinstance(usb_device, bool):
@@ -143,6 +151,7 @@ class SocketInfo(ConnectionTypeBase):
         usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
         override_baudrate: Optional[int] = None,
+        flow_control: bool = True,
     ) -> ClientInfo:
         if ip_address is not None:
             return ClientInfo(socket=SocketInfo(ip_address=ip_address, tcp_port=tcp_port))
@@ -166,6 +175,7 @@ class MockInfo(ConnectionTypeBase):
         usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
         override_baudrate: Optional[int] = None,
+        flow_control: bool = True,
     ) -> ClientInfo:
         if mock is not None:
             if mock:
@@ -197,6 +207,7 @@ class ClientInfo:
         usb_device: Optional[Union[str, bool]] = None,
         mock: Optional[bool] = None,
         override_baudrate: Optional[int] = None,
+        flow_control: bool = True,
     ) -> ClientInfo:
         client_info = None
         for subclass in ConnectionTypeBase._get_subclasses():
@@ -208,6 +219,7 @@ class ClientInfo:
                     usb_device=usb_device,
                     mock=mock,
                     override_baudrate=override_baudrate,
+                    flow_control=flow_control,
                 )
                 break
             except ClientInfoCreationError:
