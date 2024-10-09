@@ -38,7 +38,7 @@ class JsonPresentable(te.Protocol):
     def to_json(self) -> str: ...
 
     @classmethod
-    def from_json(self, json_str: str) -> te.Self: ...
+    def from_json(cls, json_str: str) -> te.Self: ...
 
 
 _JsonPresentableT = t.TypeVar("_JsonPresentableT", bound=JsonPresentable)
@@ -103,8 +103,8 @@ def _handle_exception_with_popup(
 class _JsonLoadButton(QPushButton):
     def __init__(
         self,
-        setter: t.Callable[[JsonPresentable], t.Any],
-        decoder: t.Callable[[str], JsonPresentable],
+        setter: t.Callable[[_JsonPresentableT], t.Any],
+        decoder: t.Callable[[str], _JsonPresentableT],
         parent: t.Optional[QWidget] = None,
     ) -> None:
         super().__init__(FOLDER_OPEN(), "", parent=parent)
@@ -213,8 +213,13 @@ def create_json_save_load_buttons(
                 extra_presenter=extra_presenter,
             )
         )
+
+    def setter(data: _JsonPresentableT) -> t.Any:
+        editor.set_data(data)
+        editor.sig_update.emit(data)
+
     if decoder is not None:
-        wrapper.layout().addWidget(_JsonLoadButton(editor.sig_update.emit, decoder))
+        wrapper.layout().addWidget(_JsonLoadButton(setter, decoder))
 
     return wrapper
 
