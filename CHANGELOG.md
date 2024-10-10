@@ -1,5 +1,9 @@
 # Changelog
 
+## v7.12.2
+
+- Don't use PySide6==6.8 as it does not work properly.
+
 ## v7.12.1
 
 ## v7.12.0
