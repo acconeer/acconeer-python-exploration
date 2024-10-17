@@ -67,6 +67,7 @@ graphviz_output_format = "svg"
 
 # linkcheck
 linkcheck_retries = 2
+linkcheck_exclude_documents = ["exploration_tool/example_scripts/.*"]
 
 # rediraffe
 rediraffe_redirects = "redirects.txt"
