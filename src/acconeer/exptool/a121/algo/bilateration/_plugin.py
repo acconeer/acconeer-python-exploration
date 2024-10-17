@@ -16,7 +16,7 @@ from PySide6.QtWidgets import QLabel, QPushButton, QVBoxLayout
 import pyqtgraph as pg
 
 import acconeer.exptool as et
-from acconeer.exptool import a121
+from acconeer.exptool import a121, opser
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo._plugins import (
     A121BackendPluginBase,
@@ -143,7 +143,7 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
         self.shared_state.bilateration_config = ProcessorConfig.from_json(
             file["bilateration_config"][()]
         )
-        self.shared_state.context = DetectorContext.from_h5(file["context"])
+        self.shared_state.context = opser.deserialize(file["context"], DetectorContext)
 
     @is_task
     def restore_defaults(self) -> None:
@@ -190,7 +190,7 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
             file, "bilateration_config", self.shared_state.bilateration_config.to_json()
         )
         context_group = file.create_group("context")
-        self.shared_state.context.to_h5(context_group)
+        opser.serialize(self.shared_state.context, context_group)
 
     def load_from_record_setup(self, *, record: a121.H5Record) -> None:
         algo_group = record.get_algo_group(self.key)

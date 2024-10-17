@@ -14,7 +14,7 @@ import numpy as np
 import numpy.typing as npt
 from attributes_doc import attributes_doc
 
-from acconeer.exptool import a121
+from acconeer.exptool import a121, opser
 from acconeer.exptool._core.class_creation.attrs import attrs_optional_ndarray_isclose
 from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
@@ -27,13 +27,19 @@ from acconeer.exptool.a121.algo import (
     PeakSortingMethod,
     ReflectorShape,
     calc_processing_gain,
-    calculate_loopback_peak_location,
     get_distance_filter_edge_margin,
     select_prf,
 )
 
 from ._aggregator import Aggregator, AggregatorConfig, ProcessorSpec
-from ._context import DetectorContext, SingleSensorContext
+from ._context import (
+    CloseRangeCalibration,
+    DetectorContext,
+    NoiseCalibration,
+    OffsetCalibration,
+    RecordedThresholdCalibration,
+    detector_context_timeline,
+)
 from ._processors import (
     DEFAULT_FIXED_AMPLITUDE_THRESHOLD_VALUE,
     DEFAULT_FIXED_STRENGTH_THRESHOLD_VALUE,
@@ -42,10 +48,8 @@ from ._processors import (
     Processor,
     ProcessorConfig,
     ProcessorContext,
-    ProcessorMode,
     ProcessorResult,
     ThresholdMethod,
-    calculate_bg_noise_std,
 )
 
 
@@ -314,12 +318,8 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         self.sensor_ids = sensor_ids
         self.started = False
 
-        if context is None or not bool(context.single_sensor_contexts):
-            self.context = DetectorContext(
-                single_sensor_contexts={
-                    sensor_id: SingleSensorContext() for sensor_id in self.sensor_ids
-                }
-            )
+        if context is None or not bool(context.sensor_ids):
+            self.context = DetectorContext(sensor_ids=self.sensor_ids)
         else:
             self.context = context
 
@@ -343,20 +343,25 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
 
         self._validate_ready_for_calibration()
 
-        self._calibrate_offset()
+        self.context.offset_calibration = OffsetCalibration.create(self.client, self.sensor_ids)
 
-        self._calibrate_noise()
+        self.context.noise_calibration = NoiseCalibration.create(
+            self.client, self.sensor_ids, self.session_config
+        )
 
         if self._has_close_range_measurement(self.config):
-            self._calibrate_close_range()
+            self.context.close_range_calibration = CloseRangeCalibration.create(
+                self.client, self.session_config
+            )
 
         if self._has_close_range_measurement(self.config) or self._has_recorded_threshold_mode(
             self.config, self.sensor_ids
         ):
-            self._record_threshold()
+            self.context.recorded_threshold_calibration = RecordedThresholdCalibration.create(
+                self.client, self.session_config, self.config.num_frames_in_recorded_threshold
+            )
 
-        for context in self.context.single_sensor_contexts.values():
-            context.session_config_used_during_calibration = self.session_config
+        self.context.session_config_used_during_calibration = self.session_config
 
     def update_detector_calibration(self) -> None:
         """Do a detector calibration update by running a subset of the calibration routines.
@@ -367,242 +372,15 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
 
         self._validate_ready_for_calibration()
 
-        self._calibrate_offset()
-
-    def _calibrate_close_range(self) -> None:
-        """Calibrates the close range measurement parameters used when subtracting the direct
-        leakage from the measured signal.
-
-        The parameters calibrated are the direct leakage and a phase reference, used to reduce
-        the amount of phase jitter, with the purpose of reducing the residual.
-        """
-
-        close_range_spec = self._filter_close_range_spec(self.processor_specs)
-        spec = self._update_processor_mode(close_range_spec, ProcessorMode.LEAKAGE_CALIBRATION)
-
-        # Note - Setup with full session_config to match the structure of spec
-        extended_metadata = self.client.setup_session(self.session_config)
-        assert isinstance(extended_metadata, list)
-
-        aggregators = {
-            sensor_id: Aggregator(
-                session_config=self.session_config,
-                extended_metadata=extended_metadata,
-                config=AggregatorConfig(),
-                specs=spec,
-                sensor_id=sensor_id,
-            )
-            for sensor_id in self.sensor_ids
-        }
-
-        self.client.start_session()
-        extended_result = self.client.get_next()
-        assert isinstance(extended_result, list)
-        self.client.stop_session()
-
-        for sensor_id, context in self.context.single_sensor_contexts.items():
-            aggregator_result = aggregators[sensor_id].process(extended_result=extended_result)
-            (processor_result,) = aggregator_result.processor_results
-            assert processor_result.phase_jitter_comp_reference is not None
-
-            context.direct_leakage = processor_result.direct_leakage
-            context.phase_jitter_comp_reference = processor_result.phase_jitter_comp_reference
-            context.recorded_thresholds_mean_sweep = None
-            context.recorded_thresholds_noise_std = None
-
-            context.sensor_calibration = self.client.calibrations[sensor_id]
-
-            if context.extra_context.close_range_frames is None:
-                context.extra_context.close_range_frames = [[] for _ in extended_result]
-
-            for i, res in enumerate(extended_result):
-                result = res[sensor_id]
-                context.extra_context.close_range_frames[i].append(result._frame)
-
-    def _record_threshold(self) -> None:
-        """Calibrates the parameters used when forming the recorded threshold."""
-
-        # TODO: Ignore/override threshold method while recording threshold
-
-        specs_updated = self._update_processor_mode(
-            self.processor_specs, ProcessorMode.RECORDED_THRESHOLD_CALIBRATION
-        )
-
-        specs = self._add_context_to_processor_spec(specs_updated)
-
-        extended_metadata = self.client.setup_session(self.session_config)
-        assert isinstance(extended_metadata, list)
-        aggregators = {
-            sensor_id: Aggregator(
-                session_config=self.session_config,
-                extended_metadata=extended_metadata,
-                config=AggregatorConfig(),
-                specs=specs[sensor_id],
-                sensor_id=sensor_id,
-            )
-            for sensor_id in self.sensor_ids
-        }
-
-        self.client.start_session()
-        aggregators_result = {}
-        for _ in range(self.config.num_frames_in_recorded_threshold):
-            extended_result = self.client.get_next()
-            assert isinstance(extended_result, list)
-            aggregators_result = {
-                sensor_id: aggregators[sensor_id].process(extended_result=extended_result)
-                for sensor_id in self.sensor_ids
-            }
-            for sensor_id, context in self.context.single_sensor_contexts.items():
-                if context.extra_context.recorded_threshold_frames is None:
-                    context.extra_context.recorded_threshold_frames = [[] for _ in extended_result]
-
-                for i, res in enumerate(extended_result):
-                    result = res[sensor_id]
-                    context.extra_context.recorded_threshold_frames[i].append(result._frame)
-        self.client.stop_session()
-
-        assert isinstance(extended_result, list)
-
-        for sensor_id, context in self.context.single_sensor_contexts.items():
-            recorded_thresholds_mean_sweep = []
-            recorded_thresholds_noise_std = []
-            for processor_result in aggregators_result[sensor_id].processor_results:
-                # Since we know what mode the processor is running in
-                assert processor_result.recorded_threshold_mean_sweep is not None
-                assert processor_result.recorded_threshold_noise_std is not None
-
-                recorded_thresholds_mean_sweep.append(
-                    processor_result.recorded_threshold_mean_sweep
-                )
-                recorded_thresholds_noise_std.append(processor_result.recorded_threshold_noise_std)
-
-            context.recorded_thresholds_mean_sweep = recorded_thresholds_mean_sweep
-            context.recorded_thresholds_noise_std = recorded_thresholds_noise_std
-            # Grab temperature from first group as it is the same for all.
-            context.reference_temperature = extended_result[0][sensor_id].temperature
-
-    @staticmethod
-    def _get_calibrate_noise_session_config(
-        session_config: a121.SessionConfig, sensor_ids: List[int]
-    ) -> a121.SessionConfig:
-        noise_session_config = copy.deepcopy(session_config)
-
-        for sensor_id in sensor_ids:
-            for group in noise_session_config.groups:
-                group[sensor_id].sweeps_per_frame = 1
-                # Set num_points to a high number to get sufficient number of data points to
-                # estimate the standard deviation. Extra num_points for step_length = 1 together
-                # with profile = 5 due to filter margin and cropping
-                if any(
-                    ss.step_length == 1 and ss.profile == a121.Profile.PROFILE_5
-                    for ss in group[sensor_id].subsweeps
-                ):
-                    num_points = 352
-                else:
-                    num_points = 220
-                for subsweep in group[sensor_id].subsweeps:
-                    subsweep.enable_tx = False
-                    subsweep.step_length = 1
-                    subsweep.start_point = 0
-                    subsweep.num_points = num_points
-
-        return noise_session_config
-
-    def _calibrate_noise(self) -> None:
-        """Estimates the standard deviation of the noise in each subsweep by setting enable_tx to
-        False and collecting data, used to calculate the deviation.
-
-        The calibration procedure can be done at any time as it is performed with Tx off, and is
-        not effected by objects in front of the sensor.
-
-        This function is called from the start() in the case of CFAR and Fixed threshold and from
-        record_threshold() in the case of Recorded threshold. The reason for calling from
-        record_threshold() is that it is used when calculating the threshold.
-        """
-
-        session_config = self._get_calibrate_noise_session_config(
-            self.session_config, self.sensor_ids
-        )
-
-        extended_metadata = self.client.setup_session(session_config)
-        assert isinstance(extended_metadata, list)
-
-        self.client.start_session()
-        extended_result = self.client.get_next()
-        assert isinstance(extended_result, list)
-        self.client.stop_session()
-
-        for sensor_id, context in self.context.single_sensor_contexts.items():
-            bg_noise_one_sensor = []
-            for spec in self.processor_specs:
-                result = extended_result[spec.group_index][sensor_id]
-                sensor_config = self.session_config.groups[spec.group_index][sensor_id]
-                subsweep_configs = sensor_config.subsweeps
-                bg_noise_std_in_subsweep = []
-                for idx in spec.subsweep_indexes:
-                    if not subsweep_configs[idx].enable_loopback:
-                        subframe = result.subframes[idx]
-                        subsweep_std = calculate_bg_noise_std(subframe, subsweep_configs[idx])
-                        bg_noise_std_in_subsweep.append(subsweep_std)
-                bg_noise_one_sensor.append(bg_noise_std_in_subsweep)
-            context.bg_noise_std = bg_noise_one_sensor
-
-            if context.extra_context.noise_frames is None:
-                context.extra_context.noise_frames = [[] for _ in extended_result]
-
-            for i, res in enumerate(extended_result):
-                result = res[sensor_id]
-                context.extra_context.noise_frames[i].append(result._frame)
-
-    @staticmethod
-    def _get_calibrate_offset_sensor_config() -> a121.SensorConfig:
-        return a121.SensorConfig(
-            start_point=-30,
-            num_points=50,
-            step_length=1,
-            profile=a121.Profile.PROFILE_1,
-            hwaas=64,
-            sweeps_per_frame=1,
-            enable_loopback=True,
-            phase_enhancement=True,
-        )
-
-    def _calibrate_offset(self) -> None:
-        """Estimates sensor offset error based on loopback measurement."""
-
-        self._validate_ready_for_calibration()
-
-        sensor_config = self._get_calibrate_offset_sensor_config()
-
-        session_config = a121.SessionConfig(
-            {sensor_id: sensor_config for sensor_id in self.sensor_ids}, extended=True
-        )
-        self.client.setup_session(session_config)
-        self.client.start_session()
-        extended_result = self.client.get_next()
-        self.client.stop_session()
-
-        assert isinstance(extended_result, list)
-
-        for sensor_id, context in self.context.single_sensor_contexts.items():
-            context.loopback_peak_location_m = calculate_loopback_peak_location(
-                extended_result[0][sensor_id], sensor_config
-            )
-
-            if context.extra_context.offset_frames is None:
-                context.extra_context.offset_frames = [[] for _ in extended_result]
-
-            for i, res in enumerate(extended_result):
-                result = res[sensor_id]
-                context.extra_context.offset_frames[i].append(result._frame)
+        self.context.offset_calibration = OffsetCalibration.create(self.client, self.sensor_ids)
 
     @staticmethod
     def _get_sensor_calibrations(context: DetectorContext) -> dict[int, a121.SensorCalibration]:
-        return {
-            sensor_id: single_context.sensor_calibration
-            for sensor_id, single_context in context.single_sensor_contexts.items()
-            if single_context.sensor_calibration is not None
-        }
+        return (
+            context.close_range_calibration.sensor_calibrations
+            if context.close_range_calibration is not None
+            else {}
+        )
 
     @classmethod
     def get_detector_status(
@@ -625,7 +403,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                 ready_to_start=False,
             )
 
-        if context.single_sensor_contexts is None:
+        if len(context.sensor_ids) == 0:
             return DetectorStatus(
                 detector_state=DetailedStatus.CONTEXT_MISSING,
                 ready_to_start=False,
@@ -641,17 +419,9 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         # Offset calibration is always performed as a part of the detector calibration process.
         # Use this as indication whether detector calibration has been performed.
         calibration_missing = np.any(
-            [
-                ctx.loopback_peak_location_m is None
-                for ctx in context.single_sensor_contexts.values()
-            ]
+            [context.offset_calibration is None for sensor_id in context.sensor_ids]
         )
-        config_mismatch = np.any(
-            [
-                ctx.session_config_used_during_calibration != session_config
-                for ctx in context.single_sensor_contexts.values()
-            ]
-        )
+        config_mismatch = context.session_config_used_during_calibration != session_config
 
         if calibration_missing:
             detector_state = DetailedStatus.CALIBRATION_MISSING
@@ -667,38 +437,11 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
 
     @staticmethod
     def _close_range_calibrated(context: DetectorContext) -> bool:
-        has_dl = np.all(
-            [ctx.direct_leakage is not None for ctx in context.single_sensor_contexts.values()]
-        )
-        has_pjcr = np.all(
-            [
-                ctx.phase_jitter_comp_reference is not None
-                for ctx in context.single_sensor_contexts.values()
-            ]
-        )
-
-        if has_dl != has_pjcr:
-            raise RuntimeError
-
-        return bool(has_dl and has_pjcr)
+        return context.close_range_calibration is not None
 
     @staticmethod
     def _recorded_threshold_calibrated(context: DetectorContext) -> bool:
-        mean_sweep_calibrated = np.all(
-            [
-                ctx.recorded_thresholds_mean_sweep is not None
-                for ctx in context.single_sensor_contexts.values()
-            ]
-        )
-
-        std_calibrated = np.all(
-            [
-                ctx.recorded_thresholds_noise_std is not None
-                for ctx in context.single_sensor_contexts.values()
-            ]
-        )
-
-        return bool(mean_sweep_calibrated and std_calibrated)
+        return context.recorded_threshold_calibration is not None
 
     @classmethod
     def _has_close_range_measurement(self, config: DetectorConfig) -> bool:
@@ -740,7 +483,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         if not status.ready_to_start:
             msg = f"Not ready to start ({status.detector_state.name})"
             raise RuntimeError(msg)
-        specs = self._add_context_to_processor_spec(self.processor_specs)
+        specs = self._add_context_to_processor_spec()
 
         sensor_calibration = self._get_sensor_calibrations(self.context)
 
@@ -750,10 +493,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
 
         assert isinstance(extended_metadata, list)
         assert np.all(
-            [
-                context.loopback_peak_location_m is not None
-                for context in self.context.single_sensor_contexts.values()
-            ]
+            [self.context.offset_calibration is not None for sensor_id in self.context.sensor_ids]
         )
         aggregator_config = AggregatorConfig(peak_sorting_method=self.config.peaksorting_method)
         self.aggregators = {
@@ -1330,77 +1070,92 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         bpts = num_steps / (bpts_m[-1] - bpts_m[0]) * (bpts_m - bpts_m[0]) + start_point
         return [(round(bpt) // step_length) * step_length for bpt in bpts]
 
-    @classmethod
-    def _update_processor_mode(
-        cls, processor_specs: list[ProcessorSpec], processor_mode: ProcessorMode
-    ) -> list[ProcessorSpec]:
-        updated_specs = []
-        for spec in processor_specs:
-            new_processor_config = attrs.evolve(
-                spec.processor_config, processor_mode=processor_mode
-            )
-            updated_specs.append(attrs.evolve(spec, processor_config=new_processor_config))
-        return updated_specs
-
-    @classmethod
-    def _filter_close_range_spec(cls, specs: list[ProcessorSpec]) -> list[ProcessorSpec]:
-        NUM_CLOSE_RANGE_SPECS = 1
-        close_range_specs = []
-        for spec in specs:
-            if spec.processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
-                close_range_specs.append(spec)
-        if len(close_range_specs) != NUM_CLOSE_RANGE_SPECS:
-            msg = "Incorrect subsweep config for close range measurement"
-            raise ValueError(msg)
-
-        return close_range_specs
-
-    def _add_context_to_processor_spec(
-        self, processor_specs: list[ProcessorSpec]
-    ) -> dict[int, list[ProcessorSpec]]:
+    def _add_context_to_processor_spec(self) -> dict[int, list[ProcessorSpec]]:
         """
         Create and add processor context to processor specification.
         """
 
         updated_specs_all_sensors = {}
-        for sensor_id, context in self.context.single_sensor_contexts.items():
-            assert context.bg_noise_std is not None
+        for sensor_id in self.context.sensor_ids:
+            assert self.context.noise_calibration is not None
+            bg_noise_stds = self.context.noise_calibration.bg_noise_std(
+                sensor_id, self.processor_specs, self.session_config
+            )
             updated_specs: List[ProcessorSpec] = []
-            for idx, (spec, bg_noise_std) in enumerate(zip(processor_specs, context.bg_noise_std)):
+
+            if self.context.recorded_threshold_calibration is not None:
+                recorded_thresholds_mean_sweep = (
+                    self.context.recorded_threshold_calibration.recorded_thresholds_mean_sweep(
+                        sensor_id,
+                        self.processor_specs,
+                        self.session_config,
+                        self.context.noise_calibration,
+                        self.context.close_range_calibration,
+                    )
+                )
+                recorded_thresholds_noise_std = (
+                    self.context.recorded_threshold_calibration.recorded_thresholds_noise_std(
+                        sensor_id,
+                        self.processor_specs,
+                        self.session_config,
+                        self.context.noise_calibration,
+                        self.context.close_range_calibration,
+                    )
+                )
+            else:
+                recorded_thresholds_mean_sweep = None
+                recorded_thresholds_noise_std = None
+
+            for idx, (spec, bg_noise_std) in enumerate(zip(self.processor_specs, bg_noise_stds)):
                 if (
-                    context.recorded_thresholds_mean_sweep is not None
-                    or context.recorded_thresholds_noise_std is not None
+                    recorded_thresholds_mean_sweep is not None
+                    and recorded_thresholds_noise_std is not None
                 ):
-                    assert context.recorded_thresholds_mean_sweep is not None
-                    assert context.recorded_thresholds_noise_std is not None
-                    recorded_thresholds_mean_sweep = context.recorded_thresholds_mean_sweep[idx]
-                    recorded_threshold_noise_std = context.recorded_thresholds_noise_std[idx]
+                    recorded_threshold_mean_sweep = recorded_thresholds_mean_sweep[idx]
+                    recorded_threshold_noise_std = recorded_thresholds_noise_std[idx]
                 else:
-                    recorded_thresholds_mean_sweep = None
+                    recorded_threshold_mean_sweep = None
                     recorded_threshold_noise_std = None
 
-                if (
-                    context.direct_leakage is not None
-                    or context.phase_jitter_comp_reference is not None
-                ):
-                    direct_leakage = context.direct_leakage
-                    phase_jitter_comp_ref = context.phase_jitter_comp_reference
+                if self.context.close_range_calibration is not None:
+                    direct_leakage = self.context.close_range_calibration.direct_leakage(
+                        sensor_id,
+                        self.processor_specs,
+                        self.session_config,
+                    )
+                    phase_jitter_comp_ref = (
+                        self.context.close_range_calibration.phase_jitter_comp_reference(
+                            sensor_id,
+                            self.processor_specs,
+                            self.session_config,
+                        )
+                    )
                 else:
                     direct_leakage = None
                     phase_jitter_comp_ref = None
 
-                if context.loopback_peak_location_m is not None:
-                    loopback_peak_location_m = context.loopback_peak_location_m
+                if self.context.offset_calibration is not None:
+                    loopback_peak_location_m = (
+                        self.context.offset_calibration.loopback_peak_location_m(sensor_id)
+                    )
                 else:
                     loopback_peak_location_m = None
 
-                if context.reference_temperature is not None:
-                    reference_temperature = context.reference_temperature
+                if self.context.recorded_threshold_calibration is not None:
+                    reference_temperature = (
+                        self.context.recorded_threshold_calibration.reference_temperature(
+                            sensor_id,
+                            self.processor_specs,
+                            self.session_config,
+                            self.context.noise_calibration,
+                            self.context.close_range_calibration,
+                        )
+                    )
                 else:
                     reference_temperature = None
 
                 processor_context = ProcessorContext(
-                    recorded_threshold_mean_sweep=recorded_thresholds_mean_sweep,
+                    recorded_threshold_mean_sweep=recorded_threshold_mean_sweep,
                     recorded_threshold_noise_std=recorded_threshold_noise_std,
                     bg_noise_std=bg_noise_std,
                     direct_leakage=direct_leakage,
@@ -1427,7 +1182,7 @@ def _record_algo_data(
     _create_h5_string_dataset(algo_group, "detector_config", config.to_json())
 
     context_group = algo_group.create_group("context")
-    context.to_h5(context_group)
+    opser.serialize(context, context_group)
 
 
 def _load_algo_data(
@@ -1437,6 +1192,6 @@ def _load_algo_data(
     config = DetectorConfig.from_json(algo_group["detector_config"][()])
 
     context_group = algo_group["context"]
-    context = DetectorContext.from_h5(context_group)
+    context = detector_context_timeline.migrate(context_group)
 
     return sensor_ids, config, context

@@ -132,6 +132,7 @@ class TestBackendPlugins:
                 tasks.SUCCESSFULLY_CLOSED_TASK,
             ],
             max_num_messages=1000,
+            recv_timeout=4.0,
         )
 
         # Stopping the task should be successful and report the idle state

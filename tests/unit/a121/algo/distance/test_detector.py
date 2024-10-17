@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from acconeer.exptool import a121
@@ -15,7 +15,7 @@ def test_update_processor_mode() -> None:
     )
     processor_specs = [processor_spec, processor_spec]
 
-    update_processor_specs = distance.Detector._update_processor_mode(
+    update_processor_specs = distance._utils.update_processor_mode(
         processor_specs=processor_specs,
         processor_mode=distance.ProcessorMode.RECORDED_THRESHOLD_CALIBRATION,
     )

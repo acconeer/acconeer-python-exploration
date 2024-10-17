@@ -11,7 +11,7 @@ import h5py
 import numpy as np
 import numpy.typing as npt
 
-from acconeer.exptool import a121
+from acconeer.exptool import a121, opser
 from acconeer.exptool.a121.algo import AlgoProcessorConfigBase
 from acconeer.exptool.a121.algo.distance import DetectorConfig, DetectorContext, DetectorResult
 
@@ -424,5 +424,5 @@ def _load_algo_data(
     bilateration_config = ProcessorConfig()
 
     context_group = algo_group["context"]
-    context = DetectorContext.from_h5(context_group)
+    context = opser.deserialize(context_group, DetectorContext)
     return sensor_ids, detector_config, bilateration_config, context

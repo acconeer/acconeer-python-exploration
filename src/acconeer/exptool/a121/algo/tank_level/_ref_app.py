@@ -9,7 +9,7 @@ from typing import Any, Dict, Optional, Tuple
 import attrs
 import h5py
 
-from acconeer.exptool import a121
+from acconeer.exptool import a121, opser
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo import Controller
 from acconeer.exptool.a121.algo.distance import (
@@ -18,6 +18,7 @@ from acconeer.exptool.a121.algo.distance import (
     DetectorContext,
     DetectorResult,
 )
+from acconeer.exptool.a121.algo.distance._detector import detector_context_timeline
 
 from ._processor import Processor, ProcessorConfig, ProcessorExtraResult, ProcessorLevelStatus
 
@@ -70,6 +71,7 @@ class RefAppExtraResult:
 
 
 RefAppContext = DetectorContext
+ref_app_context_timeline = detector_context_timeline
 
 
 @attrs.frozen(kw_only=True)
@@ -182,7 +184,7 @@ def _record_algo_data(
     _create_h5_string_dataset(algo_group, "config", config.to_json())
 
     context_group = algo_group.create_group("tank_level_context")
-    context.to_h5(context_group)
+    opser.serialize(context, context_group)
 
 
 def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, RefAppConfig, RefAppContext]:
@@ -190,6 +192,6 @@ def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, RefAppConfig, RefAppCo
     config = RefAppConfig.from_json(algo_group["config"][()])
 
     context_group = algo_group["tank_level_context"]
-    tank_level_context = DetectorContext.from_h5(context_group)
+    tank_level_context = ref_app_context_timeline.migrate(context_group)
 
     return sensor_id, config, tank_level_context
