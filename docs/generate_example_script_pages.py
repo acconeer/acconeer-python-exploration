@@ -81,7 +81,7 @@ def main() -> None:
         default=".",
         help="ET repo root. The directory where pyproject.toml lives.",
     )
-    parser.add_argument("verb", choices={"check", "generate"})
+    parser.add_argument("verb", choices={"check", "fix"})
     parser.add_argument(
         "--example-script-output-folder",
         type=Path,
@@ -96,48 +96,80 @@ def main() -> None:
         exit(1)
 
     docpages_root = args.et_root / args.example_script_output_folder
+    handwritten_example_index = docpages_root / "index.rst"
     example_scripts = list(args.et_root.glob("examples/**/*.py"))
 
-    category_indexes = {
+    needed_category_indexes = {
         docpages_root / example_script_category(script) / "index.rst" for script in example_scripts
     }
-    missing_category_indexes = {path for path in category_indexes if not path.exists()}
+    missing_category_indexes = {path for path in needed_category_indexes if not path.exists()}
+    superfluous_category_indexes = {
+        path
+        for path in docpages_root.glob("**/index.rst")
+        if (path not in needed_category_indexes) and (path != handwritten_example_index)
+    }
 
-    path_mapping = {
+    script_to_docpage_path_mapping = {
         script_path: docpages_root / example_script_docpage_path(script_path)
         for script_path in example_scripts
         if "a111" not in script_path.parts
     }
     missing_docpages = {
         script_path: docpage_path
-        for script_path, docpage_path in path_mapping.items()
+        for script_path, docpage_path in script_to_docpage_path_mapping.items()
         if not docpage_path.exists()
+    }
+    needed_script_docpages = list(script_to_docpage_path_mapping.values())
+    superfluous_docpages = {
+        path
+        for path in docpages_root.glob("**/*.rst")
+        if (path not in needed_script_docpages) and (path.name != "index.rst")
     }
 
     if args.verb == "check":
+        if superfluous_docpages:
+            print("Superfluous script docpages:")
+            for path in superfluous_docpages:
+                print(" -", path)
+            exit(1)
+
+        if superfluous_category_indexes:
+            print("Superfluous script indexes:")
+            for path in superfluous_category_indexes:
+                print(" -", path)
+            exit(1)
+
         if missing_docpages:
             print("Missing example script docpages for examples:")
             for path in missing_docpages:
                 print(" -", path)
             exit(1)
+
         if missing_category_indexes:
             print("Missing category index pages:")
             for path in missing_category_indexes:
                 print(" -", path)
             exit(1)
+
         print("All examples script docpages are up to date!")
         exit(0)
-    elif args.verb == "generate":
+    elif args.verb == "fix":
+        for useless_rst_file in superfluous_docpages.union(superfluous_category_indexes):
+            print(f"Removing {useless_rst_file}")
+            useless_rst_file.unlink()
+
         for index_path in missing_category_indexes:
             index_path.parent.mkdir(parents=True, exist_ok=True)
             print(f"Writing {index_path}")
             index_path.write_text(index_docpage_contents(index_path.parent.name))
+
         for script_path, docpage_path in missing_docpages.items():
             docpage_path.parent.mkdir(parents=True, exist_ok=True)
             print(f"Writing {script_path} to {docpage_path}")
             docpage_path.write_text(
                 script_docpage_contents(docpage_path, args.et_root, script_path)
             )
+
         print("All examples script docpages are up to date!")
         exit(0)
     else:

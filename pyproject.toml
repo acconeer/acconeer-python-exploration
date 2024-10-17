@@ -190,7 +190,7 @@ lint-check = [
 ]
 lint-fix = [
     "python tools/check_copyright.py --update-year",
-    "python docs/generate_example_script_pages.py generate",
+    "python docs/generate_example_script_pages.py fix",
     "python -m ruff check --fix .",
     "lint-check"
 ]
