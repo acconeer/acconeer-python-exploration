@@ -92,7 +92,7 @@ _P = te.ParamSpec("_P")
 _TBE = t.TypeVar("_TBE", bound=BaseException)
 _ReqCtxT = t.TypeVar("_ReqCtxT")
 _NewCtxT = t.TypeVar("_NewCtxT")
-_MigT = t.TypeVar("_MigT")
+_MigT_contra = t.TypeVar("_MigT_contra", contravariant=True)
 _HeadT = t.TypeVar("_HeadT")
 
 Completer: te.TypeAlias = t.Callable[[t.Type[_T]], _T]
@@ -163,17 +163,17 @@ def _inbounds_validator(_ignored1: t.Any, _ignored2: t.Any, value: t.Any) -> Non
 
 
 @attrs.frozen
-class Epoch(t.Generic[_HeadT, _ReqCtxT, _MigT]):
+class Epoch(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
     """
     A single node in a timeline. The type parameters are
 
-    - _HeadT:   The type this timeline will migrate to.
-                I.e. the most recent version of a class.
-    - _ReqCtxT: The context that might be needed to migrate to '_HeadT'.
-                This is always 'Never' unless 'contextual_load'
-                or 'contextual_epoch' is used.
-    - _MigT:    The type (usually a 'Union') this timeline is capable of migrating
-                to '_HeadT'.
+    - _HeadT:       The type this timeline will migrate to.
+                    I.e. the most recent version of a class.
+    - _ReqCtxT:     The context that might be needed to migrate to '_HeadT'.
+                    This is always 'Never' unless 'contextual_load'
+                    or 'contextual_epoch' is used.
+    - _MigT_contra: The type (usually a 'Union') this timeline is capable of migrating
+                    to '_HeadT'.
     """
 
     head: type[_HeadT] = attrs.field(validator=av.instance_of(type))
@@ -194,7 +194,7 @@ class Epoch(t.Generic[_HeadT, _ReqCtxT, _MigT]):
         src: type[_T],
         f: t.Callable[[_T], _HeadT],
         fail: t.Sequence[type[Exception]],
-    ) -> Epoch[_HeadT, _ReqCtxT, _MigT | _T]:
+    ) -> Epoch[_HeadT, _ReqCtxT, _MigT_contra | _T]:
         """Add a loading function to the current epoch"""
         new_gen = start(src)
         return Epoch(
@@ -207,7 +207,7 @@ class Epoch(t.Generic[_HeadT, _ReqCtxT, _MigT]):
         src: type[_T],
         f: _Transform[_T, _NewCtxT, _HeadT],
         fail: t.Sequence[type[Exception]],
-    ) -> Epoch[_HeadT, _ReqCtxT | _NewCtxT, _MigT | _T]:
+    ) -> Epoch[_HeadT, _ReqCtxT | _NewCtxT, _MigT_contra | _T]:
         """
         Add a contextual loading function to the current epoch.
         `f`'s second argument should be a `Completer`
@@ -223,7 +223,7 @@ class Epoch(t.Generic[_HeadT, _ReqCtxT, _MigT]):
         typ: type[_T],
         f: t.Callable[[_HeadT], _T],
         fail: t.Sequence[type[Exception]],
-    ) -> Epoch[_T, _ReqCtxT, _MigT | _HeadT]:
+    ) -> Epoch[_T, _ReqCtxT, _MigT_contra | _HeadT]:
         """Append an epoch to the timeline, adding a level to the migration tree"""
         return Epoch(
             typ,
@@ -235,13 +235,13 @@ class Epoch(t.Generic[_HeadT, _ReqCtxT, _MigT]):
         typ: type[_T],
         f: _Transform[_HeadT, _NewCtxT, _T],
         fail: t.Sequence[type[Exception]],
-    ) -> Epoch[_T, _ReqCtxT | _NewCtxT, _MigT | _HeadT]:
+    ) -> Epoch[_T, _ReqCtxT | _NewCtxT, _MigT_contra | _HeadT]:
         """Append a contextual epoch to the timeline, adding a level to the migration tree"""
         return Epoch(typ, [(_as_result(*fail)(f), self)])  # type: ignore[arg-type]
 
     def _migrate_results(
         self,
-        obj: _HeadT | _MigT,
+        obj: _HeadT | _MigT_contra,
         completer: Completer[_ReqCtxT],
     ) -> t.Iterator[r.Result[_HeadT, Exception]]:
         if isinstance(obj, self.head):
@@ -255,17 +255,19 @@ class Epoch(t.Generic[_HeadT, _ReqCtxT, _MigT]):
         )
 
     @te.overload
-    def migrate(self: Epoch[_HeadT, te.Never, _MigT], obj: _HeadT | _MigT) -> _HeadT: ...
+    def migrate(
+        self: Epoch[_HeadT, te.Never, _MigT_contra], obj: _HeadT | _MigT_contra
+    ) -> _HeadT: ...
 
     @te.overload
     def migrate(
-        self: Epoch[_HeadT, _ReqCtxT, _MigT],
-        obj: _HeadT | _MigT,
+        self: Epoch[_HeadT, _ReqCtxT, _MigT_contra],
+        obj: _HeadT | _MigT_contra,
         completer: Completer[_ReqCtxT],
     ) -> _HeadT: ...
 
     def migrate(
-        self, obj: _HeadT | _MigT, completer: Completer[t.Any] = _null_completer
+        self, obj: _HeadT | _MigT_contra, completer: Completer[t.Any] = _null_completer
     ) -> _HeadT:
         """
         Migrate `obj` be the type of the latest epoch.
