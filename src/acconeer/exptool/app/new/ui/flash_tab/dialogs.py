@@ -43,7 +43,7 @@ log = logging.getLogger(__name__)
 
 
 class FlashDialog(QDialog):
-    flash_done = Signal()
+    flash_done = Signal(bool)
     opened = Signal()
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
@@ -110,12 +110,12 @@ class FlashDialog(QDialog):
             self.flash_label.setText(f"Flashing... {progress}%")
 
     def _flash_done(self) -> None:
-        self.flash_done.emit()
+        self.flash_done.emit(True)
         self.flash_label.setText("Flashing done!")
         self.ok_button.setHidden(False)
 
     def _flash_failed(self, exception: Exception, traceback_str: Optional[str]) -> None:
-        self.flash_done.emit()
+        self.flash_done.emit(False)
         self.flash_label.setText("Flashing failed!")
         self.ok_button.setHidden(False)
         ExceptionWidget(self, exc=exception, traceback_str=traceback_str).exec()

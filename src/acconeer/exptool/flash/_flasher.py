@@ -193,6 +193,19 @@ def get_boot_description(flash_device, device_name):
     return None
 
 
+def get_post_dfu_description(flash_device, device_name):
+    flash_device_name = device_name or flash_device.name
+    product = None
+
+    if flash_device_name in EVK_TO_PRODUCT_MAP:
+        product = EVK_TO_PRODUCT_MAP[flash_device_name]
+
+    if product in PRODUCT_NAME_TO_FLASH_MAP:
+        return PRODUCT_NAME_TO_FLASH_MAP[product].get_post_dfu_description(product)
+
+    return None
+
+
 def _fetch_and_flash(args):
     flash_device = _get_flash_device_from_args(args)
 
@@ -256,7 +269,7 @@ def _fetch_and_flash(args):
             boot_description = get_boot_description(flash_device, device_name)
             if boot_description:
                 boot_description = re.sub("<li>", " - ", boot_description)
-                boot_description = re.sub("</[pli]+?>", "\n", boot_description)
+                boot_description = re.sub("</[p|li]+?>", "\n", boot_description)
                 boot_description = re.sub("<[^<]+?>", "", boot_description)
                 print("\n\n" + boot_description)
             if _query_yes_no("Proceed to flashing you device?"):
@@ -267,6 +280,12 @@ def _fetch_and_flash(args):
                     device_name=device_name,
                     progress_callback=_flasher_progress_callback,
                 )
+            post_dfu_description = get_post_dfu_description(flash_device, device_name)
+            if post_dfu_description:
+                post_dfu_description = re.sub("<li>", " - ", post_dfu_description)
+                post_dfu_description = re.sub("</[p|li]+?>", "\n", post_dfu_description)
+                post_dfu_description = re.sub("<[^<]+?>", "", post_dfu_description)
+                print("\n\n" + post_dfu_description)
         else:
             print("You need to accept the license agreement to download the image file.")
 

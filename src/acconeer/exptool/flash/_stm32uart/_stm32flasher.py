@@ -31,6 +31,10 @@ DFU_BOOT_DESCRIPTION = {
     ),
 }
 
+POST_DFU_DESCRIPTION = {
+    "XM125": ("<p>" "<ol>" "<li>Press and Release the <b>RESET</b> button</li>" "</ol>" "</p>"),
+}
+
 
 class Stm32DeviceException(Exception):
     pass
@@ -75,6 +79,17 @@ class Stm32UartFlasher(DeviceFlasherBase):
             description = (
                 f"<p>To flash the {device_name} it needs to be put in bootloader mode:</p>"
                 f"{DFU_BOOT_DESCRIPTION[device_name]}"
+            )
+
+        return description
+
+    @staticmethod
+    def get_post_dfu_description(device_name: str) -> Optional[str]:
+        description = None
+        if device_name in POST_DFU_DESCRIPTION:
+            description = (
+                f"<p>The {device_name} needs to be reset before it can be used:</p>"
+                f"{POST_DFU_DESCRIPTION[device_name]}"
             )
 
         return description

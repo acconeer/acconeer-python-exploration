@@ -108,6 +108,7 @@ class FlashMainWidget(QWidget):
         self.device_selection = QComboBox(self)
         self.device_selection.setEnabled(False)
         self.device_name_selection = None
+        self._device_post_dfu_description = None
         self.device_selection.currentIndexChanged.connect(self._on_device_selection_change)
 
         self._device_widget = QStackedWidget(self)
@@ -196,6 +197,13 @@ class FlashMainWidget(QWidget):
             "Got it! The board is in bootloader mode",
         )
         self._user_msg_dialog.finished.connect(self._user_msg_dialog_finished)
+
+        self._post_flash_dialog = UserMessageDialog(
+            "Finalize flashing description",
+            None,
+            "OK",
+        )
+        self._post_flash_dialog.finished.connect(self._post_flash_dialog_finished)
 
         app_model.sig_notify.connect(self._on_app_model_update)
 
@@ -334,6 +342,9 @@ class FlashMainWidget(QWidget):
         self.app_model.set_port_updates_pause(True)
         self._flash_dialog.flash(self.bin_file, self.flash_device, self.device_name)
 
+    def _post_flash_dialog_finished(self) -> None:
+        self.app_model.set_port_updates_pause(False)
+
     def _flash(self) -> None:
         assert self.bin_file is not None
         assert self.flash_device is not None
@@ -360,6 +371,9 @@ class FlashMainWidget(QWidget):
             return
 
         boot_description = self._get_boot_description(self.flash_device, self.device_name)
+        self._device_post_dfu_description = self._get_post_dfu_description(
+            self.flash_device, self.device_name
+        )
         if boot_description:
             self._user_msg_dialog.set_message(boot_description)
             self._user_msg_dialog.open()
@@ -381,8 +395,12 @@ class FlashMainWidget(QWidget):
         self.device_selection.setEnabled(True)
         self.flash_button.setEnabled(True)
 
-    def _flash_done(self) -> None:
-        self.app_model.set_port_updates_pause(False)
+    def _flash_done(self, flashing_ok: bool) -> None:
+        if flashing_ok and self._device_post_dfu_description is not None:
+            self._post_flash_dialog.set_message(self._device_post_dfu_description)
+            self._post_flash_dialog.open()
+        else:
+            self.app_model.set_port_updates_pause(False)
 
     def _on_interface_dd_change(self) -> None:
         self.app_model.set_connection_interface(self.interface_dd.currentData())
@@ -469,5 +487,19 @@ class FlashMainWidget(QWidget):
 
         if product in PRODUCT_NAME_TO_FLASH_MAP:
             return PRODUCT_NAME_TO_FLASH_MAP[product].get_boot_description(product)
+
+        return None
+
+    def _get_post_dfu_description(
+        self, flash_device: CommDevice, device_name: Optional[str]
+    ) -> Any:
+        flash_device_name: Optional[str] = device_name or flash_device.name
+        product: Optional[str] = None
+
+        if flash_device_name in EVK_TO_PRODUCT_MAP:
+            product = EVK_TO_PRODUCT_MAP[flash_device_name]
+
+        if product in PRODUCT_NAME_TO_FLASH_MAP:
+            return PRODUCT_NAME_TO_FLASH_MAP[product].get_post_dfu_description(product)
 
         return None
