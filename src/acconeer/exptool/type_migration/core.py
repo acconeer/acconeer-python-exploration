@@ -164,6 +164,18 @@ def _inbounds_validator(_ignored1: t.Any, _ignored2: t.Any, value: t.Any) -> Non
 
 @attrs.frozen
 class Epoch(t.Generic[_HeadT, _ReqCtxT, _MigT]):
+    """
+    A single node in a timeline. The type parameters are
+
+    - _HeadT:   The type this timeline will migrate to.
+                I.e. the most recent version of a class.
+    - _ReqCtxT: The context that might be needed to migrate to '_HeadT'.
+                This is always 'Never' unless 'contextual_load'
+                or 'contextual_epoch' is used.
+    - _MigT:    The type (usually a 'Union') this timeline is capable of migrating
+                to '_HeadT'.
+    """
+
     head: type[_HeadT] = attrs.field(validator=av.instance_of(type))
     inbounds: t.Sequence[
         tuple[
