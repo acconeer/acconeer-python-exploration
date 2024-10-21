@@ -288,16 +288,22 @@ section-order = [
 
 [tool.mypy]
 packages = [
-    "acconeer.exptool._core",
-    "acconeer.exptool.a121",
-    "acconeer.exptool.app.new",
-    "acconeer.exptool.flash._mcumgruart",
-    "acconeer.exptool.setup",
-    "acconeer.exptool.opser",
-    "acconeer.exptool.type_migration",
-    "utils.convert_h5",
-    "tests.unit.a121",
-    "tests.app",
+    "acconeer.exptool",
+    "utils",
+]
+exclude = [
+    ".*/a111/.*",
+    ".*/old/.*",
+    "src/acconeer/exptool/_structs/.*",
+    "src/acconeer/exptool/flash/.*",
+    "src/acconeer/exptool/_tests/.*",
+    "src/acconeer/exptool/_winusbcdc/.*",
+    "src/acconeer/exptool/_pyusb/.*",
+    "src/acconeer/exptool/utils.py",
+    "src/acconeer/exptool/mpl_process.py",
+    "src/acconeer/exptool/libft4222.py",
+    "src/acconeer/exptool/pg_process.py",
+    "src/acconeer/exptool/_bs_thread.py",
 ]
 check_untyped_defs = true
 disallow_any_generics = true
@@ -309,6 +315,8 @@ no_implicit_optional = true
 warn_return_any = true
 warn_unused_ignores = true
 
+mypy_path = "src/"
+explicit_package_bases = true
 incremental = true
 show_error_codes = true
 

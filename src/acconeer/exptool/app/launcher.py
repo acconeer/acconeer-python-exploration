@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ class ImageButton(QToolButton):
         label.setGraphicsEffect(label_shadow)
 
         self._layout.addStretch()
-        self._layout.addWidget(label, 0, alignment=Qt.AlignCenter)
+        self._layout.addWidget(label, 0, alignment=Qt.AlignmentFlag.AlignCenter)
         self.setStyleSheet(
             f"""
             QLabel {{
@@ -70,14 +70,14 @@ class ImageButton(QToolButton):
         self._animator.setDuration(duration)
         self._animator.setStartValue(start_value)
         self._animator.setEndValue(end_value)
-        self._animator.setEasingCurve(QEasingCurve.InOutSine)
+        self._animator.setEasingCurve(QEasingCurve.Type.InOutSine)
         self._animator.start()
 
     def eventFilter(self, _: QObject, event: QEvent) -> bool:
-        if event.type() == QEvent.HoverEnter:
+        if event.type() == QEvent.Type.HoverEnter:
             self._do_animation(0, 100, duration=300)
 
-        if event.type() == QEvent.HoverLeave:
+        if event.type() == QEvent.Type.HoverLeave:
             self._do_animation(100, 0, duration=100)
 
         return False
