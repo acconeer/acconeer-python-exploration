@@ -124,6 +124,7 @@ class Aggregator:
         sorting_order = np.argsort(dists)
         distances_sorted = dists[sorting_order]
         strengths_sorted = strengths[sorting_order]
+        profile_fwhms = profile_fwhms[sorting_order[1:] - 1]
 
         peak_cluster_idxs = np.where(profile_fwhms < np.diff(distances_sorted))[0] + 1
         distances_merged = [

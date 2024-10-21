@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 import numpy as np
@@ -8,7 +8,10 @@ from acconeer.exptool.a121.algo import distance
 
 
 def test_merge_peaks() -> None:
-    profile_fwhms = np.array([1])
+    # Remove first element as the FWHM of the subsweep with greater profile is used when
+    # determining the distance for merging two peaks.
+    profile_fwhms = np.array([1, 1, 1])
+
     distances = np.array([0.0, 2.0, 4.0, 5.0])
     strengths = np.array([0.0, 0.0, 1.0, 2.0])
     (
