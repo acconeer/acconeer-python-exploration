@@ -1,9 +1,9 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
 
-from typing import Any, Callable, Optional, TypeVar, Union, cast
+from typing import Any, Callable, Generic, Optional, TypeVar, Union, cast
 
 import typing_extensions as te
 
@@ -47,7 +47,7 @@ class _A121Extractor(_Extractor):
             return calculator.update(first_result.tick, first_result.frame_delayed)
 
 
-class ApplicationClient:
+class ApplicationClient(Generic[ClientT]):
     callback: Callable[[Message], None]
     extractor_strategy: type[_Extractor]
     _wrapped_client: Client[Any, Any, Any, Any, Any]

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -43,7 +43,7 @@ def get_pidget_mapping() -> PidgetGroupFactoryMapping:
         "inter_frame_idle_state": pidgets.EnumPidgetFactory(
             enum_type=a121.IdleState,
             name_label_text="Inter frame idle state:",
-            name_label_tooltip=get_attribute_docstring(DetectorConfig, "inter_frame_idle_state"),  # type: ignore[arg-type]
+            name_label_tooltip=get_attribute_docstring(DetectorConfig, "inter_frame_idle_state"),
             label_mapping={
                 a121.IdleState.DEEP_SLEEP: "Deep sleep",
                 a121.IdleState.SLEEP: "Sleep",

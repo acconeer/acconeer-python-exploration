@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -480,7 +480,7 @@ class ViewPlugin(A121ViewPluginBase):
             "inter_frame_idle_state": pidgets.EnumPidgetFactory(
                 enum_type=a121.IdleState,
                 name_label_text="Inter frame idle state:",
-                name_label_tooltip=get_attribute_docstring(  # type: ignore[arg-type]
+                name_label_tooltip=get_attribute_docstring(
                     ExampleAppConfig, "inter_frame_idle_state"
                 ),
                 label_mapping={
@@ -492,7 +492,7 @@ class ViewPlugin(A121ViewPluginBase):
             "inter_sweep_idle_state": pidgets.EnumPidgetFactory(
                 enum_type=a121.IdleState,
                 name_label_text="Inter sweep idle state:",
-                name_label_tooltip=get_attribute_docstring(  # type: ignore[arg-type]
+                name_label_tooltip=get_attribute_docstring(
                     ExampleAppConfig, "inter_sweep_idle_state"
                 ),
                 label_mapping={

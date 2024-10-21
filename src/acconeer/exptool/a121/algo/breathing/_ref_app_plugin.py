@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -635,7 +635,7 @@ class ViewPlugin(A121ViewPluginBase):
                         a121.Profile.PROFILE_4: "4",
                         a121.Profile.PROFILE_5: "5 (longest)",
                     },
-                    name_label_tooltip=get_attribute_docstring(RefAppConfig, "profile"),  # type: ignore[arg-type]
+                    name_label_tooltip=get_attribute_docstring(RefAppConfig, "profile"),
                 ),
             }
         }

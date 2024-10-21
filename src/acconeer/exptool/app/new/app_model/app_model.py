@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -79,7 +79,7 @@ class PluginPresetSpec(Protocol):
 
     name: str
     description: Optional[str]
-    preset_id: Optional[Enum]
+    preset_id: Enum
 
 
 class PluginSpec(Protocol):

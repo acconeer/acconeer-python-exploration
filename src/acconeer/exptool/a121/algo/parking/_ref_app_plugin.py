@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -626,7 +626,7 @@ class ViewPlugin(A121ViewPluginBase):
                 ),
                 "profile": pidgets.EnumPidgetFactory(
                     name_label_text="Profile:",
-                    name_label_tooltip=get_attribute_docstring(RefAppConfig, "profile"),  # type: ignore[arg-type]
+                    name_label_tooltip=get_attribute_docstring(RefAppConfig, "profile"),
                     enum_type=a121.Profile,
                     label_mapping={
                         a121.Profile.PROFILE_1: "1 (shortest)",

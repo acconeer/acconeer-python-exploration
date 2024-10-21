@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -534,7 +534,7 @@ class ViewPlugin(A121ViewPluginBase):
             ),
             "profile": pidgets.EnumPidgetFactory(
                 name_label_text="Profile:",
-                name_label_tooltip=get_attribute_docstring(DetectorConfig, "profile"),  # type: ignore[arg-type]
+                name_label_tooltip=get_attribute_docstring(DetectorConfig, "profile"),
                 enum_type=a121.Profile,
                 label_mapping={
                     a121.Profile.PROFILE_1: "1 (best resolution)",
@@ -581,7 +581,7 @@ class ViewPlugin(A121ViewPluginBase):
             ),
             "peak_sorting_method": pidgets.EnumPidgetFactory(
                 name_label_text="Peak sorting method:",
-                name_label_tooltip=get_attribute_docstring(DetectorConfig, "peak_sorting_method"),  # type: ignore[arg-type]
+                name_label_tooltip=get_attribute_docstring(DetectorConfig, "peak_sorting_method"),
                 enum_type=PeakSortingMethod,
                 label_mapping={
                     PeakSortingMethod.CLOSEST: "Closest",

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ def get_pidget_mapping() -> PidgetFactoryMapping:
         ),
         "max_profile": pidgets.EnumPidgetFactory(
             name_label_text="Max profile:",
-            name_label_tooltip=get_attribute_docstring(DetectorConfig, "max_profile"),  # type: ignore[arg-type]
+            name_label_tooltip=get_attribute_docstring(DetectorConfig, "max_profile"),
             enum_type=a121.Profile,
             label_mapping={
                 a121.Profile.PROFILE_1: "1 (shortest)",
@@ -56,7 +56,7 @@ def get_pidget_mapping() -> PidgetFactoryMapping:
         ),
         "reflector_shape": pidgets.EnumPidgetFactory(
             name_label_text="Reflector shape:",
-            name_label_tooltip=get_attribute_docstring(DetectorConfig, "reflector_shape"),  # type: ignore[arg-type]
+            name_label_tooltip=get_attribute_docstring(DetectorConfig, "reflector_shape"),
             enum_type=ReflectorShape,
             label_mapping={
                 ReflectorShape.GENERIC: "Generic",
@@ -65,7 +65,7 @@ def get_pidget_mapping() -> PidgetFactoryMapping:
         ),
         "peaksorting_method": pidgets.EnumPidgetFactory(
             name_label_text="Peak sorting method:",
-            name_label_tooltip=get_attribute_docstring(DetectorConfig, "peaksorting_method"),  # type: ignore[arg-type]
+            name_label_tooltip=get_attribute_docstring(DetectorConfig, "peaksorting_method"),
             enum_type=PeakSortingMethod,
             label_mapping={
                 PeakSortingMethod.CLOSEST: "Closest",
@@ -88,7 +88,7 @@ def get_pidget_mapping() -> PidgetFactoryMapping:
         ),
         "threshold_method": pidgets.EnumPidgetFactory(
             name_label_text="Threshold method:",
-            name_label_tooltip=get_attribute_docstring(DetectorConfig, "threshold_method"),  # type: ignore[arg-type]
+            name_label_tooltip=get_attribute_docstring(DetectorConfig, "threshold_method"),
             enum_type=ThresholdMethod,
             label_mapping={
                 ThresholdMethod.CFAR: "CFAR",

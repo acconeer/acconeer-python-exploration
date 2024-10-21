@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -152,7 +152,7 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
             "measurement_type": pidgets.EnumPidgetFactory(
                 enum_type=MeasurementType,
                 name_label_text="Range:",
-                name_label_tooltip=get_attribute_docstring(ProcessorConfig, "measurement_type"),  # type: ignore[arg-type]
+                name_label_tooltip=get_attribute_docstring(ProcessorConfig, "measurement_type"),
                 label_mapping={
                     MeasurementType.CLOSE_RANGE: "Close",
                     MeasurementType.FAR_RANGE: "Far",

@@ -109,7 +109,7 @@ old = "python -m acconeer.exptool.app.old {args}"
 [tool.hatch.envs.mypy]
 features = ["app"]
 dependencies = [
-    "mypy==1.7.0",
+    "mypy==1.14.1",
     "pytest==7.2",
     "pandas==1.3.5",
     "pandas-stubs",

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -76,13 +76,13 @@ class SubsweepConfigEditor(DataEditor[Optional[a121.SubsweepConfig]]):
         "profile": pidgets.EnumPidgetFactory(
             enum_type=a121.Profile,
             name_label_text="Profile:",
-            name_label_tooltip=get_attribute_docstring(a121.SubsweepConfig, "profile"),  # type: ignore[arg-type]
+            name_label_tooltip=get_attribute_docstring(a121.SubsweepConfig, "profile"),
             label_mapping=PROFILE_LABEL_MAP,
         ),
         "prf": pidgets.EnumPidgetFactory(
             enum_type=a121.PRF,
             name_label_text="PRF:",
-            name_label_tooltip=get_attribute_docstring(a121.SubsweepConfig, "prf"),  # type: ignore[arg-type]
+            name_label_tooltip=get_attribute_docstring(a121.SubsweepConfig, "prf"),
             label_mapping=PRF_LABEL_MAP,
         ),
         "enable_tx": pidgets.CheckboxPidgetFactory(
