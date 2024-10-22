@@ -30,7 +30,7 @@ from acconeer.exptool.a121.algo import (
 )
 from acconeer.exptool.a121.algo.bilateration import _processor as bilateration_processor
 from acconeer.exptool.a121.algo.breathing import _processor as breathing_processor
-from acconeer.exptool.a121.algo.distance import _detector as distance_detector
+from acconeer.exptool.a121.algo.distance import _context as distance_detector_context
 from acconeer.exptool.a121.algo.distance import _processors as distance_processors
 from acconeer.exptool.a121.algo.presence import _processors as presence_processors
 from acconeer.exptool.a121.algo.smart_presence import _ref_app as smart_presence_ref_app
@@ -267,7 +267,7 @@ DISTANCE = [
     distance.DetectorConfig(start_m=100.0),
     distance.DetectorContext(
         single_sensor_contexts={
-            1: distance_detector.SingleSensorContext(
+            1: distance_detector_context.SingleSensorContext(
                 loopback_peak_location_m=random(),
                 direct_leakage=_array(np.complex128),
                 phase_jitter_comp_reference=_array(np.float64),
@@ -277,11 +277,13 @@ DISTANCE = [
                 session_config_used_during_calibration=a121.SessionConfig(),
                 reference_temperature=5,
                 sensor_calibration=a121.SensorCalibration(temperature=5, data="hello there"),
-                extra_context=distance_detector.SingleSensorExtraContext(),
+                extra_context=distance_detector_context.SingleSensorExtraContext(),
             )
         }
     ),
-    distance.DetectorContext(single_sensor_contexts={1: distance_detector.SingleSensorContext()}),
+    distance.DetectorContext(
+        single_sensor_contexts={1: distance_detector_context.SingleSensorContext()}
+    ),
     DISTANCE_DETECTOR_RESULT,
     distance.ProcessorConfig(threshold_sensitivity=0.00001),
     distance.ProcessorContext(

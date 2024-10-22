@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 
 from ._aggregator import (
@@ -8,7 +8,8 @@ from ._aggregator import (
     PeakSortingMethod,
     ProcessorSpec,
 )
-from ._detector import DetailedStatus, Detector, DetectorConfig, DetectorContext, DetectorResult
+from ._context import DetectorContext
+from ._detector import DetailedStatus, Detector, DetectorConfig, DetectorResult
 from ._processors import (
     MeasurementType,
     Processor,
