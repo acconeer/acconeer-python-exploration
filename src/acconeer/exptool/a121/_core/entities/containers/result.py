@@ -9,8 +9,8 @@ import attrs
 import numpy as np
 import numpy.typing as npt
 
-from acconeer.exptool._core.class_creation.attrs import attrs_ndarray_eq
-from acconeer.exptool._core.int_16_complex import int16_complex_array_to_complex
+from acconeer.exptool._core.class_creation.attrs import attrs_ndarray_eq, attrs_ndarray_validator
+from acconeer.exptool._core.int_16_complex import INT_16_COMPLEX, int16_complex_array_to_complex
 
 from .metadata import Metadata
 from .utils import get_subsweeps_from_frame
@@ -53,7 +53,9 @@ class Result:
     absolute accuracy.
     """
 
-    _frame: npt.NDArray[t.Any] = attrs.field(eq=attrs_ndarray_eq)
+    _frame: npt.NDArray[t.Any] = attrs.field(
+        eq=attrs_ndarray_eq, validator=attrs_ndarray_validator(ndim=2, element_type=INT_16_COMPLEX)
+    )
     """Frame data in the original data format (complex int16)"""
 
     tick: int = attrs.field(converter=int)

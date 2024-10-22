@@ -55,7 +55,7 @@ def _list(element_type: type, length: int = 3) -> t.List[t.Any]:
 def _array(dtype: t.Any, shape: tuple[int, ...] = (1, 2, 3)) -> npt.NDArray[t.Any]:
     """Helper function for mock data. returns an array with elements of type `element_type`"""
     rng = np.random.default_rng()
-    return rng.normal(shape).astype(dtype)
+    return rng.normal(size=shape).astype(dtype)
 
 
 @attrs.frozen
@@ -161,7 +161,7 @@ MOCK_SERVICE_RESULT = a121.Result(
     frame_delayed=True,
     calibration_needed=False,
     temperature=10,
-    frame=_array(INT_16_COMPLEX),
+    frame=_array(INT_16_COMPLEX, shape=(1, 10)),
     tick=1337,
     context=ResultContext(
         metadata=a121.Metadata(

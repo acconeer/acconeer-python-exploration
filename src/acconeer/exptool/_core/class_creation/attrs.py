@@ -45,3 +45,32 @@ attrs_optional_ndarray_eq = attrs.cmp_using(eq=_optional_wrapper(np.array_equal)
 attrs_ndarray_isclose = attrs.cmp_using(eq=ndarray_isclose)
 attrs_optional_ndarray_isclose = attrs.cmp_using(eq=_optional_wrapper(ndarray_isclose))
 attrs_dict_ndarray_isclose = attrs.cmp_using(eq=_dict_wrapper(ndarray_isclose))
+
+
+def attrs_ndarray_validator(
+    ndim: int, element_type: np.dtype[np.generic]
+) -> t.Callable[[t.Any, t.Any, t.Any], None]:
+    """
+    Creates a validator to be used in attrs fields. Does the following checks:
+
+    1. The new value is a np.ndarray
+    2. It has ``ndim`` dimensions
+    3. Its elements have the type ``element_type`` (e.g. np.float64, np.int_, etc.)
+    """
+
+    def inner(_: t.Any, attribute: attrs.Attribute[t.Any], value: t.Any) -> None:
+        if not isinstance(value, np.ndarray):
+            msg = f"{attribute.name!r} needs to be a numpy array"
+            raise TypeError(msg)
+
+        if value.ndim != ndim:
+            raise ValueError(
+                f"{attribute.name!r} has {value.ndim} dimensions. "
+                + f"It needs to have {ndim} dimensions"
+            )
+
+        if value.dtype != element_type:
+            msg = f"{attribute.name!r} needs to have dtype {element_type!r}"
+            raise ValueError(msg)
+
+    return inner
