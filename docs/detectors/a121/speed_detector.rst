@@ -109,7 +109,7 @@ Traffic
 ^^^^^^^
 Continuing with the other preset, *traffic*. Here we have a longer range, which almost certainly will need adjustment when looking at a road. When aiming the sensor at cars passing by, we notice that we can not only measure the speed, but also that we see a gap between measurements. Combining the information of the time gap between *new* detections, with the speed of the detected object we can also get a good estimate of the distance between the cars.
 
-Another thing to notice when aiming the sensor at a road is that we only measure the speed component towards the sensor. If we have an angle between the sensor and the road (which is usually the case, since measuring straight ahead would require a position on the road), we will observe a lower speed that the object is traveling at. See more information here: `Cosine error effect <https://copradar.com/chapts/chapt2/ch2d1.html>`_.
+Another thing to notice when aiming the sensor at a road is that we only measure the speed component towards the sensor. If we have an angle between the sensor and the road (which is usually the case, since measuring straight ahead would require a position on the road), we will observe a lower speed that the object is traveling at. See more information here: `Cosine error effect <https://en.wikipedia.org/wiki/Cosine_error>`_.
 
 
 Further reading:
