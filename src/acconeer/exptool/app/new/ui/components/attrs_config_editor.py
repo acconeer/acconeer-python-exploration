@@ -372,3 +372,7 @@ class JoinedPartialAttrsConfigEditors(DataEditor[Optional[T]]):
         for editor in self._editors:
             not_handled = editor.handle_validation_results(not_handled)
         return not_handled
+
+    @property
+    def is_ready(self) -> bool:
+        return all([editor.is_ready for editor in self._editors])
