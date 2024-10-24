@@ -804,7 +804,8 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         """
 
         if min_dist_m[config.max_profile] < config.end_m or (
-            config.max_profile == a121.Profile.PROFILE_1
+            not config.close_range_leakage_cancellation
+            and config.max_profile == a121.Profile.PROFILE_1
         ):
             if not config.close_range_leakage_cancellation and (
                 config.max_profile == a121.Profile.PROFILE_1
