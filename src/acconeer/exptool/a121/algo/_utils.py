@@ -90,43 +90,43 @@ def get_distance_offset(
     if temperature is not None:
         if temperature < -25:
             OFFSET_COMPENSATION_COEFFS = {
-                a121.Profile.PROFILE_1: [0.7775766, 0.01424555],
-                a121.Profile.PROFILE_2: [0.78830728, 0.01977184],
-                a121.Profile.PROFILE_3: [0.81372193, 0.01186914],
-                a121.Profile.PROFILE_4: [0.762505, 0.01343452],
-                a121.Profile.PROFILE_5: [0.81893223, -0.003465],
+                a121.Profile.PROFILE_1: [0.81796372, 0.01561084],
+                a121.Profile.PROFILE_2: [0.60363902, 0.01639924],
+                a121.Profile.PROFILE_3: [0.76755397, 0.0119841],
+                a121.Profile.PROFILE_4: [0.91310206, 0.01822777],
+                a121.Profile.PROFILE_5: [1.05453651, 0.0045255],
             }
         elif temperature < 45:
             OFFSET_COMPENSATION_COEFFS = {
-                a121.Profile.PROFILE_1: [0.52589179, 0.00767648],
-                a121.Profile.PROFILE_2: [0.5506853, 0.01669611],
-                a121.Profile.PROFILE_3: [0.55525774, 0.00630906],
-                a121.Profile.PROFILE_4: [0.50062257, 0.00931814],
-                a121.Profile.PROFILE_5: [0.30723402, -0.01157347],
+                a121.Profile.PROFILE_1: [0.91880272, 0.01782158],
+                a121.Profile.PROFILE_2: [0.59457893, 0.0192985],
+                a121.Profile.PROFILE_3: [0.85039166, 0.01478081],
+                a121.Profile.PROFILE_4: [1.00348084, 0.02306631],
+                a121.Profile.PROFILE_5: [0.98183729, 0.00794888],
             }
         elif temperature < 80:
             OFFSET_COMPENSATION_COEFFS = {
-                a121.Profile.PROFILE_1: [0.40261719, 0.00320823],
-                a121.Profile.PROFILE_2: [0.41256604, 0.01628009],
-                a121.Profile.PROFILE_3: [0.40389208, 0.00247742],
-                a121.Profile.PROFILE_4: [0.46767179, 0.00931563],
-                a121.Profile.PROFILE_5: [0.39826142, -0.00668402],
+                a121.Profile.PROFILE_1: [0.54980311, 0.00836143],
+                a121.Profile.PROFILE_2: [0.49726231, 0.01961523],
+                a121.Profile.PROFILE_3: [0.53138948, 0.00784231],
+                a121.Profile.PROFILE_4: [0.44605765, 0.01097863],
+                a121.Profile.PROFILE_5: [0.51716572, 0.00060455],
             }
         else:
             OFFSET_COMPENSATION_COEFFS = {
-                a121.Profile.PROFILE_1: [0.38332261, 0.00200361],
-                a121.Profile.PROFILE_2: [0.33236478, 0.01486831],
-                a121.Profile.PROFILE_3: [0.35708526, 0.00114435],
-                a121.Profile.PROFILE_4: [0.43023859, 0.00824871],
-                a121.Profile.PROFILE_5: [0.32260045, -0.00784442],
+                a121.Profile.PROFILE_1: [0.54980311, 0.00836143],
+                a121.Profile.PROFILE_2: [0.49726231, 0.01961523],
+                a121.Profile.PROFILE_3: [0.53138948, 0.00784231],
+                a121.Profile.PROFILE_4: [0.44605765, 0.01097863],
+                a121.Profile.PROFILE_5: [0.51716572, 0.00060455],
             }
     else:
         OFFSET_COMPENSATION_COEFFS = {
-            a121.Profile.PROFILE_1: [0.52589179, 0.00767648],
-            a121.Profile.PROFILE_2: [0.5506853, 0.01669611],
-            a121.Profile.PROFILE_3: [0.55525774, 0.00630906],
-            a121.Profile.PROFILE_4: [0.50062257, 0.00931814],
-            a121.Profile.PROFILE_5: [0.30723402, -0.01157347],
+            a121.Profile.PROFILE_1: [0.91880272, 0.01782158],
+            a121.Profile.PROFILE_2: [0.59457893, 0.0192985],
+            a121.Profile.PROFILE_3: [0.85039166, 0.01478081],
+            a121.Profile.PROFILE_4: [1.00348084, 0.02306631],
+            a121.Profile.PROFILE_5: [0.98183729, 0.00794888],
         }
 
     p = OFFSET_COMPENSATION_COEFFS[profile]
