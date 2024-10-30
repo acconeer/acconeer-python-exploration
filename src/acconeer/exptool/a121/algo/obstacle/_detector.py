@@ -160,6 +160,14 @@ class DetectorConfig(AlgoConfigBase):
                 )
             )
 
+        if self.max_robot_speed <= 0.0:
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "max_robot_speed",
+                    "Must be larger than 0.0.",
+                )
+            )
         return validation_results
 
 
@@ -610,9 +618,13 @@ class Detector:
         for subsweep in subsweeps:
             subsweep.phase_enhancement = True
 
+        sweep_rate: Optional[float] = detector_config.max_robot_speed / (PERCEIVED_WAVELENGTH / 2)
+        if detector_config.max_robot_speed / (PERCEIVED_WAVELENGTH / 2) <= 0.0:
+            sweep_rate = None
+
         return a121.SensorConfig(
             sweeps_per_frame=detector_config.sweeps_per_frame,
-            sweep_rate=detector_config.max_robot_speed / (PERCEIVED_WAVELENGTH / 2),
+            sweep_rate=sweep_rate,
             inter_sweep_idle_state=a121.IdleState.READY,
             inter_frame_idle_state=a121.IdleState.READY,
             subsweeps=subsweeps,

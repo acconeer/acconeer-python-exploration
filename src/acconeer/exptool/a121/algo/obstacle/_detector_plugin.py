@@ -529,6 +529,7 @@ class ViewPlugin(A121ViewPluginBase):
                 name_label_text="Max robot speed:",
                 name_label_tooltip=get_attribute_docstring(DetectorConfig, "max_robot_speed"),
                 suffix=" m/s",
+                limits=(0.001, None),
                 decimals=3,
             ),
             "profile": pidgets.EnumPidgetFactory(
