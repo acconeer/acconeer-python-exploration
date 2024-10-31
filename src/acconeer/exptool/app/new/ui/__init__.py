@@ -2,7 +2,6 @@
 # All rights reserved
 
 from . import components, icons, utils
-from .app_model_viewer import AppModelViewer
 from .components import (
     AttrsConfigEditor,
     GroupBox,
@@ -13,4 +12,3 @@ from .components import (
     TwoSensorIdsEditor,
     pidgets,
 )
-from .main_window import MainWindow

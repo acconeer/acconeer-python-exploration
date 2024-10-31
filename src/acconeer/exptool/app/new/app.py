@@ -26,7 +26,8 @@ from .app_model import AppModel
 from .backend import Backend, GenBackend, MpBackend
 from .plugin_loader import import_and_register_plugin_module, load_plugins
 from .storage import remove_config_dir, remove_temp_dir
-from .ui import AppModelViewer, MainWindow
+from .ui.app_model_viewer import AppModelViewer
+from .ui.main_window import MainWindow
 
 
 _LOG = logging.getLogger(__name__)
