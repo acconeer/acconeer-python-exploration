@@ -30,10 +30,10 @@ from uuid import UUID
 
 import attrs
 from packaging.version import Version
-from typing_extensions import Protocol
+from typing_extensions import Literal, Protocol
 
 from PySide6.QtCore import QDeadlineTimer, QEventLoop, QObject, QThread, QTimer, Signal
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QMessageBox, QWidget
 
 from acconeer.exptool import _core as core
 from acconeer.exptool import a121
@@ -65,9 +65,11 @@ from acconeer.exptool.app.new.backend import (
     _RateStats,
 )
 from acconeer.exptool.app.new.storage import get_config_dir, remove_temp_dir
+from acconeer.exptool.app.new.ui.components.data_editor import DataEditor
 
 from .plugin_protocols import PlotPluginInterface
 from .port_updater import PortUpdater
+from .replay_selection import EditConfigBeforeReplayDialog, SelectPluginToReplayInDialog
 
 
 _AnyClient = core.Client[Any, Any, Any, Any, Any]
@@ -104,6 +106,14 @@ class PluginSpec(Protocol):
     def create_view_plugin(self, app_model: AppModel) -> QWidget: ...
 
     def create_plot_plugin(self, app_model: AppModel) -> PlotPluginInterface: ...
+
+    @classmethod
+    def replay_dialog_create_config_editor(cls) -> Optional[DataEditor[Any]]: ...
+
+    @classmethod
+    def replay_dialog_get_config(
+        cls, path: Path
+    ) -> Optional[tuple[Literal["default", "loaded"], Any, Any]]: ...
 
 
 class _BackendListeningThread(QThread):
@@ -890,21 +900,75 @@ class AppModel(QObject):
             self.emit_error(HandledException("Cannot load file"))
             return
 
-        if findings.generation != PluginGeneration.A121:
-            self.emit_error(HandledException("This app can currently only load A121 files"))
+        if findings.generation == PluginGeneration.A111:
+            self.emit_error(HandledException("This app cannot load A111 files"))
             return
 
-        if findings.key is None:
-            plugin = self.find_plugin("sparse_iq", self.plugin_generation)  # noqa: F841
-        else:
-            plugin = self.find_plugin(findings.key, self.plugin_generation)
+        current_plugin_key = None if self.plugin is None else self.plugin.key
 
-            if plugin is None:
-                log.debug(f"Could not find plugin '{findings.key}'")
+        if findings.key is None or self.find_plugin(findings.key, findings.generation) is None:
+            record_key = None
+            default_selected = current_plugin_key or "sparse_iq"
+        else:
+            record_key = findings.key
+            default_selected = findings.key
+
+        d = SelectPluginToReplayInDialog(
+            plugin_options=[pi for pi in self.plugins if pi.generation == findings.generation],
+            default_selected=default_selected,
+            current_plugin_key=current_plugin_key,
+            record_key=record_key,
+        )
+        if not d.exec():  # user aborted
+            return
+
+        plugin = d.selected_plugin_option
+
+        try:
+            get_config_result = plugin.replay_dialog_get_config(path)
+        except Exception as e:
+            log.exception(e)
+            get_config_result = None
+            data_editor = None
+        else:
+            data_editor = plugin.replay_dialog_create_config_editor()
+
+        if (get_config_result is not None) and (data_editor is not None):
+            config_source, plugin_config, validating_config = get_config_result
+            data_editor.set_data(plugin_config)
+            editor_dialog = EditConfigBeforeReplayDialog(data_editor, config_source, path)
+
+            def display_validation_results_in_data_editor(unique_config: Any) -> None:
+                valres = unique_config._collect_validation_results(validating_config)
+                editor_dialog.handle_validation_results(valres)
+
+            def disable_dialog_ok_if_there_are_validation_errors(unique_config: Any) -> None:
+                valres = unique_config._collect_validation_results(validating_config)
+                editor_dialog.set_ok_enabled(len(valres) == 0)
+
+            display_validation_results_in_data_editor(plugin_config)
+            disable_dialog_ok_if_there_are_validation_errors(plugin_config)
+            data_editor.sig_update.connect(display_validation_results_in_data_editor)
+            data_editor.sig_update.connect(disable_dialog_ok_if_there_are_validation_errors)
+
+            if not editor_dialog.exec():  # user aborted
                 return
 
+            config_override = data_editor.get_data()
+        else:
+            mb = QMessageBox(
+                QMessageBox.Icon.Information,
+                "Edit unavailable",
+                "Cannot edit config before replay. Proceed to replay?",
+                QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Abort,
+            )
+            if (mb.exec() & QMessageBox.StandardButton.Ok) == 0:
+                return
+            config_override = None
+
+        self.set_plugin_generation(findings.generation)
         self.load_plugin(plugin)
-        BackendPlugin.load_from_file.rpc(self.put_task, path=path)
+        BackendPlugin.load_from_file.rpc(self.put_task, path=path, config_override=config_override)
 
     def find_plugin(self, plugin_key: str, generation: PluginGeneration) -> Optional[PluginSpec]:
         return next(
