@@ -4,6 +4,7 @@
 from . import components, icons, utils
 from .components import (
     AttrsConfigEditor,
+    DataEditor,
     GroupBox,
     JoinedPartialAttrsConfigEditors,
     MiscErrorView,
