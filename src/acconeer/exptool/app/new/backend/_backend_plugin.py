@@ -65,7 +65,13 @@ class BackendPlugin(abc.ABC, Generic[StateT]):
 
     @is_task
     @abc.abstractmethod
-    def load_from_file(self, *, path: Path) -> None:
+    def load_from_file(
+        self,
+        *,
+        path: Path,
+        config_override: Optional[Any] = None,
+        context_override: Optional[Any] = None,
+    ) -> None:
         pass
 
     @is_task

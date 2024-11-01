@@ -6,7 +6,7 @@ from __future__ import annotations
 import abc
 import logging
 from pathlib import Path
-from typing import Callable, Generic, Optional, TypeVar
+from typing import Any, Callable, Generic, Optional, TypeVar
 
 import h5py
 
@@ -50,7 +50,18 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
         self._logger = BackendLogger.getLogger(__name__)
 
     @is_task
-    def load_from_file(self, *, path: Path) -> None:
+    def load_from_file(
+        self,
+        *,
+        path: Path,
+        config_override: Optional[Any] = None,
+        context_override: Optional[Any] = None,
+    ) -> None:
+        if config_override is not None:
+            self._logger.warning(f"Ignoring config override of type: {type(config_override)}")
+        if context_override is not None:
+            self._logger.warning(f"Ignoring context override of type: {type(context_override)}")
+
         try:
             self._opened_record = a121.H5Record(h5py.File(path, mode="r"))
 
