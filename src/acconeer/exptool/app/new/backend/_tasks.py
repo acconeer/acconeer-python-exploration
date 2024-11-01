@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import types
 import typing as t
 
 import typing_extensions as te
@@ -26,8 +27,6 @@ class _TaskDescriptor(t.Generic[_P, _R]):
 
     def __set_name__(self, owner: t.Type[t.Any], name: str) -> None:
         self._task_name = name
-        self._method_name = "_task_method_" + name
-        setattr(owner, self._method_name, self._method)
 
     @t.overload
     def __get__(self, obj: None, objtype: t.Any = ...) -> te.Self: ...
@@ -42,9 +41,8 @@ class _TaskDescriptor(t.Generic[_P, _R]):
         if obj is None:
             return self
         else:
-            method = getattr(obj, self._method_name)
-            bound_method = method.__get__(obj, objtype)
-            return bound_method  # type: ignore[no-any-return]
+            bound_method = types.MethodType(self._method, obj)
+            return bound_method
 
     def rpc(self, task_sender: _TaskSender, *args: _P.args, **kwargs: _P.kwargs) -> None:
         if self._task_name is None:
