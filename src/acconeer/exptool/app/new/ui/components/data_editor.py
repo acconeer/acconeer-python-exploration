@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -7,6 +7,8 @@ import typing as t
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QWidget
+
+from acconeer.exptool._core.entities.validation_result import ValidationResult
 
 
 _DataT = t.TypeVar("_DataT")
@@ -30,6 +32,15 @@ class DataEditor(t.Generic[_DataT], QWidget):
 
     def setEnabled(self, enabled: bool) -> None:
         super().setEnabled(enabled and self.get_data() is not None)
+
+    def handle_validation_results(
+        self, validation_results: list[ValidationResult]
+    ) -> list[ValidationResult]:
+        """Handles validation results by displaying them in the editor in some way.
+
+        Returns ValidationResults that could not be handled.
+        """
+        raise NotImplementedError
 
     @property
     def is_ready(self) -> bool:
