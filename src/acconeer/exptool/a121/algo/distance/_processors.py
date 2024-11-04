@@ -719,15 +719,19 @@ class Processor(ProcessorBase[ProcessorResult]):
 
         threshold = []
         for distance_m in distances_m:
-            subsweep_idx = np.sum(bpts_m < distance_m) - 1
-            sigma = bg_noise_std[subsweep_idx]
-            hwaas = subsweeps[subsweep_idx].hwaas
+            if distance_m > 0.0:
+                subsweep_idx = np.sum(bpts_m < distance_m) - 1
+                sigma = bg_noise_std[subsweep_idx]
+                hwaas = subsweeps[subsweep_idx].hwaas
 
-            n_db = 20 * np.log10(sigma)
-            r_db = reflector_shape.exponent * 10 * np.log10(distance_m)
-            rlg_db = RLG_PER_HWAAS_MAP[profile] + 10 * np.log10(hwaas)
+                n_db = 20 * np.log10(sigma)
+                r_db = reflector_shape.exponent * 10 * np.log10(distance_m)
+                rlg_db = RLG_PER_HWAAS_MAP[profile] + 10 * np.log10(hwaas)
 
-            threshold.append(10 ** ((processing_gain_db + n_db + rlg_db - r_db + strength) / 20))
+                thold_element = 10 ** ((processing_gain_db + n_db + rlg_db - r_db + strength) / 20)
+                threshold.append(thold_element)
+            else:
+                threshold.append(0.0)
 
         return np.array(threshold)
 
