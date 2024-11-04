@@ -1066,10 +1066,17 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
     @classmethod
     def _m_to_points(cls, breakpoints_m: list[float], step_length: int) -> list[int]:
         bpts_m = np.array(breakpoints_m)
-        start_point = int(bpts_m[0] / APPROX_BASE_STEP_LENGTH_M)
-        num_steps = (bpts_m[-1] - bpts_m[0]) / (APPROX_BASE_STEP_LENGTH_M)
-        bpts = num_steps / (bpts_m[-1] - bpts_m[0]) * (bpts_m - bpts_m[0]) + start_point
-        return [(round(bpt) // step_length) * step_length for bpt in bpts]
+        start_point_m = bpts_m[0]
+        start_point_p = int(start_point_m / APPROX_BASE_STEP_LENGTH_M)
+
+        breakpoint_offsets_p_fractional = (bpts_m - start_point_m) / APPROX_BASE_STEP_LENGTH_M
+        breakpoints_p_fractional = breakpoint_offsets_p_fractional + start_point_p
+
+        return (  # type: ignore[no-any-return]
+            ((np.round(breakpoints_p_fractional) // step_length) * step_length)
+            .astype(int)
+            .tolist()
+        )
 
     def _add_context_to_processor_spec(self) -> dict[int, list[ProcessorSpec]]:
         """

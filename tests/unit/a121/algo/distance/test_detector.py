@@ -1,5 +1,10 @@
 # Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
+from __future__ import annotations
+
+import typing as t
+
+import pytest
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121.algo import distance, select_prf
@@ -65,3 +70,12 @@ def test_limit_step_length() -> None:
         profile=profile, user_limit=None
     )
     assert actual_step_length_no_user_limit == 12
+
+
+def test_should_be_able_to_set_start_m_equals_end_m() -> None:
+    config = distance.DetectorConfig(start_m=0.8, end_m=0.8)
+    client: t.Any = None
+    try:
+        distance.Detector(client=client, sensor_ids=[1], detector_config=config, context=None)
+    except Exception:
+        pytest.fail("Should not raise Exception")
