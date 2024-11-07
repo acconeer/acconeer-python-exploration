@@ -59,6 +59,7 @@ from acconeer.exptool.app.new.ui.components.json_save_load_buttons import (
 
 from . import _pidget_mapping
 from ._configs import get_high_accuracy_detector_config
+from ._context import detector_context_timeline
 from ._detector import (
     DetailedStatus,
     Detector,
@@ -108,10 +109,6 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
 
         self.restore_defaults()
 
-    def _load_from_cache(self, file: h5py.File) -> None:
-        self.shared_state.config = DetectorConfig.from_json(file["config"][()])
-        self.shared_state.context = opser.deserialize(file["context"], DetectorContext)
-
     @is_task
     def restore_defaults(self) -> None:
         self.shared_state = SharedState()
@@ -149,6 +146,10 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
         _create_h5_string_dataset(file, "config", self.shared_state.config.to_json())
         context_group = file.create_group("context")
         opser.serialize(self.shared_state.context, context_group)
+
+    def _load_from_cache(self, file: h5py.File) -> None:
+        self.shared_state.config = DetectorConfig.from_json(file["config"][()])
+        self.shared_state.context = detector_context_timeline.migrate(file["context"])
 
     def load_from_record_setup(self, *, record: a121.H5Record) -> None:
         algo_group = record.get_algo_group(self.key)

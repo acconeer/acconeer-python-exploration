@@ -398,7 +398,9 @@ def _get_group_items(group: h5py.Group) -> list[npt.NDArray[Any]]:
 
 @attrs.mutable(kw_only=True)
 class _DetectorContext_v0(AlgoBase):
-    single_sensor_contexts: Dict[int, _SingleSensorContext_v0] = attrs.field(default=None)
+    single_sensor_contexts: Optional[Dict[int, _SingleSensorContext_v0]] = attrs.field(
+        default=None
+    )
     _GROUP_NAME = "sensor_id_"
 
     @property
@@ -452,6 +454,9 @@ class _DetectorContext_v0(AlgoBase):
         return noise_session_config
 
     def migrate(self) -> DetectorContext:
+        if not self.single_sensor_contexts:
+            return DetectorContext()
+
         base_step_length_m = 0.00250227400101721
         has_close_range = any(
             [
