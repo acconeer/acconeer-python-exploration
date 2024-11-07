@@ -16,7 +16,7 @@ Inter-frame presence -- detecting (slower) movements *between* frames
    By weighting the phase shift with the mean amplitude value, the detection of slow moving objects will increase.
 
 
-Both the inter- and the intra-frame deviations are filtered both in time and depth. Also, to be more robust against changing environments and variations between sensors, normalization is done against the noise floor.
+Both the inter- and the intra-frame deviations are filtered in time. Also, to be more robust against changing environments and variations between sensors, normalization is done against the noise floor.
 Finally, the output from each part is the maximum value in the measured range.
 
 Presence detected is defined as either inter- or intra-frame detector having a presence score above chosen thresholds.
@@ -173,7 +173,7 @@ parameter.
 
 The relationship between time constant and smoothing factor is described under :ref:`smoothing-factors`.
 
-The intra-frame deviation is normalized with a noise estimate and, when appropriate, a depth filter is applied, both are discussed in later sections.
+The intra-frame deviation is normalized with a noise estimate.
 
 Inter-frame detection basis
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -187,7 +187,7 @@ Let the *absolute mean sweep* be denoted as
 .. math::
    y(f, d) = |\frac{1}{N_s} \sum_s x(f, s, d)|
 
-We take the mean sweep :math:`y` and depth-wise run it though two `exponential smoothing` filters (first order IIR low pass filters).
+We take the mean sweep :math:`y` and depth-wise run it through two `exponential smoothing` filters (first order IIR low pass filters).
 One slower filter with a larger smoothing factor, and one faster filter with a smaller smoothing factor.
 Let :math:`\alpha_\text{fast}` and :math:`\alpha_\text{slow}` be the smoothing factors and :math:`\bar{y}_\text{fast}` and :math:`\bar{y}_\text{slow}` be the filtered sweep means.
 For every depth :math:`d` in every new frame :math:`f`:
@@ -214,7 +214,7 @@ to get a more stable metric:
    \bar{s}_\text{inter_dev}(f, d) = \alpha_\text{inter_dev} \cdot \bar{s}_\text{inter_dev}(f-1, d) + (1 - \alpha_\text{inter_dev}) \cdot s_\text{inter_dev}(f, d)
 
 This is the basis of the inter-frame presence detection.
-As with the intra-frame deviation, it's favorable to normalize this with the noise floor and, if relevant, apply a depth filter. Both are discussed in later sections.
+As with the intra-frame deviation, it's favorable to normalize this with the noise floor.
 
 Inter-frame phase boost
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -312,35 +312,10 @@ Both the intra-frame deviation, :math:`\bar{s}_\text{intra_dev}(f, d)`, and the 
       \bar{n}(f, d)
    }
 
-Depth filtering
-^^^^^^^^^^^^^^^
-
-If we choose profile and step length in a way that the reflection spans several depth points, we apply a depth filter with length :math:`n` on both the noise normalized intra-frame deviation,
-and the noise normalized inter-frame deviation. If the depth filter length is odd we have:
-
-.. math::
-   n' = \frac{n - 1}{2}
-
-.. math::
-   z(f, d) = \frac{1}{2n' + 1} \sum_{i=-n'}^{n'} \bar{s}(f, d + i)
-
-and if the depth filter length is even we have:
-
-.. math::
-   n' = \frac{n}{2}
-
-.. math::
-   z(f, d) = \frac{1}{2n'} \sum_{i=-n'}^{n' - 1} \bar{s}(f, d + i)
-
-where the signal :math:`\bar{s}` is zero-padded, i.e.:
-
-.. math::
-   \bar{s}(f, d) = 0 \text{ for } d < 1 \text{ or } d > N_d
-
 Output and distance estimation
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The outputs from the noise normalized and depth filtered intra-frame deviation and inter-frame deviation are the maximum scores of the respective deviation:
+The outputs from the noise normalized intra-frame deviation and inter-frame deviation are the maximum scores of the respective deviation:
 
 .. math::
    v(f) = \max_d(z(f, d))
