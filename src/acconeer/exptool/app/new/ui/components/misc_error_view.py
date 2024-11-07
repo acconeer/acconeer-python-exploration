@@ -7,17 +7,24 @@ from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from acconeer.exptool._core.entities.validation_result import Criticality, ValidationResult
 
+from .group_box import GroupBox
 
-class MiscErrorView(QWidget):
+
+class MiscErrorView(GroupBox[QVBoxLayout]):
     def __init__(self, parent: QWidget) -> None:
-        super().__init__(parent)
+        super().__init__(
+            left_header="Miscellaneous Errors",
+            layout_type=QVBoxLayout,
+            parent=parent,
+        )
 
-        self.setLayout(QVBoxLayout(self))
-        self.layout().setContentsMargins(0, 0, 0, 0)
+        self.setVisible(False)
 
     def handle_validation_results(
         self, validation_results: list[ValidationResult]
     ) -> list[ValidationResult]:
+        self.setVisible(len(validation_results) > 0)
+
         COLOR_MAP = {
             Criticality.ERROR: "#E6635A",
             Criticality.WARNING: "#FCC842",
