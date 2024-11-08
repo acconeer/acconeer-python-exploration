@@ -1,5 +1,12 @@
 # Changelog
 
+## v7.13.0
+
+### Changed
+- Distance: Use a more narrow filter for distance filter
+- Distance: Reduce order of Butterworth distance filter
+- Distance: Update CFAR threshold to be one-sided close to the sensor
+
 ## v7.12.2
 
 - Don't use PySide6==6.8 as it does not work properly.
