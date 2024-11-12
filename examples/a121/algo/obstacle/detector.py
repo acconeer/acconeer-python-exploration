@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
 from __future__ import annotations
@@ -53,8 +53,6 @@ def main():
 
     # Configure the detector using multiple subsweeps
     detector_config = DetectorConfig(
-        enable_bilateration=(len(SENSOR_IDS) == 2),
-        bilateration_sensor_spacing_m=0.1,
         num_mean_threshold=1.5,
         num_std_threshold=4,
         subsweep_configurations=subsweep_configurations,
@@ -68,7 +66,6 @@ def main():
     pg_updater = PGUpdater(
         num_sensors=len(SENSOR_IDS),
         num_subsweeps=len(subsweep_configurations),
-        enable_bilateration=detector_config.enable_bilateration,
     )
 
     pg_process = et.PGProcess(pg_updater)
@@ -99,10 +96,9 @@ PLOT_THRESHOLDS = True
 
 
 class PGUpdater:
-    def __init__(self, num_sensors, num_subsweeps, enable_bilateration):
+    def __init__(self, num_sensors, num_subsweeps):
         self.num_sensors = num_sensors
         self.num_subsweeps = num_subsweeps
-        self.enable_bilateration = enable_bilateration
         self.obst_vel_ys = num_sensors * [np.nan * np.ones(PLOT_HISTORY_FRAMES)]
         self.obst_dist_ys = num_sensors * [np.nan * np.ones(PLOT_HISTORY_FRAMES)]
         self.obst_bil_ys = np.nan * np.ones(PLOT_HISTORY_FRAMES)
@@ -241,22 +237,6 @@ class PGUpdater:
             sublayout.layout.setColumnStretchFactor(0, self.num_subsweeps)
             sublayout.addItem(self.range_hist, row=0, col=0)
 
-        if self.enable_bilateration:
-            self.bil_hist_plot = pg.PlotItem(title="Bilateration history")
-
-            self.bil_hist_plot.showGrid(x=True, y=True)
-            self.bil_hist_plot.setLabel("bottom", "Time (frames)")
-            self.bil_hist_plot.setLabel("left", "Bilateration angle (deg)")
-            self.bil_hist_plot.setXRange(-100, 0)
-            self.bil_hist_plot.setYRange(-90, 90)
-            self.bil_hist_plot.addLegend()
-
-            self.bil_hist_curve = self.bil_hist_plot.plot(pen=et.utils.pg_pen_cycler(1))
-
-            sublayout = win.addLayout(row=3 + row_offset, col=0, colspan=2 * self.num_subsweeps)
-            sublayout.layout.setColumnStretchFactor(0, 2 * self.num_subsweeps)
-            sublayout.addItem(self.bil_hist_plot, row=0, col=0)
-
     def update(self, detector_result: DetectorResult):
         for i_s in range(self.num_sensors):
             pr = detector_result.processor_results[SENSOR_IDS[i_s]]
@@ -329,22 +309,6 @@ class PGUpdater:
                 self.range_hist_curves[i_s].setData(
                     self.hist_x, self.obst_dist_ys[i_s], connect="finite"
                 )
-
-        if self.enable_bilateration:
-            beta = (
-                detector_result.bilateration_result.beta_degs[0]
-                if detector_result.bilateration_result.beta_degs
-                else np.nan
-            )
-
-            self.obst_bil_ys = np.roll(self.obst_bil_ys, -1)
-            self.obst_bil_ys[-1] = beta
-
-            if np.isnan(self.obst_bil_ys).all():
-                self.bil_hist_curve.setVisible(False)
-            else:
-                self.bil_hist_curve.setVisible(True)
-                self.bil_hist_curve.setData(self.hist_x, self.obst_bil_ys, connect="finite")
 
 
 if __name__ == "__main__":
