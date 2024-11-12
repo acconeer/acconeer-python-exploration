@@ -157,3 +157,4 @@
 "detectors/a121/presence_detection.rst" "detectors/a121/presence_detector.rst"
 "detectors/a121/distance_detection.rst" "detectors/a121/distance_detector.rst"
 "detectors/a121/speed_detection.rst" "detectors/a121/speed_detector.rst"
+"exploration_tool/example_scripts/python_api/examples-a121-stress.rst" "removed.rst"
