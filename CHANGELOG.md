@@ -1,5 +1,10 @@
 # Changelog
 
+## v7.13.1
+
+### Changed
+- A121: Update SDK version
+
 ## v7.13.0
 
 ### Changed
