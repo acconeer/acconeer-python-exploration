@@ -144,6 +144,39 @@ class ExampleAppConfig(AlgoConfigBase):
             np.around(optimal_point - np.floor((self.num_points - 1) / 2) * self.step_length)
         )
 
+        end_point = start_point + (self.num_points - 1) * self.step_length
+
+        if end_point * APPROX_BASE_STEP_LENGTH_M > a121.PRF.PRF_5_2_MHz.mmd:
+            msg = "The required measurable distance exceeds maximum measureable distance. Decrease surface distance, sensor angle, number of distance points or step length."
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "surface_distance",
+                    msg,
+                )
+            )
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "sensor_angle",
+                    msg,
+                )
+            )
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "num_points",
+                    msg,
+                )
+            )
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "step_length",
+                    msg,
+                )
+            )
+
         if start_point * APPROX_BASE_STEP_LENGTH_M <= self.surface_distance:
             validation_results.append(
                 a121.ValidationError(

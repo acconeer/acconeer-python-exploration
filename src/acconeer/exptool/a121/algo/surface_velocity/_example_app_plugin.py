@@ -559,13 +559,16 @@ class ViewPlugin(A121ViewPluginBase):
 
             results = state.config._collect_validation_results()
 
+            config_valid = not results
+
             not_handled = self.config_editor.handle_validation_results(results)
 
             not_handled = self.misc_error_view.handle_validation_results(not_handled)
 
             assert not_handled == []
 
-            self.range_helper.set_data(ExampleApp._get_sensor_config(state.config).subsweep)
+            if config_valid:
+                self.range_helper.set_data(ExampleApp._get_sensor_config(state.config).subsweep)
 
     def on_app_model_update(self, app_model: AppModel) -> None:
         self.sensor_id_pidget.set_selectable_sensors(app_model.connected_sensors)
