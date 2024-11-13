@@ -59,6 +59,11 @@ Python related
 
    Downloading the latest binary depends on the Acconeer developer site. Update to latest version of Exploration Tool.
 
+#) Cannot unpack GitHub zip on Windows
+
+   The root issue is the ``MAX_PATH`` setting on the Windows platform.
+   Try unzipping the zip in a place that's not at deep in your folder structure. To your **Desktop**, for example.
+
 Sensor related
 --------------
 
