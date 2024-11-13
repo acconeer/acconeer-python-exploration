@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2024
 # All rights reserved
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ class ProcessorWrapper:
         return ResultSlice.from_processor_result(self.processor.process(result))
 
 
-def touchless_button_wrapper(record: a121.H5Record) -> ProcessorWrapper:
+def touchless_button_processor(record: a121.H5Record) -> ProcessorWrapper:
     algo_group = record.get_algo_group("touchless_button")
     processor_config = touchless_button.ProcessorConfig.from_json(
         algo_group["processor_config"][()]

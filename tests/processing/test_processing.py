@@ -32,7 +32,13 @@ AlgorithmFactory = t.Callable[[a121.H5Record], t.Any]
 
 
 def get_output_path(input_path: Path, algorithm_name: str) -> Path:
-    output_file_name = f"{input_path.stem}-{algorithm_name}-output.h5"
+    algo_parts_not_in_input_file = [
+        part for part in algorithm_name.split("_") if part not in input_path.name
+    ]
+    if len(algo_parts_not_in_input_file) == 0:
+        output_file_name = input_path.name
+    else:
+        output_file_name = f"{input_path.stem}-{'_'.join(algo_parts_not_in_input_file)}.h5"
     data_files_dir = input_path.parent / ".."
 
     return data_files_dir / "expected_output" / output_file_name
@@ -61,42 +67,42 @@ def input_path(resource_name: str) -> Path:
         (
             parking_test.parking_default,
             t.List[parking_test.ResultSlice],
-            "input-parking_ground_default.h5",
+            "parking_ground_default.h5",
         ),
         (
             parking_test.parking_default,
             t.List[parking_test.ResultSlice],
-            "input-parking_pole.h5",
+            "parking_pole.h5",
         ),
         (
             presence_test.presence_default,
             t.List[presence_test.ProcessorResultSlice],
-            "input-frame_rate_10Hz-sweeps_per_frame_4.h5",
+            "fr10Hz-spf4.h5",
         ),
         (
             presence_test.presence_default,
             t.List[presence_test.ProcessorResultSlice],
-            "input-presence-default.h5",
+            "presence-default.h5",
         ),
         (
             presence_test.presence_short_range,
             t.List[presence_test.ProcessorResultSlice],
-            "input-presence-short_range.h5",
+            "presence-short_range.h5",
         ),
         (
             presence_test.presence_long_range,
             t.List[presence_test.ProcessorResultSlice],
-            "input-presence-long_range.h5",
+            "presence-long_range.h5",
         ),
         (
             presence_test.presence_low_power,
             t.List[presence_test.ProcessorResultSlice],
-            "input-presence-low_power.h5",
+            "presence-low_power.h5",
         ),
         (
             presence_test.presence_medium_range_phase_boost_no_timeout,
             t.List[presence_test.ProcessorResultSlice],
-            "input-presence-medium_range_phase_boost_no_timeout.h5",
+            "presence-medium_range_phase_boost_no_timeout.h5",
         ),
         (
             distance_test.distance_processor,
@@ -106,27 +112,27 @@ def input_path(resource_name: str) -> Path:
         (
             distance_test.distance_detector,
             t.List[distance_test.ResultSlice],
-            "input-distance-detector-5_to_10cm.h5",
+            "distance-5to10.h5",
         ),
         (
             distance_test.distance_detector,
             t.List[distance_test.ResultSlice],
-            "input-distance-detector-5_to_20cm.h5",
+            "distance-5to20.h5",
         ),
         (
             distance_test.distance_detector,
             t.List[distance_test.ResultSlice],
-            "input-distance-detector-200_to_400cm.h5",
+            "distance-200to400.h5",
         ),
         (
             distance_test.distance_detector,
             t.List[distance_test.ResultSlice],
-            "input-distance-detector-5_to_200_cm_close_range_cancellation_disabled.h5",
+            "distance-5to200_no_cr_cancel.h5",
         ),
         (
             distance_test.distance_detector,
             t.List[distance_test.ResultSlice],
-            "input-distance-detector-5_to_200_cm_p1_close_range_cancellation_disabled.h5",
+            "distance-5to200_p1_no_cr_cancel.h5",
         ),
         (
             distance_test.distance_detector,
@@ -159,29 +165,29 @@ def input_path(resource_name: str) -> Path:
             "small_tank.h5",
         ),
         (
-            touchless_button_test.touchless_button_wrapper,
+            touchless_button_test.touchless_button_processor,
             t.List[touchless_button_test.ResultSlice],
-            "input-touchless_button_default.h5",
+            "touchless_button_default.h5",
         ),
         (
-            touchless_button_test.touchless_button_wrapper,
+            touchless_button_test.touchless_button_processor,
             t.List[touchless_button_test.ResultSlice],
-            "input-touchless_button_both_ranges.h5",
+            "touchless_button_both_ranges.h5",
         ),
         (
-            touchless_button_test.touchless_button_wrapper,
+            touchless_button_test.touchless_button_processor,
             t.List[touchless_button_test.ResultSlice],
-            "input-touchless_button_patience.h5",
+            "touchless_button_patience.h5",
         ),
         (
-            touchless_button_test.touchless_button_wrapper,
+            touchless_button_test.touchless_button_processor,
             t.List[touchless_button_test.ResultSlice],
-            "input-touchless_button_sensitivity.h5",
+            "touchless_button_sensitivity.h5",
         ),
         (
-            touchless_button_test.touchless_button_wrapper,
+            touchless_button_test.touchless_button_processor,
             t.List[touchless_button_test.ResultSlice],
-            "input-touchless_button_calibration.h5",
+            "touchless_button_calibration.h5",
         ),
         (
             breathing_test.breathing_controller,
@@ -196,17 +202,17 @@ def input_path(resource_name: str) -> Path:
         (
             surface_velocity_test.surface_velocity_controller,
             t.List[surface_velocity_test.ResultSlice],
-            "input_surface_velocity_1_dist.h5",
+            "surface_velocity_1_dist.h5",
         ),
         (
             surface_velocity_test.surface_velocity_controller,
             t.List[surface_velocity_test.ResultSlice],
-            "input_surface_velocity_4_dist.h5",
+            "surface_velocity_4_dist.h5",
         ),
         (
             surface_velocity_test.surface_velocity_controller,
             t.List[surface_velocity_test.ResultSlice],
-            "input_surface_velocity_default.h5",
+            "surface_velocity_default.h5",
         ),
         (
             vibration_test.vibration_controller,
@@ -221,27 +227,27 @@ def input_path(resource_name: str) -> Path:
         (
             waste_level_test.waste_level_processor,
             t.List[waste_level_test.ResultSlice],
-            "input-waste-level-empty.h5",
+            "waste-level-empty.h5",
         ),
         (
             waste_level_test.waste_level_processor,
             t.List[waste_level_test.ResultSlice],
-            "input-waste-level-25-percent.h5",
+            "waste-level-25-percent.h5",
         ),
         (
             waste_level_test.waste_level_processor,
             t.List[waste_level_test.ResultSlice],
-            "input-waste-level-75-percent.h5",
+            "waste-level-75-percent.h5",
         ),
         (
             waste_level_test.waste_level_processor,
             t.List[waste_level_test.ResultSlice],
-            "input-waste-level-full.h5",
+            "waste-level-full.h5",
         ),
         (
             waste_level_test.waste_level_processor,
             t.List[waste_level_test.ResultSlice],
-            "input-waste-level-missing-level.h5",
+            "waste-level-missing-level.h5",
         ),
         (
             hand_motion_test.hand_motion_app,
