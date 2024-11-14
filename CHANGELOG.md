@@ -1,5 +1,11 @@
 # Changelog
 
+## v7.13.2
+
+### Fixed
+- A121: Validate maximum end range on surface velocity
+- A121 Distance Detector/Tank Level: Resolve issues with cache loading
+
 ## v7.13.1
 
 ### Changed
@@ -14,6 +20,7 @@
 
 ## v7.12.2
 
+### Fixed
 - Don't use PySide6==6.8 as it does not work properly.
 
 ## v7.12.1

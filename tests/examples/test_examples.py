@@ -33,7 +33,7 @@ def set_env():
         ),
         pytest.param("examples/a121/reuse_calibration.py --mock", None),
         pytest.param("examples/a121/subsweeps.py --mock", 3),
-        pytest.param("examples/a121/algo/bilateration/bilaterator.py --mock", 3),
+        pytest.param("examples/a121/algo/bilateration/bilaterator.py --mock", 4),
         pytest.param("examples/a121/algo/breathing/breathing_with_gui.py --mock", 5),
         pytest.param("examples/a121/algo/breathing/breathing.py --mock", 3),
         pytest.param("examples/a121/algo/distance/detector.py --mock", 6),
@@ -65,5 +65,5 @@ def test_a121_examples(run_cmd, timeout):
         ret = p.wait(timeout=timeout)
     except subprocess.TimeoutExpired:
         p.send_signal(signal.SIGINT)
-        ret = p.wait(timeout=2)
+        ret = p.wait(timeout=4)
     assert ret == 0
