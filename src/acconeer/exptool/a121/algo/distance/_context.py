@@ -39,7 +39,7 @@ class DetectorContext(AlgoBase):
     recorded_threshold_calibration: Optional[RecordedThresholdCalibration] = attrs.field(
         default=None
     )
-    sensor_ids: List[int] = attrs.field(default=[])
+    sensor_ids: List[int] = attrs.field(factory=list)
     session_config_used_during_calibration: Optional[a121.SessionConfig] = attrs.field(
         default=None
     )
