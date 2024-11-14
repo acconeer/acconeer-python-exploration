@@ -1,10 +1,21 @@
 # Copyright (c) Acconeer AB, 2024
 # All rights reserved
 
+import os
 import signal
 import subprocess
 
 import pytest
+
+
+@pytest.fixture(scope="session", autouse=True)
+def set_env():
+    if "QT_QPA_PLATFORM" not in os.environ:
+        os.environ["QT_QPA_PLATFORM"] = "offscreen"
+        yield
+        del os.environ["QT_QPA_PLATFORM"]
+    else:
+        yield
 
 
 @pytest.mark.parametrize(
@@ -39,9 +50,9 @@ import pytest
         pytest.param("examples/a121/algo/speed/processor.py --mock", 5),
         pytest.param("examples/a121/algo/surface_velocity/example_app.py --mock", 3),
         pytest.param("examples/a121/algo/surface_velocity/processor.py --mock", 4),
-        pytest.param("examples/a121/algo/tank_level/tank_level_with_gui.py --mock", 4),
-        pytest.param("examples/a121/algo/tank_level/tank_level.py --mock", 4),
-        pytest.param("examples/a121/algo/touchless_button/processor.py --mock", 3),
+        pytest.param("examples/a121/algo/tank_level/tank_level_with_gui.py --mock", 5),
+        pytest.param("examples/a121/algo/tank_level/tank_level.py --mock", 5),
+        pytest.param("examples/a121/algo/touchless_button/processor.py --mock", 4),
         pytest.param("examples/a121/algo/vibration/example_app.py --mock", 3),
         pytest.param("examples/a121/algo/vibration/processor.py --mock", 3),
         pytest.param("examples/a121/algo/waste_level/processor.py --mock", 3),

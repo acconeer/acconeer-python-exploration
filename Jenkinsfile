@@ -208,7 +208,7 @@ try {
                     buildDocker(path: 'docker').inside(dockerArgs(env)) {
                         isolatedTestPythonVersions.each { v -> sh "python${v} -V" }
                         String versionSelection = "-py=" + isolatedTestPythonVersions.join(",")
-                        hatchWrap "test ${versionSelection} --parallel tests/unit tests/processing tests/app src/acconeer/exptool"
+                        hatchWrap "test ${versionSelection} --parallel tests/unit tests/processing tests/app src/acconeer/exptool tests/examples"
                     }
                 }
             }
