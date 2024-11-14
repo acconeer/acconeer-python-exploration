@@ -10,6 +10,7 @@ import warnings
 import attrs
 from attributes_doc import attributes_doc
 
+from acconeer.exptool import opser
 from acconeer.exptool._core.class_creation.formatting import pretty_dict_line_strs
 from acconeer.exptool._core.entities.validation_result import (
     ValidationError,
@@ -295,3 +296,6 @@ class SubsweepConfig:
 
     def __str__(self) -> str:
         return "\n".join(self._pretty_str_lines())
+
+
+opser.register_json_presentable(SubsweepConfig)

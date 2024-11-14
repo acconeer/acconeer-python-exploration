@@ -44,9 +44,6 @@ from ._processors import (
 )
 
 
-opser.register_json_presentable(a121.SessionConfig)
-
-
 @attrs.mutable(kw_only=True)
 class DetectorContext(AlgoBase):
     single_sensor_contexts: Dict[int, SingleSensorContext] = attrs.field(factory=dict)

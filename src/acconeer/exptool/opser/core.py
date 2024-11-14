@@ -120,7 +120,7 @@ class Persistor(abc.ABC):
                 raise LoadError
 
         return type(
-            f"GeneratedPersistor_JsonPresentable_{presentable_type.__name__}",
+            f"GeneratedPersistor_JsonPresentable_{presentable_type.__name__}_{hash(presentable_type)}",
             (Persistor,),
             {
                 "is_applicable": classmethod(_is_applicable),

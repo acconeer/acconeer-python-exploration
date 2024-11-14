@@ -9,6 +9,7 @@ from typing import Any, List, Optional, TypeVar
 
 import numpy as np
 
+from acconeer.exptool import opser
 from acconeer.exptool._core.class_creation.descriptors import Descriptor, delegate_field
 from acconeer.exptool._core.class_creation.formatting import pretty_dict_line_strs
 from acconeer.exptool._core.entities.validation_result import (
@@ -595,3 +596,6 @@ class SensorConfig:
             + f"inter_sweep_idle_state={self.inter_sweep_idle_state}"
             + ")"
         )
+
+
+opser.register_json_presentable(SensorConfig)

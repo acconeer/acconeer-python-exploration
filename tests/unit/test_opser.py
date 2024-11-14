@@ -42,10 +42,6 @@ from acconeer.exptool.opser.registry_persistor import RegistryPersistor
 _T = t.TypeVar("_T")
 
 
-opser.register_json_presentable(a121.SessionConfig)
-opser.register_json_presentable(a121.SensorConfig)
-
-
 def _list(element_type: type, length: int = 3) -> t.List[t.Any]:
     """Helper function for mock data. returns a list with elements of type `element_type`"""
     return [element_type(random()) for _ in range(length)]
@@ -679,6 +675,23 @@ def test_registering_persistors_is_idempotent() -> None:
     opser.register_json_presentable(a121.SessionConfig)
 
     assert original_registry_size == RegistryPersistor.registry_size()
+
+
+class SessionConfig:
+    def to_json(self) -> str:
+        return ""
+
+    @classmethod
+    def from_json(cls, json_str: str) -> "SessionConfig":
+        return cls()
+
+
+def test_registering_json_presentable_with_same_name_does_not_overwrite() -> None:
+    original_registry_size = RegistryPersistor.registry_size()
+
+    opser.register_json_presentable(SessionConfig)
+
+    assert original_registry_size < RegistryPersistor.registry_size()
 
 
 def test_ragged_numpy_array_persistor_should_not_be_able_to_store_mutlidim_ragged_arrays(

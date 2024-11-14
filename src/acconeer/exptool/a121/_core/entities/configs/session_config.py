@@ -9,6 +9,7 @@ from typing import Any, Optional, Union
 
 import numpy as np
 
+from acconeer.exptool import opser
 from acconeer.exptool._core.class_creation.formatting import pretty_dict_line_strs
 from acconeer.exptool._core.entities.validation_result import (
     ValidationError,
@@ -337,3 +338,6 @@ def _validate_groups_structure(groups: list[dict[int, SensorConfig]]) -> None:
 
             if not isinstance(entry, SensorConfig):
                 raise ValueError
+
+
+opser.register_json_presentable(SessionConfig)

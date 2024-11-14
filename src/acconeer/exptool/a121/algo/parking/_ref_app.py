@@ -33,9 +33,6 @@ from acconeer.exptool.a121.algo.parking._processors import (
 )
 
 
-opser.register_json_presentable(a121.SensorConfig)
-
-
 class DetailedStatus(enum.Enum):
     OK = enum.auto()
     CALIBRATION_MISSING = enum.auto()
