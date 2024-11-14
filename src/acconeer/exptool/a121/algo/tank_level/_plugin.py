@@ -36,6 +36,7 @@ from acconeer.exptool.a121.algo.tank_level._ref_app import (
     RefAppContext,
     RefAppResult,
     _load_algo_data,
+    ref_app_context_timeline,
 )
 from acconeer.exptool.app.new import (
     AppModel,
@@ -123,7 +124,7 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
 
     def _load_from_cache(self, file: h5py.File) -> None:
         self.shared_state.config = RefAppConfig.from_json(file["config"][()])
-        self.shared_state.context = opser.deserialize(file["context"], RefAppContext)
+        self.shared_state.context = ref_app_context_timeline.migrate(file["context"])
 
     @is_task
     def restore_defaults(self) -> None:
