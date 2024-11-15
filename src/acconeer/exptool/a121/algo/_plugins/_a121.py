@@ -99,7 +99,7 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
                 self._load_from_cache(f)
         except FileNotFoundError:
             pass
-        except KeyError:
+        except Exception:
             log.warning("Cache file loading failed, using defaults")
             self.restore_defaults()
 
