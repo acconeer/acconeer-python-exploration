@@ -213,7 +213,9 @@ try {
                         // Some test script are multi processed, we've seen issues with
                         // the second plot process hanging (when running in parallel).
                         // Run these sequentially until we have a better solution.
-                        hatchWrap "test ${versionSelection} tests/examples"
+                        //
+                        // Still issues when running tests sequentially, add a single retry
+                        hatchWrap "test ${versionSelection} --retries 1 tests/examples"
                     }
                 }
             }
