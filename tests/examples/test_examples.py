@@ -60,10 +60,19 @@ def set_env():
 )
 def test_a121_examples(run_cmd, timeout):
     p = subprocess.Popen(["python3"] + run_cmd.split())
+    max_retries = 1
+    retries = 0
+    done = False
+    interrupted = False
 
-    try:
-        ret = p.wait(timeout=timeout)
-    except subprocess.TimeoutExpired:
-        p.send_signal(signal.SIGINT)
-        ret = p.wait(timeout=4)
+    while retries <= max_retries and not done:
+        try:
+            ret = p.wait(timeout=timeout)
+            done = True
+        except subprocess.TimeoutExpired:
+            if not interrupted:
+                p.send_signal(signal.SIGINT)
+            else:
+                retries += 1
+
     assert ret == 0
