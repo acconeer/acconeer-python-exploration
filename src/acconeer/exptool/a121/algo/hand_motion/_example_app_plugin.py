@@ -17,6 +17,7 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool import a121, opser
+from acconeer.exptool._core.docstrings import get_attribute_docstring
 from acconeer.exptool.a121.algo._plugins import (
     A121BackendPluginBase,
     A121ViewPluginBase,
@@ -385,12 +386,18 @@ class ViewPlugin(A121ViewPluginBase):
         return {
             "hand_detection_timeout": pidgets.FloatPidgetFactory(
                 name_label_text="Hand motion timeout limit:",
+                name_label_tooltip=get_attribute_docstring(
+                    ModeHandlerConfig, "hand_detection_timeout"
+                ),
                 limits=(0, None),
                 decimals=1,
                 suffix="s",
             ),
             "use_presence_detection": pidgets.CheckboxPidgetFactory(
-                name_label_text="Enable low-power mode"
+                name_label_text="Enable low-power mode",
+                name_label_tooltip=get_attribute_docstring(
+                    ModeHandlerConfig, "use_presence_detection"
+                ),
             ),
         }
 
@@ -399,18 +406,25 @@ class ViewPlugin(A121ViewPluginBase):
         return {
             "sensor_to_water_distance": pidgets.FloatPidgetFactory(
                 name_label_text="Distance between sensor and water jet:",
+                name_label_tooltip=get_attribute_docstring(
+                    ExampleAppConfig, "sensor_to_water_distance"
+                ),
                 limits=(0, 0.3),
                 decimals=3,
                 suffix="m",
             ),
             "water_jet_width": pidgets.FloatPidgetFactory(
                 name_label_text="Water jet width:",
+                name_label_tooltip=get_attribute_docstring(ExampleAppConfig, "water_jet_width"),
                 limits=(0, 0.1),
                 decimals=3,
                 suffix="m",
             ),
             "measurement_range_end": pidgets.FloatPidgetFactory(
                 name_label_text="Measurement range end:",
+                name_label_tooltip=get_attribute_docstring(
+                    ExampleAppConfig, "measurement_range_end"
+                ),
                 limits=(0, 0.5),
                 decimals=3,
                 suffix="m",
@@ -422,17 +436,22 @@ class ViewPlugin(A121ViewPluginBase):
         return {
             "threshold": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Threshold:",
+                name_label_tooltip=get_attribute_docstring(ExampleAppConfig, "threshold"),
                 limits=(0, 5),
                 decimals=2,
             ),
             "filter_time_const": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Filter constant:",
+                name_label_tooltip=get_attribute_docstring(ExampleAppConfig, "filter_time_const"),
                 limits=(0, 2.0),
                 decimals=2,
                 suffix="s",
             ),
             "detection_retention_duration": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Detection retention duration:",
+                name_label_tooltip=get_attribute_docstring(
+                    ExampleAppConfig, "detection_retention_duration"
+                ),
                 limits=(0, 5),
                 decimals=1,
                 suffix="s",
@@ -444,20 +463,24 @@ class ViewPlugin(A121ViewPluginBase):
         return {
             "sweeps_per_frame": pidgets.IntPidgetFactory(
                 name_label_text="Sweeps per frame:",
+                name_label_tooltip=get_attribute_docstring(ExampleAppConfig, "sweeps_per_frame"),
                 limits=(1, 1000),
             ),
             "sweeps_rate": pidgets.IntPidgetFactory(
                 name_label_text="Sweep rate:",
+                name_label_tooltip=get_attribute_docstring(ExampleAppConfig, "sweeps_rate"),
                 limits=(1, 5000),
                 suffix="Hz",
             ),
             "frame_rate": pidgets.IntPidgetFactory(
                 name_label_text="Frame rate:",
+                name_label_tooltip=get_attribute_docstring(ExampleAppConfig, "frame_rate"),
                 limits=(1, 100),
                 suffix="Hz",
             ),
             "hwaas": pidgets.IntPidgetFactory(
                 name_label_text="HWAAS:",
+                name_label_tooltip=get_attribute_docstring(ExampleAppConfig, "hwaas"),
                 limits=(1, 511),
             ),
         }

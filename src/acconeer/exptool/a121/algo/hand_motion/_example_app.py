@@ -10,6 +10,7 @@ import attrs
 import h5py
 import numpy as np
 import numpy.typing as npt
+from attributes_doc import attributes_doc
 
 from acconeer.exptool import a121, opser
 from acconeer.exptool.a121.algo import (
@@ -39,6 +40,7 @@ class DetectionState(enum.Enum):
     """No detection. Retaining detection."""
 
 
+@attributes_doc
 @attrs.mutable(kw_only=True)
 class ExampleAppConfig(AlgoConfigBase):
     # Setup parameters

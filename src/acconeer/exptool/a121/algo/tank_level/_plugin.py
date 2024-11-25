@@ -17,6 +17,7 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool import a121, opser
+from acconeer.exptool._core.docstrings import get_attribute_docstring
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo._plugins import (
     A121BackendPluginBase,
@@ -586,20 +587,24 @@ class ViewPlugin(A121ViewPluginBase):
         return {
             "median_filter_length": pidgets.IntPidgetFactory(
                 name_label_text="Median filter length:",
+                name_label_tooltip=get_attribute_docstring(RefAppConfig, "median_filter_length"),
                 limits=(1, 10),
             ),
             "num_medians_to_average": pidgets.IntPidgetFactory(
                 name_label_text="Num measurements averaged:",
+                name_label_tooltip=get_attribute_docstring(RefAppConfig, "num_medians_to_average"),
                 limits=(1, 10),
             ),
             "start_m": pidgets.FloatPidgetFactory(
                 name_label_text="Tank start:",
+                name_label_tooltip=get_attribute_docstring(RefAppConfig, "start_m"),
                 suffix=" m",
                 decimals=3,
                 limits=(0.03, 20),
             ),
             "end_m": pidgets.FloatPidgetFactory(
                 name_label_text="Tank end:",
+                name_label_tooltip=get_attribute_docstring(RefAppConfig, "end_m"),
                 suffix=" m",
                 decimals=3,
                 limits=(0.05, 20),

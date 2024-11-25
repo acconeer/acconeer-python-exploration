@@ -615,15 +615,18 @@ class ViewPlugin(A121ViewPluginBase):
             pidgets.FlatPidgetGroup(): {
                 "update_rate": pidgets.FloatPidgetFactory(
                     name_label_text="Update rate:",
+                    name_label_tooltip=get_attribute_docstring(RefAppConfig, "update_rate"),
                     suffix=" Hz",
                     decimals=1,
                 ),
                 "hwaas": pidgets.IntPidgetFactory(
                     name_label_text="HWAAS:",
+                    name_label_tooltip=get_attribute_docstring(RefAppConfig, "hwaas"),
                     limits=(1, 511),
                 ),
                 "profile": pidgets.EnumPidgetFactory(
                     name_label_text="Profile:",
+                    name_label_tooltip=get_attribute_docstring(RefAppConfig, "profile"),  # type: ignore[arg-type]
                     enum_type=a121.Profile,
                     label_mapping={
                         a121.Profile.PROFILE_1: "1 (shortest)",

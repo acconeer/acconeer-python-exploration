@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional, Tuple
 
 import attrs
 import h5py
+from attributes_doc import attributes_doc
 
 from acconeer.exptool import a121, opser
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
@@ -23,6 +24,7 @@ from acconeer.exptool.a121.algo.distance._detector import detector_context_timel
 from ._processor import Processor, ProcessorConfig, ProcessorExtraResult, ProcessorLevelStatus
 
 
+@attributes_doc
 @attrs.mutable(kw_only=True)
 class RefAppConfig(DetectorConfig):
     start_m: float = attrs.field(default=0.03)

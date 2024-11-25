@@ -8,6 +8,7 @@ from typing import Any, Optional, Tuple, Union
 
 import attrs
 import h5py
+from attributes_doc import attributes_doc
 
 from acconeer.exptool import a121, opser
 from acconeer.exptool.a121.algo import (
@@ -34,6 +35,7 @@ class AppMode(enum.Enum):
     """Detecting hand motion."""
 
 
+@attributes_doc
 @attrs.mutable(kw_only=True)
 class ModeHandlerConfig(AlgoConfigBase):
     example_app_config: ExampleAppConfig = attrs.field(factory=ExampleAppConfig)

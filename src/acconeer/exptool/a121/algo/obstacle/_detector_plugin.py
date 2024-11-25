@@ -546,7 +546,7 @@ class ViewPlugin(A121ViewPluginBase):
             ),
             "hwaas": pidgets.IntPidgetFactory(
                 name_label_text="Hardware averaging (HWAAS):",
-                name_label_tooltip=get_attribute_docstring(DetectorConfig, "HWAAS"),
+                name_label_tooltip=get_attribute_docstring(DetectorConfig, "hwaas"),
                 suffix=" ",
             ),
             "num_std_threshold": pidgets.FloatPidgetFactory(
@@ -590,11 +590,15 @@ class ViewPlugin(A121ViewPluginBase):
             ),
             "dead_reckoning_duration_s": pidgets.FloatPidgetFactory(
                 name_label_text="Dead reckoning duration:",
+                name_label_tooltip=get_attribute_docstring(
+                    DetectorConfig, "dead_reckoning_duration_s"
+                ),
                 suffix=" s",
                 decimals=1,
             ),
             "kalman_sensitivity": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Kalman filter sensitivity:",
+                name_label_tooltip=get_attribute_docstring(DetectorConfig, "kalman_sensitivity"),
                 decimals=2,
                 limits=(0.001, 1),
                 show_limit_values=False,
