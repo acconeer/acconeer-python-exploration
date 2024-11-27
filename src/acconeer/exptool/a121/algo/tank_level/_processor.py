@@ -18,6 +18,7 @@ from acconeer.exptool.a121.algo.distance import DetectorResult
 
 TIME_HISTORY_S = 30
 UPDATES_PER_SECOND = 4
+CLOSE_RANGE_START = 0.07
 
 
 class ProcessorLevelStatus(enum.Enum):
@@ -170,12 +171,16 @@ class Processor:
                 elif filtered_level > self.tank_range_end_m - self.tank_range_start_m or (
                     filtered_level <= self.tank_range_end_m - self.tank_range_start_m
                     and self.peak_status_list.count(True) > len(self.peak_status_list) / 2
+                    and self.tank_range_start_m >= CLOSE_RANGE_START
                 ):
                     peak_status = ProcessorLevelStatus.OVERFLOW
                 else:
                     peak_status = ProcessorLevelStatus.IN_RANGE
             else:
-                if self.peak_status_list.count(True) > len(self.peak_status_list) / 2:
+                if (
+                    self.peak_status_list.count(True) > len(self.peak_status_list) / 2
+                    and self.tank_range_start_m >= CLOSE_RANGE_START
+                ):
                     peak_status = ProcessorLevelStatus.OVERFLOW
 
             if peak_status in (ProcessorLevelStatus.OVERFLOW, ProcessorLevelStatus.OUT_OF_RANGE):
