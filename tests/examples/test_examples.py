@@ -64,6 +64,7 @@ def test_a121_examples(run_cmd, timeout):
     retries = 0
     done = False
     interrupted = False
+    ret = 1
 
     while retries <= max_retries and not done:
         try:
@@ -72,6 +73,7 @@ def test_a121_examples(run_cmd, timeout):
         except subprocess.TimeoutExpired:
             if not interrupted:
                 p.send_signal(signal.SIGINT)
+                interrupted = True
             else:
                 retries += 1
 

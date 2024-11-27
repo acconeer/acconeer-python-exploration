@@ -215,7 +215,7 @@ try {
                         // Run these sequentially until we have a better solution.
                         //
                         // Still issues when running tests sequentially, add a single retry
-                        hatchWrap "test ${versionSelection} --retries 1 tests/examples"
+                        hatchWrap "test ${versionSelection} --retries 1 --parallel -n 3 tests/examples"
                     }
                 }
             }
