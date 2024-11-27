@@ -467,7 +467,7 @@ class PlotPlugin(PgPlotPlugin):
                 elif peak_detected and (peak_status == ProcessorLevelStatus.OUT_OF_RANGE):
                     for rect in self.rects:
                         rect.setBrush(et.utils.pg_brush_cycler(1))
-                elif ~peak_detected and (self.counter <= NO_DETECTION_TIMEOUT):
+                elif (not peak_detected) and (self.counter <= NO_DETECTION_TIMEOUT):
                     for rect in self.rects[: self.bar_loc]:
                         rect.setBrush(et.utils.pg_brush_cycler(0))
 
@@ -600,14 +600,14 @@ class ViewPlugin(A121ViewPluginBase):
                 name_label_tooltip=get_attribute_docstring(RefAppConfig, "start_m"),
                 suffix=" m",
                 decimals=3,
-                limits=(0.03, 20),
+                limits=(0.03, 23),
             ),
             "end_m": pidgets.FloatPidgetFactory(
                 name_label_text="Tank end:",
                 name_label_tooltip=get_attribute_docstring(RefAppConfig, "end_m"),
                 suffix=" m",
                 decimals=3,
-                limits=(0.05, 20),
+                limits=(0.05, 23),
             ),
         }
 

@@ -5,7 +5,7 @@ The tank level reference application shows the liquid level in a tank with an A1
 This reference application is built on top of the distance detector (see :doc:`/detectors/a121/distance_detector`) with some additional configurations specific to the tank level application.
 
 Measurement range
-    The liquid level in the tank can be measured from a minimum distance of 3 cm from the sensor to a maximum distance of 20 m.
+    The liquid level in the tank can be measured from a minimum distance of 3 cm from the sensor to a maximum distance of 23 m.
 
 Presets
     The application includes three predefined configurations optimized for tanks of varying sizes: small, medium, and large, corresponding to depths of 50 cm, 6.0 m, and 20.0 m, respectively.

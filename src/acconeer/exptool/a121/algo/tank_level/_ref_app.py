@@ -61,7 +61,7 @@ class RefAppConfig(DetectorConfig):
     def to_detector_config(self) -> DetectorConfig:
         return DetectorConfig(
             start_m=self.start_m - 0.015,
-            end_m=self.end_m * 1.05,
+            end_m=min(self.end_m * 1.05, 23.0),
             max_step_length=self.max_step_length,
             max_profile=self.max_profile,
             close_range_leakage_cancellation=self.close_range_leakage_cancellation,
