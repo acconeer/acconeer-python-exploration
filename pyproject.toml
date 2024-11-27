@@ -288,6 +288,7 @@ packages = [
     "acconeer.exptool.flash._mcumgruart",
     "acconeer.exptool.setup",
     "acconeer.exptool.opser",
+    "acconeer.exptool.type_migration",
     "utils.convert_h5",
     "tests.unit.a121",
     "tests.app",
