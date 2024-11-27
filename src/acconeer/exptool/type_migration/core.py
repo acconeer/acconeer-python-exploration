@@ -75,12 +75,11 @@ correct type is returned.
 
 from __future__ import annotations
 
-import functools
 import typing as t
 
 import attrs
 import attrs.validators as av
-import result as r
+import exceptiongroup as eg
 import typing_extensions as te
 
 
@@ -89,7 +88,6 @@ _R = t.TypeVar("_R")
 _S = t.TypeVar("_S")
 _P = te.ParamSpec("_P")
 
-_TBE = t.TypeVar("_TBE", bound=BaseException)
 _ReqCtxT = t.TypeVar("_ReqCtxT")
 _NewCtxT = t.TypeVar("_NewCtxT")
 _MigT_contra = t.TypeVar("_MigT_contra", contravariant=True)
@@ -99,7 +97,7 @@ Completer: te.TypeAlias = t.Callable[[t.Type[_T]], _T]
 _Transform: te.TypeAlias = t.Callable[[_T, Completer[_ReqCtxT]], _R]
 
 
-def _add_ignored_completer(f: t.Callable[[_T], _R]) -> _Transform[_T, te.Never, _R]:
+def _wrap_with_ignored_completer(f: t.Callable[[_T], _R]) -> _Transform[_T, te.Never, _R]:
     """Turns a regular function into a _Transform for homogenous internal representation.
     Used in the non-contextual 'load' and 'epoch'
     """
@@ -122,25 +120,6 @@ def _flip(f: t.Callable[[_S, _T], _R]) -> t.Callable[[_T, _S], _R]:
     return wrapper
 
 
-def _as_result(
-    *exceptions: type[_TBE],
-) -> t.Callable[
-    [t.Callable[_P, _R]],
-    t.Callable[_P, r.Result[_R, _TBE]],
-]:
-    """Extends result.as_result to accept 0 caught exceptions"""
-    if exceptions:
-        return r.as_result(*exceptions)
-
-    def _decorator_factory(f: t.Callable[_P, _R]) -> t.Callable[_P, r.Result[_R, _TBE]]:
-        def _decorator(*args: _P.args, **kwargs: _P.kwargs) -> r.Ok[_R]:
-            return r.Ok(f(*args, **kwargs))
-
-        return _decorator
-
-    return _decorator_factory
-
-
 def _null_completer(typ: type) -> t.Any:
     msg = f"No completion for {typ}"
     raise RuntimeError(msg)
@@ -150,15 +129,27 @@ class MigrationError(Exception):
     """This error is raised then a migration fails"""
 
 
+class MigrationErrorGroup(MigrationError, eg.ExceptionGroup[Exception]):
+    """A tree of errors describing why a migration failed"""
+
+
 def _inbounds_validator(_ignored1: t.Any, _ignored2: t.Any, value: t.Any) -> None:
-    (transform, ancestor) = value
+    (transform, fails, ancestor) = value
 
     if not callable(transform):
         msg = "The first element of the tuple needs to be a callable"
         raise TypeError(msg)
 
+    if not isinstance(fails, t.Sequence):
+        msg = "The second element of the tuple needs to be a sequence"
+        raise TypeError(msg)
+
+    if not all(issubclass(x, Exception) for x in fails):
+        msg = "All elements of the fail sequence needs to be a subclass of BaseExceptions"
+        raise TypeError(msg)
+
     if not isinstance(ancestor, Epoch):
-        msg = "The second element of the tuple needs to be an Epoch"
+        msg = "The third element of the tuple needs to be an Epoch"
         raise TypeError(msg)
 
 
@@ -179,14 +170,15 @@ class Epoch(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
     head: type[_HeadT] = attrs.field(validator=av.instance_of(type))
     inbounds: t.Sequence[
         tuple[
-            _Transform[t.Any, _ReqCtxT, r.Result[_HeadT, Exception]],
+            _Transform[t.Any, t.Any, _HeadT],
+            t.Sequence[type[Exception]],
             Epoch[t.Any, t.Any, t.Any],
         ],
     ] = attrs.field(validator=av.deep_iterable(_inbounds_validator))
 
     def _is_supported(self, typ: type) -> bool:
         return issubclass(typ, self.head) or any(
-            ancestor._is_supported(typ) for _, ancestor in self.inbounds
+            ancestor._is_supported(typ) for _, _, ancestor in self.inbounds
         )
 
     def load(
@@ -197,10 +189,7 @@ class Epoch(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
     ) -> Epoch[_HeadT, _ReqCtxT, _MigT_contra | _T]:
         """Add a loading function to the current epoch"""
         new_gen = start(src)
-        return Epoch(
-            self.head,
-            [(_as_result(*fail)(_add_ignored_completer(f)), new_gen), *self.inbounds],  # type: ignore[arg-type]
-        )
+        return Epoch(self.head, [(_wrap_with_ignored_completer(f), fail, new_gen), *self.inbounds])
 
     def contextual_load(
         self,
@@ -213,10 +202,7 @@ class Epoch(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
         `f`'s second argument should be a `Completer`
         """
         new_gen = start(src)
-        return Epoch(
-            self.head,
-            [(_as_result(*fail)(f), new_gen), *self.inbounds],  # type: ignore[arg-type, list-item]
-        )
+        return Epoch(self.head, [(f, fail, new_gen), *self.inbounds])
 
     def epoch(
         self,
@@ -225,10 +211,7 @@ class Epoch(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
         fail: t.Sequence[type[Exception]],
     ) -> Epoch[_T, _ReqCtxT, _MigT_contra | _HeadT]:
         """Append an epoch to the timeline, adding a level to the migration tree"""
-        return Epoch(
-            typ,
-            [(_as_result(*fail)(_add_ignored_completer(f)), self)],  # type: ignore[arg-type]
-        )
+        return Epoch(typ, [(_wrap_with_ignored_completer(f), fail, self)])
 
     def contextual_epoch(
         self,
@@ -237,22 +220,38 @@ class Epoch(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
         fail: t.Sequence[type[Exception]],
     ) -> Epoch[_T, _ReqCtxT | _NewCtxT, _MigT_contra | _HeadT]:
         """Append a contextual epoch to the timeline, adding a level to the migration tree"""
-        return Epoch(typ, [(_as_result(*fail)(f), self)])  # type: ignore[arg-type]
+        return Epoch(typ, [(f, fail, self)])
 
-    def _migrate_results(
+    def _migrate(
         self,
         obj: _HeadT | _MigT_contra,
         completer: Completer[_ReqCtxT],
-    ) -> t.Iterator[r.Result[_HeadT, Exception]]:
+    ) -> _HeadT:
         if isinstance(obj, self.head):
-            yield r.Ok(obj)
-            return
+            return obj
 
-        yield from (
-            migrated.and_then(functools.partial(_flip(transform), completer))
-            for transform, ancestor in self.inbounds
-            for migrated in ancestor._migrate_results(obj, completer)
-        )
+        if len(self.inbounds) == 0:
+            msg = f"Leaf node with head type {self.head} could not migrate object of type {type(obj)}"
+            raise MigrationError(msg)
+
+        errors = []
+
+        for transform, transform_fails, ancestor in self.inbounds:
+            try:
+                ancestor_migrated = ancestor._migrate(obj, completer)
+            except Exception as e:
+                errors.append(e)
+                continue
+
+            try:
+                self_migrated = transform(ancestor_migrated, completer)
+            except tuple(transform_fails) as e:
+                errors.append(e)
+            else:
+                return self_migrated
+
+        msg = f"Failed migration to {self.head} from {obj!r}"
+        raise MigrationErrorGroup(msg, tuple(errors))
 
     @te.overload
     def migrate(
@@ -278,12 +277,7 @@ class Epoch(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
             msg = f"Cannot migrate objects of type {type(obj)}"
             raise TypeError(msg)
 
-        for res in self._migrate_results(obj, completer):
-            if isinstance(res, r.Ok):
-                return res.ok_value
-
-        msg = f"Failed during migration of object {obj!r}"
-        raise MigrationError(msg)
+        return self._migrate(obj, completer)
 
     def nop(self) -> te.Self:
         """Does nothing."""

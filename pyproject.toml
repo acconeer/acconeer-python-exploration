@@ -34,7 +34,6 @@ dependencies = [
     "pyusb>=1.2.1",
     "pyyaml",
     "requests>=2.0,<3",
-    "result==0.16.1",
     "typing-extensions>=4,<5",
     "textual==0.1.18",
     "XlsxWriter>=3.1.9",

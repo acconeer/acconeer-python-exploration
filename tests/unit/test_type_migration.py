@@ -7,6 +7,7 @@ import json
 import typing as t
 
 import attrs
+import exceptiongroup as eg
 import pytest
 import typing_extensions as te
 
@@ -117,10 +118,14 @@ def test_migrate_raises_type_error_if_input_is_of_wrong_type(simple_graph: _SG) 
         simple_graph.migrate(None)  # type: ignore[call-overload]
 
 
-@pytest.mark.parametrize("inp", ['{"a": 10}', "invalid_json"], ids=repr)
+@pytest.mark.parametrize("inp", ["{'a': 10}", "invalid_json"], ids=repr)
 def test_migrate_exhausted_error_message_contain_input(simple_graph: _SG, inp: str) -> None:
-    with pytest.raises(tm.MigrationError, match=inp):
+    try:
         simple_graph.migrate(inp)
+    except tm.MigrationErrorGroup as meg:
+        assert inp in "\n".join(eg.format_exception(meg))
+    else:
+        pytest.fail("'.migrate()' should've raised an MigrationErrorGroup")
 
 
 @pytest.fixture
@@ -153,3 +158,36 @@ def test_migrate_fails_with_completer_error_if_completer_raises(
 
     with pytest.raises(exception_type, match="In completer!"):
         _ = needs_extra_context.migrate('{"x": "10"}', completer)
+
+
+def test_all_error_messages_are_visible_on_failed_migration() -> None:
+    def raiser(msg: str) -> t.Callable[[t.Any], t.Any]:
+        def inner(x: t.Any) -> t.Any:
+            raise ValueError(msg)
+
+        return inner
+
+    graph = (
+        tm.start(int)
+        .load(dict, raiser("dict->int"), fail=[ValueError])
+        .nop()
+        .epoch(str, lambda x: str(x), fail=[])
+        .load(dict, raiser("dict->str"), fail=[ValueError])
+        .nop()
+        .epoch(float, lambda x: float(x), fail=[])
+        .load(dict, raiser("dict->float"), fail=[ValueError])
+        .nop()
+        .epoch(list, lambda x: [x], fail=[])
+        .load(dict, raiser("dict->list"), fail=[ValueError])
+    )
+
+    try:
+        graph.migrate({"x": 1})
+    except tm.MigrationErrorGroup as e:
+        str_e = "\n".join(eg.format_exception(e))
+        assert "dict->int" in str_e
+        assert "dict->str" in str_e
+        assert "dict->float" in str_e
+        assert "dict->list" in str_e
+    else:
+        pytest.fail("'.migrate()' should've raised a MigrationErrorGroup.")

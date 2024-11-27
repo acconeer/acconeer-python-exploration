@@ -115,4 +115,4 @@ The module also supports requiring context when defining the timeline
 to 'migrate' via a Completer (i.e. a function with a specific signature).
 """
 
-from .core import Completer, Epoch, MigrationError, start
+from .core import Completer, Epoch, MigrationError, MigrationErrorGroup, start
