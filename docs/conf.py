@@ -67,7 +67,10 @@ graphviz_output_format = "svg"
 
 # linkcheck
 linkcheck_retries = 2
-linkcheck_exclude_documents = ["exploration_tool/example_scripts/.*"]
+linkcheck_exclude_documents = [
+    "exploration_tool/example_scripts/.*",
+    "a111/evk_setup/xm112.*",  # Due to instable link to https://ftdichip.com/drivers/vcp-drivers/
+]
 
 # rediraffe
 rediraffe_redirects = "redirects.txt"
