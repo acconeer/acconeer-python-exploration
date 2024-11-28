@@ -208,14 +208,7 @@ try {
                     buildDocker(path: 'docker').inside(dockerArgs(env)) {
                         isolatedTestPythonVersions.each { v -> sh "python${v} -V" }
                         String versionSelection = "-py=" + isolatedTestPythonVersions.join(",")
-                        hatchWrap "test ${versionSelection} --parallel tests/unit tests/processing tests/app src/acconeer/exptool"
-
-                        // Some test script are multi processed, we've seen issues with
-                        // the second plot process hanging (when running in parallel).
-                        // Run these sequentially until we have a better solution.
-                        //
-                        // Still issues when running tests sequentially, add a single retry
-                        hatchWrap "test ${versionSelection} --retries 1 --parallel -n 3 tests/examples"
+                        hatchWrap "test ${versionSelection} --parallel tests/unit tests/processing tests/app src/acconeer/exptool tests/examples"
                     }
                 }
             }
