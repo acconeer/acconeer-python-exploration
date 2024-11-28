@@ -70,6 +70,7 @@ class RefAppConfig(DetectorConfig):
             peaksorting_method=self.peaksorting_method,
             reflector_shape=self.reflector_shape,
             num_frames_in_recorded_threshold=self.num_frames_in_recorded_threshold,
+            fixed_strength_threshold_value=self.fixed_strength_threshold_value,
             fixed_threshold_value=self.fixed_threshold_value,
             threshold_sensitivity=self.threshold_sensitivity,
             update_rate=self.update_rate,
