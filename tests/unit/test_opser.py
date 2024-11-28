@@ -651,6 +651,9 @@ def test_unwrap_generic() -> None:
     assert opser.core.unwrap_generic(t.Dict[str, int]) == (dict, str, int)
     assert opser.core.unwrap_generic(GenericClass[int]) == (GenericClass, int)
 
+    assert opser.core.unwrap_generic(list) == (None,)
+    assert opser.core.unwrap_generic(dict) == (None,)
+
 
 def test_is_optional() -> None:
     assert opser.core.is_optional(t.Optional[int])

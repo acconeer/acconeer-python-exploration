@@ -206,7 +206,26 @@ def is_class(__type: TypeLike) -> te.TypeGuard[type]:
 
 def is_subclass(__type: TypeLike, superclass: t.Union[type, t.Tuple[type, ...]]) -> bool:
     """Return True if '__type' is a subclass of superclass"""
-    return is_class(__type) and issubclass(__type, superclass)
+    cannot_be_generic: t.Iterable[type]
+    if isinstance(superclass, type):
+        cannot_be_generic = [superclass]
+    else:
+        cannot_be_generic = superclass
+
+    for sc in cannot_be_generic:
+        if is_generic(sc):
+            msg = f"A type passed as the 'superclass' argument cannot be a generic class. It was {sc}"
+            raise ValueError(msg)
+
+    try:
+        if is_generic(__type):
+            (origin_t, *_) = unwrap_generic(__type)
+            return is_subclass(origin_t, superclass)
+        else:
+            return is_class(__type) and issubclass(__type, superclass)
+    except Exception as e:
+        msg = f"Could not determine if {__type} is a subclass of {superclass}"
+        raise TypeError(msg) from e
 
 
 def is_generic(__type: TypeLike) -> bool:
