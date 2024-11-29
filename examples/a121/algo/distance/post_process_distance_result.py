@@ -1,25 +1,29 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2024
 # All rights reserved
 
+import argparse
 
 import h5py
 import matplotlib.pyplot as plt
 
 from acconeer.exptool.a121 import H5Record, _ReplayingClient, _StopReplay
 from acconeer.exptool.a121.algo.distance import Detector, DetectorConfig, DetectorContext
-
-
-FILEPATH = ""
+from acconeer.exptool.a121.algo.distance._context import detector_context_timeline
 
 
 def main():
-    with h5py.File(FILEPATH, "r") as file:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input-file")
+
+    args = parser.parse_args()
+
+    with h5py.File(args.input_file, "r") as file:
         algo_group = file["algo"]
 
         sensor_ids = algo_group["sensor_ids"][()].tolist()
         detector_config = DetectorConfig.from_json(algo_group["detector_config"][()])
         context_group = algo_group["context"]
-        context = DetectorContext.from_h5(context_group)
+        context: DetectorContext = detector_context_timeline.migrate(context_group)
 
         record = H5Record(file)
         client = _ReplayingClient(record, realtime_replay=False)
@@ -67,7 +71,7 @@ def main():
     axs[1].grid()
 
     plt.legend()
-    plt.suptitle(FILEPATH)
+    plt.suptitle(args.input_file)
     plt.show()
 
 
