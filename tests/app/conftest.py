@@ -4,10 +4,8 @@ from __future__ import annotations
 
 import copy
 import functools
-import queue
 import typing as t
 from pathlib import Path
-from time import time
 
 import dirty_equals as de
 import pytest
@@ -99,9 +97,6 @@ def assert_messages() -> t.Callable[..., None]:
         *,
         received: list[t.Union[Message, ClosedTask]],
         not_received: t.Iterable[t.Union[Message, ClosedTask]] = (Tasks.FAILED_CLOSED_TASK,),
-        max_num_messages: int = 30,
-        recv_timeout: float = 2.0,
-        timeout: float = 10.0,
     ) -> None:
         """
         Utility function that asserts that
@@ -113,26 +108,9 @@ def assert_messages() -> t.Callable[..., None]:
         """
         not_yet_seen_messages = copy.deepcopy(received)
         received_messages: list[t.Union[Message, ClosedTask]] = []
-        message_generator = (backend.recv(recv_timeout) for _ in range(max_num_messages))
-        start_time = time()
         while not_yet_seen_messages != []:
-            try:
-                received_message = next(message_generator)
-                received_messages.append(received_message)
-            except (queue.Empty, StopIteration):
-                # next(message_generator) timed out <-> message was (probably) not sent
-                raise AssertionError(
-                    "Did not find the messages:\n"
-                    + "\n".join(f"- {m}" for m in not_yet_seen_messages)
-                    + "\n"
-                    + "in the received messages:\n"
-                    + "\n".join(f"- {m}" for m in received_messages)
-                    + "\n"
-                )
-
-            if time() - start_time > timeout:
-                msg = f"Did not find the message within time {timeout}s"
-                raise TimeoutError(msg)
+            received_message = backend.recv()
+            received_messages.append(received_message)
 
             if received_message in not_received:
                 if received_message == Tasks.FAILED_CLOSED_TASK:

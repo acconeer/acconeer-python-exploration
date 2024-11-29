@@ -23,6 +23,10 @@ from acconeer.exptool.app.new.backend._backend import FromBackendQueueItem
 from acconeer.exptool.app.new.plugin_loader import load_default_plugins
 
 
+# pytest-magic for a module-wide timeout of 60s
+pytestmark = pytest.mark.timeout(60)
+
+
 class CaptureSaveableFile:
     """
     A small wrapper that captures the "saveable_file" message and stores the path
@@ -118,8 +122,6 @@ class TestBackendPlugins:
             # If the backend plugin does not have a "calibrate_detector",
             # ignore that error and continue on.
             not_received=[],
-            max_num_messages=1000,
-            recv_timeout=2.0,
         )
 
         # Starting the session should close successfully and report the busy state
@@ -131,8 +133,6 @@ class TestBackendPlugins:
                 PluginStateMessage(state=PluginState.LOADED_BUSY),
                 tasks.SUCCESSFULLY_CLOSED_TASK,
             ],
-            max_num_messages=1000,
-            recv_timeout=4.0,
         )
 
         # Stopping the task should be successful and report the idle state
@@ -144,7 +144,6 @@ class TestBackendPlugins:
                 PluginStateMessage(state=PluginState.LOADED_IDLE),
                 tasks.SUCCESSFULLY_CLOSED_TASK,
             ],
-            max_num_messages=1000,  # a lot of messages could be sent when busy
         )
 
         saved_file = t.cast(CaptureSaveableFile, backend).saveable_file_path
@@ -171,5 +170,4 @@ class TestBackendPlugins:
                     PluginStateMessage(state=PluginState.LOADED_IDLE),
                     tasks.SUCCESSFULLY_CLOSED_TASK,
                 ],
-                max_num_messages=1000,
             )

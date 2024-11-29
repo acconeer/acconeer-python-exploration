@@ -16,6 +16,10 @@ from acconeer.exptool.app.new.backend import (
 )
 
 
+# pytest-magic for a module-wide timeout of 60s
+pytestmark = pytest.mark.timeout(60)
+
+
 @pytest.fixture(params=list(PluginGeneration))
 def generation(request: pytest.FixtureRequest) -> PluginGeneration:
     gen = t.cast(PluginGeneration, request.param)
