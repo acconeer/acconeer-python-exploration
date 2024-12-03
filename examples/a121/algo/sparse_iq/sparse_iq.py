@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ def main():
     # Multiple subsweep configuration can be assigned in single group SensorConfig
     # through 'subweeps' fields shown above or in these way below
     sensor_config.subsweeps[0].num_points = 140
-    sensor_config.subsweeps[1].prf = PRF.PRF_13_0_MHz
+    sensor_config.subsweeps[1].prf = PRF.PRF_15_6_MHz
 
     # Create a SessionConfig with (e.g.) two groups SensorConfig
     # First group will contain multiple subsweeps, second group will contain single subsweep

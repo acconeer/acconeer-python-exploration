@@ -401,3 +401,16 @@ def test_invalid_attribute():
         config.sweep_per_frame = 16
 
     config.sweeps_per_frame = 16
+
+
+def test_raises_validation_error_if_higher_indexed_subsweeps_has_higher_prf():
+    config = a121.SensorConfig(
+        subsweeps=[
+            a121.SubsweepConfig(prf=a121.PRF.PRF_5_2_MHz),
+            a121.SubsweepConfig(prf=a121.PRF.PRF_13_0_MHz),
+            a121.SubsweepConfig(prf=a121.PRF.PRF_15_6_MHz),
+        ]
+    )
+
+    with pytest.raises(a121.ValidationError, match=r"PRF.*It needs to be one of.*PRF"):
+        config.validate()

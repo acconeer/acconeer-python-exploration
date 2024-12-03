@@ -291,6 +291,7 @@ class SensorConfig:
             + self._validate_idle_states()
             + self._validate_sweep_and_frame_rate()
             + self._validate_required_buffer_usage()
+            + self._validate_ascending_prf_in_subsweeps()
         )
         subsweep_config_validate_results = []
         for subsweep in self.subsweeps:
@@ -415,6 +416,43 @@ class SensorConfig:
                 )
                 for subsweep_config in self.subsweeps
             )
+        return validation_results
+
+    def _validate_ascending_prf_in_subsweeps(self) -> list[ValidationResult]:
+        """Validate that PRFs are defined in an ascending fashion with subsweeps.
+        I.e. Subsweep index and PRF should be inversly proportional.
+        """
+
+        if len(self.subsweeps) == 1:
+            return []
+
+        validation_results: list[ValidationResult] = []
+
+        for (ss_curr_idx, ss_curr), (ss_next_idx, ss_next) in zip(
+            enumerate(self.subsweeps),
+            enumerate(self.subsweeps[1:], start=1),
+        ):
+            if ss_curr.prf.frequency < ss_next.prf.frequency:
+                ss_curr_valid_prfs_names = ", ".join(
+                    prf.name for prf in PRF if (prf.frequency >= ss_next.prf.frequency)
+                )
+                validation_results.append(
+                    ValidationError(
+                        source=ss_curr,
+                        aspect="prf",
+                        message=f"subsweeps[{ss_curr_idx}].prf = {ss_curr.prf.name}. It needs to be one of [{ss_curr_valid_prfs_names}] because subsweeps[{ss_next_idx}].prf = {ss_next.prf.name}",
+                    )
+                )
+                ss_next_valid_prfs_names = ", ".join(
+                    prf.name for prf in PRF if (prf.frequency <= ss_curr.prf.frequency)
+                )
+                validation_results.append(
+                    ValidationError(
+                        source=ss_next,
+                        aspect="prf",
+                        message=f"subsweeps[{ss_next_idx}].prf = {ss_next.prf.name}. It needs to be one of [{ss_next_valid_prfs_names}] because subsweeps[{ss_curr_idx}].prf = {ss_curr.prf.name}",
+                    )
+                )
         return validation_results
 
     @property

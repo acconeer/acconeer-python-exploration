@@ -14,6 +14,7 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 from acconeer.exptool import a121
 from acconeer.exptool._core.docstrings import get_attribute_docstring
 from acconeer.exptool._core.entities.validation_result import Criticality
+from acconeer.exptool.app.new.ui import icons
 from acconeer.exptool.app.new.ui.components import pidgets
 from acconeer.exptool.app.new.ui.components.a121 import RangeHelpView
 from acconeer.exptool.app.new.ui.components.collapsible_widget import CollapsibleWidget
@@ -145,12 +146,9 @@ class SubsweepConfigEditor(DataEditor[Optional[a121.SubsweepConfig]]):
         collapsible_layout.setContentsMargins(11, 0, 0, 0)
         dummy = QWidget()
         dummy.setLayout(collapsible_layout)
-        self.layout().addWidget(
-            CollapsibleWidget(
-                label="Advanced",
-                widget=dummy,
-            )
-        )
+        self.collapsible_widget = CollapsibleWidget(label="Advanced", widget=dummy)
+
+        self.layout().addWidget(self.collapsible_widget)
 
     def set_read_only(self, read_only: bool) -> None:
         for pidget in self._subsweep_config_pidgets.values():
@@ -179,6 +177,20 @@ class SubsweepConfigEditor(DataEditor[Optional[a121.SubsweepConfig]]):
     def handle_validation_results(
         self, results: list[a121.ValidationResult]
     ) -> list[a121.ValidationResult]:
+        current_data = self.get_data()
+        advanced_results = [
+            r
+            for r in results
+            if (r.aspect in self.ADVANCED_PARAMETERS) and (r.source == current_data)
+        ]
+
+        if any(result.criticality is Criticality.ERROR for result in advanced_results):
+            self.collapsible_widget.set_icon(icons.WARNING(color=icons.ERROR_RED))
+        elif any(result.criticality is Criticality.WARNING for result in advanced_results):
+            self.collapsible_widget.set_icon(icons.WARNING())
+        else:
+            self.collapsible_widget.set_icon(None)
+
         for aspect, pidget in self._subsweep_config_pidgets.items():
             if aspect not in self._erroneous_aspects:
                 pidget.set_note_text("")
