@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from functools import partial
@@ -9,6 +9,7 @@ import qtawesome as qta
 BUTTON_ICON_COLOR = "#0081db"
 TEXT_GREY = "#4d5157"
 WARNING_YELLOW = "#ff9e00"
+ERROR_RED = "#e6635a"
 
 
 # "partial" is used here as the icons from qtawesome needs a running QApplication

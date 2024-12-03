@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -42,6 +42,7 @@ from PySide6.QtWidgets import (
 )
 
 from acconeer.exptool._core.entities.validation_result import Criticality
+from acconeer.exptool.app.new.ui import icons
 from acconeer.exptool.app.new.ui.components.data_editor import DataEditor
 
 from .common import MaybeIterable, as_sequence
@@ -201,8 +202,8 @@ class Pidget(DataEditor[Any]):
             return
 
         COLOR_MAP = {
-            Criticality.ERROR: "#E6635A",
-            Criticality.WARNING: "#FCC842",
+            Criticality.ERROR: icons.ERROR_RED,
+            Criticality.WARNING: icons.WARNING_YELLOW,
             None: "white",
         }
 
