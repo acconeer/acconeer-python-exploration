@@ -53,6 +53,7 @@ def parse_rss_version(rss_version: str) -> tuple[str, Version]:
         r"(?:-(?P<pre_phase>rc)(?P<pre_number>\d+))?"
         r"(?:-(?P<dev_number>\d+)-(?P<dev_commit>g\w+))?"
         r"(?:-(dirty))?"
+        r".*"
     )
     match = re.fullmatch(pattern, rss_version)
     if not match:
