@@ -195,6 +195,13 @@ lint-fix = [
     "lint-check"
 ]
 
+[tool.hatch.envs.test-multiple-qt-bindings]
+# Single purpose environment.
+# Used to test that user warnings are printed
+# if multiple Qt bindings are installed in the environment.
+features = ["app"]
+dependencies = ["PyQt6", "PyQt5", "PySide2"]
+
 [tool.ruff]
 include = ["pyproject.toml", "**/*.py"]
 
