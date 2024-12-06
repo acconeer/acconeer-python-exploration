@@ -3,13 +3,13 @@
 
 from __future__ import annotations
 
-import cgi
 import logging
 import os
 import pickle
 import shutil
 import tempfile
 import zipfile
+from email.message import EmailMessage
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -152,8 +152,12 @@ def download(
 
     r = session.post(zip_url, data=tc, allow_redirects=False, cookies=cookies, headers=headers)
 
-    _, params = cgi.parse_header(r.headers["Content-Disposition"])
-    filename = params["filename*"].split("'")[-1]
+    msg = EmailMessage()
+    content_disposition = r.headers["Content-Disposition"]
+    msg["Content-Disposition"] = (
+        content_disposition  # EmailMessage.__setitem__ does magic things here
+    )
+    filename = msg.get_filename()
 
     version = _get_version(filename)
 
