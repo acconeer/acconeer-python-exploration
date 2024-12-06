@@ -261,7 +261,7 @@ def load_yaml():
     if REGISTERS is not None:
         return
 
-    with importlib.resources.open_text(data, "regmap.yaml") as stream:
+    with (importlib.resources.files(data) / "regmap.yaml").open() as stream:
         raw_regs = yaml.safe_load(stream)
 
     REGISTERS = []

@@ -149,7 +149,9 @@ class GUI(QMainWindow):
                     calibration_config = mi.calibration_config_class()
                     self.module_label_to_calibration_config_map[mi.label] = calibration_config
 
-        with importlib.resources.path(resources, "icon.png") as path:
+        with importlib.resources.as_file(
+            importlib.resources.files(resources) / "icon.png"
+        ) as path:
             self.setWindowIcon(QIcon(str(path)))
 
         self.main_widget = QtWidgets.QSplitter(self.centralWidget())
@@ -287,7 +289,9 @@ class GUI(QMainWindow):
 
     def init_graphs(self):
         if self.current_module_info is None:
-            with importlib.resources.path(resources, "icon.png") as path:
+            with importlib.resources.as_file(
+                importlib.resources.files(resources) / "icon.png"
+            ) as path:
                 canvas = Label(str(path))
 
             self.refresh_pidgets()
