@@ -8,7 +8,7 @@ description = "Acconeer Exploration Tool"
 dynamic = ["version"]
 readme = "README.md"
 license = "BSD-3-Clause-Clear"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 authors = [
     { name = "Acconeer AB", email = "tools@acconeer.com" },
 ]
@@ -16,7 +16,6 @@ classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -118,7 +117,7 @@ dependencies = [
 ]
 
 [[tool.hatch.envs.mypy.matrix]]
-python = ["3.8"]
+python = ["3.9"]
 
 [tool.hatch.envs.mypy.scripts]
 check = "python -m mypy {args}"
@@ -135,7 +134,7 @@ extra-dependencies = [
 ]
 
 [[tool.hatch.envs.hatch-test.matrix]]
-python = ["3.8", "3.9", "3.10", "3.11", "3.12"]
+python = ["3.9", "3.10", "3.11", "3.12"]
 
 [tool.hatch.envs.hatch-test.scripts]
 run = "pytest{env:HATCH_TEST_ARGS:} {args}"  # default
@@ -206,7 +205,7 @@ dependencies = ["PyQt6", "PyQt5", "PySide2"]
 include = ["pyproject.toml", "**/*.py"]
 
 line-length = 99
-target-version = "py38"
+target-version = "py39"
 
 show-fixes = true
 output-format = "concise"
