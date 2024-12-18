@@ -162,10 +162,6 @@ rediraffe-write = "python -m sphinx -b rediraffewritediff docs docs/_build"
 rediraffe-check = "python -m sphinx -b rediraffecheckdiff docs docs/_build"
 build = ["clean", "html", "latexpdf", "linkcheck", "spelling", "rediraffe-check"]
 
-# Temporary matrix to avoid using Python 3.8 (ubuntu 20.04 system version)
-[[tool.hatch.envs.docs.matrix]]
-python = ["3.9"]
-
 [tool.hatch.envs.hatch-static-analysis]
 # This is the environment for "hatch fmt"
 config-path = "none"

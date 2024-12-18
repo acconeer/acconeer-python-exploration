@@ -1,4 +1,6 @@
-FROM ubuntu:20.04
+FROM ubuntu:24.04
+
+RUN userdel -r ubuntu
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -14,28 +16,22 @@ RUN apt-get update -qq \
         libegl1 \
         libenchant-2-2 \
         libfontconfig1 \
-        libgl1-mesa-glx \
+        libgl1 \
+        libglx-mesa0 \
         libtsan0 \
         libubsan1 \
         libxkbcommon0 \
         make \
         ninja-build \
-        python3 \
-        python3-distutils \
+        python3-full \
+        pipx \
         texlive-fonts-recommended \
         texlive-latex-extra \
         texlive-latex-recommended \
         texlive-plain-generic \
         texlive-publishers \
         wget \
-    && rm -rf /var/lib/apt/lists/* \
-    && wget https://bootstrap.pypa.io/get-pip.py \
-        && python3 get-pip.py \
-        && python3 -m pip install --no-cache-dir \
-            "hatch>=1.10.0" \
-            "pip>=21.3" \
-            "requests>=2.0,<3" \
-            "twine==5.1.1"
+    && rm -rf /var/lib/apt/lists/*
 
 ENV QT_QPA_PLATFORM offscreen
 
@@ -43,6 +39,9 @@ RUN groupadd -g 1000 jenkins \
     && useradd -rm -d /home/jenkins -u 1000 -g jenkins jenkins
 
 USER jenkins
+
+ENV PATH="$PATH:/home/jenkins/.local/bin"
+RUN pipx install "hatch>=1.10.0" "twine==5.1.1"
 
 RUN mkdir -p /home/jenkins/.cache/pip
 RUN mkdir -p /home/jenkins/.cache/uv
