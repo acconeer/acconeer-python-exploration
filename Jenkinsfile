@@ -206,7 +206,6 @@ try {
                     checkoutAndCleanup()
 
                     buildDocker(path: 'docker').inside(dockerArgs(env)) {
-                        isolatedTestPythonVersions.each { v -> sh "python${v} -V" }
                         String versionSelection = "-py=" + isolatedTestPythonVersions.join(",")
                         hatchWrap "test ${versionSelection} --parallel tests/unit tests/processing tests/app src/acconeer/exptool tests/examples"
                     }
@@ -273,7 +272,6 @@ try {
                     }
                     stage("Run integration tests (py=${integrationTestPythonVersions}, rss=${rssVersionName})") {
                         buildDocker(path: 'docker').inside(dockerArgs(env)) {
-                            integrationTestPythonVersions.each { v -> sh "python${v} -V" }
                             String versionSelection = "-py=" + integrationTestPythonVersions.join(",")
                             hatchWrap "test ${versionSelection} tests/integration/a111"
                         }

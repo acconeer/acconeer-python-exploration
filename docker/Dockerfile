@@ -4,8 +4,6 @@ ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update -qq \
     && apt-get install software-properties-common -qq \
-    && add-apt-repository ppa:deadsnakes/ppa -y \
-    && apt-get update -qq \
     && apt-get install --no-install-recommends -qq \
         build-essential \
         git \
@@ -22,37 +20,22 @@ RUN apt-get update -qq \
         libxkbcommon0 \
         make \
         ninja-build \
-        python3.8-dev \
-        python3.9-dev \
-        python3.10-dev \
-        python3.11-dev \
-        python3.12-dev \
-        python3.8-distutils \
-        python3.9-distutils \
-        python3.10-distutils \
-        python3.11-distutils \
-        python3.12-distutils \
+        python3 \
+        python3-distutils \
         texlive-fonts-recommended \
         texlive-latex-extra \
         texlive-latex-recommended \
         texlive-plain-generic \
         texlive-publishers \
         wget \
-        && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /var/lib/apt/lists/* \
     && wget https://bootstrap.pypa.io/get-pip.py \
-        && python3.8 get-pip.py \
-        && python3.9 get-pip.py \
-        && python3.10 get-pip.py \
-        && python3.11 get-pip.py \
-        && python3.12 get-pip.py
-
-COPY requirements-dev.txt /tmp/
-
-RUN python3.8 -m pip install --no-cache-dir -r /tmp/requirements-dev.txt \
-    && python3.9 -m pip install --no-cache-dir -r /tmp/requirements-dev.txt \
-    && python3.10 -m pip install --no-cache-dir -r /tmp/requirements-dev.txt \
-    && python3.11 -m pip install --no-cache-dir -r /tmp/requirements-dev.txt \
-    && python3.12 -m pip install --no-cache-dir -r /tmp/requirements-dev.txt
+        && python3 get-pip.py \
+        && python3 -m pip install --no-cache-dir \
+            "hatch>=1.10.0" \
+            "pip>=21.3" \
+            "requests>=2.0,<3" \
+            "twine==5.1.1"
 
 ENV QT_QPA_PLATFORM offscreen
 
