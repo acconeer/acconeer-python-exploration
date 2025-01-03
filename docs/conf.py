@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 import os
 
 
 project = "acconeer-python-exploration"
-copyright = "2019-2024, Acconeer AB"
+copyright = "2019-2025, Acconeer AB"
 author = "Acconeer AB"
 html_title = "Acconeer docs"
 language = "en"

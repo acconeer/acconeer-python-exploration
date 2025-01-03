@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 from __future__ import annotations
 
@@ -163,6 +163,11 @@ def input_path(resource_name: str) -> Path:
             tank_level_test.tank_level_controller,
             t.List[tank_level_test.RefAppResultSlice],
             "small_tank.h5",
+        ),
+        (
+            tank_level_test.tank_level_controller,
+            t.List[tank_level_test.RefAppResultSlice],
+            "large_tank.h5",
         ),
         (
             touchless_button_test.touchless_button_processor,
