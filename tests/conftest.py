@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 import os
@@ -11,31 +11,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 
 
 def pytest_addoption(parser):
-    parser.addoption(
-        "--uart",
-        dest="uart",
-        metavar="port",
-    )
-
-    parser.addoption(
-        "--spi",
-        dest="spi",
-        action="store_true",
-    )
-
-    parser.addoption(
-        "--socket",
-        dest="socket",
-        metavar="socket_args",
-        nargs=2,
-    )
-
-    parser.addoption(
-        "--mock",
-        dest="mock",
-        action="store_true",
-    )
-
     parser.addoption(
         "--update-outputs",
         dest="update_outputs",
