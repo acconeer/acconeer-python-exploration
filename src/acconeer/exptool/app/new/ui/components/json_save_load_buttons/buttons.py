@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -30,7 +30,8 @@ from .dialogs import (
 
 _ICON_SIZE = QSize(20, 20)
 _BUTTON_SIZE = QSize(35, 25)
-_FILE_DIALOG_FILTER = "JSON (*.json)"
+_SAVE_FILE_DIALOG_FILTER = "JSON (*.json);;CSV (*.csv)"
+_LOAD_FILE_DIALOG_FILTER = "JSON (*.json)"
 
 
 @te.runtime_checkable
@@ -126,7 +127,7 @@ class _JsonLoadButton(QPushButton):
     def _load_and_set_selected_file(self) -> None:
         contents = LoadDialogWithJsonEditor.get_load_contents(
             caption="Load from file",
-            filter=_FILE_DIALOG_FILTER,
+            filter=_LOAD_FILE_DIALOG_FILTER,
             parent=self,
         )
 
@@ -164,7 +165,7 @@ class _JsonSaveButton(QPushButton):
         if model is None:
             raise RuntimeError
 
-        filename = SaveDialogWithPreview.get_save_file_name(
+        filename, file_filter = SaveDialogWithPreview.get_save_file_name(
             caption="Save to file",
             model=model,
             presenter=_none_coalescing_chain(
@@ -172,13 +173,60 @@ class _JsonSaveButton(QPushButton):
                 set_config_presenter,
                 self._extra_presenter,
             ),
-            filter=_FILE_DIALOG_FILTER,
+            filter=_SAVE_FILE_DIALOG_FILTER,
             parent=self,
         )
 
-        if filename:
-            Path(filename).with_suffix(".json").write_text(self._encoder(model))
+        if filename and file_filter:
+            if "json" in file_filter:
+                Path(filename).with_suffix(".json").write_text(self._encoder(model))
+            elif "csv" in file_filter:
+                Path(filename).with_suffix(".csv").write_text(
+                    _dict_to_csv(_flatten_dict(json.loads(self._encoder(model))))
+                )
+            else:
+                msg = f"Unknown file type {file_filter}"
+                raise TypeError(msg)
             _show_transient_checkmark(self)
+
+
+def _dict_to_csv(data: t.Dict[t.Any, t.Any]) -> str:
+    output_str = ""
+
+    for key, value in data.items():
+        output_str += f"{key},{value}\n"
+
+    return output_str
+
+
+def _flatten_dict(
+    data: t.Dict[str, t.Any], root: t.Optional[t.Dict[str, t.Any]] = None, parent_key: str = ""
+) -> t.Dict[str, t.Any]:
+    if root is None:
+        root = dict()
+
+    for key, value in data.items():
+        src_key = parent_key + "_" + key if parent_key else key
+        if isinstance(value, dict):
+            _flatten_dict(value, root, src_key)
+        elif isinstance(value, list):
+            for i, v in enumerate(value):
+                if src_key == "groups":
+                    # In SessionConfig groups are a list of dicts with a single key,
+                    # which corresponds to the number of the group.
+                    # So no need to enumerate these keys.
+                    sub_key = src_key
+                else:
+                    sub_key = src_key + "_" + str(i)
+
+                if isinstance(v, dict):
+                    _flatten_dict(v, root, sub_key)
+                else:
+                    root[sub_key] = v if v is not None else "None"
+        else:
+            root[src_key] = value if value is not None else "None"
+
+    return root
 
 
 def create_json_save_load_buttons(
