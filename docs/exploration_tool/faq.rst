@@ -64,6 +64,29 @@ Python related
    The root issue is the ``MAX_PATH`` setting on the Windows platform.
    Try unzipping the zip in a place that's not at deep in your folder structure. To your **Desktop**, for example.
 
+#) Cannot open recorded h5-files on newly updated ET
+
+   If you get an error when trying to replay a file in ET; you
+   have probably recorded the data with an older version of ET. Try opening the file with the
+   same version of ET as it was recorded with.
+   For example, in Distance Detector you might get the error ``Could not start, Not ready to start (CONFIG_MISMATCH)`` when trying to replay an old file.
+   You can find out which version the h5-file was recorded with by running the script:
+
+   .. code-block::
+
+      examples/a121/load_record.py <your h5-file>
+
+   which will output the "ET version":
+   .. code-block::
+
+      ET version:  <the ET version that created the h5-file>
+      RSS version: <the RSS version used when creating the h5-file>
+      HW name:     xc120
+      Data shape:  (256, 1, 439)
+      ...
+
+   Then you can try installing that version (``pip install acconeer-exptool==<the ET version that created the h5-file>``) and replaying the file.
+
 Sensor related
 --------------
 

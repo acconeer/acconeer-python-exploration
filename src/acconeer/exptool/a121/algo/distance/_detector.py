@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -13,8 +13,10 @@ import h5py
 import numpy as np
 import numpy.typing as npt
 from attributes_doc import attributes_doc
+from packaging.version import Version
 
 from acconeer.exptool import a121, opser
+from acconeer.exptool import type_migration as tm
 from acconeer.exptool._core.class_creation.attrs import attrs_optional_ndarray_isclose
 from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
@@ -74,17 +76,11 @@ class SubsweepGroupPlan:
     breakpoints: list[int] = attrs.field()
     profile: a121.Profile = attrs.field()
     hwaas: list[int] = attrs.field()
-    prf: Optional[a121.PRF] = attrs.field()
 
 
 Plan = Dict[MeasurementType, List[SubsweepGroupPlan]]
 
-
-def optional_prf_converter(prf: Optional[a121.PRF]) -> Optional[a121.PRF]:
-    if prf is None:
-        return None
-
-    return a121.PRF(prf)
+PRF_REMOVED_ET_VERSION = Version("v7.13.2")
 
 
 @attributes_doc
@@ -112,15 +108,6 @@ class DetectorConfig(AlgoConfigBase):
     leakage is used to maximize SNR.
 
     A lower profile improves the radial resolution.
-    """
-
-    prf: Optional[a121.PRF] = attrs.field(default=None, converter=optional_prf_converter)
-    """Specify PRF used for all subsweeps
-
-    If no argument is provided, the highest possible PRF for the range is used.
-    Override to avoid false peaks in the case of strong reflectors outside of the measurement range.
-
-    A lower PRF will increase MUR and increase measurement time
     """
 
     close_range_leakage_cancellation: bool = attrs.field(default=False)
@@ -594,10 +581,11 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         group_index = 0
 
         plans = cls._create_group_plans(config)
+        prf = cls._get_max_prf(plans)
 
         if MeasurementType.CLOSE_RANGE in plans:
             sensor_config = cls._close_subsweep_group_plans_to_sensor_config(
-                plans[MeasurementType.CLOSE_RANGE]
+                plans[MeasurementType.CLOSE_RANGE], prf
             )
             groups.append({sensor_id: sensor_config for sensor_id in sensor_ids})
             processor_specs.append(
@@ -619,7 +607,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                 sensor_config,
                 processor_specs_subsweep_indexes,
             ) = cls._far_subsweep_group_plans_to_sensor_config_and_subsweep_indexes(
-                plans[MeasurementType.FAR_RANGE]
+                plans[MeasurementType.FAR_RANGE], prf
             )
             groups.append({sensor_id: sensor_config for sensor_id in sensor_ids})
 
@@ -877,7 +865,6 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
             breakpoints=extended_breakpoints,
             profile=profile,
             hwaas=hwaas,
-            prf=config.prf,
         )
 
     @classmethod
@@ -994,8 +981,28 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
             return int((limit // cls.VALID_STEP_LENGTHS[-1]) * cls.VALID_STEP_LENGTHS[-1])
 
     @classmethod
+    def _get_max_prf(cls, plans: Dict[MeasurementType, List[SubsweepGroupPlan]]) -> a121.PRF:
+        selected_prf = a121.PRF.PRF_19_5_MHz
+
+        if MeasurementType.CLOSE_RANGE in plans:
+            (plan,) = plans[MeasurementType.CLOSE_RANGE]
+            prf = select_prf(plan.breakpoints[1], plan.profile)
+            if prf.frequency < selected_prf.frequency:
+                selected_prf = prf
+
+        if MeasurementType.FAR_RANGE in plans:
+            subsweep_group_plans = plans[MeasurementType.FAR_RANGE]
+            for plan in subsweep_group_plans:
+                for bp_idx in range(len(plan.breakpoints) - 1):
+                    prf = select_prf(plan.breakpoints[bp_idx + 1], plan.profile)
+                    if prf.frequency < selected_prf.frequency:
+                        selected_prf = prf
+
+        return selected_prf
+
+    @classmethod
     def _close_subsweep_group_plans_to_sensor_config(
-        cls, plan_: List[SubsweepGroupPlan]
+        cls, plan_: List[SubsweepGroupPlan], prf: a121.PRF
     ) -> a121.SensorConfig:
         (plan,) = plan_
         subsweeps = []
@@ -1009,6 +1016,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                 receiver_gain=15,
                 phase_enhancement=True,
                 enable_loopback=True,
+                prf=a121.PRF.PRF_15_6_MHz,
             )
         )
         num_points = int((plan.breakpoints[1] - plan.breakpoints[0]) / plan.step_length)
@@ -1021,16 +1029,14 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                 hwaas=plan.hwaas[0],
                 receiver_gain=5,
                 phase_enhancement=True,
-                prf=select_prf(plan.breakpoints[1], plan.profile)
-                if plan.prf is None
-                else plan.prf,
+                prf=prf,
             )
         )
         return a121.SensorConfig(subsweeps=subsweeps, sweeps_per_frame=10)
 
     @classmethod
     def _far_subsweep_group_plans_to_sensor_config_and_subsweep_indexes(
-        cls, subsweep_group_plans: list[SubsweepGroupPlan]
+        cls, subsweep_group_plans: list[SubsweepGroupPlan], prf: a121.PRF
     ) -> Tuple[a121.SensorConfig, list[list[int]]]:
         subsweeps = []
         processor_specs_subsweep_indexes = []
@@ -1050,9 +1056,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                         hwaas=plan.hwaas[bp_idx],
                         receiver_gain=10,
                         phase_enhancement=True,
-                        prf=select_prf(plan.breakpoints[bp_idx + 1], plan.profile)
-                        if plan.prf is None
-                        else plan.prf,
+                        prf=prf,
                     )
                 )
                 subsweep_indexes.append(subsweep_idx)
@@ -1197,9 +1201,72 @@ def _load_algo_data(
     algo_group: h5py.Group,
 ) -> Tuple[list[int], DetectorConfig, DetectorContext]:
     sensor_ids = algo_group["sensor_ids"][()].tolist()
-    config = DetectorConfig.from_json(algo_group["detector_config"][()])
+    try:
+        config = detector_config_timeline.migrate(algo_group["detector_config"][()].decode())
+    except tm.core.MigrationErrorGroup as exc:
+        msg = ""
+        match = exc.subgroup(BadMigrationPathError)
+        if match is not None:
+            # Add more details from exception thrown
+            for exc_arg in match.exceptions[0].args:
+                if isinstance(exc_arg, str):
+                    print(exc_arg)
+                    msg += f", {exc_arg}"
+
+        raise TypeError(msg) from exc
 
     context_group = algo_group["context"]
     context = detector_context_timeline.migrate(context_group)
 
     return sensor_ids, config, context
+
+
+@attrs.mutable
+@attrs.mutable(kw_only=True)
+class _DetectorConfig_v0(AlgoConfigBase):
+    start_m: float = attrs.field(default=0.25)
+    end_m: float = attrs.field(default=3.0)
+    max_step_length: Optional[int] = attrs.field(default=None)
+    max_profile: a121.Profile = attrs.field(default=a121.Profile.PROFILE_5, converter=a121.Profile)
+    close_range_leakage_cancellation: bool = attrs.field(default=False)
+    signal_quality: float = attrs.field(default=15.0)
+    threshold_method: ThresholdMethod = attrs.field(
+        default=ThresholdMethod.CFAR,
+        converter=ThresholdMethod,
+    )
+    peaksorting_method: PeakSortingMethod = attrs.field(
+        default=PeakSortingMethod.STRONGEST,
+        converter=PeakSortingMethod,
+    )
+    reflector_shape: ReflectorShape = attrs.field(
+        default=ReflectorShape.GENERIC,
+        converter=ReflectorShape,
+    )
+    num_frames_in_recorded_threshold: int = attrs.field(default=100)
+    fixed_threshold_value: float = attrs.field(default=DEFAULT_FIXED_AMPLITUDE_THRESHOLD_VALUE)
+    fixed_strength_threshold_value: float = attrs.field(
+        default=DEFAULT_FIXED_STRENGTH_THRESHOLD_VALUE
+    )
+    threshold_sensitivity: float = attrs.field(default=DEFAULT_THRESHOLD_SENSITIVITY)
+    update_rate: Optional[float] = attrs.field(default=50.0)
+    prf: Optional[a121.PRF] = attrs.field(default=None)
+
+    def _collect_validation_results(self) -> list[a121.ValidationResult]:
+        return []
+
+
+class BadMigrationPathError(Exception): ...
+
+
+def always_raise_an_error_when_migrating_v0(_: _DetectorConfig_v0) -> DetectorConfig:
+    msg = f"Try opening the file in an earlier version of ET <= {PRF_REMOVED_ET_VERSION}"
+    raise BadMigrationPathError(msg)
+
+
+detector_config_timeline = (
+    tm.start(_DetectorConfig_v0)
+    .load(str, _DetectorConfig_v0.from_json, fail=[TypeError])
+    .nop()
+    .epoch(DetectorConfig, always_raise_an_error_when_migrating_v0, fail=[BadMigrationPathError])
+    .load(str, DetectorConfig.from_json, fail=[TypeError])
+)

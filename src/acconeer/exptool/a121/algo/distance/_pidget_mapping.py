@@ -72,20 +72,6 @@ def get_pidget_mapping() -> PidgetFactoryMapping:
                 PeakSortingMethod.STRONGEST: "Strongest",
             },
         ),
-        "prf": pidgets.OptionalEnumPidgetFactory(
-            name_label_text="PRF:",
-            name_label_tooltip=get_attribute_docstring(DetectorConfig, "prf"),
-            checkbox_label_text="Override",
-            enum_type=a121.PRF,
-            label_mapping={
-                a121.PRF.PRF_19_5_MHz: "19.5 MHz",
-                a121.PRF.PRF_15_6_MHz: "15.6 MHz",
-                a121.PRF.PRF_13_0_MHz: "13.0 MHz",
-                a121.PRF.PRF_8_7_MHz: "8.7 MHz",
-                a121.PRF.PRF_6_5_MHz: "6.5 MHz",
-                a121.PRF.PRF_5_2_MHz: "5.2 MHz",
-            },
-        ),
         "threshold_method": pidgets.EnumPidgetFactory(
             name_label_text="Threshold method:",
             name_label_tooltip=get_attribute_docstring(DetectorConfig, "threshold_method"),

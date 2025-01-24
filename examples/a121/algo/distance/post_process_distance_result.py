@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 import argparse
@@ -7,8 +7,9 @@ import h5py
 import matplotlib.pyplot as plt
 
 from acconeer.exptool.a121 import H5Record, _ReplayingClient, _StopReplay
-from acconeer.exptool.a121.algo.distance import Detector, DetectorConfig, DetectorContext
+from acconeer.exptool.a121.algo.distance import Detector, DetectorContext
 from acconeer.exptool.a121.algo.distance._context import detector_context_timeline
+from acconeer.exptool.a121.algo.distance._detector import detector_config_timeline
 
 
 def main():
@@ -21,7 +22,9 @@ def main():
         algo_group = file["algo"]
 
         sensor_ids = algo_group["sensor_ids"][()].tolist()
-        detector_config = DetectorConfig.from_json(algo_group["detector_config"][()])
+        detector_config = detector_config_timeline.migrate(
+            algo_group["detector_config"][()].decode()
+        )
         context_group = algo_group["context"]
         context: DetectorContext = detector_context_timeline.migrate(context_group)
 

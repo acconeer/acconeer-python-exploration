@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -11,13 +11,16 @@ import h5py
 from attributes_doc import attributes_doc
 
 from acconeer.exptool import a121, opser
+from acconeer.exptool import type_migration as tm
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo import Controller
 from acconeer.exptool.a121.algo.distance import (
+    PRF_REMOVED_ET_VERSION,
     Detector,
     DetectorConfig,
     DetectorContext,
     DetectorResult,
+    _DetectorConfig_v0,
 )
 from acconeer.exptool.a121.algo.distance._detector import detector_context_timeline
 
@@ -202,9 +205,70 @@ def _record_algo_data(
 
 def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, RefAppConfig, RefAppContext]:
     sensor_id = int(algo_group["sensor_id"][()])
-    config = RefAppConfig.from_json(algo_group["config"][()])
+
+    try:
+        config = ref_app_config_timeline.migrate(algo_group["config"][()].decode())
+    except tm.core.MigrationErrorGroup as exc:
+        msg = ""
+        match = exc.subgroup(BadMigrationPathError)
+        if match is not None:
+            # Add more details from exception thrown
+            for exc_arg in match.exceptions[0].args:
+                if isinstance(exc_arg, str):
+                    print(exc_arg)
+                    msg += f", {exc_arg}"
+
+        raise TypeError(msg) from exc
 
     context_group = algo_group["tank_level_context"]
     tank_level_context = ref_app_context_timeline.migrate(context_group)
 
     return sensor_id, config, tank_level_context
+
+
+@attrs.mutable
+@attrs.mutable(kw_only=True)
+class _RefAppConfig_v0(_DetectorConfig_v0):
+    start_m: float = attrs.field(default=0.03)
+    end_m: float = attrs.field(default=0.5)
+    median_filter_length: int = attrs.field(default=5)
+    num_medians_to_average: int = attrs.field(default=1)
+    close_range_leakage_cancellation: bool = attrs.field(default=False)
+
+    def to_detector_config(self) -> RefAppConfig:
+        return RefAppConfig(
+            start_m=self.start_m - 0.015,
+            end_m=min(self.end_m * 1.05, 23.0),
+            max_step_length=self.max_step_length,
+            max_profile=self.max_profile,
+            close_range_leakage_cancellation=self.close_range_leakage_cancellation,
+            signal_quality=self.signal_quality,
+            threshold_method=self.threshold_method,
+            peaksorting_method=self.peaksorting_method,
+            reflector_shape=self.reflector_shape,
+            num_frames_in_recorded_threshold=self.num_frames_in_recorded_threshold,
+            fixed_strength_threshold_value=self.fixed_strength_threshold_value,
+            fixed_threshold_value=self.fixed_threshold_value,
+            threshold_sensitivity=self.threshold_sensitivity,
+            update_rate=self.update_rate,
+        )
+
+    def _collect_validation_results(self) -> list[a121.ValidationResult]:
+        return []
+
+
+class BadMigrationPathError(Exception): ...
+
+
+def always_raise_an_error_when_migrating_v0(_: _RefAppConfig_v0) -> RefAppConfig:
+    msg = f"Try opening the file in an earlier version of ET <= {PRF_REMOVED_ET_VERSION}"
+    raise BadMigrationPathError(msg)
+
+
+ref_app_config_timeline = (
+    tm.start(_RefAppConfig_v0)
+    .load(str, _RefAppConfig_v0.from_json, fail=[TypeError])
+    .nop()
+    .epoch(RefAppConfig, always_raise_an_error_when_migrating_v0, fail=[BadMigrationPathError])
+    .load(str, RefAppConfig.from_json, fail=[TypeError])
+)

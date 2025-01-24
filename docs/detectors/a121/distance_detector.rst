@@ -325,10 +325,6 @@ The following points provide insight into the configuration process.
 - :attr:`~acconeer.exptool.a121.algo.distance.DetectorConfig.signal_quality` should be set so that desirable detection rate is achieved.
   A higher value corresponds to higher HWAAS and SNR, but also higher power consumption.
 
-- :attr:`~acconeer.exptool.a121.algo.distance.DetectorConfig.prf` should be used when a fixed value is required, instead of dynamically scaling the value for each subsweep.
-  To avoid false peaks in the case of strong reflectors outside of the measurement range, the PRF should be overridden with a lower value.
-  See `PRF documentation <https://docs.acconeer.com/en/latest/exploration_tool/api/a121.html#acconeer.exptool.a121.SensorConfig.prf>`__ for more information.
-
 
 
 Use Case Scenarios

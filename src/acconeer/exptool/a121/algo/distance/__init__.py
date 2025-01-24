@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from ._aggregator import (
@@ -9,7 +9,14 @@ from ._aggregator import (
     ProcessorSpec,
 )
 from ._context import DetectorContext
-from ._detector import DetailedStatus, Detector, DetectorConfig, DetectorResult
+from ._detector import (
+    PRF_REMOVED_ET_VERSION,
+    DetailedStatus,
+    Detector,
+    DetectorConfig,
+    DetectorResult,
+    _DetectorConfig_v0,
+)
 from ._processors import (
     MeasurementType,
     Processor,
