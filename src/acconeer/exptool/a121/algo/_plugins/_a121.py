@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -79,6 +79,12 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
 
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
             msg = "Could not load from file"
+
+            # Add more details from exception thrown
+            for exc_arg in exc.args:
+                if isinstance(exc_arg, str):
+                    msg += f", {exc_arg}"
+
             raise HandledException(msg) from exc
 
         self._replaying_client = ApplicationClient.wrap_a121(replaying_client, self.callback)
@@ -193,11 +199,16 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
         try:
             self._start_session(self._recorder)
         except Exception as exc:
+            msg = "Could not start"
+            # Add more details from exception thrown
+            for exc_arg in exc.args:
+                if isinstance(exc_arg, str):
+                    msg += f", {exc_arg}"
+
             recorder = self.client.detach_recorder()
             if recorder is not None:
                 recorder.close()
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
-            msg = "Could not start"
             raise HandledException(msg) from exc
 
         self._started = True
