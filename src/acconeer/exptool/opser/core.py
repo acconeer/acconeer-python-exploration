@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -168,12 +168,18 @@ class Persistor(abc.ABC):
         group.attrs["persistor"] = f"{type(self).__name__}"
         return group
 
-    def create_own_dataset(self, data: t.Any, *, dtype: t.Any = None) -> h5py.Dataset:
+    def create_own_dataset(
+        self,
+        data: t.Any,
+        *,
+        dtype: t.Any = None,
+        shape: t.Optional[tuple[int, ...]] = None,
+    ) -> h5py.Dataset:
         if self.name == "./":
             msg = "Datasets cannot be the root entry. Try wrapping the object or save a different representation."
             msg += f"\n\nAttempted to save the following to './': {data!r}"
             raise SaveError(msg)
-        dataset = self.parent_group.create_dataset(self.name, data=data, dtype=dtype)
+        dataset = self.parent_group.create_dataset(self.name, data=data, dtype=dtype, shape=shape)
         dataset.attrs["persistor"] = f"{type(self).__name__}"
         return dataset
 

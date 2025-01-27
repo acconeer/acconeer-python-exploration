@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 from __future__ import annotations
 
@@ -82,7 +82,7 @@ class NonePersistor(core.Persistor):
         if data is not None:
             raise core.TypeMissmatchError.wrong_type_encountered(data, "?", type(None))
 
-        self.parent_group.create_dataset(self.name, dtype="f")
+        self.create_own_dataset(data, dtype="f")
 
     def load(self) -> None:
         should_be_empty = self.dataset[()]

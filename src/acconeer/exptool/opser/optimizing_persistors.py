@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 from __future__ import annotations
 
@@ -97,9 +97,9 @@ class RaggedNumpyArrayPersistor(core.Persistor):
         ragged_dtype = h5py.vlen_dtype(dtype)
         num_arrays = len(data)
 
-        ragged_dataset = self.parent_group.create_dataset(
-            self.name,
-            (num_arrays,),
+        ragged_dataset = self.create_own_dataset(
+            data=None,
+            shape=(num_arrays,),
             dtype=ragged_dtype,
         )
 
