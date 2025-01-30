@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -148,7 +148,7 @@ class RefAppConfig(AlgoConfigBase):
                 a121.ValidationError(
                     self,
                     "range_end_m",
-                    "End point must be greater than start point",
+                    "End point cannot be behind start point",
                 )
             )
 
@@ -160,6 +160,16 @@ class RefAppConfig(AlgoConfigBase):
                     "End point must be within 5m, see documentation for details.",
                 )
             )
+
+        if self.obstruction_detection and (self.obstruction_end_m < self.obstruction_start_m):
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "obstruction_end_m",
+                    "Obstruction end point cannot be behind start point",
+                )
+            )
+
         return validation_results
 
 
@@ -550,13 +560,16 @@ def get_obstruction_subsweep_config(ref_app_config: RefAppConfig) -> a121.Subswe
     step_length = 2  # Typically not very important, we just want a few points close to the sensor.
 
     start_point = int(round(ref_app_config.obstruction_start_m / APPROX_BASE_STEP_LENGTH_M))
-    num_points = int(
-        round(
-            np.ceil(
-                (ref_app_config.obstruction_end_m - ref_app_config.obstruction_start_m)
-                / (step_length * APPROX_BASE_STEP_LENGTH_M)
+    num_points = max(
+        int(
+            round(
+                np.ceil(
+                    (ref_app_config.obstruction_end_m - ref_app_config.obstruction_start_m)
+                    / (step_length * APPROX_BASE_STEP_LENGTH_M)
+                )
             )
-        )
+        ),
+        1,
     )
     conf_obstruction = a121.SubsweepConfig(
         start_point=start_point,
@@ -589,13 +602,16 @@ def get_sensor_configs(ref_app_config: RefAppConfig) -> Dict[str, a121.SensorCon
         while step_length > 2 and 24 % step_length != 0:
             step_length -= 1
     hwaas = ref_app_config.hwaas
-    num_points = int(
-        round(
-            np.ceil(
-                (ref_app_config.range_end_m - ref_app_config.range_start_m)
-                / (step_length * APPROX_BASE_STEP_LENGTH_M)
+    num_points = max(
+        int(
+            round(
+                np.ceil(
+                    (ref_app_config.range_end_m - ref_app_config.range_start_m)
+                    / (step_length * APPROX_BASE_STEP_LENGTH_M)
+                )
             )
-        )
+        ),
+        1,
     )
 
     subsweeps = []
