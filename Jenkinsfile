@@ -29,8 +29,8 @@ def integrationTestA111RssVersionsForBuildScope = [
 @Field
 def modelTestA121RssVersionForBuildScope = [
     (BuildScope.SANITY)  : [tag: "a121-v1.8.1"],
-    (BuildScope.HOURLY)  : [],
-    (BuildScope.NIGHTLY) : [],
+    (BuildScope.HOURLY)  : [tag: "a121-v1.8.1"],
+    (BuildScope.NIGHTLY) : [tag: "a121-v1.8.1"],
 ]
 
 String dockerArgs(env_map) {
