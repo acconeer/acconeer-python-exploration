@@ -140,7 +140,13 @@ try {
                     buildDocker(path: 'docker').inside(dockerArgs(env)) {
                         sh 'python3 -V'
                         hatchWrap 'build'
-                        hatchWrap 'run docs:build'
+                        if (buildScope == BuildScope.NIGHTLY) {
+                            hatchWrap 'run docs:fullbuild'
+                        }
+                        else
+                        {
+                            hatchWrap 'run docs:build'
+                        }
                     }
                     archiveArtifacts artifacts: 'dist/*', allowEmptyArchive: true
                     stash includes: 'dist/**', name: 'dist'

@@ -163,7 +163,8 @@ spelling = "python -m sphinx -W -b spelling docs docs/_build"
 latexpdf = "python -m sphinx -M latexpdf docs docs/_build"
 rediraffe-write = "python -m sphinx -b rediraffewritediff docs docs/_build"
 rediraffe-check = "python -m sphinx -b rediraffecheckdiff docs docs/_build"
-build = ["clean", "html", "latexpdf", "linkcheck", "spelling", "rediraffe-check"]
+build = ["clean", "html", "latexpdf", "spelling", "rediraffe-check"]
+fullbuild = ["clean", "html", "latexpdf", "linkcheck", "spelling", "rediraffe-check"]
 
 [tool.hatch.envs.hatch-static-analysis]
 # This is the environment for "hatch fmt"
