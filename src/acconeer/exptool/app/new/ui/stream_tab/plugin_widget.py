@@ -1,12 +1,12 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
 
-import importlib.resources
 import logging
 from enum import Enum
 from functools import partial
+from importlib.resources import as_file, files
 from typing import Any, Optional
 
 import qtawesome as qta
@@ -361,7 +361,7 @@ class ControlPlaceholder(QWidget):
 
         self.setLayout(QGridLayout(self))
 
-        with importlib.resources.path(resources, "icon-black.svg") as path:
+        with as_file(files(resources) / "icon-black.svg") as path:
             icon = QSvgWidget(str(path), self)
 
         icon.setMaximumSize(60, 60)

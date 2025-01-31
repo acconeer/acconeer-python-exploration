@@ -1,15 +1,15 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 from __future__ import annotations
 
 import argparse
 import ctypes
 import functools
-import importlib.resources
 import logging
 import sys
 import time
 import typing as t
+from importlib.resources import as_file, files
 
 import qdarktheme
 
@@ -110,7 +110,7 @@ def main() -> None:
     pg.setConfigOption("leftButtonPan", False)
     pg.setConfigOptions(antialias=True)
 
-    with importlib.resources.path(resources, "icon.png") as path:
+    with as_file(files(resources) / "icon.png") as path:
         app.setWindowIcon(_pixmap_to_icon(QtGui.QPixmap(str(path))))
 
     mw = MainWindow(model)

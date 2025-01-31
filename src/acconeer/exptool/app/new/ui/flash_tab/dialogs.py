@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
 
-import importlib
 import logging
+from importlib.resources import as_file, files
 from typing import Optional, Tuple
 
 from requests import Response, Session
@@ -59,7 +59,7 @@ class FlashDialog(QDialog):
         self.loading.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         loader_gif = None
-        with importlib.resources.path(resources, "loader.gif") as path:
+        with as_file(files(resources) / "loader.gif") as path:
             loader_gif = path
 
         self.flash_movie = QMovie(str(loader_gif))
@@ -173,7 +173,7 @@ class FlashLoginDialog(QDialog):
         self.login_spinner.setHidden(True)
 
         loader_gif = None
-        with importlib.resources.path(resources, "loader.gif") as path:
+        with as_file(files(resources) / "loader.gif") as path:
             loader_gif = path
 
         self.login_movie = QMovie(str(loader_gif))

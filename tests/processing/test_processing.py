@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import contextlib
-import importlib.resources
 import typing as t
+from importlib.resources import as_file, files
 from pathlib import Path
 
 import h5py
@@ -53,7 +53,7 @@ def output_path(input_path: Path, algorithm_factory: AlgorithmFactory) -> Path:
 @pytest.fixture
 def input_path(resource_name: str) -> Path:
     """Returns the input path, given a resource name (in the "data_files" package)"""
-    with importlib.resources.path(data_files.recorded_data, resource_name) as path:
+    with as_file(files(data_files.recorded_data) / resource_name) as path:
         return path
 
 

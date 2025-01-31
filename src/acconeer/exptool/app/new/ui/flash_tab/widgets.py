@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
 
-import importlib
 import logging
+from importlib.resources import as_file, files
 from typing import Any, Optional, Tuple
 
 from requests import Response, Session
@@ -90,7 +90,7 @@ class FlashMainWidget(QWidget):
         self.download_spinner.setHidden(True)
 
         loader_gif = None
-        with importlib.resources.path(resources, "loader.gif") as path:
+        with as_file(files(resources) / "loader.gif") as path:
             loader_gif = path
 
         self.download_movie = QMovie(str(loader_gif))

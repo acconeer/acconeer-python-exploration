@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-import importlib.resources
+from importlib.resources import as_file, files
 from typing import Optional
 
 from typing_extensions import Literal
@@ -106,12 +106,12 @@ class CentralWidget(QWidget):
         super().__init__(parent)
         self.setLayout(QHBoxLayout(self))
 
-        with importlib.resources.path(et_app_resources, "new_gui.png") as path:
+        with as_file(files(et_app_resources) / "new_gui.png") as path:
             new_app_button = ImageButton("A121", path.as_posix(), QSize(500, 300))
             new_app_button.clicked.connect(self.sig_new_app_clicked)
             self.layout().addWidget(new_app_button)
 
-        with importlib.resources.path(et_app_resources, "old_gui.png") as path:
+        with as_file(files(et_app_resources) / "old_gui.png") as path:
             old_app_button = ImageButton("A111", path.as_posix(), QSize(500, 300))
             old_app_button.clicked.connect(self.sig_old_app_clicked)
             self.layout().addWidget(old_app_button)
