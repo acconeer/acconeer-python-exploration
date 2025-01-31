@@ -85,10 +85,8 @@ def pytest_generate_tests(metafunc):
     err_msg_fmt = "Need to specify at least 1 {} when running in Jenkins."
 
     if "a111_exploration_server_path" in metafunc.fixturenames:
-        values = _validate_parametrization(
-            metafunc.config.getoption("--a111-exploration-server-paths", []),
-            err_msg=err_msg_fmt.format("A111 Exploration Server"),
-        )
+        # A111 testing could be left out when running sanity tests
+        values = list(metafunc.config.getoption("--a111-exploration-server-paths", []))
         metafunc.parametrize(argnames="a111_exploration_server_path", argvalues=values)
 
     if "a121_exploration_server_path" in metafunc.fixturenames:
