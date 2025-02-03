@@ -15,8 +15,8 @@ def pythonVersionsForBuildScope = [
 @Field
 def integrationTestA121RssVersionsForBuildScope = [
     (BuildScope.SANITY)  : [branch: "master"],
-    (BuildScope.HOURLY)  : [tag: "a121-v1.8.1"],
-    (BuildScope.NIGHTLY) : [branch: "master", tag: "a121-v1.8.1"],
+    (BuildScope.HOURLY)  : [tag: "a121-v1.9.0"],
+    (BuildScope.NIGHTLY) : [branch: "master", tag: "a121-v1.9.0"],
 ]
 
 @Field
@@ -28,9 +28,9 @@ def integrationTestA111RssVersionsForBuildScope = [
 
 @Field
 def modelTestA121RssVersionForBuildScope = [
-    (BuildScope.SANITY)  : [tag: "a121-v1.8.1"],
-    (BuildScope.HOURLY)  : [tag: "a121-v1.8.1"],
-    (BuildScope.NIGHTLY) : [tag: "a121-v1.8.1"],
+    (BuildScope.SANITY)  : [tag: "a121-v1.9.0"],
+    (BuildScope.HOURLY)  : [tag: "a121-v1.9.0"],
+    (BuildScope.NIGHTLY) : [tag: "a121-v1.9.0"],
 ]
 
 String dockerArgs(env_map) {

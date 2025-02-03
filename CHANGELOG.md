@@ -1,5 +1,26 @@
 # Changelog
 
+## v7.14.0
+
+### Added
+- Support for Python 3.13
+- Warn users if multiple Qt binding are installed
+- Possibility to export config as CSV
+
+### Changed
+- Tank level: Disable leakage cancellation as default
+- Tank level: Assign correct level status
+- Tank level: Update maximum distance to 23 m
+- Tank level: Update presets
+- A121: Bump SDK version
+
+### Fixed
+- A121 Distance: Use the same PRF for all subsweeps
+
+### Removed
+- Support for Python 3.8
+- A121 Distance: Removed PRF config from distance detector
+
 ## v7.13.2
 
 ### Fixed
