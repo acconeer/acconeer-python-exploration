@@ -1015,6 +1015,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                 hwaas=plan.hwaas[0],
                 receiver_gain=15,
                 phase_enhancement=True,
+                iq_imbalance_compensation=True,
                 enable_loopback=True,
                 prf=a121.PRF.PRF_15_6_MHz,
             )
@@ -1029,6 +1030,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                 hwaas=plan.hwaas[0],
                 receiver_gain=5,
                 phase_enhancement=True,
+                iq_imbalance_compensation=True,
                 prf=prf,
             )
         )
@@ -1056,6 +1058,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                         hwaas=plan.hwaas[bp_idx],
                         receiver_gain=10,
                         phase_enhancement=True,
+                        iq_imbalance_compensation=True,
                         prf=prf,
                     )
                 )

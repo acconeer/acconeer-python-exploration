@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -124,6 +124,10 @@ class SensorConfig:
     enable_tx = subsweep_delegate_field(SubsweepConfig.enable_tx, type_=bool)  # type: ignore[misc]
     enable_loopback = subsweep_delegate_field(SubsweepConfig.enable_loopback, type_=bool)  # type: ignore[misc]
     phase_enhancement = subsweep_delegate_field(SubsweepConfig.phase_enhancement, type_=bool)  # type: ignore[misc]
+    iq_imbalance_compensation = subsweep_delegate_field(
+        SubsweepConfig.iq_imbalance_compensation,  # type: ignore[misc]
+        type_=bool,
+    )
     prf = subsweep_delegate_field(SubsweepConfig.prf, type_=PRF)
 
     def __init__(
@@ -147,6 +151,7 @@ class SensorConfig:
         enable_tx: Optional[bool] = None,
         enable_loopback: Optional[bool] = None,
         phase_enhancement: Optional[bool] = None,
+        iq_imbalance_compensation: Optional[bool] = None,
         prf: Optional[PRF] = None,
     ) -> None:
         if subsweeps is not None and num_subsweeps is not None:
@@ -166,6 +171,7 @@ class SensorConfig:
             and enable_tx is None
             and enable_loopback is None
             and phase_enhancement is None
+            and iq_imbalance_compensation is None
             and prf is None
         )
         if subsweeps is not None and not no_subsweep_param_passed:
@@ -212,6 +218,8 @@ class SensorConfig:
             self.enable_loopback = enable_loopback
         if phase_enhancement is not None:
             self.phase_enhancement = phase_enhancement
+        if iq_imbalance_compensation is not None:
+            self.iq_imbalance_compensation = iq_imbalance_compensation
         if prf is not None:
             self.prf = prf
 

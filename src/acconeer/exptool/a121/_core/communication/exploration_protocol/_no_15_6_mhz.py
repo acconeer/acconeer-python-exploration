@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -8,10 +8,11 @@ from typing import Optional
 from acconeer.exptool.a121._core.entities import PRF, SensorCalibration, SessionConfig
 from acconeer.exptool.a121._core.utils import iterate_extended_structure_values
 
-from ._latest import ExplorationProtocol, ExplorationProtocolError
+from ._latest import ExplorationProtocolError
+from ._no_iq_imb_comp import ExplorationProtocol_No_IQ_Imb_Comp
 
 
-class ExplorationProtocol_No_15_6MHz_PRF(ExplorationProtocol):
+class ExplorationProtocol_No_15_6MHz_PRF(ExplorationProtocol_No_IQ_Imb_Comp):
     @classmethod
     def setup_command(
         cls,

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -161,6 +161,14 @@ class SubsweepConfig:
     the amplitude peak.
 
     Enabling the phase enhancement increases the processing execution time.
+    """
+
+    iq_imbalance_compensation: bool = attrs.field(default=False, converter=bool)
+    """Enable or disable IQ imbalance compensation
+
+    If enabled, reduces undesirable amplitude variations over distance.
+
+    Enabling IQ imbalance compensation increases the processing execution time.
     """
 
     _prf: PRF = attrs.field(

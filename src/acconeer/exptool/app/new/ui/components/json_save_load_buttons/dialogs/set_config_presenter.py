@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -49,6 +49,7 @@ def _subsweep_parameters(config: a121.SubsweepConfig, *, index: t.Optional[int])
                 "enable_tx": _bool(config.enable_tx),
                 "enable_loopback": _bool(config.enable_loopback),
                 "phase_enhancement": _bool(config.phase_enhancement),
+                "iq_imbalance_compensation": _bool(config.iq_imbalance_compensation),
                 "prf": _prf(config.prf),
             }.items()
         ]

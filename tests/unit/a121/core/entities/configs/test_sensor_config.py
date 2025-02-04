@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 # type: ignore
@@ -296,6 +296,7 @@ def test_enum_fields_in_to_json():
         ("receiver_gain", 13),
         ("enable_tx", False),
         ("phase_enhancement", True),
+        ("iq_imbalance_compensation", True),
         ("prf", a121.PRF.PRF_6_5_MHz),
     ],
 )
@@ -375,6 +376,7 @@ def test_config_that_require_too_much_buffer_space_raises_error_upon_validate(
         "enable_tx",
         "enable_loopback",
         "phase_enhancement",
+        "iq_imbalance_compensation",
         "prf",
     ],
 )

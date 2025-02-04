@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2024
+# Copyright (c) Acconeer AB, 2024-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -24,6 +24,7 @@ def get_calibrate_offset_sensor_config() -> a121.SensorConfig:
         sweeps_per_frame=1,
         enable_loopback=True,
         phase_enhancement=True,
+        iq_imbalance_compensation=True,
     )
 
 

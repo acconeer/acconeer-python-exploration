@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -13,6 +13,7 @@ from acconeer.exptool.a121._core.communication.exploration_protocol import (
     ExplorationProtocol,
     ExplorationProtocol_No_5_2MHz_PRF,
     ExplorationProtocol_No_15_6MHz_PRF,
+    ExplorationProtocol_No_IQ_Imb_Comp,
     ExplorationProtocol_NoCalibrationReuse,
     get_exploration_protocol,
 )
@@ -72,6 +73,7 @@ class TestLatestExplorationProtocolCommands:
                                 enable_tx=True,
                                 enable_loopback=False,
                                 phase_enhancement=False,
+                                iq_imbalance_compensation=False,
                                 prf=a121.PRF.PRF_6_5_MHz,
                             ),
                         ],
@@ -106,6 +108,7 @@ class TestLatestExplorationProtocolCommands:
                                     "enable_tx": True,
                                     "enable_loopback": False,
                                     "phase_enhancement": False,
+                                    "iq_imbalance_compensation": False,
                                     "prf": "6_5_MHz",
                                 }
                             ],
@@ -141,7 +144,8 @@ class TestExplorationProtocolFactory:
             ("a121-v0.6.0", ExplorationProtocol_No_15_6MHz_PRF),
             ("a121-v0.7.0", ExplorationProtocol_No_15_6MHz_PRF),
             ("a121-v0.7.0-36-ge6dee0180c", ExplorationProtocol_No_15_6MHz_PRF),
-            ("a121-v0.7.0-37-gce2d06dd2e", ExplorationProtocol),
+            ("a121-v0.7.0-37-gce2d06dd2e", ExplorationProtocol_No_IQ_Imb_Comp),
+            ("a121-v1.9.0-84-g605f449bc9", ExplorationProtocol),
         ],
     )
     def test_get_exploration_protocol_compatible_versions(

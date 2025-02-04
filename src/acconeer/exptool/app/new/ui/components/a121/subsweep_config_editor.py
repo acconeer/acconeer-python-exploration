@@ -97,6 +97,12 @@ class SubsweepConfigEditor(DataEditor[Optional[a121.SubsweepConfig]]):
             name_label_text="Phase enhancement",
             name_label_tooltip=get_attribute_docstring(a121.SubsweepConfig, "phase_enhancement"),
         ),
+        "iq_imbalance_compensation": pidgets.CheckboxPidgetFactory(
+            name_label_text="IQ imbalance compensation",
+            name_label_tooltip=get_attribute_docstring(
+                a121.SubsweepConfig, "iq_imbalance_compensation"
+            ),
+        ),
     }
     ADVANCED_PARAMETERS = {
         "receiver_gain",
@@ -104,6 +110,7 @@ class SubsweepConfigEditor(DataEditor[Optional[a121.SubsweepConfig]]):
         "enable_tx",
         "enable_loopback",
         "phase_enhancement",
+        "iq_imbalance_compensation",
     }
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
