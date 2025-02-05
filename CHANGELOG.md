@@ -1,6 +1,6 @@
 # Changelog
 
-## v7.14.2
+## v7.14.3
 
 ### Added
 - Support for Python 3.13
