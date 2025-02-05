@@ -272,12 +272,12 @@ try {
                     }
                     stage('Publish to Test PyPI') {
                         withCredentials([usernamePassword(credentialsId: 'testpypi', passwordVariable: 'TWINE_PASSWORD', usernameVariable: 'TWINE_USERNAME')]) {
-                            sh 'python3 -m twine upload -r testpypi dist/*'
+                            sh 'twine upload -r testpypi dist/*'
                         }
                     }
                     stage('Publish to PyPI') {
                         withCredentials([usernamePassword(credentialsId: 'pypi', passwordVariable: 'TWINE_PASSWORD', usernameVariable: 'TWINE_USERNAME')]) {
-                            sh 'python3 -m twine upload dist/*'
+                            sh 'twine upload dist/*'
                         }
                     }
                 }
