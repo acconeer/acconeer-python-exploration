@@ -126,3 +126,38 @@ without phase enhancement enabled.
 The phase enhancement feature is implemented as a part of RSS and can be enabled/disabled through
 the API. The easiest way to get familiar with the feature is through Exploration Tool, where
 it can be enabled/disabled.
+
+IQ imbalance compensation
+-------------------------
+
+Key features **#2** and **#4** are used to achieve consistent envelope amplitude values in the distance domain.
+
+The phase rotates at a distance point when an object moves within a small interval and corresponds to where in the interval the object is located.
+IQ imbalance causes oscillation in amplitude when the phase rotates.
+Amplitude oscillation will cause the center of gravity of a peak to shift and impair distance estimation.
+Compensating for the IQ imbalance will reduce the amplitude oscillation.
+
+Loopback measurements are performed to quantify the IQ imbalance at all distance points in a small interval.
+The result is used to calculate compensation coefficients, one for each distance point in the interval.
+The complex samples from a distance point are adjusted by multiplication with the corresponding coefficients.
+The IQ-imbalance repeats outside the small interval so the same coefficients are reused for all distances.
+
+Figures below show the phase rotation and resulting amplitude, with and without IQ imbalance compensation, for an object that moves within the interval.
+The left and right envelope corresponds to the same object but with different phase rotations.
+
+.. figure:: /_static/handbook/a121/in-depth_topics/iq_imbalance.png
+   :align: center
+   :width: 70%
+
+   Amplitude oscillates when the phase rotates over a distance without compensation.
+
+
+.. figure:: /_static/handbook/a121/in-depth_topics/no_iq_imbalance.png
+   :align: center
+   :width: 70%
+
+   Amplitude does not oscillate when the phase rotates over a distance with compensation.
+
+The IQ imbalance compensation feature is implemented as a part of RSS and can be enabled/disabled through
+the API. The easiest way to get familiar with the feature is through Exploration Tool, where
+it can be enabled/disabled.
