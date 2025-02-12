@@ -213,7 +213,7 @@ Additional Setup
             This method is confirmed to work for ***Ubuntu 22.04**.
 
          Ubuntu 22.04
-            To run the application on Ubuntu 20.04, ``libxcb-xinerama0-dev``, ``libusb-1.0-0`` and
+            To run the application on Ubuntu 22.04, ``libxcb-xinerama0-dev``, ``libusb-1.0-0`` and
             ``libxcb-cursor0`` needs to be installed:
 
             .. code-block::
