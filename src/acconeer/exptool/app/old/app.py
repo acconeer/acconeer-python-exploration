@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -2255,11 +2255,11 @@ def main():
     if args.portable:
         pass
 
-    QApplication.setHighDpiScaleFactorRoundingPolicy(
-        QtCore.Qt.HighDpiScaleFactorRoundingPolicy.PassThrough,
-    )
     app = QApplication.instance()
     if app is None:
+        QApplication.setHighDpiScaleFactorRoundingPolicy(
+            QtCore.Qt.HighDpiScaleFactorRoundingPolicy.PassThrough,
+        )
         app = QApplication(sys.argv)
     ex = GUI(use_last_config=args.use_last_config)
 

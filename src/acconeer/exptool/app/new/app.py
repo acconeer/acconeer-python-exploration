@@ -63,9 +63,10 @@ def main() -> None:
     if sys.platform == "win32" or sys.platform == "cygwin":
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("acconeer.exptool")
 
-    QApplication.setHighDpiScaleFactorRoundingPolicy(
-        QtCore.Qt.HighDpiScaleFactorRoundingPolicy.PassThrough,
-    )
+    if QApplication.instance() is None:
+        QApplication.setHighDpiScaleFactorRoundingPolicy(
+            QtCore.Qt.HighDpiScaleFactorRoundingPolicy.PassThrough,
+        )
 
     # The cast necessitated of a miss in the typing stubs.
     app: QApplication = t.cast(QApplication, QApplication.instance()) or QApplication(sys.argv)

@@ -140,6 +140,10 @@ class Launcher(QMainWindow):
 
 
 def run_launcher() -> Optional[Literal["new", "old"]]:
+    QApplication.setHighDpiScaleFactorRoundingPolicy(
+        Qt.HighDpiScaleFactorRoundingPolicy.PassThrough,
+    )
+
     app = QApplication([])
 
     vh = ValueHolder()
