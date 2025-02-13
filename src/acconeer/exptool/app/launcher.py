@@ -59,7 +59,7 @@ class ImageButton(QToolButton):
                 /* The border-image attribute is hack:
                  * https://forum.qt.io/topic/40151/solved-scaled-background-image-using-stylesheet
                  */
-                border-image: url({image_path}) 0 0 0 0 stretch stretch;
+                border-image: url('{image_path}') 0 0 0 0 stretch stretch;
             }}
             """
         )
@@ -92,7 +92,7 @@ class ImageButton(QToolButton):
                 font-size: 32px;
             }}
             QToolButton {{
-                border-image: url({self._image_path}) {zoom_string} stretch stretch;
+                border-image: url('{self._image_path}') {zoom_string} stretch stretch;
             }}
             """
         )
