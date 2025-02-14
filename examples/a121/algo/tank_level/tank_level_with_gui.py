@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -70,6 +70,8 @@ def main():
         fixed_threshold_value=DEFAULT_FIXED_AMPLITUDE_THRESHOLD_VALUE,  # float
         fixed_strength_threshold_value=DEFAULT_FIXED_STRENGTH_THRESHOLD_VALUE,  # float
         threshold_sensitivity=0.0,  # float
+        level_tracking_active=False,
+        partial_tracking_range_m=0.0,
     )
 
     # End setup configurations
@@ -214,6 +216,10 @@ class PGUpdater:
             result.extra_result.processor_extra_result.level_and_time_for_plotting
         )
 
+        # clear sweep curves
+        for idx in range(len(self.sweep_curves)):
+            self.sweep_curves[idx].clear()
+            self.threshold_curves[idx].clear()
         # update sweep plot
         max_val_in_plot = 0
         for idx, processor_result in enumerate(detector_result.processor_results):

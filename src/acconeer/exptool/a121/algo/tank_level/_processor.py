@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 from __future__ import annotations
 
@@ -137,7 +137,9 @@ class Processor:
                 np.append(self.level_and_time_for_plotting["level"], filtered_level)
             )[1:]
 
-    def process(self, detector_result: Dict[int, DetectorResult]) -> ProcessorResult:
+    def process(
+        self, detector_result: Dict[int, DetectorResult], detector_start_m: float
+    ) -> ProcessorResult:
         # Get the first detector result (single sensor operation).
         (result,) = list(detector_result.values())
 
@@ -169,7 +171,7 @@ class Processor:
                 if filtered_level < 0:
                     peak_status = ProcessorLevelStatus.OUT_OF_RANGE
                 elif filtered_level > self.tank_range_end_m - self.tank_range_start_m or (
-                    filtered_level <= self.tank_range_end_m - self.tank_range_start_m
+                    detector_start_m <= self.tank_range_start_m  # relevant for level tracking
                     and self.peak_status_list.count(True) > len(self.peak_status_list) / 2
                     and self.tank_range_start_m >= CLOSE_RANGE_START
                 ):
@@ -178,7 +180,8 @@ class Processor:
                     peak_status = ProcessorLevelStatus.IN_RANGE
             else:
                 if (
-                    self.peak_status_list.count(True) > len(self.peak_status_list) / 2
+                    detector_start_m <= self.tank_range_start_m  # relevant for level tracking
+                    and self.peak_status_list.count(True) > len(self.peak_status_list) / 2
                     and self.tank_range_start_m >= CLOSE_RANGE_START
                 ):
                     peak_status = ProcessorLevelStatus.OVERFLOW

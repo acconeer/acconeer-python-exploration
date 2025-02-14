@@ -539,6 +539,26 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
 
         return recorder_result
 
+    def stop_recorder(self) -> Any:
+        """Stop the recorder if the detector session is already stopped"""
+        recorder = self.client.detach_recorder()
+        if recorder is None:
+            recorder_result = None
+        else:
+            recorder_result = recorder.close()
+
+        return recorder_result
+
+    def stop_detector(self) -> Any:
+        """Stops only the detector session."""
+        if not self.started:
+            msg = "Already stopped"
+            raise RuntimeError(msg)
+
+        self.client.stop_session()
+        self.started = False
+        return None
+
     def _add_context_to_processor_spec(self) -> dict[int, list[ProcessorSpec]]:
         """
         Create and add processor context to processor specification.

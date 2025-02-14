@@ -41,13 +41,18 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
     _recorder: Optional[a121.H5Recorder] = None
 
     def __init__(
-        self, callback: Callable[[Message], None], generation: PluginGeneration, key: str
+        self,
+        callback: Callable[[Message], None],
+        generation: PluginGeneration,
+        key: str,
+        use_app_client: bool = True,
     ) -> None:
         super().__init__(callback, generation, key)
         self._live_client = None
         self._replaying_client = None
         self._opened_record = None
         self._logger = BackendLogger.getLogger(__name__)
+        self._use_app_client = use_app_client
 
     @is_task
     def load_from_file(
@@ -86,8 +91,10 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
                     msg += f", {exc_arg}"
 
             raise HandledException(msg) from exc
-
-        self._replaying_client = ApplicationClient.wrap_a121(replaying_client, self.callback)
+        if self._use_app_client:
+            self._replaying_client = ApplicationClient.wrap_a121(replaying_client, self.callback)
+        else:
+            self._replaying_client = replaying_client
 
         self.start_session(with_recorder=False)
 
@@ -161,7 +168,10 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
         pass
 
     def attach_client(self, *, client: a121.Client) -> None:
-        self._live_client = ApplicationClient.wrap_a121(client, self.callback)
+        if self._use_app_client:
+            self._live_client = ApplicationClient.wrap_a121(client, self.callback)
+        else:
+            self._live_client = client
         self._sync_sensor_ids()
         self.broadcast()
 

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import enum
 import warnings
 from typing import Any, Dict, Optional, Tuple
 
@@ -20,6 +21,7 @@ from acconeer.exptool.a121.algo import (
     PeakSortingMethod,
     ReflectorShape,
 )
+from acconeer.exptool.a121.algo._utils import ENVELOPE_FWHM_M
 from acconeer.exptool.a121.algo.distance import (
     PRF_REMOVED_ET_VERSION,
     Detector,
@@ -32,6 +34,16 @@ from acconeer.exptool.a121.algo.distance import (
 from acconeer.exptool.a121.algo.distance._detector import detector_context_timeline
 
 from ._processor import Processor, ProcessorConfig, ProcessorExtraResult, ProcessorLevelStatus
+
+
+PARTIAL_RANGE_FWHM_FACTOR = 2.0  # Sets the minimal partial range in number of FWHM widths
+
+
+class RangeMode(enum.Enum):
+    """Range mode of ref app"""
+
+    FULL_RANGE = enum.auto()
+    PARTIAL_RANGE = enum.auto()
 
 
 @attributes_doc
@@ -71,6 +83,12 @@ class RefAppConfig(AlgoConfigBase):
     The close range leakage cancellation process requires the sensor to be installed in its
     intended geometry with free space in front of the sensor during detector calibration.
     """
+
+    level_tracking_active: bool = attrs.field(default=False)
+    """Track level and measure only a smaller partial range to save power"""
+
+    partial_tracking_range_m: float = attrs.field(default=1.0)
+    """Minimum partial range window length used during level tracking"""
 
     signal_quality: float = attrs.field(default=15.0)
     """Signal quality (dB).
@@ -142,6 +160,51 @@ class RefAppConfig(AlgoConfigBase):
     def _collect_validation_results(self) -> list[a121.ValidationResult]:
         validation_results: list[a121.ValidationResult] = []
 
+        if self.threshold_method == ThresholdMethod.RECORDED and self.level_tracking_active:
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "threshold_method",
+                    "Cannot use recorded threshold when level tracking is activated.",
+                )
+            )
+        if self.close_range_leakage_cancellation and self.level_tracking_active:
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "close_range_leakage_cancellation",
+                    "Cannot use close range leakage cancellation when level tracking is activated.",
+                )
+            )
+        if (
+            self.level_tracking_active
+            and self.partial_tracking_range_m is not None
+            and self.partial_tracking_range_m
+            <= ENVELOPE_FWHM_M[self.max_profile] * PARTIAL_RANGE_FWHM_FACTOR
+        ):
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "partial_tracking_range_m",
+                    (
+                        "Partial tracking range must be larger than "
+                        f"{ENVELOPE_FWHM_M[self.max_profile] * PARTIAL_RANGE_FWHM_FACTOR:.3f} "
+                        "for the selected max_profile."
+                    ),
+                )
+            )
+        if (
+            self.level_tracking_active
+            and self.partial_tracking_range_m is not None
+            and self.partial_tracking_range_m >= (self.end_m - self.start_m)
+        ):
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "partial_tracking_range_m",
+                    "Partial tracking range must be smaller than (end_m - start_m).",
+                )
+            )
         if self.end_m < self.start_m:
             validation_results.append(
                 a121.ValidationError(
@@ -180,6 +243,8 @@ class RefAppConfig(AlgoConfigBase):
         return validation_results
 
     def to_detector_config(self) -> DetectorConfig:
+        """Nominal full range detector config"""
+
         return DetectorConfig(
             start_m=self.start_m - 0.015,
             end_m=min(self.end_m * 1.05, 23.0),
@@ -194,7 +259,38 @@ class RefAppConfig(AlgoConfigBase):
             fixed_strength_threshold_value=self.fixed_strength_threshold_value,
             fixed_threshold_value=self.fixed_threshold_value,
             threshold_sensitivity=self.threshold_sensitivity,
-            update_rate=self.update_rate,
+            update_rate=None,
+        )
+
+    def to_detector_level_tracking_config(self, level: float) -> DetectorConfig:
+        """Level tracking detector config."""
+        full_range_config = self.to_detector_config()
+        distance = self.end_m - level
+        if self.partial_tracking_range_m is not None:
+            partial_range_width = max(
+                self.partial_tracking_range_m,
+                ENVELOPE_FWHM_M[self.max_profile] * PARTIAL_RANGE_FWHM_FACTOR,
+            )
+        else:
+            partial_range_width = ENVELOPE_FWHM_M[self.max_profile] * PARTIAL_RANGE_FWHM_FACTOR
+        sub_start = max(distance - partial_range_width / 2, full_range_config.start_m)
+        sub_end = min(distance + partial_range_width / 2, full_range_config.end_m)
+
+        return DetectorConfig(
+            start_m=sub_start,
+            end_m=sub_end,
+            max_step_length=self.max_step_length,
+            max_profile=self.max_profile,
+            close_range_leakage_cancellation=self.close_range_leakage_cancellation,
+            signal_quality=self.signal_quality,
+            threshold_method=self.threshold_method,
+            peaksorting_method=self.peaksorting_method,
+            reflector_shape=self.reflector_shape,
+            num_frames_in_recorded_threshold=self.num_frames_in_recorded_threshold,
+            fixed_strength_threshold_value=self.fixed_strength_threshold_value,
+            fixed_threshold_value=self.fixed_threshold_value,
+            threshold_sensitivity=self.threshold_sensitivity,
+            update_rate=None,
         )
 
 
@@ -232,13 +328,13 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
     ) -> None:
         super().__init__(client=client, config=config)
         self.sensor_id = sensor_id
-
-        detector_config = self.config.to_detector_config()
+        self.range_mode: RangeMode = RangeMode.FULL_RANGE
+        self.detector_config = self.config.to_detector_config()
 
         self._detector = Detector(
             client=self.client,
             sensor_ids=[self.sensor_id],
-            detector_config=detector_config,
+            detector_config=self.detector_config,
             context=context,
         )
 
@@ -252,6 +348,7 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         self._processor = Processor(processor_config)
 
         self.started = False
+        self.context = context
 
     def calibrate(self) -> None:
         self._detector.calibrate_detector()
@@ -271,6 +368,10 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
                 # Should never happen as we currently only have the H5Recorder
                 warnings.warn("Will not save algo data")
 
+        # Detector start() called with recorder and algo group input.
+        # Since the detector is swapped and/or stopped during runtime without
+        # recorder and algo group input a side effect is that, only the
+        # algo group and context for the initial full range config is saved to the record.
         self._detector.start(recorder=recorder, _algo_group=algo_group)
 
         self.started = True
@@ -280,13 +381,53 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
             msg = "Not started"
             raise RuntimeError(msg)
 
-        result = self._detector.get_next()
+        if not self._detector.started:
+            self._detector.calibrate_detector()
+            self._detector.start(recorder=None, _algo_group=None)
 
-        processor_result = self._processor.process(result)
+        result = self._detector.get_next()
+        processor_result = self._processor.process(
+            detector_result=result,
+            detector_start_m=self._detector.config.start_m,
+        )
 
         ref_app_extra_result = RefAppExtraResult(
             processor_extra_result=processor_result.extra_result, detector_result=result
         )
+
+        if processor_result.filtered_level is not None:
+            # Level tracking (partial/full range) state machine. Level tracking not updated if
+            # processor has no result.
+            if self.range_mode == RangeMode.FULL_RANGE:
+                # Do nothing while in full range mode. I.e sensor range is kept constant in this
+                # mode as full range
+                if (
+                    processor_result.peak_status == ProcessorLevelStatus.IN_RANGE
+                    and (processor_result.filtered_level is not None)
+                    and self.config.level_tracking_active
+                ):
+                    # change to tracking mode. I.e partial range
+                    detector_config = self.config.to_detector_level_tracking_config(
+                        processor_result.filtered_level
+                    )
+                    self._swap_detector(detector_config)
+                    self.range_mode = RangeMode.PARTIAL_RANGE
+            elif self.range_mode == RangeMode.PARTIAL_RANGE:
+                # update config for level tracking
+                if (
+                    processor_result.peak_status != ProcessorLevelStatus.IN_RANGE
+                    or processor_result.filtered_level is None
+                ):
+                    # No peak detected (NO_DETECTION) or outside range (OUT_OF_RANGE or OVERFLOW).
+                    # filtered_level == None as safe guard. Go to full range mode
+                    detector_config = self.config.to_detector_config()
+                    self._swap_detector(detector_config)
+                    self.range_mode = RangeMode.FULL_RANGE
+                else:
+                    detector_config = self.config.to_detector_level_tracking_config(
+                        processor_result.filtered_level
+                    )
+                    self._swap_detector(detector_config)
 
         return RefAppResult(
             peak_detected=processor_result.peak_detected,
@@ -303,11 +444,26 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
             msg = "Already stopped"
             raise RuntimeError(msg)
 
-        recorder_result = self._detector.stop()
+        if self._detector.started:
+            recorder_result = self._detector.stop()
+        else:
+            recorder_result = self._detector.stop_recorder()
 
         self.started = False
 
         return recorder_result
+
+    def _swap_detector(self, config: DetectorConfig) -> None:
+        """Create new detector object. No recorder is sent to detector.
+        The recorder is however attached to the client at initialization of the ref app."""
+        if self._detector.started:
+            self._detector.stop_detector()
+        self._detector = Detector(
+            client=self.client,
+            sensor_ids=[self.sensor_id],
+            detector_config=config,
+            context=self.context,
+        )
 
 
 def _record_algo_data(
@@ -346,6 +502,61 @@ def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, RefAppConfig, RefAppCo
 
 @attrs.mutable
 @attrs.mutable(kw_only=True)
+class _RefAppConfig_v1(AlgoConfigBase):
+    start_m: float = attrs.field(default=0.03)
+    end_m: float = attrs.field(default=0.5)
+    max_step_length: Optional[int] = attrs.field(default=None)
+    max_profile: a121.Profile = attrs.field(default=a121.Profile.PROFILE_5, converter=a121.Profile)
+    close_range_leakage_cancellation: bool = attrs.field(default=False)
+    signal_quality: float = attrs.field(default=15.0)
+    threshold_method: ThresholdMethod = attrs.field(
+        default=ThresholdMethod.CFAR,
+        converter=ThresholdMethod,
+    )
+    peaksorting_method: PeakSortingMethod = attrs.field(
+        default=PeakSortingMethod.STRONGEST,
+        converter=PeakSortingMethod,
+    )
+    reflector_shape: ReflectorShape = attrs.field(
+        default=ReflectorShape.GENERIC,
+        converter=ReflectorShape,
+    )
+    num_frames_in_recorded_threshold: int = attrs.field(default=100)
+    fixed_threshold_value: float = attrs.field(default=100.0)
+    fixed_strength_threshold_value: float = attrs.field(default=0.0)
+    threshold_sensitivity: float = attrs.field(default=0.5)
+    update_rate: Optional[float] = attrs.field(default=50.0)
+    median_filter_length: int = attrs.field(default=5)
+    num_medians_to_average: int = attrs.field(default=1)
+
+    def _collect_validation_results(self) -> list[a121.ValidationResult]:
+        return []
+
+    def migrate(self) -> RefAppConfig:
+        return RefAppConfig(
+            start_m=self.start_m,
+            end_m=self.end_m,
+            max_step_length=self.max_step_length,
+            max_profile=self.max_profile,
+            close_range_leakage_cancellation=self.close_range_leakage_cancellation,
+            signal_quality=self.signal_quality,
+            update_rate=self.update_rate,
+            median_filter_length=self.median_filter_length,
+            num_medians_to_average=self.num_medians_to_average,
+            threshold_method=self.threshold_method,
+            reflector_shape=self.reflector_shape,
+            peaksorting_method=self.peaksorting_method,
+            num_frames_in_recorded_threshold=self.num_frames_in_recorded_threshold,
+            fixed_threshold_value=self.fixed_threshold_value,  # float
+            fixed_strength_threshold_value=self.fixed_strength_threshold_value,  # float
+            threshold_sensitivity=self.threshold_sensitivity,  # float
+            level_tracking_active=False,
+            partial_tracking_range_m=0.0,  # not used
+        )
+
+
+@attrs.mutable
+@attrs.mutable(kw_only=True)
 class _RefAppConfig_v0(_DetectorConfig_v0):
     start_m: float = attrs.field(default=0.03)
     end_m: float = attrs.field(default=0.5)
@@ -378,7 +589,7 @@ class _RefAppConfig_v0(_DetectorConfig_v0):
 class BadMigrationPathError(Exception): ...
 
 
-def always_raise_an_error_when_migrating_v0(_: _RefAppConfig_v0) -> RefAppConfig:
+def always_raise_an_error_when_migrating_v0(_: _DetectorConfig_v0) -> _RefAppConfig_v1:
     msg = f"Try opening the file in an earlier version of ET <= {PRF_REMOVED_ET_VERSION}"
     raise BadMigrationPathError(msg)
 
@@ -387,6 +598,9 @@ ref_app_config_timeline = (
     tm.start(_RefAppConfig_v0)
     .load(str, _RefAppConfig_v0.from_json, fail=[TypeError])
     .nop()
-    .epoch(RefAppConfig, always_raise_an_error_when_migrating_v0, fail=[BadMigrationPathError])
+    .epoch(_RefAppConfig_v1, always_raise_an_error_when_migrating_v0, fail=[BadMigrationPathError])
+    .load(str, _RefAppConfig_v1.from_json, fail=[TypeError])
+    .nop()
+    .epoch(RefAppConfig, _RefAppConfig_v1.migrate, fail=[])
     .load(str, RefAppConfig.from_json, fail=[TypeError])
 )

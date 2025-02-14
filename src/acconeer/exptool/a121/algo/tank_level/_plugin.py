@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -61,8 +61,13 @@ from acconeer.exptool.app.new import (
 from acconeer.exptool.app.new.ui.components import (
     AttrsConfigEditor,
     PidgetFactoryMapping,
+    PidgetGroupFactoryMapping,
     PresentationType,
     pidgets,
+)
+from acconeer.exptool.app.new.ui.components.pidgets.hooks import (
+    disable_if,
+    parameter_is,
 )
 
 
@@ -115,11 +120,12 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
     def __init__(
         self, callback: Callable[[Message], None], generation: PluginGeneration, key: str
     ) -> None:
-        super().__init__(callback=callback, generation=generation, key=key)
+        super().__init__(callback=callback, generation=generation, key=key, use_app_client=False)
 
         self._recorder = None
         self._ref_app_instance: Optional[RefApp] = None
         self._log = BackendLogger.getLogger(__name__)
+        self._frame_count = 0
 
         self.restore_defaults()
 
@@ -201,7 +207,15 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
             raise RuntimeError
         result = self._ref_app_instance.get_next()
 
+        # Report frame count to GUI. Usually done in ApplicationClient but because
+        # of erratic behavior when distance detector is re-calibrated, it has to
+        # be done by the ref app plugin instead.
+        for value in result.extra_result.detector_result.values():
+            self._frame_count += len(
+                value.service_extended_result
+            )  # count frames in extended result
         self.callback(backend.PlotMessage(result=result))
+        self.callback(GeneralMessage(name="frame_count", data=self._frame_count))
 
     @is_task
     def calibrate_detector(self) -> None:
@@ -395,6 +409,10 @@ class PlotPlugin(PgPlotPlugin):
             result.extra_result.processor_extra_result.level_and_time_for_plotting
         )
 
+        # clear sweep plots
+        for idx, _ in enumerate(self.sweep_curves):
+            self.sweep_curves[idx].clear()
+            self.threshold_curves[idx].clear()
         # update sweep plot
         max_val_in_plot = 0
         for idx, processor_result in enumerate(detector_result.processor_results):
@@ -583,32 +601,58 @@ class ViewPlugin(A121ViewPluginBase):
         self.scrolly_widget.setLayout(scrolly_layout)
 
     @classmethod
-    def _get_processor_pidget_mapping(cls) -> PidgetFactoryMapping:
+    def _get_processor_pidget_mapping(cls) -> PidgetGroupFactoryMapping:
+        partial_range_params = {
+            "partial_tracking_range_m": pidgets.FloatPidgetFactory(
+                name_label_text="Partial tracking range:",
+                name_label_tooltip=get_attribute_docstring(
+                    RefAppConfig, "partial_tracking_range_m"
+                ),
+                suffix=" m",
+                decimals=3,
+                limits=(0, 23),
+            ),
+        }
         return {
-            "median_filter_length": pidgets.IntPidgetFactory(
-                name_label_text="Median filter length:",
-                name_label_tooltip=get_attribute_docstring(RefAppConfig, "median_filter_length"),
-                limits=(1, 10),
-            ),
-            "num_medians_to_average": pidgets.IntPidgetFactory(
-                name_label_text="Num measurements averaged:",
-                name_label_tooltip=get_attribute_docstring(RefAppConfig, "num_medians_to_average"),
-                limits=(1, 10),
-            ),
-            "start_m": pidgets.FloatPidgetFactory(
-                name_label_text="Tank start:",
-                name_label_tooltip=get_attribute_docstring(RefAppConfig, "start_m"),
-                suffix=" m",
-                decimals=3,
-                limits=(0.03, 23),
-            ),
-            "end_m": pidgets.FloatPidgetFactory(
-                name_label_text="Tank end:",
-                name_label_tooltip=get_attribute_docstring(RefAppConfig, "end_m"),
-                suffix=" m",
-                decimals=3,
-                limits=(0.05, 23),
-            ),
+            pidgets.FlatPidgetGroup(): {
+                "median_filter_length": pidgets.IntPidgetFactory(
+                    name_label_text="Median filter length:",
+                    name_label_tooltip=get_attribute_docstring(
+                        RefAppConfig, "median_filter_length"
+                    ),
+                    limits=(1, 10),
+                ),
+                "num_medians_to_average": pidgets.IntPidgetFactory(
+                    name_label_text="Num measurements averaged:",
+                    name_label_tooltip=get_attribute_docstring(
+                        RefAppConfig, "num_medians_to_average"
+                    ),
+                    limits=(1, 10),
+                ),
+                "start_m": pidgets.FloatPidgetFactory(
+                    name_label_text="Tank start:",
+                    name_label_tooltip=get_attribute_docstring(RefAppConfig, "start_m"),
+                    suffix=" m",
+                    decimals=3,
+                    limits=(0.03, 23),
+                ),
+                "end_m": pidgets.FloatPidgetFactory(
+                    name_label_text="Tank end:",
+                    name_label_tooltip=get_attribute_docstring(RefAppConfig, "end_m"),
+                    suffix=" m",
+                    decimals=3,
+                    limits=(0.05, 23),
+                ),
+                "level_tracking_active": pidgets.CheckboxPidgetFactory(
+                    name_label_text="Level tracking active",
+                    name_label_tooltip=get_attribute_docstring(
+                        RefAppConfig, "level_tracking_active"
+                    ),
+                ),
+            },
+            pidgets.FlatPidgetGroup(
+                hooks=disable_if(parameter_is("level_tracking_active", False)),
+            ): partial_range_params,
         }
 
     @classmethod
