@@ -6,6 +6,7 @@ import argparse
 import ctypes
 import functools
 import logging
+import re
 import sys
 import time
 import typing as t
@@ -71,7 +72,13 @@ def main() -> None:
     # The cast necessitated of a miss in the typing stubs.
     app: QApplication = t.cast(QApplication, QApplication.instance()) or QApplication(sys.argv)
 
-    app.setStyleSheet(qdarktheme.load_stylesheet("light"))
+    # Make sure to wrap urls in single quotation marks to avoid errors parsing stylesheet
+    stylesheet = qdarktheme.load_stylesheet("light")
+    search_pattern = r"url\((.*?)\)"
+    replace_pattern = r"url('\1')"
+    stylesheet = re.sub(search_pattern, replace_pattern, stylesheet)
+
+    app.setStyleSheet(stylesheet)
     app.setAttribute(QtCore.Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
 
     if args.plugin_modules is not None:
