@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 from __future__ import annotations
 
@@ -39,7 +39,7 @@ def test_m_to_points() -> None:
     breakpoints_m = [0.5, 1.0, 1.5]
     step_length = 4
 
-    actual_points = distance.Detector._m_to_points(
+    actual_points = distance._translation._m_to_points(
         breakpoints_m=breakpoints_m, step_length=step_length
     )
 
@@ -61,12 +61,12 @@ def test_limit_step_length() -> None:
     profile = a121.Profile.PROFILE_3
     user_limit = 2
 
-    actual_step_length = distance.Detector._limit_step_length(
+    actual_step_length = distance._translation._limit_step_length(
         profile=profile, user_limit=user_limit
     )
     assert actual_step_length == 2
 
-    actual_step_length_no_user_limit = distance.Detector._limit_step_length(
+    actual_step_length_no_user_limit = distance._translation._limit_step_length(
         profile=profile, user_limit=None
     )
     assert actual_step_length_no_user_limit == 12

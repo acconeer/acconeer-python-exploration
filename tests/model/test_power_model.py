@@ -208,16 +208,16 @@ def test_lower_idle_state_limits(
     [
         (
             "Distance, Default",
-            distance.Detector._detector_to_session_config_and_processor_specs(
+            distance.detector_config_to_session_config(
                 distance.DetectorConfig(update_rate=1.0, close_range_leakage_cancellation=True),
                 sensor_ids=[1],
-            )[0],
+            ),
             power.Sensor.IdleState.OFF,
             power.algo.Distance(),
         ),
         (
             "Distance, Close",
-            distance.Detector._detector_to_session_config_and_processor_specs(
+            distance.detector_config_to_session_config(
                 distance.DetectorConfig(
                     start_m=0.05,
                     end_m=0.10,
@@ -225,13 +225,13 @@ def test_lower_idle_state_limits(
                     close_range_leakage_cancellation=False,
                 ),
                 sensor_ids=[1],
-            )[0],
+            ),
             power.Sensor.IdleState.OFF,
             power.algo.Distance(),
         ),
         (
             "Distance, Close and far",
-            distance.Detector._detector_to_session_config_and_processor_specs(
+            distance.detector_config_to_session_config(
                 distance.DetectorConfig(
                     start_m=0.05,
                     end_m=3.0,
@@ -239,20 +239,20 @@ def test_lower_idle_state_limits(
                     close_range_leakage_cancellation=False,
                 ),
                 sensor_ids=[1],
-            )[0],
+            ),
             power.Sensor.IdleState.OFF,
             power.algo.Distance(),
         ),
         (
             "Distance, Far",
-            distance.Detector._detector_to_session_config_and_processor_specs(
+            distance.detector_config_to_session_config(
                 distance.DetectorConfig(
                     start_m=0.25,
                     end_m=3.0,
                     update_rate=1.0,
                 ),
                 sensor_ids=[1],
-            )[0],
+            ),
             power.Sensor.IdleState.OFF,
             power.algo.Distance(),
         ),

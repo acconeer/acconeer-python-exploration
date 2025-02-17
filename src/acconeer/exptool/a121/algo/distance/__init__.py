@@ -28,3 +28,4 @@ from ._processors import (
     ThresholdMethod,
     calculate_bg_noise_std,
 )
+from ._translation import detector_config_to_processor_specs, detector_config_to_session_config

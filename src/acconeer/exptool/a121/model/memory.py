@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -7,7 +7,7 @@ import numpy as np
 
 from acconeer.exptool.a121 import SensorConfig, SessionConfig
 from acconeer.exptool.a121._core import utils as core_utils
-from acconeer.exptool.a121.algo import get_distance_filter_edge_margin
+from acconeer.exptool.a121.algo import distance, get_distance_filter_edge_margin
 from acconeer.exptool.a121.algo.distance import (
     Detector as DistanceDetector,
 )
@@ -115,10 +115,8 @@ def presence_heap_memory(config: PresenceConfig) -> int:
 
 def distance_external_heap_memory(config: DistanceConfig) -> int:
     offset_sensor_config = get_calibrate_offset_sensor_config()
-    (
-        session_config,
-        processor_specs,
-    ) = DistanceDetector._detector_to_session_config_and_processor_specs(config, [1])
+    session_config = distance.detector_config_to_session_config(config, [1])
+    processor_specs = distance.detector_config_to_processor_specs(config, [1])
     noise_session_config = get_calibrate_noise_session_config(session_config, [1])
 
     offset_ext_heap = session_external_heap_memory(SessionConfig(offset_sensor_config))
@@ -184,10 +182,8 @@ def distance_external_heap_memory(config: DistanceConfig) -> int:
 
 def distance_rss_heap_memory(config: DistanceConfig) -> int:
     offset_sensor_config = get_calibrate_offset_sensor_config()
-    (
-        session_config,
-        processor_configs,
-    ) = DistanceDetector._detector_to_session_config_and_processor_specs(config, [1])
+    session_config = distance.detector_config_to_session_config(config, [1])
+    processor_specs = distance.detector_config_to_processor_specs(config, [1])
     noise_session_config = get_calibrate_noise_session_config(session_config, [1])
 
     offset_rss_heap = _session_config_rss_heap_memory(SessionConfig(offset_sensor_config))
@@ -200,7 +196,7 @@ def distance_rss_heap_memory(config: DistanceConfig) -> int:
 
     sensor_heap = RSS_HEAP_PER_SENSOR
 
-    processor_heap = DISTANCE_HEAP_PER_PROCESSOR * len(processor_configs)
+    processor_heap = DISTANCE_HEAP_PER_PROCESSOR * len(processor_specs)
 
     return (
         DISTANCE_HEAP_OVERHEAD

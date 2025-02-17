@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -68,6 +68,7 @@ from ._detector import (
     DetectorResult,
     _load_algo_data,
 )
+from ._translation import detector_config_to_session_config
 
 
 log = logging.getLogger(__name__)
@@ -591,9 +592,7 @@ class ViewPlugin(A121ViewPluginBase):
 
     def _update_sensor_configs_view(self, config: DetectorConfig, sensor_ids: list[int]) -> None:
         with contextlib.suppress(Exception):
-            session_config, _ = Detector._detector_to_session_config_and_processor_specs(
-                config, sensor_ids
-            )
+            session_config = detector_config_to_session_config(config, sensor_ids)
             tab_visible = [False, False]
             for group in session_config.groups:
                 for _, sensor_config in group.items():

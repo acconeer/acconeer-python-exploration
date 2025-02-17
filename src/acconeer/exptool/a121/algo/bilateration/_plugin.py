@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -18,6 +18,7 @@ import pyqtgraph as pg
 import acconeer.exptool as et
 from acconeer.exptool import a121, opser
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
+from acconeer.exptool.a121.algo import distance
 from acconeer.exptool.a121.algo._plugins import (
     A121BackendPluginBase,
     A121ViewPluginBase,
@@ -586,7 +587,7 @@ class ViewPlugin(A121ViewPluginBase):
 
             self.message_box.setText(self.TEXT_MSG_MAP[detector_status.detector_state])
 
-            (session_config, _) = Detector._detector_to_session_config_and_processor_specs(
+            session_config = distance.detector_config_to_session_config(
                 state.config, state.sensor_ids
             )
 
@@ -643,9 +644,7 @@ class ViewPlugin(A121ViewPluginBase):
         )
 
     def _config_valid(self, state: SharedState) -> bool:
-        (session_config, _) = Detector._detector_to_session_config_and_processor_specs(
-            state.config, state.sensor_ids
-        )
+        session_config = distance.detector_config_to_session_config(state.config, state.sensor_ids)
 
         try:
             state.bilateration_config.validate(session_config)

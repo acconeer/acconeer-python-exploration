@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -10,8 +10,9 @@ import attrs
 from PySide6.QtWidgets import QVBoxLayout
 
 from acconeer.exptool import a121
+from acconeer.exptool.a121.algo import distance
 from acconeer.exptool.a121.algo.distance._configs import get_high_accuracy_detector_config
-from acconeer.exptool.a121.algo.distance._detector import Detector, DetectorConfig
+from acconeer.exptool.a121.algo.distance._detector import DetectorConfig
 from acconeer.exptool.a121.algo.distance._pidget_mapping import get_pidget_mapping
 from acconeer.exptool.a121.model import power
 from acconeer.exptool.app.new.ui.components import AttrsConfigEditor, GroupBox, pidgets
@@ -29,10 +30,7 @@ class DistanceConfigEvent:
 
     @property
     def translated_session_config(self) -> a121.SessionConfig:
-        (session_config, _) = Detector._detector_to_session_config_and_processor_specs(
-            self.config,
-            sensor_ids=[1],
-        )
+        session_config = distance.detector_config_to_session_config(self.config, sensor_ids=[1])
         return session_config
 
 

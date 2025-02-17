@@ -5,11 +5,11 @@ import pytest
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121.algo.distance import (
-    Detector,
     DetectorConfig,
     PeakSortingMethod,
     ReflectorShape,
     ThresholdMethod,
+    detector_config_to_session_config,
 )
 
 
@@ -752,8 +752,6 @@ from acconeer.exptool.a121.algo.distance import (
     ],
 )
 def test_session_translation(detector_config, expected_session_config):
-    session_config, _ = Detector._detector_to_session_config_and_processor_specs(
-        detector_config, [1]
-    )
+    session_config = detector_config_to_session_config(detector_config, [1])
 
     assert session_config == expected_session_config
