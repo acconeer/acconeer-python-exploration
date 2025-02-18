@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -225,6 +225,30 @@ class _EnergyRegionPlot(QWidget):
                     _DummyBarGraphItem(PowerCurveBarGraphItem.tag_color(tag)), tag.name.title()
                 )
 
+        active = power.group_active(
+            self._state.session_config,
+            self._state.lower_idle_state,
+            algorithm=self._algorithm,
+        )
+
+        if active.duration > 1.0:
+            approx_duration_formatted = f"{active.duration:.1f} s"
+        else:
+            approx_duration_formatted = f"{active.duration * _s_to_ms:.1f} ms"
+
+        region_bounds = (0, active.duration)
+
+        lri = pg.LinearRegionItem(
+            values=region_bounds,
+            movable=False,
+            pen={"color": "#222", "style": Qt.PenStyle.DashLine, "width": 2},
+        )
+
+        ti = pg.TextItem(f"Approx. active duration {approx_duration_formatted}", color="#222")
+
+        self._plot_widget.addItem(lri)
+        self._plot_widget.addItem(ti)
+
         hline_item = pg.InfiniteLine(
             pos=approx_avg_current,
             angle=0,
@@ -240,11 +264,6 @@ class _EnergyRegionPlot(QWidget):
         if rate is None:
             return
 
-        active = power.group_active(
-            self._state.session_config,
-            self._state.lower_idle_state,
-            algorithm=self._algorithm,
-        )
         if active.duration > 1 / rate:
             rate_warning_text = pg.InfiniteLine(
                 pos=0.10,
