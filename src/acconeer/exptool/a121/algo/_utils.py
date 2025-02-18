@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -442,10 +442,10 @@ def double_buffering_frame_filter(
     return filtered_frame
 
 
-def select_prf(breakpoint: int, profile: a121.Profile) -> a121.PRF:
+def select_prf_m(distance_m: float, profile: a121.Profile) -> a121.PRF:
     """Calculates the highest possible PRF for the given breakpoint.
 
-    :param breakpoint: Distance in the unit of points.
+    :param distance_m: Distance in meters
     :param profile: Profile.
     """
     max_meas_dist_m = copy.copy(MAX_MEASURABLE_DIST_M)
@@ -453,9 +453,17 @@ def select_prf(breakpoint: int, profile: a121.Profile) -> a121.PRF:
     if a121.PRF.PRF_19_5_MHz in max_meas_dist_m and profile != a121.Profile.PROFILE_1:
         del max_meas_dist_m[a121.PRF.PRF_19_5_MHz]
 
-    breakpoint_m = breakpoint * APPROX_BASE_STEP_LENGTH_M
-    viable_prfs = [prf for prf, max_dist_m in max_meas_dist_m.items() if breakpoint_m < max_dist_m]
+    viable_prfs = [prf for prf, max_dist_m in max_meas_dist_m.items() if distance_m < max_dist_m]
     return sorted(viable_prfs, key=lambda prf: prf.frequency)[-1]
+
+
+def select_prf(breakpoint: int, profile: a121.Profile) -> a121.PRF:
+    """Calculates the highest possible PRF for the given breakpoint.
+
+    :param breakpoint: Distance in the unit of points.
+    :param profile: Profile.
+    """
+    return select_prf_m(breakpoint * APPROX_BASE_STEP_LENGTH_M, profile)
 
 
 def get_max_profile_without_direct_leakage(start_m: float) -> a121.Profile:

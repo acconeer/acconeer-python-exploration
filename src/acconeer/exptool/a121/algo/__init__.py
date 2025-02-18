@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from ._base import (
@@ -33,4 +33,5 @@ from ._utils import (
     get_temperature_adjustment_factors,
     interpolate_peaks,
     select_prf,
+    select_prf_m,
 )

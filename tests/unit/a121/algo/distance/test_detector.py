@@ -36,16 +36,9 @@ def test_update_processor_mode() -> None:
 
 
 def test_m_to_points() -> None:
-    breakpoints_m = [0.5, 1.0, 1.5]
-    step_length = 4
-
-    actual_points = distance._translation._m_to_points(
-        breakpoints_m=breakpoints_m, step_length=step_length
-    )
-
-    assert actual_points[0] == 200
-    assert actual_points[1] == 400
-    assert actual_points[2] == 600
+    assert distance._translation._m_to_point(start_m=0.5, distance_m=0.5, step_length=4) == 200
+    assert distance._translation._m_to_point(start_m=0.5, distance_m=1.0, step_length=4) == 400
+    assert distance._translation._m_to_point(start_m=0.5, distance_m=1.5, step_length=4) == 600
 
 
 def test_select_prf() -> None:
