@@ -12,10 +12,8 @@ import typing_extensions as te
 
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
-    QDoubleSpinBox,
     QGraphicsSceneMouseEvent,
     QGridLayout,
-    QLabel,
     QTabWidget,
     QToolTip,
     QWidget,
@@ -47,7 +45,7 @@ _MU = "\u00b5"
 
 _A_to_mA = _s_to_ms = _mA_to_uA = 1000
 
-_mA = 1e-3
+_mA = _ms = 1e-3
 
 
 class PowerCurveBarGraphItem(pg.BarGraphItem):
@@ -143,6 +141,9 @@ class _EnergyRegionPlot(QWidget):
 
         lower_idle_state: t.Optional[power.Sensor.LowerIdleState]
 
+    _MIN_DURATION_S = 20 * _ms
+    _MAX_DURATION_S = 10
+
     def __init__(
         self,
         profile_duration_s: float,
@@ -161,31 +162,24 @@ class _EnergyRegionPlot(QWidget):
         self._plot_widget.getPlotItem().setContentsMargins(0, 0, 0, 10)
         self._plot_widget.getViewBox().setMouseMode(pg.ViewBox.PanMode)
 
+        def update_profile_duration(view_box: pg.ViewBox, x_range: tuple[float, float]) -> None:
+            (_, x_range_max) = x_range
+            new_duration_s = min(
+                max(x_range_max * 0.9, self._MIN_DURATION_S),
+                self._MAX_DURATION_S,
+            )
+            self.evolve_current_state(profile_duration_s=new_duration_s)
+            self.plot_current_state()
+
+        self._plot_widget.getViewBox().sigXRangeChanged.connect(update_profile_duration)
+
         self._bar_legend = pg.graphicsItems.LegendItem.LegendItem(offset=(75, 10))
         self._bar_legend.setParentItem(self._plot_widget.getPlotItem())
         self._bar_legend.setEnabled(False)
 
-        label = QLabel(_X_AXIS_SPINBOX_LABEL)
-        label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom)
-
-        self._duration_spinbox = QDoubleSpinBox()
-        self._duration_spinbox.setRange(*_DURATION_SB_RANGE)
-        self._duration_spinbox.setDecimals(_DURATION_SB_DECIMALS)
-        self._duration_spinbox.setSingleStep(_DURATION_SB_STEP)
-        self._duration_spinbox.setSuffix(" s")
-
-        self._duration_spinbox.setValue(self._state.profile_duration_s)
-
-        self._duration_spinbox.editingFinished.connect(
-            lambda: self.evolve_current_state(profile_duration_s=self._duration_spinbox.value())
-        )
-        self._duration_spinbox.editingFinished.connect(self.plot_current_state)
-
         layout = QGridLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(self._plot_widget, 0, 0, 1, 2)
-        layout.addWidget(label, 1, 0)
-        layout.addWidget(self._duration_spinbox, 1, 1)
         self.setLayout(layout)
 
     def evolve_current_state(self, **kwargs: t.Any) -> None:
