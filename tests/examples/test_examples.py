@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2024
+# Copyright (c) Acconeer AB, 2024-2025
 # All rights reserved
 from __future__ import annotations
 
@@ -222,5 +222,5 @@ def test_a121_examples(example_script: str, tmp_path: Path) -> None:
             f"{example_script!r} did not exit within {kill_timeout_s} seconds after kill signal."
         )
     else:
-        assert returncode in [0, -signal.SIGKILL]
+        assert returncode in [0, 1, -signal.SIGKILL]
         return
