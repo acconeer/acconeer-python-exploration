@@ -12,14 +12,21 @@ from attributes_doc import attributes_doc
 
 from acconeer.exptool import a121, opser
 from acconeer.exptool import type_migration as tm
+from acconeer.exptool.a121._core import utils
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
-from acconeer.exptool.a121.algo import Controller
+from acconeer.exptool.a121.algo import (
+    AlgoConfigBase,
+    Controller,
+    PeakSortingMethod,
+    ReflectorShape,
+)
 from acconeer.exptool.a121.algo.distance import (
     PRF_REMOVED_ET_VERSION,
     Detector,
     DetectorConfig,
     DetectorContext,
     DetectorResult,
+    ThresholdMethod,
     _DetectorConfig_v0,
 )
 from acconeer.exptool.a121.algo.distance._detector import detector_context_timeline
@@ -29,15 +36,31 @@ from ._processor import Processor, ProcessorConfig, ProcessorExtraResult, Proces
 
 @attributes_doc
 @attrs.mutable(kw_only=True)
-class RefAppConfig(DetectorConfig):
+class RefAppConfig(AlgoConfigBase):
     start_m: float = attrs.field(default=0.03)
     """Start of measurement range."""
+
     end_m: float = attrs.field(default=0.5)
     """End of measurement range."""
-    median_filter_length: int = attrs.field(default=5)
-    """Length of the median filter used to improve robustness of the result."""
-    num_medians_to_average: int = attrs.field(default=1)
-    """Number of medians averaged to obtain the final level."""
+
+    max_step_length: Optional[int] = attrs.field(default=None)
+    """If set, limits the step length.
+
+    If no argument is provided, the step length is automatically calculated based on the profile.
+
+    Reducing the step length increases SNR through more efficient distance filtering, while
+    increasing the measurement time and the processing load.
+    """
+
+    max_profile: a121.Profile = attrs.field(default=a121.Profile.PROFILE_5, converter=a121.Profile)
+    """Specifies the longest allowed profile.
+
+    If no argument is provided, the highest possible profile without interference of direct
+    leakage is used to maximize SNR.
+
+    A lower profile improves the radial resolution.
+    """
+
     close_range_leakage_cancellation: bool = attrs.field(default=False)
     """Enable close range leakage cancellation logic.
 
@@ -48,6 +71,61 @@ class RefAppConfig(DetectorConfig):
     The close range leakage cancellation process requires the sensor to be installed in its
     intended geometry with free space in front of the sensor during detector calibration.
     """
+
+    signal_quality: float = attrs.field(default=15.0)
+    """Signal quality (dB).
+
+    High quality equals higher HWAAS and better SNR but increases power consumption."""
+
+    threshold_method: ThresholdMethod = attrs.field(
+        default=ThresholdMethod.CFAR,
+        converter=ThresholdMethod,
+    )
+    """Threshold method"""
+
+    peaksorting_method: PeakSortingMethod = attrs.field(
+        default=PeakSortingMethod.STRONGEST,
+        converter=PeakSortingMethod,
+    )
+    """Sorting method of estimated distances.
+
+    The distance estimates are sorted according to the selected strategy, before being return
+    by th application.
+    """
+
+    reflector_shape: ReflectorShape = attrs.field(
+        default=ReflectorShape.GENERIC,
+        converter=ReflectorShape,
+    )
+    """Reflector shape."""
+
+    num_frames_in_recorded_threshold: int = attrs.field(default=100)
+    """Number of frames used when calibrating threshold.
+
+    A lower number reduce calibration time and a higher number results in a more statistically
+    significant threshold.
+    """
+
+    fixed_threshold_value: float = attrs.field(default=100.0)
+    """Value of fixed amplitude threshold."""
+
+    fixed_strength_threshold_value: float = attrs.field(default=0.0)
+    """Value of fixed strength threshold."""
+
+    threshold_sensitivity: float = attrs.field(default=0.5)
+    """Sensitivity of threshold.
+
+    High sensitivity equals low detection threshold, low sensitivity equals high detection
+    threshold."""
+
+    update_rate: Optional[float] = attrs.field(default=50.0)
+    """Sets the detector update rate."""
+
+    median_filter_length: int = attrs.field(default=5)
+    """Length of the median filter used to improve robustness of the result."""
+
+    num_medians_to_average: int = attrs.field(default=1)
+    """Number of medians averaged to obtain the final level."""
 
     @start_m.validator
     def _(self, _: Any, value: float) -> None:
@@ -60,6 +138,46 @@ class RefAppConfig(DetectorConfig):
         if value > Detector.MAX_DIST_M:
             msg = f"Cannot measure further than {Detector.MAX_DIST_M}m"
             raise ValueError(msg)
+
+    def _collect_validation_results(self) -> list[a121.ValidationResult]:
+        validation_results: list[a121.ValidationResult] = []
+
+        if self.end_m < self.start_m:
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "start_m",
+                    "Must be smaller than 'Range end'",
+                )
+            )
+
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "end_m",
+                    "Must be greater than 'Range start'",
+                )
+            )
+
+        if self.max_step_length is not None and (
+            not utils.is_divisor_of(24, self.max_step_length)
+            and not utils.is_multiple_of(24, self.max_step_length)
+        ):
+            valid_step_length = next(
+                sl
+                for sl in range(self.max_step_length, 0, -1)
+                if utils.is_divisor_of(24, sl) or utils.is_multiple_of(24, sl)
+            )
+            validation_results.append(
+                a121.ValidationWarning(
+                    self,
+                    "max_step_length",
+                    "Actual step length will be rounded down "
+                    + f"to the closest valid step length ({valid_step_length}).",
+                )
+            )
+
+        return validation_results
 
     def to_detector_config(self) -> DetectorConfig:
         return DetectorConfig(
