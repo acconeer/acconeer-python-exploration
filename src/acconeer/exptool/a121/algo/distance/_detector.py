@@ -581,11 +581,11 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         group_index = 0
 
         plans = cls._create_group_plans(config)
-        prf = cls._get_max_prf(plans)
+        far_range_prf = cls._get_far_range_max_prf(plans)
 
         if MeasurementType.CLOSE_RANGE in plans:
             sensor_config = cls._close_subsweep_group_plans_to_sensor_config(
-                plans[MeasurementType.CLOSE_RANGE], prf
+                plans[MeasurementType.CLOSE_RANGE]
             )
             groups.append({sensor_id: sensor_config for sensor_id in sensor_ids})
             processor_specs.append(
@@ -607,7 +607,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                 sensor_config,
                 processor_specs_subsweep_indexes,
             ) = cls._far_subsweep_group_plans_to_sensor_config_and_subsweep_indexes(
-                plans[MeasurementType.FAR_RANGE], prf
+                plans[MeasurementType.FAR_RANGE], far_range_prf
             )
             groups.append({sensor_id: sensor_config for sensor_id in sensor_ids})
 
@@ -628,8 +628,10 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                     )
                 )
 
+        session_config = a121.SessionConfig(groups, extended=True, update_rate=config.update_rate)
+        session_config.validate()
         return (
-            a121.SessionConfig(groups, extended=True, update_rate=config.update_rate),
+            session_config,
             processor_specs,
         )
 
@@ -981,14 +983,10 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
             return int((limit // cls.VALID_STEP_LENGTHS[-1]) * cls.VALID_STEP_LENGTHS[-1])
 
     @classmethod
-    def _get_max_prf(cls, plans: Dict[MeasurementType, List[SubsweepGroupPlan]]) -> a121.PRF:
+    def _get_far_range_max_prf(
+        cls, plans: Dict[MeasurementType, List[SubsweepGroupPlan]]
+    ) -> a121.PRF:
         selected_prf = a121.PRF.PRF_19_5_MHz
-
-        if MeasurementType.CLOSE_RANGE in plans:
-            (plan,) = plans[MeasurementType.CLOSE_RANGE]
-            prf = select_prf(plan.breakpoints[1], plan.profile)
-            if prf.frequency < selected_prf.frequency:
-                selected_prf = prf
 
         if MeasurementType.FAR_RANGE in plans:
             subsweep_group_plans = plans[MeasurementType.FAR_RANGE]
@@ -1002,7 +1000,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
 
     @classmethod
     def _close_subsweep_group_plans_to_sensor_config(
-        cls, plan_: List[SubsweepGroupPlan], prf: a121.PRF
+        cls, plan_: List[SubsweepGroupPlan]
     ) -> a121.SensorConfig:
         (plan,) = plan_
         subsweeps = []
@@ -1031,7 +1029,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
                 receiver_gain=5,
                 phase_enhancement=True,
                 iq_imbalance_compensation=True,
-                prf=prf,
+                prf=a121.PRF.PRF_15_6_MHz,
             )
         )
         return a121.SensorConfig(subsweeps=subsweeps, sweeps_per_frame=10)
