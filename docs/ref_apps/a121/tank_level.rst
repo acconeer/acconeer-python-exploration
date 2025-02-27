@@ -11,12 +11,18 @@ Presets
     The application includes three predefined configurations optimized for tanks of varying sizes: small, medium, and large, corresponding to depths of 50 cm, 6.0 m, and 20.0 m, respectively.
 
 Configuration
-    The configuration parameter :attr:`~acconeer.exptool.a121.algo.tank_level._ref_app.RefAppConfig.start_m` defines the distance from the sensor to the surface of the liquid when the tank is full.
-    Similarly, :attr:`~acconeer.exptool.a121.algo.tank_level._ref_app.RefAppConfig.end_m` defines the distance from the sensor to the tank base, i.e., the liquid level when the tank is empty.
+    The configuration parameter :attr:`~acconeer.exptool.a121.algo.tank_level._ref_app.RefAppConfig.start_m` defines the distance from the sensor to the surface of the liquid when the tank is full. Similarly, :attr:`~acconeer.exptool.a121.algo.tank_level._ref_app.RefAppConfig.end_m` defines the distance from the sensor to the tank base, i.e., the liquid level when the tank is empty.
 
-    Multiple peaks can be detected in the distance domain by the detector due to various factors such as sensor installation, tank geometry, etc.
-    The peak sorting method in the detector parameters can be used to ensure that the correct peak is chosen as the first peak for calculating the liquid level.
-    Refer to :doc:`/detectors/a121/distance_detector` for a detailed description of the detector parameters.
+    Multiple peaks can be detected in the distance domain by the detector due to various factors such as sensor installation, tank geometry, etc. The peak sorting method in the detector parameters can be used to ensure that the correct peak is chosen as the first peak for calculating the liquid level. Refer to :doc:`/detectors/a121/distance_detector` for a detailed description of the detector parameters.
+
+    The tank level reference application also contains an additional power saving feature, applicable for medium to large tanks called *level tracking*. When enabling *level tracking* its possible to reduce the power consumption by up to 70-90% for large tanks (~15m). This is done by making the sweep range smaller than the nominal full range [:attr:`~acconeer.exptool.a121.algo.tank_level._ref_app.RefAppConfig.start_m`, :attr:`~acconeer.exptool.a121.algo.tank_level._ref_app.RefAppConfig.end_m`] while *tracking* the level. The parameter :attr:`~acconeer.exptool.a121.algo.tank_level._ref_app.RefAppConfig.level_tracking_active` is used to activate the *level tracking*. When this check box is enabled the distance detector will be configured to use a *partial* window centered around the previously measured level. The size of this partial window is determined by the parameter :attr:`~acconeer.exptool.a121.algo.tank_level._ref_app.RefAppConfig.partial_tracking_range_m`. A lower limit on the window size apply too ensure that the peak corresponding to the level can be resolved. Note that the peak width is affected by both the profile used and the object's physical properties. The allowed minimum partial window is only accounting for the maximum profile used, :attr:`~acconeer.exptool.a121.algo.tank_level._ref_app.RefAppConfig.max_profile`. The partial window will be active and track the level as long as some peak is detected by the distance detector within the partial window.
+
+    In certain situations it is possible that the peak corresponding to the level is lost by the partial window. In this situation two scenarios are possible:
+
+    * No peak is detected. Full range measurement is triggered next sample to locate the peak again.
+    * Some other peak is detected corresponding to e.g reflections of the level or stationary objects. In this case the partial window will lose track of the actual level and give a false reading.
+
+    Because of the second scenario with possibility of a silent errors, *level tracking* should be used with care only in applications where it can be ensured that the peak corresponding to the tank level will be the only peak above the threshold. Alternatively, *Level tracking* can be be used if level changes are slow (compared to sampling frequency), such that :attr:`~acconeer.exptool.a121.algo.tank_level._ref_app.RefAppConfig.partial_tracking_range_m` :math:`>2X_{max}`, where :math:`X_{max}` is the maximum level movement between two consecutive samples. This ensures that the peak corresponding to the level is not lost by the partial window between samples.
 
 Calibration
     The distance detector calibration process performs noise level estimation and offset compensation.
