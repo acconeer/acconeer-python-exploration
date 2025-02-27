@@ -8,6 +8,7 @@ import qtawesome as qta
 
 BUTTON_ICON_COLOR = "#0081db"
 TEXT_GREY = "#4d5157"
+TEXT_LIGHTGREY = "#888f99"
 WARNING_YELLOW = "#ff9e00"
 ERROR_RED = "#e6635a"
 
@@ -50,4 +51,6 @@ RECORD          = partial(qta.icon, "mdi.record-circle-outline", color=BUTTON_IC
 STOP            = partial(qta.icon, "fa5s.stop-circle",          color=BUTTON_ICON_COLOR)
 UNLINK          = partial(qta.icon, "fa5s.unlink",               color=BUTTON_ICON_COLOR)
 WARNING         = partial(qta.icon, "ph.warning-fill",           color=WARNING_YELLOW)
+EYE_OPEN        = partial(qta.icon, "fa5s.eye",                  color=BUTTON_ICON_COLOR)
+EYE_CLOSED      = partial(qta.icon, "fa5s.eye-slash",            color=BUTTON_ICON_COLOR)
 # fmt: on

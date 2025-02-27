@@ -35,12 +35,43 @@ def valid_credentials(is_running_in_jenkins: bool) -> tuple[str, str]:
     return (username, password)
 
 
-def test_login_succeeds_with_valid_credentials(valid_credentials: tuple[str, str]):
+def test_login_succeeds_with_valid_credentials(valid_credentials: tuple[str, str]) -> None:
     (username, password) = valid_credentials
     cookiejar = flash.login(username, password)
     assert cookiejar is not None
 
 
-def test_login_fails_with_invalid_credentials():
+def test_login_fails_with_invalid_credentials() -> None:
     cookiejar = flash.login("example@acconeer.com", "this_is_not_a_real_password")
     assert cookiejar is None
+
+
+def test_cookiejar_contains_logged_in_cookie(
+    valid_credentials: tuple[str, str],
+) -> None:
+    (username, password) = valid_credentials
+    cookiejar = flash.login(username, password)
+    assert cookiejar is not None
+
+    found = False
+    for k, v in cookiejar.items():
+        if "logged_in" in k:
+            found = True
+
+    assert found, "No cookie with name '*_logged_in_*' was found in cookiejar."
+
+
+def test_logged_in_cookie_value_start_with_mangled_username(
+    valid_credentials: tuple[str, str],
+) -> None:
+    (username, password) = valid_credentials
+    cookiejar = flash.login(username, password)
+    assert cookiejar is not None
+
+    for k, v in cookiejar.items():
+        if "logged_in" in k:
+            mangled_username = username.replace(".", "-").replace("@", "")
+            assert v.startswith(mangled_username + "%")
+            break
+    else:
+        assert False, "No cookie with name '*_logged_in_*' was found in cookiejar."

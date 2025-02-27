@@ -4,3 +4,6 @@ include src/acconeer/exptool/app/elements/acc.png
 prune docs
 prune tests
 recursive-include src/acconeer/exptool py.typed
+include src/acconeer/exptool/app/new/ui/flash_tab/resources/xe121.jpg
+include src/acconeer/exptool/app/new/ui/flash_tab/resources/xe125.jpg
+include src/acconeer/exptool/app/new/ui/flash_tab/resources/xm126.jpg
