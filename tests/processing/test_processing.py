@@ -11,6 +11,7 @@ import h5py
 import pytest
 
 from acconeer.exptool import a121, opser
+from acconeer.exptool.a121._core_ext import ReplaySessionsExhaustedError, _StopReplay
 
 from .a121 import (
     breathing_test,
@@ -170,6 +171,16 @@ def input_path(resource_name: str) -> Path:
             "large_tank.h5",
         ),
         (
+            tank_level_test.tank_level_controller,
+            t.List[tank_level_test.RefAppResultSlice],
+            "medium_tank_level_track.h5",
+        ),
+        (
+            tank_level_test.tank_level_controller,
+            t.List[tank_level_test.RefAppResultSlice],
+            "large_tank_level_track.h5",
+        ),
+        (
             touchless_button_test.touchless_button_processor,
             t.List[touchless_button_test.ResultSlice],
             "touchless_button_default.h5",
@@ -279,11 +290,16 @@ def test_input_output(
         if hasattr(algorithm, "process"):
             actual_results = [algorithm.process(result) for result in r.results]
         elif hasattr(algorithm, "get_next"):
-            actual_results = [
-                algorithm.get_next()
-                for idx in range(r.num_sessions)
-                for _ in r.session(idx).extended_results
-            ]
+            actual_results = []
+            try:
+                while True:
+                    result = algorithm.get_next()
+                    actual_results.append(result)
+            except (
+                _StopReplay,
+                ReplaySessionsExhaustedError,
+            ):  # record file exhausted. Stop replay.
+                pass
         else:
             msg = "Algorithm does not have process() or get_next()"
             raise AttributeError(msg)

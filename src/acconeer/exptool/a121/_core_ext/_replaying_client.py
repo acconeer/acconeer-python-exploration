@@ -1,8 +1,9 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
 
+import itertools
 import time
 import warnings
 from typing import Any, Iterator, Optional, Union
@@ -26,6 +27,10 @@ class _StopReplay(Exception):
     pass
 
 
+class ReplaySessionsExhaustedError(Exception):
+    pass
+
+
 class _ReplayingClient(Client, register=False):
     def __init__(
         self,
@@ -46,16 +51,21 @@ class _ReplayingClient(Client, register=False):
         self._is_started: bool = False
         self._result_iterator: Iterator[list[dict[int, Result]]] = iter([])
         self._origin_time: Optional[float] = None
-        self._session_idx = 0
-        self._cycled_session_idx = cycled_session_idx
         self._realtime_replay = realtime_replay
+        self._session_idx: Optional[int] = None
+        self._session_idx_iter: Union[Iterator[int], itertools.repeat[int]]
+        if cycled_session_idx is not None:
+            self._session_idx_iter = itertools.repeat(cycled_session_idx)
+        else:
+            self._session_idx_iter = iter(range(record.num_sessions))
 
     @property
     def _actual_session_idx(self) -> int:
-        if self._cycled_session_idx is not None:
-            return self._cycled_session_idx
-        else:
+        if self._session_idx is not None:
             return self._session_idx
+        else:
+            msg = "Session is not set up."
+            raise ClientError(msg)
 
     def _assert_connected(self) -> None:
         if not self.connected:
@@ -84,6 +94,13 @@ class _ReplayingClient(Client, register=False):
     ) -> Union[Metadata, list[dict[int, Metadata]]]:
         if isinstance(config, SensorConfig):
             config = SessionConfig(config)
+
+        try:
+            new_session_idx = next(self._session_idx_iter)
+        except StopIteration:
+            raise ReplaySessionsExhaustedError
+        else:
+            self._session_idx = new_session_idx
 
         if config != self.session_config:
             raise ValueError
@@ -136,7 +153,6 @@ class _ReplayingClient(Client, register=False):
         else:
             warnings.warn(f"Results of session {self._actual_session_idx} were not exhausted.")
 
-        self._session_idx += 1
         self._is_started = False
 
     def close(self) -> None:
