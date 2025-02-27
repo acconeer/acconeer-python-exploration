@@ -33,14 +33,20 @@ from acconeer.exptool.a121.algo.distance import (
 )
 from acconeer.exptool.a121.algo.distance._detector import detector_context_timeline
 
-from ._processor import Processor, ProcessorConfig, ProcessorExtraResult, ProcessorLevelStatus
+from ._processor import (
+    Processor,
+    ProcessorConfig,
+    ProcessorExtraResult,
+    ProcessorLevelStatus,
+    ProcessorResult,
+)
 
 
 PARTIAL_RANGE_FWHM_FACTOR = 2.0  # Sets the minimal partial range in number of FWHM widths
 
 
 class RangeMode(enum.Enum):
-    """Range mode of ref app"""
+    """Tank Level range mode."""
 
     FULL_RANGE = enum.auto()
     PARTIAL_RANGE = enum.auto()
@@ -376,6 +382,23 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
 
         self.started = True
 
+    def _get_next_mean_median(self) -> Tuple[ProcessorResult, RefAppExtraResult]:
+        current_peak_status = None
+        # fetch new data until processor has accumulated enough data to give result.
+        # get_next() will be called {median_filter_length * num_medians_to_average} times.
+        while current_peak_status is None:
+            result = self._detector.get_next()
+            processor_result = self._processor.process(
+                detector_result=result,
+                detector_start_m=self._detector.config.start_m,
+            )
+            current_peak_status = processor_result.peak_status
+
+        ref_app_extra_result = RefAppExtraResult(
+            processor_extra_result=processor_result.extra_result, detector_result=result
+        )
+        return (processor_result, ref_app_extra_result)
+
     def get_next(self) -> RefAppResult:
         if not self.started:
             msg = "Not started"
@@ -384,50 +407,42 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         if not self._detector.started:
             self._detector.calibrate_detector()
             self._detector.start(recorder=None, _algo_group=None)
+        (processor_result, ref_app_extra_result) = self._get_next_mean_median()
 
-        result = self._detector.get_next()
-        processor_result = self._processor.process(
-            detector_result=result,
-            detector_start_m=self._detector.config.start_m,
-        )
+        if self.config.update_rate is not None:
+            self._detector.stop_detector()
 
-        ref_app_extra_result = RefAppExtraResult(
-            processor_extra_result=processor_result.extra_result, detector_result=result
-        )
-
-        if processor_result.filtered_level is not None:
-            # Level tracking (partial/full range) state machine. Level tracking not updated if
-            # processor has no result.
-            if self.range_mode == RangeMode.FULL_RANGE:
-                # Do nothing while in full range mode. I.e sensor range is kept constant in this
-                # mode as full range
-                if (
-                    processor_result.peak_status == ProcessorLevelStatus.IN_RANGE
-                    and (processor_result.filtered_level is not None)
-                    and self.config.level_tracking_active
-                ):
-                    # change to tracking mode. I.e partial range
-                    detector_config = self.config.to_detector_level_tracking_config(
-                        processor_result.filtered_level
-                    )
-                    self._swap_detector(detector_config)
-                    self.range_mode = RangeMode.PARTIAL_RANGE
-            elif self.range_mode == RangeMode.PARTIAL_RANGE:
-                # update config for level tracking
-                if (
-                    processor_result.peak_status != ProcessorLevelStatus.IN_RANGE
-                    or processor_result.filtered_level is None
-                ):
-                    # No peak detected (NO_DETECTION) or outside range (OUT_OF_RANGE or OVERFLOW).
-                    # filtered_level == None as safe guard. Go to full range mode
-                    detector_config = self.config.to_detector_config()
-                    self._swap_detector(detector_config)
-                    self.range_mode = RangeMode.FULL_RANGE
-                else:
-                    detector_config = self.config.to_detector_level_tracking_config(
-                        processor_result.filtered_level
-                    )
-                    self._swap_detector(detector_config)
+        # Level tracking (partial/full range) state machine.
+        if self.range_mode == RangeMode.FULL_RANGE:
+            # Do nothing while in full range mode. I.e sensor range is kept constant in this
+            # mode as full range
+            if (
+                processor_result.peak_status == ProcessorLevelStatus.IN_RANGE
+                and processor_result.filtered_level is not None
+                and self.config.level_tracking_active
+            ):
+                # change to tracking mode. I.e partial range
+                detector_config = self.config.to_detector_level_tracking_config(
+                    processor_result.filtered_level
+                )
+                self._swap_detector(detector_config)
+                self.range_mode = RangeMode.PARTIAL_RANGE
+        elif self.range_mode == RangeMode.PARTIAL_RANGE:
+            # update config for level tracking
+            if (
+                processor_result.peak_status != ProcessorLevelStatus.IN_RANGE
+                or processor_result.filtered_level is None
+            ):
+                # No peak detected (NO_DETECTION) or outside range (OUT_OF_RANGE or OVERFLOW).
+                # Go to full range mode
+                detector_config = self.config.to_detector_config()
+                self._swap_detector(detector_config)
+                self.range_mode = RangeMode.FULL_RANGE
+            else:
+                detector_config = self.config.to_detector_level_tracking_config(
+                    processor_result.filtered_level
+                )
+                self._swap_detector(detector_config)
 
         return RefAppResult(
             peak_detected=processor_result.peak_detected,

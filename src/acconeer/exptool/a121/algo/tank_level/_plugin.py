@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import logging
+import math
+import time
 from enum import Enum, auto
 from typing import Any, Callable, Mapping, Optional
 
@@ -76,6 +78,7 @@ log = logging.getLogger(__name__)
 
 NO_DETECTION_TIMEOUT = 50
 TIME_HISTORY_S = 30
+UPDATE_RATE_EXP_FILTER = 0.1
 
 
 @attrs.mutable(kw_only=True)
@@ -125,6 +128,8 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
         self._recorder = None
         self._ref_app_instance: Optional[RefApp] = None
         self._log = BackendLogger.getLogger(__name__)
+        self._last_get_next_time_s: Optional[float] = None
+        self._actual_update_rate_hz = 0.0
         self._frame_count = 0
 
         self.restore_defaults()
@@ -201,21 +206,28 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
 
         self._ref_app_instance.stop()
 
+        self._clear_rate_stats()
+
     def get_next(self) -> None:
         assert self.client is not None
         if self._ref_app_instance is None:
             raise RuntimeError
+
+        sleep_time = self._sleep_until_next_frame()
+
+        self._actual_update_rate_hz = self._iteratively_estimate_update_rate(
+            last_get_next_time_s=self._last_get_next_time_s,
+            current_estimated_update_rate=self._actual_update_rate_hz,
+        )
+
+        self._last_get_next_time_s = time.perf_counter()
         result = self._ref_app_instance.get_next()
 
-        # Report frame count to GUI. Usually done in ApplicationClient but because
-        # of erratic behavior when distance detector is re-calibrated, it has to
-        # be done by the ref app plugin instead.
-        for value in result.extra_result.detector_result.values():
-            self._frame_count += len(
-                value.service_extended_result
-            )  # count frames in extended result
-        self.callback(backend.PlotMessage(result=result))
-        self.callback(GeneralMessage(name="frame_count", data=self._frame_count))
+        # Report frame count and update-rate to GUI.
+        # usually done in ApplicationClient but because of erratic behavior
+        # when distance detector is re-calibrated, it has to be done by the
+        # ref app plugin instead.
+        self._update_rate_stats(sleep_time=sleep_time, result=result)
 
     @is_task
     def calibrate_detector(self) -> None:
@@ -246,6 +258,66 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
 
         self.shared_state.context = self._ref_app_instance._detector.context
         self.broadcast()
+
+    def _sleep_until_next_frame(self) -> Optional[float]:
+        if self._ref_app_instance is None:
+            raise RuntimeError
+
+        if self._ref_app_instance.config.update_rate is None:
+            return None
+
+        if self._last_get_next_time_s is None:
+            return None
+
+        sleep_time = (
+            self._last_get_next_time_s
+            + 1 / self._ref_app_instance.config.update_rate
+            - time.perf_counter()
+        )
+
+        if sleep_time > 0:
+            time.sleep(sleep_time)
+
+        return sleep_time
+
+    @staticmethod
+    def _iteratively_estimate_update_rate(
+        last_get_next_time_s: Optional[float], current_estimated_update_rate: float
+    ) -> float:
+        if last_get_next_time_s is None:
+            return 0.0
+
+        actual_update_rate_hz = UPDATE_RATE_EXP_FILTER * current_estimated_update_rate + (
+            1 - UPDATE_RATE_EXP_FILTER
+        ) / (time.perf_counter() - last_get_next_time_s)
+
+        return actual_update_rate_hz
+
+    def _update_rate_stats(self, sleep_time: Optional[float], result: RefAppResult) -> None:
+        if sleep_time is not None:
+            if sleep_time > 0:  # had time to sleep -> No rate warning
+                stats = backend._RateStats(self._actual_update_rate_hz, False, math.nan, False)
+                self.callback(GeneralMessage(name="rate_stats", data=stats))
+            else:  # no time to sleep -> rate warning
+                stats = backend._RateStats(self._actual_update_rate_hz, True, math.nan, False)
+                self.callback(GeneralMessage(name="rate_stats", data=stats))
+        else:  # Run as fast as possible -> no rate warning
+            stats = backend._RateStats(self._actual_update_rate_hz, False, math.nan, False)
+            self.callback(GeneralMessage(name="rate_stats", data=stats))
+
+        for value in result.extra_result.detector_result.values():
+            self._frame_count += len(
+                value.service_extended_result
+            )  # count frames in extended result
+        self.callback(backend.PlotMessage(result=result))
+        self.callback(GeneralMessage(name="frame_count", data=self._frame_count))
+
+    def _clear_rate_stats(self) -> None:
+        self._last_get_next_time_s = None
+        self._actual_update_rate_hz = 0.0
+        self._frame_count = 0
+        self.callback(GeneralMessage(name="rate_stats", data=None))
+        self.callback(GeneralMessage(name="frame_count", data=None))
 
 
 class PlotPlugin(PgPlotPlugin):
@@ -653,6 +725,16 @@ class ViewPlugin(A121ViewPluginBase):
             pidgets.FlatPidgetGroup(
                 hooks=disable_if(parameter_is("level_tracking_active", False)),
             ): partial_range_params,
+            pidgets.FlatPidgetGroup(): {
+                "update_rate": pidgets.OptionalFloatPidgetFactory(
+                    name_label_tooltip=get_attribute_docstring(RefAppConfig, "update_rate"),
+                    name_label_text="Update rate:",
+                    checkbox_label_text="Limit",
+                    suffix=" Hz",
+                    limits=(0.5, None),
+                    init_set_value=1,
+                ),
+            },
         }
 
     @classmethod
