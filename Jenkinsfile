@@ -235,39 +235,46 @@ try {
 
                 stage("Run tests (${pythonVersions})") {
                     buildDocker(path: 'docker').inside(dockerArgs) {
-                        String versionSelection = '-py=' + pythonVersions.join(',')
+                        withCredentials([usernamePassword(credentialsId: 'tools-devsite',
+                                                          passwordVariable: 'DEV_PASSWORD',
+                                                          usernameVariable: 'DEV_USERNAME')])
+                        {
+                            String versionSelection = '-py=' + pythonVersions.join(',')
 
-                        def a121_es_binaries = findFiles(glob: (
-                            'stash/a121/*/out/customer/a121/internal_sanitizer_x86_64/out/' +
-                            'acc_exploration_server_a121'
-                        ))
-                        def a111_es_binaries = findFiles(glob: (
-                            'stash/a111/*/out/customer/a111/internal_sanitizer_x86_64/out/' +
-                            'acc_exploration_server_a111'
-                        ))
+                            def a121_es_binaries = findFiles(glob: (
+                                'stash/a121/*/out/customer/a121/internal_sanitizer_x86_64/out/' +
+                                'acc_exploration_server_a121'
+                            ))
+                            def a111_es_binaries = findFiles(glob: (
+                                'stash/a111/*/out/customer/a111/internal_sanitizer_x86_64/out/' +
+                                'acc_exploration_server_a111'
+                            ))
 
-                        def a121_sensor_current_limits_matches = findFiles(
-                            glob: 'stash/model_a121/**/python_libs/**/sensor_current_limits.yaml'
-                        )
-                        def a121_module_current_limits_matches = findFiles(
-                            glob: 'stash/model_a121/**/python_libs/**/module_current_limits.yaml'
-                        )
-                        def a121_inter_sweep_idle_state_current_limits_matches = findFiles(
-                            glob: 'stash/model_a121/**/python_libs/**/inter_sweep_idle_states_limits.yaml'
-                        )
-                        def a121_memory_usage_yaml_matches = findFiles(
-                            glob: 'stash/model_a121/**/python_libs/**/memory_usage.yaml'
-                        )
+                            def a121_sensor_current_limits_matches = findFiles(
+                                glob: 'stash/model_a121/**/python_libs/**/sensor_current_limits.yaml'
+                            )
+                            def a121_module_current_limits_matches = findFiles(
+                                glob: 'stash/model_a121/**/python_libs/**/module_current_limits.yaml'
+                            )
+                            def a121_inter_sweep_idle_state_current_limits_matches = findFiles(
+                                glob: 'stash/model_a121/**/python_libs/**/inter_sweep_idle_states_limits.yaml'
+                            )
+                            def a121_memory_usage_yaml_matches = findFiles(
+                                glob: 'stash/model_a121/**/python_libs/**/memory_usage.yaml'
+                            )
 
-                        hatchWrap """test ${versionSelection} --parallel tests/ src/ \
-                            --a121-exploration-server-paths ${a121_es_binaries.join(' ')} \
-                            --a111-exploration-server-paths ${a111_es_binaries.join(' ')} \
-                            --sensor-current-limits-path ${a121_sensor_current_limits_matches[0]} \
-                            --module-current-limits-path ${a121_module_current_limits_matches[0]} \
-                            --inter-sweep-idle-state-current-limits-path \
-                                ${a121_inter_sweep_idle_state_current_limits_matches[0]} \
-                            --memory-usage-path ${a121_memory_usage_yaml_matches[0]}
-                        """
+                            hatchWrap """test ${versionSelection} --parallel tests/ src/ \
+                                --a121-exploration-server-paths ${a121_es_binaries.join(' ')} \
+                                --a111-exploration-server-paths ${a111_es_binaries.join(' ')} \
+                                --sensor-current-limits-path ${a121_sensor_current_limits_matches[0]} \
+                                --module-current-limits-path ${a121_module_current_limits_matches[0]} \
+                                --inter-sweep-idle-state-current-limits-path \
+                                    ${a121_inter_sweep_idle_state_current_limits_matches[0]} \
+                                --memory-usage-path ${a121_memory_usage_yaml_matches[0]} \
+                                --test-devsite
+                            """ // ^ Here connection tests against the devsite is run in sanity scope.
+                            //       We might want to reduce the frequency in for tests in the future?
+                        }
                     }
                 }
             }

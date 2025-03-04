@@ -26,6 +26,16 @@ REQUEST_URL = "https://developer.acconeer.com/log-in/"
 REFERER_URL = "https://developer.acconeer.com"
 ACC_DEV_AJAX_URL = "https://developer.acconeer.com/wp-admin/admin-ajax.php"
 A121_SW_URL = "https://developer.acconeer.com/home/a121-docs-software/"
+WORDPRESS_PROFILE_BUILDER_OPTIONS = {
+    "rememberme": "forever",
+    "wp-submit": "Log+In",
+    "wppb_login": "true",
+    "wppb_request_url": REQUEST_URL,
+    "wppb_redirect_priority": "normal",
+    "wppb_referer_url": REFERER_URL,
+    "_wp_http_referer": "/log-in/",
+    "wppb_redirect_check": "true",
+}
 
 BIN_FETCH_PROMPT = (
     "To fetch the latest image you need to log into your Acconeer Developer account.\n\n"
@@ -70,10 +80,10 @@ def clear_cookies() -> None:
         log.debug("No previous session saved")
 
 
-def login(email: str, password: str) -> requests.cookies.RequestsCookieJar:
+def login(email: str, password: str) -> Optional[requests.cookies.RequestsCookieJar]:
     with requests.Session() as session:
-        login_page = session.get(REQUEST_URL)
-        soup = bs4.BeautifulSoup(login_page.content, "html.parser")
+        login_page_get_resp = session.get(REQUEST_URL)
+        soup = bs4.BeautifulSoup(login_page_get_resp.content, "html.parser")
         csrf_input_elem = soup.find("input", {"id": "CSRFToken-wppb"})
         assert isinstance(csrf_input_elem, bs4.Tag)
         token = csrf_input_elem.get("value")
@@ -81,18 +91,24 @@ def login(email: str, password: str) -> requests.cookies.RequestsCookieJar:
         credentials = {
             "log": email,
             "pwd": password,
-            "rememberme": "forever",
-            "wp-submit": "Log+In",
-            "wppb_login": "true",
-            "wppb_request_url": REQUEST_URL,
-            "wppb_redirect_priority": "normal",
-            "wppb_referer_url": REFERER_URL,
             "CSRFToken-wppb": token,
-            "_wp_http_referer": "/log-in/",
-            "wppb_redirect_check": "true",
         }
-        sw_page = session.post(REQUEST_URL, data=credentials, allow_redirects=False)
-        cookies = sw_page.cookies
+        login_post_resp = session.post(
+            REQUEST_URL,
+            data={**credentials, **WORDPRESS_PROFILE_BUILDER_OPTIONS},
+            allow_redirects=False,
+        )
+
+        # https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Location
+        redirection_url = login_post_resp.headers["Location"]
+
+        if "loginerror" in redirection_url:
+            log.warning("Wrong email or password")
+            return None
+
+        cookies = login_post_resp.cookies
+        if len(cookies) == 0:
+            return None
 
         return cookies
 

@@ -20,9 +20,12 @@ def _existing_path(path_str: str) -> Path:
     return p
 
 
+def _is_running_in_jenkins() -> bool:
+    return os.environ.get("CI", False)
+
+
 def _validate_parametrization(iterable: t.Sized, err_msg: str) -> t.Sized:
-    running_in_jenkins = os.environ.get("CI", False)
-    if running_in_jenkins and len(iterable) < 1:
+    if _is_running_in_jenkins() and len(iterable) < 1:
         raise ValueError(err_msg)
     return iterable
 
@@ -77,6 +80,8 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         default=[],
     )
 
+    parser.addoption("--test-devsite", action="store_true")
+
 
 def pytest_generate_tests(metafunc):
     # This function dynamically parametrizes tests/fixtures based on CLI arguments.
@@ -127,6 +132,21 @@ def pytest_generate_tests(metafunc):
         metafunc.parametrize(argnames="memory_usage_path", argvalues=values)
 
 
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--test-devsite"):
+        return  # Don't skip any devsite tests
+
+    skip_devsite_marker = pytest.mark.skip(reason="Needs '--test-devsite' to run")
+    for item in items:
+        if "devsite" in item.keywords:
+            item.add_marker(skip_devsite_marker)
+
+
 @pytest.fixture(scope="session")
 def should_update_outputs(request):
     return request.config.getoption("--update-outputs") is True
+
+
+@pytest.fixture(scope="session")
+def is_running_in_jenkins() -> bool:
+    return _is_running_in_jenkins()

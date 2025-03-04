@@ -353,6 +353,9 @@ doctest_optionflags = [
     "ELLIPSIS",
     "NORMALIZE_WHITESPACE",
 ]
+markers = [
+    "devsite: Tests related to devsite"
+]
 
 [tool.coverage.report]
 # Non-existing files that PySide6 says exists
