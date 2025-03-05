@@ -33,7 +33,7 @@ RUN apt-get update -qq \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
-ENV QT_QPA_PLATFORM offscreen
+ENV QT_QPA_PLATFORM=offscreen
 
 RUN groupadd -g 1000 jenkins \
     && useradd -rm -d /home/jenkins -u 1000 -g jenkins jenkins
