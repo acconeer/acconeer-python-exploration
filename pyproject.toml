@@ -114,6 +114,7 @@ dependencies = [
     "pandas==1.3.5",
     "pandas-stubs",
     "PySide6==6.6.2",
+    "types-beautifulsoup4",
 ]
 
 [[tool.hatch.envs.mypy.matrix]]
@@ -300,7 +301,9 @@ exclude = [
     ".*/a111/.*",
     ".*/old/.*",
     "src/acconeer/exptool/_structs/.*",
-    "src/acconeer/exptool/flash/.*",
+    "src/acconeer/exptool/flash/_xc120/.*",
+    "src/acconeer/exptool/flash/_stm32uart/.*",
+    "src/acconeer/exptool/flash/_device_flasher_base.py",
     "src/acconeer/exptool/_tests/.*",
     "src/acconeer/exptool/_winusbcdc/.*",
     "src/acconeer/exptool/_pyusb/.*",

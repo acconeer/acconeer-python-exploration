@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -6,7 +6,7 @@ from __future__ import annotations
 from typing import List
 
 from textual import events
-from textual.app import App
+from textual.app import App, Driver
 from textual.geometry import Spacing
 from textual.widgets import Button, ButtonPressed, Header, ScrollView
 
@@ -24,11 +24,11 @@ class DevLicenseTuiDialog(App):
         self,
         license: DevLicense,
         screen: bool = True,
-        driver_class=None,
+        driver_class: type[Driver] | None = None,
         log: str = "",
         log_verbosity: int = 1,
         title: str = "",
-    ):
+    ) -> None:
         super().__init__(screen, driver_class, log, log_verbosity, title)
 
         self.license = license
@@ -79,7 +79,7 @@ class DevLicenseTuiDialog(App):
         button_grid = await self.view.dock_grid(size=5)
         button_grid.add_column("col", repeat=2)
         button_grid.add_row("row", repeat=1)
-        button_grid.set_align("strech", "center")
+        button_grid.set_align("stretch", "center")
         button_grid.set_gap(1, 1)
 
         button_grid.add_widget(self.accept_button)

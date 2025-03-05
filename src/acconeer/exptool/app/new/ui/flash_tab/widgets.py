@@ -220,6 +220,7 @@ class FlashMainWidget(QWidget):
         return self.device_name_selection
 
     def _license_accepted(self) -> None:
+        assert self.flash_device is not None
         device_download_name = get_flash_download_name(self.flash_device, self.device_name)
 
         assert self._auth_info is not None

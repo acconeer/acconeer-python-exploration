@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -13,9 +13,9 @@ from email.message import EmailMessage
 from pathlib import Path
 from typing import Optional, Tuple
 
+import bs4
 import platformdirs
 import requests
-from bs4 import BeautifulSoup
 
 
 ET_DIR = Path(platformdirs.user_data_dir(appname="acconeer_exptool", appauthor="Acconeer AB"))
@@ -73,8 +73,10 @@ def clear_cookies() -> None:
 def login(email: str, password: str) -> requests.cookies.RequestsCookieJar:
     with requests.Session() as session:
         login_page = session.get(REQUEST_URL)
-        soup = BeautifulSoup(login_page.content, "html.parser")
-        token = soup.find("input", {"id": "CSRFToken-wppb"}).get("value")
+        soup = bs4.BeautifulSoup(login_page.content, "html.parser")
+        csrf_input_elem = soup.find("input", {"id": "CSRFToken-wppb"})
+        assert isinstance(csrf_input_elem, bs4.Tag)
+        token = csrf_input_elem.get("value")
 
         credentials = {
             "log": email,
@@ -110,12 +112,12 @@ def get_content(
 
 
 def is_redirected_to_login_page(response: requests.Response) -> bool:
-    return response.url == REQUEST_URL
+    return bool(response.url == REQUEST_URL)
 
 
 def download(
     session: requests.Session,
-    cookies: dict,
+    cookies: requests.cookies.RequestsCookieJar,
     path: str,
     device: str,
 ) -> Tuple[str, str]:
@@ -127,7 +129,7 @@ def download(
 
     response = session.get(url=A121_SW_URL)
 
-    soup = BeautifulSoup(response.content, "html.parser")
+    soup = bs4.BeautifulSoup(response.content, "html.parser")
     link = soup.findAll("a", {"href": lambda l: l and page_device in l})
 
     if not link:
@@ -135,7 +137,7 @@ def download(
         raise Exception(msg)
 
     response = session.get(url=link[0]["href"])
-    soup = BeautifulSoup(response.content, "html.parser")
+    soup = bs4.BeautifulSoup(response.content, "html.parser")
 
     zip_url = soup.findAll(
         "a", {"href": lambda l: l and device in l and "exploration_server" in l}
@@ -152,12 +154,14 @@ def download(
 
     r = session.post(zip_url, data=tc, allow_redirects=False, cookies=cookies, headers=headers)
 
-    msg = EmailMessage()
+    email_msg = EmailMessage()
     content_disposition = r.headers["Content-Disposition"]
-    msg["Content-Disposition"] = (
-        content_disposition  # EmailMessage.__setitem__ does magic things here
-    )
-    filename = msg.get_filename()
+    # EmailMessage.__setitem__ does magic things here
+    email_msg["Content-Disposition"] = content_disposition
+    filename = email_msg.get_filename()
+    if filename is None:
+        msg = f"Response from POST to {zip_url} did not contain a filename."
+        raise Exception(msg)
 
     version = _get_version(filename)
 

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -8,6 +8,7 @@ import getpass
 import re
 import tempfile
 import time
+import typing as t
 
 from acconeer.exptool._core.communication import comm_devices
 from acconeer.exptool._pyusb import UsbPortError
@@ -63,13 +64,18 @@ def _query_yes_no(question: str, default: str = "yes") -> bool:
             print("Please respond with 'yes' or 'no' " "(or 'y' or 'n').\n")
 
 
-def _flasher_progress_callback(progress, end=False):
+def _flasher_progress_callback(progress: int, end: bool = False) -> None:
     print(f"\rProgress: [{progress}/100]", end="", flush=True)
     if end:
         print()
 
 
-def flash_image(image_path, flash_device, device_name=None, progress_callback=None):
+def flash_image(
+    image_path: str,
+    flash_device: comm_devices.CommDevice,
+    device_name: t.Optional[str] = None,
+    progress_callback: t.Callable[[int, bool], t.Any] = lambda *_: None,
+) -> None:
     if flash_device:
         serial_device_name = device_name or flash_device.name
         if serial_device_name is None:
@@ -99,9 +105,13 @@ def flash_image(image_path, flash_device, device_name=None, progress_callback=No
 
 
 def _find_flash_device(
-    device_name=None, port=None, serial_number=None, use_usb=True, use_serial=True
-):
-    all_devices = []
+    device_name: t.Optional[str] = None,
+    port: t.Optional[str] = None,
+    serial_number: t.Optional[str] = None,
+    use_usb: bool = True,
+    use_serial: bool = True,
+) -> t.Union[comm_devices.SerialDevice, comm_devices.USBDevice]:
+    all_devices: list[t.Union[comm_devices.SerialDevice, comm_devices.USBDevice]] = []
     found_devices = []
     flash_device = None
 
@@ -151,7 +161,7 @@ def _find_flash_device(
     return flash_device
 
 
-def _get_flash_device_from_args(args):
+def _get_flash_device_from_args(args: argparse.Namespace) -> comm_devices.CommDevice:
     use_usb = args.interface is None or args.interface == "usb"
     use_serial = args.interface is None or args.interface == "serial"
     flash_device = _find_flash_device(
@@ -164,7 +174,7 @@ def _get_flash_device_from_args(args):
     return flash_device
 
 
-def get_flash_known_devices():
+def get_flash_known_devices() -> list[str]:
     known_devices = []
     for _, item in EVK_TO_PRODUCT_MAP.items():
         if item not in known_devices:
@@ -172,7 +182,7 @@ def get_flash_known_devices():
     return known_devices
 
 
-def get_flash_download_name(device, device_name):
+def get_flash_download_name(device: comm_devices.CommDevice, device_name: t.Optional[str]) -> str:
     name = device_name or device.name
     if name in EVK_TO_PRODUCT_MAP:
         return EVK_TO_PRODUCT_MAP[name]
@@ -180,7 +190,10 @@ def get_flash_download_name(device, device_name):
     raise FlashException(msg)
 
 
-def get_boot_description(flash_device, device_name):
+def get_boot_description(
+    flash_device: comm_devices.CommDevice,
+    device_name: str,
+) -> t.Optional[str]:
     flash_device_name = device_name or flash_device.name
     product = None
 
@@ -193,7 +206,10 @@ def get_boot_description(flash_device, device_name):
     return None
 
 
-def get_post_dfu_description(flash_device, device_name):
+def get_post_dfu_description(
+    flash_device: comm_devices.CommDevice,
+    device_name: str,
+) -> t.Optional[str]:
     flash_device_name = device_name or flash_device.name
     product = None
 
@@ -206,7 +222,7 @@ def get_post_dfu_description(flash_device, device_name):
     return None
 
 
-def _fetch_and_flash(args):
+def _fetch_and_flash(args: argparse.Namespace) -> None:
     flash_device = _get_flash_device_from_args(args)
 
     cookies = get_cookies()
@@ -292,7 +308,7 @@ def _fetch_and_flash(args):
     session.close()
 
 
-def _flash(args):
+def _flash(args: argparse.Namespace) -> None:
     flash_device = _get_flash_device_from_args(args)
     flash_image(
         args.image,
@@ -302,7 +318,7 @@ def _flash(args):
     )
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Image Flasher")
     parser.prog = "python -m acconeer.exptool.flash"
     subparsers = parser.add_subparsers(help="sub-command help", dest="operation", required=True)

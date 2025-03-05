@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import logging
-from typing import List
+from typing import List, Optional
 
 import bs4
 import requests
@@ -27,7 +27,7 @@ class DevLicense:
 
     def __init__(self, license_url: str = DEV_LICENSE_URL) -> None:
         self.license_url = license_url
-        self.html = None
+        self.html: Optional[bs4.BeautifulSoup] = None
 
     def load(self) -> None:
         """Loads the license HTML document"""
@@ -74,8 +74,10 @@ class DevLicense:
 
         if self.html is not None:
             subheader_element = self.html.find("h3")
-            if subheader_element is not None:
-                subheader = subheader_element.contents[0].string
+            if isinstance(subheader_element, bs4.Tag):
+                h3_contents = subheader_element.string
+                if h3_contents is not None:
+                    subheader = h3_contents
 
         return subheader
 
