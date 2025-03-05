@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -6,8 +6,8 @@ from __future__ import annotations
 import logging
 from typing import List
 
+import bs4
 import requests
-from bs4 import BeautifulSoup
 
 
 DEV_LICENSE_URL = "https://developer.acconeer.com/software-license-agreement/"
@@ -32,7 +32,7 @@ class DevLicense:
     def load(self) -> None:
         """Loads the license HTML document"""
         try:
-            self.html = BeautifulSoup(requests.get(self.license_url).text, "html.parser")
+            self.html = bs4.BeautifulSoup(requests.get(self.license_url).text, "html.parser")
         except Exception as e:
             log.warn(str(e))
             self.html = None
@@ -43,14 +43,18 @@ class DevLicense:
         :returns: HTML header.
 
         """
-        header = DEV_LICENSE_DEFAULT_HEADER
+        if self.html is None:
+            return DEV_LICENSE_DEFAULT_HEADER
 
-        if self.html is not None:
-            header_element = self.html.find("h1")
-            if header_element is not None:
-                header = header_element.contents[0].string
+        last_breadcrumb = self.html.find("span", {"class": "breadcrumb_last"})
+        if not isinstance(last_breadcrumb, bs4.Tag):
+            return DEV_LICENSE_DEFAULT_HEADER
 
-        return header
+        header_text = last_breadcrumb.string
+        if header_text is None:
+            return DEV_LICENSE_DEFAULT_HEADER
+
+        return header_text
 
     def get_header_element(self) -> str:
         """Get the HTML header element as a string
@@ -58,12 +62,7 @@ class DevLicense:
         :returns: HTML header element.
 
         """
-        header_elem = "<h1>" + DEV_LICENSE_DEFAULT_HEADER + "</h1>"
-
-        if self.html is not None:
-            header_elem = str(self.html.find("h1"))
-
-        return header_elem
+        return "<h1>" + self.get_header() + "</h1>"
 
     def get_subheader(self) -> str:
         """Get the HTML subheader as a string
