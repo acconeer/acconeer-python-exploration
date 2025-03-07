@@ -128,13 +128,32 @@ class _DummyBarGraphItem(pg.BarGraphItem):
         super().__init__(brush=color, x0=1, width=1, y0=1, height=1)
 
 
+class PowerCurvePlotItem(pg.PlotItem):
+    """
+    Just like pg.PlotItem, but the 'auto' range
+    (which is applied when clicking the "A" button) is customizable in X-axis.
+    """
+
+    def __init__(self, *args: t.Any, auto_end_x: float, **kwargs: t.Any) -> None:
+        super().__init__(*args, **kwargs)
+        self._auto_end_x: float = auto_end_x
+
+    def set_auto_end_x(self, x: float) -> None:
+        self._auto_end_x = x
+
+    def autoBtnClicked(self) -> None:
+        if self.autoBtn.mode == "auto":
+            # default behaviour is self.enableAutoRange()
+            self.setXRange(0, self._auto_end_x)
+            self.autoBtn.hide()
+        else:
+            self.disableAutoRange()
+
+
 class _EnergyRegionPlot(QWidget):
     @attrs.frozen
     class _State:
         """Whenever this changes, the plot is redrawn (with the new information)"""
-
-        profile_duration_s: float
-        """This is controlled from a tab-local spinbox."""
 
         session_config: a121.SessionConfig
         """This received from events"""
@@ -146,35 +165,38 @@ class _EnergyRegionPlot(QWidget):
 
     def __init__(
         self,
-        profile_duration_s: float,
         session_config: a121.SessionConfig,
         lower_idle_state: t.Optional[power.Sensor.LowerIdleState],
         algorithm: power.algo.Algorithm,
     ) -> None:
         super().__init__()
 
-        self._state = self._State(profile_duration_s, session_config, lower_idle_state)
+        self._state = self._State(session_config, lower_idle_state)
         self._algorithm: te.Final[power.algo.Algorithm] = algorithm
 
-        self._plot_widget = pg.plot()
-        self._plot_widget.getPlotItem().setLabel("left", "Sensor + XM125", units="A")
-        self._plot_widget.getPlotItem().setLabel("bottom", "Duration", units="s")
-        self._plot_widget.getPlotItem().setContentsMargins(0, 0, 0, 10)
+        duration_of_2_actives = power.session(
+            session_config,
+            lower_idle_state=lower_idle_state,
+            num_actives=2,
+            algorithm=algorithm,
+        ).duration
+        self._plot_item = PowerCurvePlotItem(auto_end_x=duration_of_2_actives)
+        self._plot_item.autoBtnClicked()
+
+        self._plot_item.setLabel("left", "Sensor + XM125", units="A")
+        self._plot_item.setLabel("bottom", "Duration", units="s")
+        self._plot_item.setContentsMargins(0, 0, 0, 10)
+
+        self._plot_widget = pg.PlotWidget(plotItem=self._plot_item)
         self._plot_widget.getViewBox().setMouseMode(pg.ViewBox.PanMode)
-
-        def update_profile_duration(view_box: pg.ViewBox, x_range: tuple[float, float]) -> None:
-            (_, x_range_max) = x_range
-            new_duration_s = min(
-                max(x_range_max * 0.9, self._MIN_DURATION_S),
-                self._MAX_DURATION_S,
-            )
-            self.evolve_current_state(profile_duration_s=new_duration_s)
-            self.plot_current_state()
-
-        self._plot_widget.getViewBox().sigXRangeChanged.connect(update_profile_duration)
+        y_min = -0.01
+        y_max = 0.1
+        self._plot_widget.getViewBox().setLimits(
+            yMin=y_min, yMax=y_max, minYRange=y_max - y_min, maxYRange=y_max - y_min
+        )
 
         self._bar_legend = pg.graphicsItems.LegendItem.LegendItem(offset=(75, 10))
-        self._bar_legend.setParentItem(self._plot_widget.getPlotItem())
+        self._bar_legend.setParentItem(self._plot_item)
         self._bar_legend.setEnabled(False)
 
         layout = QGridLayout()
@@ -186,12 +208,6 @@ class _EnergyRegionPlot(QWidget):
         self._state = attrs.evolve(self._state, **kwargs)
 
     def plot_current_state(self) -> None:
-        session_profile = power.session(
-            self._state.session_config,
-            lower_idle_state=self._state.lower_idle_state,
-            duration=self._state.profile_duration_s,
-            algorithm=self._algorithm,
-        )
         approx_avg_current = power.converged_average_current(
             self._state.session_config,
             lower_idle_state=self._state.lower_idle_state,
@@ -206,11 +222,35 @@ class _EnergyRegionPlot(QWidget):
             approx_avg_current_formatted = f"{milliampere * _mA_to_uA:.0f} {_MU}A"
 
         self._plot_widget.clear()
+        duration_of_2_actives = power.session(
+            self._state.session_config,
+            lower_idle_state=self._state.lower_idle_state,
+            num_actives=2,
+            algorithm=self._algorithm,
+        ).duration
+        self._plot_item.set_auto_end_x(duration_of_2_actives)
 
-        bar_item = PowerCurveBarGraphItem(session_profile)
-        self._plot_widget.addItem(bar_item)
+        active_profile = power.group_active(
+            self._state.session_config,
+            self._state.lower_idle_state,
+            algorithm=self._algorithm,
+        )
 
-        power_tag_set = set([p.tag for p in session_profile.flat_iter()])
+        fifty_first_active_and_idle_profiles = power.session(
+            self._state.session_config,
+            lower_idle_state=self._state.lower_idle_state,
+            num_actives=50,
+            algorithm=self._algorithm,
+        )
+
+        etc_text = pg.TextItem("and so on ...", anchor=(0, 1))
+        etc_text.setPos(fifty_first_active_and_idle_profiles.duration, 0)
+        self._plot_widget.addItem(etc_text)
+
+        session_bar_item = PowerCurveBarGraphItem(fifty_first_active_and_idle_profiles)
+        self._plot_widget.addItem(session_bar_item)
+
+        power_tag_set = set([p.tag for p in fifty_first_active_and_idle_profiles.flat_iter()])
 
         self._bar_legend.clear()
         for tag in power_tag_set:
@@ -219,18 +259,12 @@ class _EnergyRegionPlot(QWidget):
                     _DummyBarGraphItem(PowerCurveBarGraphItem.tag_color(tag)), tag.name.title()
                 )
 
-        active = power.group_active(
-            self._state.session_config,
-            self._state.lower_idle_state,
-            algorithm=self._algorithm,
-        )
-
-        if active.duration > 1.0:
-            approx_duration_formatted = f"{active.duration:.1f} s"
+        if active_profile.duration > 1.0:
+            approx_duration_formatted = f"{active_profile.duration:.1f} s"
         else:
-            approx_duration_formatted = f"{active.duration * _s_to_ms:.1f} ms"
+            approx_duration_formatted = f"{active_profile.duration * _s_to_ms:.1f} ms"
 
-        region_bounds = (0, active.duration)
+        region_bounds = (0, active_profile.duration)
 
         lri = pg.LinearRegionItem(
             values=region_bounds,
@@ -252,17 +286,15 @@ class _EnergyRegionPlot(QWidget):
         )
         self._plot_widget.addItem(hline_item)
 
-        self._plot_widget.setYRange(0, 0.1)
-
         rate = power.configured_rate(self._state.session_config)
         if rate is None:
             return
 
-        if active.duration > 1 / rate:
+        if active_profile.duration > 1 / rate:
             rate_warning_text = pg.InfiniteLine(
                 pos=0.10,
                 angle=0,
-                label=f"Cannot keep rate.\nMaximum rate is approx.\n{1 / active.duration:.0f} Hz",
+                label=f"Cannot keep rate.\nMaximum rate is approx.\n{1 / active_profile.duration:.0f} Hz",
                 labelOpts={
                     "color": "#000",
                     "fill": WARNING_YELLOW,
@@ -317,14 +349,7 @@ class EnergyRegionOutput(QTabWidget):
 
     def _handle_session_config_event(self, event: SessionConfigEvent) -> None:
         if event.service_id not in self._tabs:
-            configured_rate = power.configured_rate(event.session_config)
-            if configured_rate is None:
-                seconds_in_x_axis = _SECONDS_IF_RATE_UNSET
-            else:
-                seconds_in_x_axis = 1 / configured_rate
-
             plot_widget = _EnergyRegionPlot(
-                seconds_in_x_axis,
                 event.session_config,
                 event.lower_idle_state,
                 power.algo.SparseIq(),
@@ -345,14 +370,7 @@ class EnergyRegionOutput(QTabWidget):
         session_config = event.translated_session_config
 
         if event.service_id not in self._tabs:
-            configured_rate = power.configured_rate(event.translated_session_config)
-            if configured_rate is None:
-                seconds_in_x_axis = _SECONDS_IF_RATE_UNSET
-            else:
-                seconds_in_x_axis = 1 / configured_rate
-
             plot_widget = _EnergyRegionPlot(
-                seconds_in_x_axis,
                 session_config,
                 event.lower_idle_state,
                 power.algo.Distance(),
@@ -373,14 +391,7 @@ class EnergyRegionOutput(QTabWidget):
         session_config = event.translated_session_config
 
         if event.service_id not in self._tabs:
-            configured_rate = power.configured_rate(event.translated_session_config)
-            if configured_rate is None:
-                seconds_in_x_axis = _SECONDS_IF_RATE_UNSET
-            else:
-                seconds_in_x_axis = 1 / configured_rate
-
             plot_widget = _EnergyRegionPlot(
-                seconds_in_x_axis,
                 session_config,
                 event.lower_idle_state,
                 power.algo.Presence(),

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 """
 API for generating power regions (for more info see ./domain.py).
@@ -293,7 +293,7 @@ def group_active(
     algorithm: algo.Algorithm = di.DEFAULT_ALGO,
     sensor: Sensor = di.DEFAULT_SENSOR,
     module: Module = di.DEFAULT_MODULE,
-) -> domain.EnergyRegion:
+) -> domain.CompositeRegion:
     """
     Describes the active part of a group.
     """
@@ -335,7 +335,7 @@ def group_idle(
     duration: float,
     sensor: Sensor = di.DEFAULT_SENSOR,
     module: Module = di.DEFAULT_MODULE,
-) -> domain.EnergyRegion:
+) -> domain.SimpleRegion:
     """
     Returns a region that describes the idling between groups
     """
@@ -369,6 +369,7 @@ def session_generator(
 
     rate = configured_rate(session_config)
 
+    regions: list[domain.EnergyRegion]
     if rate is None:
         regions = [active]
     else:
@@ -392,7 +393,8 @@ def session_generator(
 def session(
     session_config: a121.SessionConfig,
     lower_idle_state: t.Optional[Sensor.LowerIdleState],
-    duration: float,
+    duration: t.Optional[float] = None,
+    num_actives: t.Optional[int] = None,
     algorithm: algo.Algorithm = di.DEFAULT_ALGO,
     sensor: Sensor = di.DEFAULT_SENSOR,
     module: Module = di.DEFAULT_MODULE,
@@ -402,6 +404,11 @@ def session(
     """
     regions: list[domain.EnergyRegion] = []
     elapsed_time = 0.0
+    found_actives = 0
+
+    if num_actives is None and duration is None:
+        msg = "At least one of 'num_actives' and 'duration' needs to be not None"
+        raise ValueError(msg)
 
     for region in session_generator(
         session_config,
@@ -413,7 +420,14 @@ def session(
         regions += [region]
         elapsed_time += region.duration
 
-        if elapsed_time > duration:
+        if not (
+            isinstance(region, domain.SimpleRegion) and region.tag is domain.EnergyRegion.Tag.IDLE
+        ):
+            found_actives += 1
+
+        if duration is not None and elapsed_time > duration:
+            break
+        if num_actives is not None and found_actives >= num_actives:
             break
 
     sequence = domain.CompositeRegion(
@@ -421,7 +435,10 @@ def session(
         f"First {duration} seconds of session",
     )
 
-    return sequence.truncate(duration)
+    if duration is not None:
+        return sequence.truncate(duration)
+    else:
+        return sequence
 
 
 def converged_average_current(
