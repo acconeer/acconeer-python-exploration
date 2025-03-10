@@ -213,6 +213,9 @@ class Pidget(DataEditor[Any]):
             f"background-color: {COLOR_MAP[criticality]}; color: white; font: bold italic;"
         )
 
+    def setEnabled(self, enabled: bool) -> None:
+        super(DataEditor, self).setEnabled(enabled)
+
     @abc.abstractmethod
     def set_data(self, value: Any) -> None:
         pass
