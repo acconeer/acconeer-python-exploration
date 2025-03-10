@@ -354,6 +354,13 @@ doctest_optionflags = [
     "NORMALIZE_WHITESPACE",
 ]
 
+[tool.coverage.report]
+# Non-existing files that PySide6 says exists
+omit = [
+    "shibokensupport/*",
+    "signature_bootstrap.py",
+]
+
 [tool.check_line_length]
 line_length = 80
 include = [
