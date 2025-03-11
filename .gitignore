@@ -15,6 +15,7 @@ src/acconeer/exptool/_version.py
 
 # pytest
 .pytest_cache/
+.hypothesis/
 
 # VS Code
 .vscode/

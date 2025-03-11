@@ -18,6 +18,9 @@ from acconeer.exptool import a121, opser
 from acconeer.exptool import type_migration as tm
 from acconeer.exptool._core.class_creation.attrs import attrs_optional_ndarray_isclose
 from acconeer.exptool.a121._core import utils
+from acconeer.exptool.a121._core.entities.configs.sensor_config import (
+    VALIDATION_TAG_BUFFER_SIZE_TOO_LARGE,
+)
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo import (
     AlgoConfigBase,
@@ -205,6 +208,37 @@ class DetectorConfig(AlgoConfigBase):
                     "max_step_length",
                     "Actual step length will be rounded down "
                     + f"to the closest valid step length ({valid_step_length}).",
+                )
+            )
+
+        session_config = detector_config_to_session_config(self, [1])
+        if any(
+            sc_val_res.tag is VALIDATION_TAG_BUFFER_SIZE_TOO_LARGE
+            for sc_val_res in session_config._collect_validation_results()
+        ):
+            error_msg_stem = "Required buffer size is too large. "
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "end_m",
+                    error_msg_stem + "Try decreasing the range.",
+                )
+            )
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "start_m",
+                    error_msg_stem + "Try decreasing the range.",
+                )
+            )
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "max_step_length",
+                    (
+                        error_msg_stem
+                        + "Allowing a higher step length will require a smaller buffer."
+                    ),
                 )
             )
 

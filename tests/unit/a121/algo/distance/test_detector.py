@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import typing as t
 
+import hypothesis as hyp
+import hypothesis.strategies as hyp_st
 import pytest
 
 from acconeer.exptool import a121
@@ -72,3 +74,64 @@ def test_should_be_able_to_set_start_m_equals_end_m() -> None:
         distance.Detector(client=client, sensor_ids=[1], detector_config=config, context=None)
     except Exception:
         pytest.fail("Should not raise Exception")
+
+
+@hyp_st.composite
+def detector_config_strategy(draw: hyp_st.DrawFn) -> distance.DetectorConfig:
+    start_m = draw(
+        hyp_st.floats(
+            min_value=distance.Detector.MIN_DIST_M,
+            max_value=distance.Detector.MAX_DIST_M,
+        )
+    )
+    end_m = draw(hyp_st.floats(min_value=start_m, max_value=distance.Detector.MAX_DIST_M))
+    max_step_length = draw(
+        hyp_st.one_of(
+            # valid step length in [1, 23]
+            hyp_st.integers(min_value=1, max_value=23).filter(lambda n: 24 % n == 0),
+            # valid step length in [24, 960]
+            hyp_st.integers(min_value=1, max_value=40).map(lambda n: n * 24),
+            hyp_st.none(),
+        )
+    )
+    max_profile = draw(hyp_st.sampled_from(a121.Profile))
+
+    config = distance.DetectorConfig(
+        start_m=start_m,
+        end_m=end_m,
+        max_step_length=max_step_length,
+        max_profile=max_profile,
+        close_range_leakage_cancellation=draw(hyp_st.booleans()),
+        signal_quality=draw(hyp_st.floats(min_value=0.0, max_value=30.0)),
+        threshold_method=draw(hyp_st.sampled_from(distance.ThresholdMethod)),
+        peaksorting_method=draw(hyp_st.sampled_from(distance.PeakSortingMethod)),
+        reflector_shape=draw(hyp_st.sampled_from(distance.ReflectorShape)),
+        num_frames_in_recorded_threshold=draw(hyp_st.integers(min_value=0, max_value=300)),
+        fixed_threshold_value=draw(hyp_st.floats()),
+        threshold_sensitivity=draw(hyp_st.floats()),
+        update_rate=draw(
+            hyp_st.one_of(
+                hyp_st.floats(min_value=0.000001),
+                hyp_st.none(),
+            ),
+        ),
+    )
+
+    try:
+        config.validate()
+    except a121.ValidationResult:
+        # discards invalid distance.DetectorConfigs
+        hyp.assume(False)
+
+    return config
+
+
+@hyp.given(detector_config_strategy())
+def test_valid_detector_configs_translates_to_valid_session_configs(
+    detector_config: distance.DetectorConfig,
+) -> None:
+    session_config = distance.detector_config_to_session_config(
+        config=detector_config, sensor_ids=[1]
+    )
+
+    session_config.validate()

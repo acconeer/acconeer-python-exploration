@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -20,6 +20,7 @@ class ValidationResult(Exception):
     aspect: Optional[str] = field()
     message: str = field()
     criticality: Criticality = field()
+    tag: Any = field(default=None)
 
     def __attrs_post_init__(self) -> None:
         super(Exception, self).__init__(self.source, self.aspect, self.message, self.criticality)

@@ -29,6 +29,7 @@ _TOO_MANY_SUBSWEEPS_ERROR_FORMAT = (
     "SensorConfig has too many subsweeps "
     + 'to use accessor "{}". Number of subsweeps needs to be 1.'
 )
+VALIDATION_TAG_BUFFER_SIZE_TOO_LARGE = object()
 
 
 def subsweep_delegate_field(descriptor: Any, type_: type[T]) -> Descriptor[T]:
@@ -401,18 +402,24 @@ class SensorConfig:
         if required_buffer_size > buffer_size_available:
             validation_results.append(
                 ValidationError(
-                    self,
-                    "sweeps_per_frame",
-                    ERROR_MSG.format(required_buffer_size, buffer_size_available)
-                    + " Decreasing sweeps per frame reduces buffer usage.",
+                    source=self,
+                    aspect="sweeps_per_frame",
+                    message=(
+                        ERROR_MSG.format(required_buffer_size, buffer_size_available)
+                        + " Decreasing sweeps per frame reduces buffer usage."
+                    ),
+                    tag=VALIDATION_TAG_BUFFER_SIZE_TOO_LARGE,
                 ),
             )
             validation_results.extend(
                 ValidationError(
-                    subsweep_config,
-                    "num_points",
-                    ERROR_MSG.format(required_buffer_size, buffer_size_available)
-                    + " Decreasing number of points reduces buffer usage.",
+                    source=subsweep_config,
+                    aspect="num_points",
+                    message=(
+                        ERROR_MSG.format(required_buffer_size, buffer_size_available)
+                        + " Decreasing number of points reduces buffer usage."
+                    ),
+                    tag=VALIDATION_TAG_BUFFER_SIZE_TOO_LARGE,
                 )
                 for subsweep_config in self.subsweeps
             )
