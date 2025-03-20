@@ -74,12 +74,17 @@ class RangeTypes(Flag):
         ]
 
 
-def _are_ranges_overlapping(a: tuple[float, float], b: tuple[float, float]) -> bool:
-    (a_start, a_end) = a
-    (b_start, b_end) = b
-    assert a_start <= a_end
-    assert b_start <= b_end
-    return not (a_start >= b_end or b_start >= a_end)
+def _clamp(value: float, min_val: float, max_val: float) -> float:
+    return min(max(value, min_val), max_val)
+
+
+def _range_overlap(a: tuple[float, float], b: tuple[float, float]) -> t.Optional[float]:
+    (a_start, a_end) = sorted(a)
+    (b_start, b_end) = sorted(b)
+    overlap_start = _clamp(a_start, b_start, b_end)
+    overlap_end = _clamp(a_end, b_start, b_end)
+    ranges_overlapping = not (a_start >= b_end or b_start >= a_end)
+    return abs(overlap_end - overlap_start) if ranges_overlapping else None
 
 
 def _calc_hwaas(
@@ -126,12 +131,29 @@ def _get_range_types(config: DetectorConfig) -> RangeTypes:
         bounding_profile = min(a121.Profile.PROFILE_3, config.max_profile, key=lambda p: p.value)
         transition_p1_range = (min_dist_m[a121.Profile.PROFILE_1], min_dist_m[bounding_profile])
 
-        if _are_ranges_overlapping(transition_p1_range, configured_range):
+        step_length_m = (
+            _limit_step_length(a121.Profile.PROFILE_1, config.max_step_length)
+            * APPROX_BASE_STEP_LENGTH_M
+        )
+
+        min_overlap = min(step_length_m, config.end_m - config.start_m)
+        range_overlap = _range_overlap(transition_p1_range, configured_range)
+
+        if range_overlap is not None and range_overlap >= min_overlap:
             range_types |= RangeTypes.TRANSITION_P1
 
     if config.max_profile.value > a121.Profile.PROFILE_3.value:
         transition_p3_range = (min_dist_m[a121.Profile.PROFILE_3], min_dist_m[config.max_profile])
-        if _are_ranges_overlapping(transition_p3_range, configured_range):
+
+        step_length_m = (
+            _limit_step_length(a121.Profile.PROFILE_3, config.max_step_length)
+            * APPROX_BASE_STEP_LENGTH_M
+        )
+
+        min_overlap = min(step_length_m, config.end_m - config.start_m)
+        range_overlap = _range_overlap(transition_p3_range, configured_range)
+
+        if range_overlap is not None and range_overlap >= min_overlap:
             range_types |= RangeTypes.TRANSITION_P3
 
     if min_dist_m[config.max_profile] < config.end_m:
@@ -353,8 +375,12 @@ def detector_config_to_session_config(
             cfar_margin = 0
 
         marginless_start_point = _m_to_point(start_m, start_m, step_length)
-        start_point = marginless_start_point - left_filter_margin - cfar_margin
         marginless_end_point = _m_to_point(start_m, end_m, step_length)
+
+        if marginless_start_point == marginless_end_point:
+            marginless_end_point += step_length
+
+        start_point = marginless_start_point - left_filter_margin - cfar_margin
         end_point = marginless_end_point + right_filter_margin + cfar_margin
         num_points = int((end_point - start_point) / step_length)
 
@@ -394,8 +420,13 @@ def detector_config_to_session_config(
         else:
             cfar_margin = 0
 
-        start_point = _m_to_point(start_m, start_m, step_length) - left_filter_margin - cfar_margin
+        marginless_start_point = _m_to_point(start_m, start_m, step_length)
         marginless_end_point = _m_to_point(start_m, end_m, step_length)
+
+        if marginless_start_point == marginless_end_point:
+            marginless_end_point += step_length
+
+        start_point = marginless_start_point - left_filter_margin - cfar_margin
         end_point = marginless_end_point + right_filter_margin + cfar_margin
         num_points = int((end_point - start_point) / step_length)
 
