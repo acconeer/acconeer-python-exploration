@@ -1,11 +1,11 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import contextlib
 from copy import copy
-from typing import List, Optional
+from typing import Any, Callable, List, Optional
 
 from PySide6.QtWidgets import (
     QButtonGroup,
@@ -48,13 +48,16 @@ class TabPGWidget(QFrame):
         self.newTab(plot_widget, title)
         return plot_widget
 
-    def newTab(self, widget: QWidget, title: str) -> None:
+    def newTab(
+        self, widget: QWidget, title: str, callback: Callable[[], Any] = lambda: None
+    ) -> None:
         new_tab_id = len(self._button_group.buttons())
         widget.setVisible(new_tab_id == 0)
         self._plot_widgets.append(widget)
         self._main_layout.addWidget(widget)
 
         button = QPushButton(title, self)
+        button.clicked.connect(callback)
         button.setCheckable(True)
         button.setChecked(new_tab_id == 0)
         button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
