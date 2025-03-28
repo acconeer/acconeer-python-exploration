@@ -16,8 +16,8 @@ def pythonVersionsForBuildScope = [
 @Field
 def integrationTestA121RssVersionsForBuildScope = [
     (BuildScope.SANITY)  : [branch: 'master'],
-    (BuildScope.HOURLY)  : [tag: 'a121-v1.9.0'],
-    (BuildScope.NIGHTLY) : [branch: 'master', tag: 'a121-v1.9.0'],
+    (BuildScope.HOURLY)  : [tag: 'a121-v1.10.0'],
+    (BuildScope.NIGHTLY) : [branch: 'master', tag: 'a121-v1.10.0'],
 ]
 
 @Field
@@ -29,9 +29,9 @@ def integrationTestA111RssVersionsForBuildScope = [
 
 @Field
 def modelTestA121RssVersionForBuildScope = [
-    (BuildScope.SANITY)  : [tag: 'a121-v1.9.0'],
-    (BuildScope.HOURLY)  : [tag: 'a121-v1.9.0'],
-    (BuildScope.NIGHTLY) : [tag: 'a121-v1.9.0'],
+    (BuildScope.SANITY)  : [tag: 'a121-v1.10.0'],
+    (BuildScope.HOURLY)  : [tag: 'a121-v1.10.0'],
+    (BuildScope.NIGHTLY) : [tag: 'a121-v1.10.0'],
 ]
 
 boolean messageOnFailure = true
@@ -226,10 +226,11 @@ try {
                         findBuildAndCopyArtifacts(
                             [
                                 projectName: 'sw-main',
-                                artifactNames: ['out/internal_stash_python_libs.tgz'],
+                                artifactNames: ['out/internal_stash_python_libs.tgz', 'out/internal_stash_tests_a121.tgz'],
                             ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a121-vX.Y.Z']
                         )
                         sh "tar -xzf out/internal_stash_python_libs.tgz -C ${stashFolder}"
+                        sh "tar -xzf out/internal_stash_tests_a121.tgz -C ${stashFolder}"
                     }
                 }
 
@@ -260,7 +261,7 @@ try {
                                 glob: 'stash/model_a121/**/python_libs/**/inter_sweep_idle_states_limits.yaml'
                             )
                             def a121_memory_usage_yaml_matches = findFiles(
-                                glob: 'stash/model_a121/**/python_libs/**/memory_usage.yaml'
+                                glob: 'stash/model_a121/**/tests/a121/**/memory_usage.yaml'
                             )
 
                             hatchWrap """test ${versionSelection} --parallel tests/ src/ \

@@ -1,5 +1,16 @@
 # Changelog
 
+## v7.15.0
+
+### Added​
+- IQ imbalance compensation parameter​
+- IQ imbalance compensation docs​
+- PRF validation over subsweeps​
+
+### Changed​
+- Update flash utilities for dev site login​
+- Refactor detector distance config translation
+
 ## v7.14.3
 
 ### Added
