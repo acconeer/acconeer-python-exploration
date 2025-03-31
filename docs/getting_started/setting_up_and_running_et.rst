@@ -4,15 +4,11 @@
 Setting up and running Exploration Tool
 #######################################
 
-.. youtube:: MxdJxe9-ipw
-   :width: 100%
+This page will help you
 
-
-See also our other Getting Started guides:
-
-* *Getting started with the XM126 EVK*: :octicon:`download` `PDF <dev_pdf_xm126_getting_started_>`_
-* *Getting started with the XE125 EVK*: `YouTube <yt_xe125_getting_started_>`_, :octicon:`download` `PDF <dev_pdf_xm125_getting_started_>`_
-* *Getting started with the A121 EVK*: `YouTube <yt_xe121_getting_started_>`_, :octicon:`download` `PDF <dev_pdf_xe121_getting_started_>`_
+* Install and run Exploration Tool
+* Connect your EVK to Exploration Tool
+* Start retrieving Radar Data using Exploration Tool
 
 
 .. _installation-and-setup:
@@ -47,7 +43,7 @@ you can install in different ways:
       interested in scripting and using the :doc:`Python API </exploration_tool/api/index>`,
       you can install the `Exploration Tool Python package <et_pypi_>`_:
 
-      If not already installed, install Python by following the video-/PDF guides above or go to `python.org <https://www.python.org/downloads/>`_
+      If not already installed, install Python by following the video-/PDF guides at the bottom of the page or go to `python.org <https://www.python.org/downloads/>`_
 
       .. code-block::
 
@@ -142,7 +138,7 @@ Additional Setup
 
    .. tab:: :fab:`windows;fa-xl`
 
-      If you encounter any connection issues while following along :ref:`exploration_tool-running` you *might* be missing
+      If you encounter any connection issues while following along :ref:`installation-and-setup` you *might* be missing
       drivers that allow proper function of Acconeer's modules.
 
       See :doc:`evk_setup/index` for your specific module for more information.
@@ -231,16 +227,27 @@ Additional Setup
             An USB device have to be disconnected and reconnected before the udev permissions are updated.
 
 
-.. _exploration_tool-running:
+.. _connecting-your-evk:
 
-************************
-Running Exploration Tool
-************************
+*******************
+Connecting Your EVK
+*******************
 
-Depending on which path you took in :ref:`installation-and-setup`, Exploration Tool is started by either
+The next step is to connect Exploration Tool to your EVK. See :doc:`evk_setup/index` for instructions.
+
+When that is done, depending on how you installed in :ref:`installation-and-setup`, start Exploration Tool by either
 
 * Double-clicking the ``run_app`` script,
 * Running the command ``python -m acconeer.exptool.app`` in your terminal.
+
+To connect, click on the **Stream tab** and then the **Connect** button. Use the same port as when flashing the device in :doc:`evk_setup/index`.
+
+
+.. _getting-radar-data:
+
+******************
+Getting Radar Data
+******************
 
 After that, have a look at the functional overview below for an introduction of Exploration Tool:
 
@@ -251,6 +258,22 @@ Running Example Scripts
 =======================
 
 See :ref:`python_api_example_scripts` section on how to get started with Example Scripts and the :doc:`Python API </exploration_tool/api/index>`.
+
+
+.. _other-media:
+
+***********
+Other Media
+***********
+
+For Getting Started PDFs and videos, see:
+
+* *Getting started with the XM126 EVK*: `YouTube <yt_xm126_getting_started_>`_, :octicon:`download` `PDF <dev_pdf_xm126_getting_started_>`_
+* *Getting started with the XE125 EVK*: `YouTube <yt_xe125_getting_started_>`_, :octicon:`download` `PDF <dev_pdf_xm125_getting_started_>`_
+* *Getting started with the A121 EVK*: `YouTube <yt_xe121_getting_started_>`_, :octicon:`download` `PDF <dev_pdf_xe121_getting_started_>`_
+
+If information is different in the PDFs and videos compared to this site, use the information on this site.
+
 
 .. _dev_pdf_xe121_getting_started: https://developer.acconeer.com/download/getting-started-guide-a121-evk/?tmstv=1716368189
 .. _dev_pdf_xm125_getting_started: https://developer.acconeer.com/download/getting-started-guide-a121-xe125/?tmstv=1716368160

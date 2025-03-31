@@ -1,8 +1,7 @@
 Setting up your EVK
 ===================
 
-If you did not get started by following :doc:`../setting_up_and_running_et`, the following
-sections are in-depth setup guides for each EVK/module:
+The following sections are step-by-step setup guides for each EVK/module:
 
 .. toctree::
    :caption: Setup Guides

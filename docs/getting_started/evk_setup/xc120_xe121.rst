@@ -16,9 +16,10 @@ automatically download the latest binary file.
 Automatically download and flash using the GUI
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Start the Exploration Tool Application::
+Depending on how you installed in :ref:`installation-and-setup`, start Exploration Tool by either
 
-   python -m acconeer.exptool.app
+* Double-clicking the ``run_app`` script,
+* Running the command ``python -m acconeer.exptool.app`` in your terminal.
 
 To automatically download the latest binary file:
 
