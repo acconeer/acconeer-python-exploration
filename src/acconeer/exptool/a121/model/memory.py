@@ -116,7 +116,7 @@ def presence_heap_memory(config: PresenceConfig) -> int:
 def distance_external_heap_memory(config: DistanceConfig) -> int:
     offset_sensor_config = get_calibrate_offset_sensor_config()
     session_config = distance.detector_config_to_session_config(config, [1])
-    processor_specs = distance.detector_config_to_processor_specs(config, [1])
+    processor_specs = distance.detector_config_to_processor_specs(config, [1], 4)
     noise_session_config = get_calibrate_noise_session_config(session_config, [1])
 
     offset_ext_heap = session_external_heap_memory(SessionConfig(offset_sensor_config))
@@ -183,7 +183,7 @@ def distance_external_heap_memory(config: DistanceConfig) -> int:
 def distance_rss_heap_memory(config: DistanceConfig) -> int:
     offset_sensor_config = get_calibrate_offset_sensor_config()
     session_config = distance.detector_config_to_session_config(config, [1])
-    processor_specs = distance.detector_config_to_processor_specs(config, [1])
+    processor_specs = distance.detector_config_to_processor_specs(config, [1], 4)
     noise_session_config = get_calibrate_noise_session_config(session_config, [1])
 
     offset_rss_heap = _session_config_rss_heap_memory(SessionConfig(offset_sensor_config))

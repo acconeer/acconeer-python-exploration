@@ -44,7 +44,11 @@ from ._processors import (
     ProcessorResult,
     ThresholdMethod,
 )
-from ._translation import detector_config_to_processor_specs, detector_config_to_session_config
+from ._translation import (
+    detector_config_to_processor_specs,
+    detector_config_to_session_config,
+    get_num_far_subsweeps,
+)
 
 
 @attrs.frozen(kw_only=True)
@@ -394,16 +398,25 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         return context.recorded_threshold_calibration is not None
 
     @classmethod
-    def _has_close_range_measurement(self, config: DetectorConfig) -> bool:
+    def _has_close_range_measurement(cls, config: DetectorConfig) -> bool:
         # sensor_ids=[1] as the detector is running the same config for all sensors.
-        specs = detector_config_to_processor_specs(config=config, sensor_ids=[1])
+        session_config = detector_config_to_session_config(config, sensor_ids=[1])
+        num_far_subsweeps = get_num_far_subsweeps(session_config, config)
+        specs = detector_config_to_processor_specs(
+            config=config, sensor_ids=[1], num_far_subsweeps=num_far_subsweeps
+        )
         return MeasurementType.CLOSE_RANGE in [
             spec.processor_config.measurement_type for spec in specs
         ]
 
     @classmethod
-    def _has_recorded_threshold_mode(self, config: DetectorConfig, sensor_ids: list[int]) -> bool:
-        processor_specs = detector_config_to_processor_specs(config=config, sensor_ids=sensor_ids)
+    def _has_recorded_threshold_mode(cls, config: DetectorConfig, sensor_ids: list[int]) -> bool:
+        processor_specs = detector_config_to_processor_specs(
+            config=config,
+            sensor_ids=sensor_ids,
+            # num_far_subsweeps hardcoded as it does not impact the threshold method.
+            num_far_subsweeps=4,
+        )
         return ThresholdMethod.RECORDED in [
             spec.processor_config.threshold_method for spec in processor_specs
         ]
@@ -504,7 +517,10 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         """Updates the session config and processor specification based on the detector
         configuration."""
         self.session_config = detector_config_to_session_config(config, self.sensor_ids)
-        self.processor_specs = detector_config_to_processor_specs(config, self.sensor_ids)
+        num_far_subsweeps = get_num_far_subsweeps(self.session_config, config)
+        self.processor_specs = detector_config_to_processor_specs(
+            config, self.sensor_ids, num_far_subsweeps
+        )
 
     def stop(self) -> Any:
         """Stops the measurement session."""

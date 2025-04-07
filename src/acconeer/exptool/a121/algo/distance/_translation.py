@@ -228,7 +228,11 @@ def _max_profile_margins(
 def detector_config_to_processor_specs(
     config: DetectorConfig,
     sensor_ids: list[int],
+    num_far_subsweeps: int,
 ) -> list[ProcessorSpec]:
+    if num_far_subsweeps > 4 or num_far_subsweeps < 0:
+        raise ValueError
+
     far_range_processor_config = ProcessorConfig(
         threshold_method=config.threshold_method,
         fixed_threshold_value=config.fixed_threshold_value,
@@ -255,7 +259,7 @@ def detector_config_to_processor_specs(
 
     # Iterator of available subsweep indexes. Will be consumed
     # in the for-loop below.
-    far_subsweep_idx_iter = iter(range(4))
+    far_subsweep_idx_iter = iter(range(num_far_subsweeps))
     far_group_idx = 1 if RangeTypes.CLOSE_RANGE in range_types else 0
 
     for range_type in range_types & RangeTypes.FAR_RANGE:
@@ -526,6 +530,21 @@ def detector_config_to_session_config(
         groups.append({sensor_id: sensor_config for sensor_id in sensor_ids})
 
     return a121.SessionConfig(groups, extended=True, update_rate=config.update_rate)
+
+
+def get_num_far_subsweeps(
+    session_config: a121.SessionConfig,
+    config: DetectorConfig,
+) -> int:
+    range_types = _get_range_types(config)
+    if RangeTypes.CLOSE_RANGE & range_types and len(session_config.groups) == 1:
+        # no far group
+        return 0
+
+    far_sensor_group = session_config.groups[-1]
+    # same config for each sensor. Grab first sensor id.
+    num_far_subsweeps = far_sensor_group[list(far_sensor_group.keys())[0]].num_subsweeps
+    return num_far_subsweeps
 
 
 def _get_furthest_measurement(config: DetectorConfig) -> tuple[float, a121.Profile]:
