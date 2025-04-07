@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 from __future__ import annotations
 
@@ -123,5 +123,24 @@ def assert_messages() -> t.Callable[..., None]:
 
             if received_message in not_yet_seen_messages:
                 not_yet_seen_messages.remove(received_message)
+
+    return f
+
+
+@pytest.fixture
+def assert_num_calls() -> t.Callable[..., None]:
+    def f(backend: Backend, num_calls: int, call_identifier_message_type: type) -> None:
+        """
+        Utility function that asserts that the plugin has called the plugin 'num_calls' times.
+        The call is identified by the received message type call_identifier_message_type.
+
+        The messages are fetched with a timeout of BACKEND_RECEIVE_TIMEOUT.
+        If any receive from Backend times out, function will be terminated.
+        """
+        recv_num_calls = 0
+        while recv_num_calls < num_calls:
+            received_message = backend.recv()
+            if type(received_message) is call_identifier_message_type:
+                recv_num_calls += 1
 
     return f

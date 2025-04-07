@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 from __future__ import annotations
 
@@ -16,12 +16,16 @@ from acconeer.exptool.app.new.backend import (
     Backend,
     GeneralMessage,
     MpBackend,
+    PlotMessage,
     PluginStateMessage,
     Task,
 )
 from acconeer.exptool.app.new.backend._backend import FromBackendQueueItem
 from acconeer.exptool.app.new.plugin_loader import load_default_plugins
 
+
+# number of calls the plugin should request from each application
+NUM_CALLS_TO_REQUEST = 2
 
 # pytest-magic for a module-wide timeout of 60s
 pytestmark = pytest.mark.timeout(60)
@@ -112,6 +116,7 @@ class TestBackendPlugins:
         backend: Backend,
         plugin: PluginSpec,
         assert_messages: t.Callable[..., None],
+        assert_num_calls: t.Callable[..., None],
         tasks: t.Any,
     ) -> None:
         # Some backend plugins need to calibrate before starting session
@@ -134,6 +139,9 @@ class TestBackendPlugins:
                 tasks.SUCCESSFULLY_CLOSED_TASK,
             ],
         )
+        # make sure NUM_CALLS_TO_REQUEST calls has been received by receiving
+        # the same number of PlotMessages
+        assert_num_calls(backend, NUM_CALLS_TO_REQUEST, PlotMessage)
 
         # Stopping the task should be successful and report the idle state
         backend.put_task(tasks.STOP_SESSION_TASK)

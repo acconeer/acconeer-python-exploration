@@ -5,10 +5,12 @@ from __future__ import annotations
 
 import abc
 import logging
+import re
 from pathlib import Path
 from typing import Any, Callable, Generic, Optional, TypeVar
 
 import h5py
+from packaging.version import Version
 
 from acconeer.exptool import a121
 from acconeer.exptool.app.new import (
@@ -70,9 +72,17 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
         try:
             self._opened_record = a121.H5Record(h5py.File(path, mode="r"))
 
+            log_version_match = re.match(
+                "^([0-9]+[.][0-9]+[.][0-9]+)[.]", self._opened_record.lib_version
+            )
+            if log_version_match is None:
+                log_version = "0.0.0"  # assume old/any version
+            else:
+                log_version = log_version_match.groups()[0]
+
             # This is to be able to replay files recorded before v7.0.0
             # when there were only one session per file
-            if self._opened_record.num_sessions <= 1:
+            if self._opened_record.num_sessions <= 1 and Version(log_version) < Version("7.0.0"):
                 replaying_client = a121._ReplayingClient(self._opened_record, cycled_session_idx=0)
             else:
                 replaying_client = a121._ReplayingClient(self._opened_record)
