@@ -1,4 +1,4 @@
-Windows COM port drivers
+Windows COM Port Drivers
 ------------------------
 
-If no COM port is recognized when plugging in a module, you might need to install a driver:
+If no COM port is recognized when plugging in a module, you need to install a driver:

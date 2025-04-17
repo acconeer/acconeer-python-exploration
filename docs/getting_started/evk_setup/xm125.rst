@@ -1,13 +1,33 @@
-.. _setup_xm125:
+.. _setup_xm125_xe125:
 
-Setting up your XM125
-=====================
+Setting Up Your XM125/XE125
+===========================
 
-For detailed instructions, visit our `developer page <https://developer.acconeer.com/>`_.
+The XE125 is an evaluation board which has the XM125 module soldered onto it.
+All you need to connect it to a PC is a USB-C cable (not provided by Acconeer).
+
+
+.. _xm125-hw-overview:
+
+Hardware Overview
+-----------------
+
+The image below depicts the XE125 from the front (left) and back (right).
+
+.. figure:: /_static/hw_images/xe125_hw_overview.png
+   :align: center
+   :width: 80%
+
+.. _xm125-finding-the-serial-port:
 
 .. include:: find_serial_port.rst
 
-**Note that the XM125 has two serial ports. Usually, the first port is the one to use.**
+Note that when the XE125 is connected to a PC, two virtual serial ports will appear:
+
+* Enhanced
+* Standard
+
+Use the enhanced port (usually the first one) when connecting to the module from the Exploration Tool application.
 
 .. include:: windows_com_port_drivers.rst
 - XM125: `Silicon Labs <https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers>`_
@@ -18,7 +38,7 @@ Flashing
 The most convenient method to prepare the XM125 board for flashing is to let the Exploration Tool Application
 automatically download the latest binary file.
 
-Automatically download and flash using the GUI
+Automatically Download and Flash Using the GUI
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Depending on how you installed in :ref:`installation-and-setup`, start Exploration Tool by either
@@ -38,20 +58,24 @@ To automatically download the latest binary file:
 |
 
 Once the binary file has been downloaded it is possible to start flashing the board by clicking the **Flash** button
-in the **Flash tool**.
+in the **Flash tool**. Make sure to select the serial port you found in section :ref:`xm125-finding-the-serial-port`.
 
-Automatically download and flash using the CLI
+Put the XM125 in DFU mode by following the instructions in the prompt. Use the image in :ref:`xm125-hw-overview` for reference.
+
+Automatically Download and Flash Using the CLI
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Run the following command from the CLI::
 
    python -m acconeer.exptool.flash flash -d XM125 -f
 
+When prompted, put the XM125 in DFU mode by following the instructions. Use the image in :ref:`xm125-hw-overview` for reference.
 
-Manually download and flash
+Manually Download and Flash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Start by downloading the latest ``acc_exploration_server_a121.bin`` from our `developer page <https://developer.acconeer.com/>`_.
+Start by downloading the latest Exploration Server package for XM125  from our `developer page <https://developer.acconeer.com/>`_.
+Inside the downloaded package, ``acc_exploration_server_a121.bin`` can be found.
 
 Flash XM125 using the Exploration Tool Application::
 
@@ -60,3 +84,14 @@ Flash XM125 using the Exploration Tool Application::
 or by using the following command::
 
    python -m acconeer.exptool.flash flash -d XM125 -i acc_exploration_server_a121.bin
+
+If the last command was used, make sure to put the XM125 in DFU mode:
+
+#. Press the DFU-button and hold it
+#. Press the RESET-button and hold it
+#. Release the RESET-button
+#. Release the DFU-button
+
+Use the image in :ref:`xm125-hw-overview` for reference.
+
+After the XM125 has been flashed, it needs to be reset. This is done by pressing and releasing the RESET-button.

@@ -1,4 +1,4 @@
-Setting up your EVK
+Setting Up Your EVK
 ===================
 
 The following sections are step-by-step setup guides for each EVK/module:
@@ -9,5 +9,5 @@ The following sections are step-by-step setup guides for each EVK/module:
 
    XC120 + XE121 <xc120_xe121>
    RPi + XE121 <raspberry_a121_xe121>
-   XM125 <xm125>
-   XM126 <xm126>
+   XM125/XE125 <xm125>
+   XB122 + XM126 <xm126>

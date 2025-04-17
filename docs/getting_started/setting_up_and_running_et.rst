@@ -1,7 +1,7 @@
 .. _setting_up_et:
 
 #######################################
-Setting up and running Exploration Tool
+Setting Up and Running Exploration Tool
 #######################################
 
 This page will help you
@@ -40,10 +40,29 @@ you can install in different ways:
 
       If you have a PC with Windows or Ubuntu, want to use Python,
       want to run the Exploration Tool Application,
-      interested in scripting and using the :doc:`Python API </exploration_tool/api/index>`,
-      you can install the `Exploration Tool Python package <et_pypi_>`_:
+      and interested in scripting using the :doc:`Python API </exploration_tool/api/index>`,
+      you can install the `Exploration Tool Python package <et_pypi_>`_.
+      Information on example scripts can be found in :ref:`python_api_example_scripts`.
 
-      If not already installed, install Python by following the video-/PDF guides at the bottom of the page or go to `python.org <https://www.python.org/downloads/>`_
+      Python is needed to install the package. If you don't have Python installed, see below for instructions,
+      otherwise go to next step.
+
+      .. tabs::
+
+         .. tab:: :fab:`windows;fa-xl` Windows
+
+            #. Go to `python.org <https://www.python.org/downloads/>`_ and download the latest version
+            #. Start the installer
+            #. Select 'Add python to PATH'
+            #. Click 'Install Now'
+            #. Disable path length limit
+            #. Click 'Close'
+
+         .. tab:: :fab:`ubuntu;fa-xl` Ubuntu
+
+            Go to `how-to-install-python <https://phoenixnap.com/kb/how-to-install-python-3-ubuntu>`_ for example how to install.
+
+      Install the Exploration Tool package:
 
       .. code-block::
 
