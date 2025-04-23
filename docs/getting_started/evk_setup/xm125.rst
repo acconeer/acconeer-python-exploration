@@ -6,7 +6,6 @@ Setting Up Your XM125/XE125
 The XE125 is an evaluation board which has the XM125 module soldered onto it.
 All you need to connect it to a PC is a USB-C cable (not provided by Acconeer).
 
-
 .. _xm125-hw-overview:
 
 Hardware Overview
@@ -69,7 +68,7 @@ Run the following command from the CLI::
 
    python -m acconeer.exptool.flash flash -d XM125 -f
 
-When prompted, put the XM125 in DFU mode by following the instructions. Use the image in :ref:`xm125-hw-overview` for reference.
+Put the XM125 in DFU mode by following the instructions in the prompt. Use the image in :ref:`xm125-hw-overview` for reference.
 
 Manually Download and Flash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
