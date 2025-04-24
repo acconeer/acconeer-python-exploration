@@ -285,18 +285,15 @@ See :ref:`python_api_example_scripts` section on how to get started with Example
 Other Media
 ***********
 
-For Getting Started PDFs and videos, see:
+For Getting Started videos, see:
 
-* *Getting started with the XM126 EVK*: `YouTube <yt_xm126_getting_started_>`_, :octicon:`download` `PDF <dev_pdf_xm126_getting_started_>`_
-* *Getting started with the XE125 EVK*: `YouTube <yt_xe125_getting_started_>`_, :octicon:`download` `PDF <dev_pdf_xm125_getting_started_>`_
-* *Getting started with the A121 EVK*: `YouTube <yt_xe121_getting_started_>`_, :octicon:`download` `PDF <dev_pdf_xe121_getting_started_>`_
+* *Getting started with the XM126 EVK*: `YouTube <yt_xm126_getting_started_>`_
+* *Getting started with the XE125 EVK*: `YouTube <yt_xe125_getting_started_>`_
+* *Getting started with the A121 EVK*: `YouTube <yt_xe121_getting_started_>`_
 
-If information is different in the PDFs and videos compared to this site, use the information on this site.
+If information is different in the videos compared to this site, use the information on this site.
 
 
-.. _dev_pdf_xe121_getting_started: https://developer.acconeer.com/download/getting-started-guide-a121-evk/?tmstv=1716368189
-.. _dev_pdf_xm125_getting_started: https://developer.acconeer.com/download/getting-started-guide-a121-xe125/?tmstv=1716368160
-.. _dev_pdf_xm126_getting_started: https://developer.acconeer.com/download/getting-started-guide-a121-xe126/?tmstv=1716368093
 .. _et_github: https://github.com/acconeer/acconeer-python-exploration
 .. _et_pypi: https://pypi.org/project/acconeer-exptool
 .. _gh_docs_forks: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/fork-a-repo
