@@ -76,15 +76,26 @@ Manually Download and Flash
 Start by downloading the latest Exploration Server package for XM125  from our `developer page <https://developer.acconeer.com/>`_.
 Inside the downloaded package, ``acc_exploration_server_a121.bin`` can be found.
 
-Flash XM125 using the Exploration Tool Application::
+There are two ways to flash the downloaded binary, either using Exploration Tool GUI or the command line.
+
+**Using the Exploration Tool GUI:**
+
+Start the Exploration Tool Application::
 
    python -m acconeer.exptool.app
 
-or by using the following command::
+and flash XM125 with the downloaded binary file:
 
-   python -m acconeer.exptool.flash flash -d XM125 -i acc_exploration_server_a121.bin
+1. Open the **Flash tool** by selecting the **Flash tab** in the tab selection
+2. Click the **Browse** tab
+3. Click the **Browse** button and select the downloaded file
+4. Start flashing the board by clicking the **Flash** button
 
-If the last command was used, make sure to put the XM125 in DFU mode:
+Put the XM125 in DFU mode by following the instructions in the prompt. Use the image in :ref:`xm125-hw-overview` for reference.
+
+**Using the Command Line:**
+
+Put the XM125 in DFU mode:
 
 #. Press the DFU-button and hold it
 #. Press the RESET-button and hold it
@@ -92,5 +103,9 @@ If the last command was used, make sure to put the XM125 in DFU mode:
 #. Release the DFU-button
 
 Use the image in :ref:`xm125-hw-overview` for reference.
+
+Flash:
+
+   python -m acconeer.exptool.flash flash -d XM125 -i acc_exploration_server_a121.bin
 
 After the XM125 has been flashed, it needs to be reset. This is done by pressing and releasing the RESET-button.

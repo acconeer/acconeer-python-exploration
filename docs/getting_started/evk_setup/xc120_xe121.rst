@@ -1,19 +1,50 @@
-Setting up your XC120 + XE121
+.. _setup_xc120_xe121:
+
+Setting Up Your XC120 + XE121
 =============================
+
+A great way to evaluate the A121 sensor in Exploration Tool is to use the XC120 connector board together with the XE121 evaluation board.
+Multiple XS121 satellite boards can also be connected to the XE121 evaluation board for multi-sensor evaluation.
+The XS121 satellite board has a small form factor and is connected to the XE121 evaluation board with a flex cable (included with XS121),
+enabling high flexibility in the evaluation.
+A USB-C cable (not provided by Acconeer) is needed to connect the XC120 board to a PC.
+
+.. _xc120_xe121-hw-overview:
+
+Hardware Overview
+-----------------
+
+The image below depicts the XC120 from the front (left) and back (right).
+
+.. figure:: /_static/hw_images/xc120_hw_overview.png
+   :align: center
+   :width: 80%
+
+The image below depicts the XE121 from the front (left) and back (right).
+
+.. figure:: /_static/hw_images/xe121_hw_overview.png
+   :align: center
+   :width: 80%
+
+The image below depicts the XS121 from the front (left) and back (right).
+
+.. figure:: /_static/hw_images/xs121_hw_overview.png
+   :align: center
+   :width: 80%
+
+The image below depicts all the boards assembled.
+
+.. figure:: /_static/hw_images/xc120_xe121_xs121_assembled.png
+   :align: center
+   :width: 80%
 
 Flashing
 --------
 
-.. attention::
-
-   To flash and connect to SDK/RSS v0.8.0 or newer,
-   Exploration Tool v5.9.0 or newer is required.
-
-
 The most convenient method to prepare the XC120 board for flashing is to let the Exploration Tool Application
 automatically download the latest binary file.
 
-Automatically download and flash using the GUI
+Automatically Download and Flash Using the GUI
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Depending on how you installed in :ref:`installation-and-setup`, start Exploration Tool by either
@@ -35,72 +66,39 @@ To automatically download the latest binary file:
 Once the binary file has been downloaded it is possible to start flashing the board by clicking the **Flash** button
 in the **Flash tool**.
 
-Automatically download and flash using the CLI
+If the device cannot be found in Exploration Tool after flashing, disconnect and reconnect the USB cable and it should be found again.
+
+Automatically Download and Flash Using the CLI
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Run the following command from the CLI::
 
    python -m acconeer.exptool.flash flash -d XC120 -f
 
-
-Manually download and flash
+Manually Download and Flash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Start by downloading the latest ``acc_exploration_server_a121.bin`` from our `developer page <https://developer.acconeer.com/>`_.
+Start by downloading the latest Exploration Server package for XC120 from our `developer page <https://developer.acconeer.com/>`_.
+The correct package is located under XE121.
+Inside the downloaded package, ``acc_exploration_server_a121.bin`` can be found.
 
-Flash XC120 using the Exploration Tool Application::
+There are two ways to flash the downloaded binary, either using Exploration Tool GUI or the command line.
+
+**Using the Exploration Tool GUI:**
+
+Start the Exploration Tool Application::
 
    python -m acconeer.exptool.app
 
-or by using the following command::
+and flash XC120 with the downloaded binary file:
+
+1. Open the **Flash tool** by selecting the **Flash tab** in the tab selection
+2. Click the **Browse** tab
+3. Click the **Browse** button and select the downloaded file
+4. Start flashing the board by clicking the **Flash** button
+
+**Using the Command Line:**
+
+Flash:
 
    python -m acconeer.exptool.flash flash -d XC120 -i acc_exploration_server_a121.bin
-
-Windows USB drivers (deprecated)
---------------------------------
-
-.. attention::
-
-   Manual driver installation is no longer needed from SDK/RSS v0.8.0,
-   but requires Exploration Tool v5.9.0 or newer.
-
-For enhanced stability and performance on Windows, we strongly recommend using the WinUSB driver to communicate with the XC120.
-In order to do so, follow the steps below.
-
-Download Zadig from their `website <https://zadig.akeo.ie/>`_.
-We recommend version 2.7 or newer.
-
-With the XC120 plugged in, run the Zadig application.
-
-Under *Options*, select *List All Devices*:
-
-.. figure:: /_static/zadig/zadig-1.png
-   :align: center
-   :width: 80%
-
-|
-
-Find the *XC120 Exploration Server* in the dropdown. Make sure *WinUSB* is selected as the driver to replace with. Now it should look like this:
-
-.. figure:: /_static/zadig/zadig-2.png
-   :align: center
-   :width: 80%
-
-|
-
-Click *Replace Driver*. The process could take a minute. Once it's done, it should look like this:
-
-.. figure:: /_static/zadig/zadig-3.png
-   :align: center
-   :width: 80%
-
-|
-
-All done! Now you can close Zadig and run the XC120 with the WinUSB driver.
-In the app, select the XC120 like this:
-
-.. figure:: /_static/zadig/usb-in-app.png
-   :align: center
-   :width: 80%
-
-|

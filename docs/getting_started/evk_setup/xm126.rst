@@ -76,12 +76,17 @@ Run the following command from the CLI::
 
    python -m acconeer.exptool.flash flash -d XM126 -f
 
+Put the XM126 in DFU mode by following the instructions in the prompt. Use the images in :ref:`xm126-hw-overview` for reference.
 
 Manually Download and Flash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Start by downloading the latest Exploration Server package for XM126 from our `developer page <https://developer.acconeer.com/>`_.
 Inside the downloaded package, ``acc_exploration_server_a121.bin`` can be found.
+
+There are two ways to flash the downloaded binary, either using Exploration Tool GUI or the command line.
+
+**Using the Exploration Tool GUI:**
 
 Start the Exploration Tool Application::
 
@@ -100,11 +105,9 @@ and flash XM126 with the downloaded binary file:
 
 Put the XM126 in DFU mode by following the instructions in the prompt. Use the images in :ref:`xm126-hw-overview` for reference.
 
-or by using the following command::
+**Using the Command Line:**
 
-   python -m acconeer.exptool.flash flash -d XM126 -i app_update.bin
-
-If the last command was used, make sure to put the XM126 in DFU mode:
+Put the XM126 in DFU mode:
 
 #. Press the DFU-button and hold it
 #. Press the RESET-button and hold it
@@ -112,5 +115,9 @@ If the last command was used, make sure to put the XM126 in DFU mode:
 #. Release the DFU-button
 
 Use the images in :ref:`xm126-hw-overview` for reference.
+
+Flash:
+
+   python -m acconeer.exptool.flash flash -d XM126 -i app_update.bin
 
 After the XM126 has been flashed, it needs to be reset. This is done by pressing and releasing the RESET-button.
