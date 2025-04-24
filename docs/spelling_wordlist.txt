@@ -90,6 +90,7 @@ multipath
 multisensor
 nox
 ns
+Nucleo
 num
 Numpy
 Nyquist
@@ -157,6 +158,7 @@ virtualenv
 Wayland
 Welch
 Welch's
+wirelessly
 Zadig
 zipimporter
 μm
