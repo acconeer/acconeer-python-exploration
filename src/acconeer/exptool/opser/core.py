@@ -124,8 +124,8 @@ class Persistor(abc.ABC):
             (Persistor,),
             {
                 "is_applicable": classmethod(_is_applicable),
-                "save": _save,
-                "load": _load,
+                "_save": _save,
+                "_load": _load,
             },
         )
 
@@ -183,17 +183,37 @@ class Persistor(abc.ABC):
         dataset.attrs["persistor"] = f"{type(self).__name__}"
         return dataset
 
+    @t.final
+    def save(self, data: t.Any) -> None:
+        try:
+            self._save(data)
+        except SaveError as se:
+            raise se
+        except Exception as e:
+            raise SaveError from e
+
+    @t.final
+    def load(self) -> t.Any:
+        try:
+            res = self._load()
+        except LoadError as le:
+            raise le
+        except Exception as e:
+            raise LoadError from e
+        else:
+            return res
+
     @classmethod
     @abc.abstractmethod
     def is_applicable(cls, __type: core.TypeLike) -> bool:
         pass
 
     @abc.abstractmethod
-    def save(self, data: t.Any) -> None:
+    def _save(self, data: t.Any) -> None:
         pass
 
     @abc.abstractmethod
-    def load(self) -> t.Any:
+    def _load(self) -> t.Any:
         pass
 
 

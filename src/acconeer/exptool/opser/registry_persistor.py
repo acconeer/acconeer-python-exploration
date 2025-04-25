@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 from __future__ import annotations
 
@@ -56,7 +56,7 @@ class RegistryPersistor(core.Persistor):
     def is_applicable(cls, __type: core.TypeLike) -> bool:
         return len(cls._get_applicable_persistors(__type)) > 0
 
-    def save(self, instance: t.Any) -> None:
+    def _save(self, instance: t.Any) -> None:
         persistor_classes = self._get_applicable_persistors(self.type_tree.data)
 
         if not persistor_classes:
@@ -79,7 +79,7 @@ class RegistryPersistor(core.Persistor):
             errors,
         )
 
-    def load(self) -> t.Any:
+    def _load(self) -> t.Any:
         persistor_classes = self._get_applicable_persistors(self.type_tree.data)
 
         if not persistor_classes:

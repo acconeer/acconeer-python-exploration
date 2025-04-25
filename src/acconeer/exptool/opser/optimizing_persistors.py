@@ -34,7 +34,7 @@ class ScalarListPersistor(core.Persistor):
         else:
             return False
 
-    def save(self, data: t.Any) -> None:
+    def _save(self, data: t.Any) -> None:
         if not isinstance(data, list):
             raise core.TypeMissmatchError
 
@@ -45,7 +45,7 @@ class ScalarListPersistor(core.Persistor):
 
         self.create_own_dataset(data)
 
-    def load(self) -> t.Any:
+    def _load(self) -> t.Any:
         dataset_contents = self.dataset[()]
 
         self.assert_not_empty(dataset_contents)
@@ -81,7 +81,7 @@ class RaggedNumpyArrayPersistor(core.Persistor):
 
         return core.is_optional(type_arg) and core.is_ndarray(core.optional_arg(type_arg))
 
-    def save(self, data: t.Any) -> None:
+    def _save(self, data: t.Any) -> None:
         if not isinstance(data, list):
             raise core.TypeMissmatchError
 
@@ -106,7 +106,7 @@ class RaggedNumpyArrayPersistor(core.Persistor):
         for i, array in enumerate(data):
             ragged_dataset[i] = array
 
-    def load(self) -> t.List[t.Any]:
+    def _load(self) -> t.List[t.Any]:
         self.assert_not_empty(self.dataset[()])
 
         return list(self.dataset[()])
@@ -130,7 +130,7 @@ class TrileanListPersistor(core.Persistor):
         else:
             return False
 
-    def save(self, data: t.Any) -> None:
+    def _save(self, data: t.Any) -> None:
         if not isinstance(data, list):
             raise core.TypeMissmatchError
 
@@ -142,7 +142,7 @@ class TrileanListPersistor(core.Persistor):
             dtype=_Trilean.dtype(),
         )
 
-    def load(self) -> t.List[t.Optional[bool]]:
+    def _load(self) -> t.List[t.Optional[bool]]:
         self.assert_not_empty(self.dataset[()])
 
         return [_Trilean.from_stored_value(e).object_value for e in self.dataset[()]]
@@ -198,7 +198,7 @@ class OptionalFloatListPersistor(core.Persistor):
         else:
             return False
 
-    def save(self, data: t.Any) -> None:
+    def _save(self, data: t.Any) -> None:
         if any(e == self.SENTINEL for e in data):
             raise core.TypeMissmatchError
 
@@ -206,7 +206,7 @@ class OptionalFloatListPersistor(core.Persistor):
 
         self.create_own_dataset(data_with_replaced_nones)
 
-    def load(self) -> t.List[t.Optional[float]]:
+    def _load(self) -> t.List[t.Optional[float]]:
         self.assert_not_empty(self.dataset[()])
 
         return [(None if e == self.SENTINEL else float(e)) for e in self.dataset[()]]
@@ -234,7 +234,7 @@ class OptionalIntListPersistor(core.Persistor):
         else:
             return False
 
-    def save(self, data: t.Any) -> None:
+    def _save(self, data: t.Any) -> None:
         if any(e == self.SENTINEL for e in data):
             raise core.TypeMissmatchError
 
@@ -242,7 +242,7 @@ class OptionalIntListPersistor(core.Persistor):
 
         self.create_own_dataset(data_with_replaced_nones)
 
-    def load(self) -> t.List[t.Optional[float]]:
+    def _load(self) -> t.List[t.Optional[float]]:
         self.assert_not_empty(self.dataset[()])
 
         return [(None if e == self.SENTINEL else int(e)) for e in self.dataset[()]]
@@ -289,7 +289,7 @@ class EnumListPersistor(core.Persistor):
         element_type = element_type_tree.data
         return core.is_optional(element_type)
 
-    def save(self, data: t.Any) -> None:
+    def _save(self, data: t.Any) -> None:
         if not isinstance(data, list):
             raise core.TypeMissmatchError
 
@@ -300,7 +300,7 @@ class EnumListPersistor(core.Persistor):
             dtype=h5_enum.dtype(),
         )
 
-    def load(self) -> t.List[t.Optional[Enum]]:
+    def _load(self) -> t.List[t.Optional[Enum]]:
         self.assert_not_empty(self.dataset[()])
 
         h5_enum = H5Enum(self.enum_class, include_none=self.is_optional)
@@ -383,7 +383,7 @@ class SausageableAttrsPersistor(core.Persistor):
         (type_arg,) = type_args
         return attrs.has(type_arg)
 
-    def save(self, data: t.Any) -> None:
+    def _save(self, data: t.Any) -> None:
         (attrs_type_tree,) = self.type_tree.children.values()
 
         if not isinstance(data, list):
@@ -399,7 +399,7 @@ class SausageableAttrsPersistor(core.Persistor):
                 ),
             ).save([getattr(attrs_instance, attribute_name) for attrs_instance in data])
 
-    def load(self) -> t.List[attrs.AttrsInstance]:
+    def _load(self) -> t.List[attrs.AttrsInstance]:
         (attrs_type_tree,) = self.type_tree.children.values()
         attrs_type = attrs_type_tree.data
 
