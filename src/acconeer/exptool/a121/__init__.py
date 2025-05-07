@@ -4,6 +4,7 @@
 SDK_VERSION = "1.10.0"
 
 # Make these visible under the a121 package to not break api
+from acconeer.exptool._cli import ExampleArgumentParser, get_client_args
 from acconeer.exptool._core.communication.client import ClientError, ServerError
 from acconeer.exptool._core.entities import (
     ClientInfo,
@@ -21,7 +22,6 @@ from acconeer.exptool._core.int_16_complex import (
     int16_complex_array_to_complex,
 )
 
-from ._cli import ExampleArgumentParser, get_client_args
 from ._core import (
     _H5PY_STR_DTYPE,
     PRF,
