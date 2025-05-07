@@ -53,7 +53,7 @@ from ._core import (
     zip3_extended_structures,
     zip_extended_structures,
 )
-from ._core_ext import _ReplayingClient, _StopReplay
+from ._core_ext import ReplaySessionsExhaustedError, _ReplayingClient, _StopReplay
 from ._perf_calc import (
     _SensorPerformanceCalc,
     _SessionPerformanceCalc,

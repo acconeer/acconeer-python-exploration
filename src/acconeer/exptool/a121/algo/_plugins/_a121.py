@@ -150,7 +150,7 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
 
             try:
                 self.get_next()
-            except a121._StopReplay:
+            except (a121._StopReplay, a121.ReplaySessionsExhaustedError):
                 self.stop_session()
                 return True
             except Exception as exc:
