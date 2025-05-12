@@ -1,5 +1,10 @@
 # Changelog
 
+## v7.16.0
+
+### Added
+- Level tracking feature for Tank Level
+
 ## v7.15.0
 
 ### Added​
