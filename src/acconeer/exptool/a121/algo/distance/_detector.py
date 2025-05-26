@@ -54,6 +54,10 @@ from ._translation import (
 )
 
 
+class ConfigMismatchError(RuntimeError):
+    pass
+
+
 @attrs.frozen(kw_only=True)
 class DetectorStatus:
     detector_state: DetailedStatus
@@ -471,7 +475,10 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
 
         if not status.ready_to_start:
             msg = f"Not ready to start ({status.detector_state.name})"
-            raise RuntimeError(msg)
+            if status.detector_state.name == DetailedStatus.CONFIG_MISMATCH.name:
+                raise ConfigMismatchError(msg)
+            else:
+                raise RuntimeError(msg)
         specs = self._add_context_to_processor_spec()
 
         sensor_calibration = self._get_sensor_calibrations(self.context)

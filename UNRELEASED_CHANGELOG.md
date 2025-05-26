@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### Added
+- Cargo example application added
 
 ### Changed
 
