@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from acconeer.exptool import a121
@@ -107,7 +107,7 @@ def get_medium_range_config() -> RefAppConfig:
             inter_output_time_const=2,
             inter_phase_boost=False,
             inter_frame_presence_timeout=3,
-            num_zones=7,
+            num_zones=6,
         ),
     )
 
