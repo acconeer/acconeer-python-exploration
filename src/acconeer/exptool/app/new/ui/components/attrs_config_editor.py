@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -82,9 +82,9 @@ class AttrsConfigEditor(DataEditor[Optional[T]]):
     ) -> None:
         super().__init__(parent=parent)
         self._config = None
-        self.setLayout(QVBoxLayout(self))
-        self.layout().setContentsMargins(0, 0, 0, 0)
-        self.layout().setSpacing(11)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(11)
 
         group_box = GroupBox.vertical(
             title,
@@ -98,7 +98,7 @@ class AttrsConfigEditor(DataEditor[Optional[T]]):
             min_top_padding=min_top_padding,
             parent=self,
         )
-        self.layout().addWidget(group_box)
+        layout.addWidget(group_box)
 
         self._pidget_mapping: dict[str, Pidget] = {}
         self._pidget_hooks: dict[str, Sequence[PidgetHook]] = {}
@@ -122,6 +122,8 @@ class AttrsConfigEditor(DataEditor[Optional[T]]):
 
             self._group_widgets.append(group_widget)
             self._group_hooks.append(pidget_group.hooks)
+
+        self.setLayout(layout)
 
     def set_data(self, config: Optional[T]) -> None:
         if self._config == config:

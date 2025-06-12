@@ -368,12 +368,12 @@ class FloatSliderPidget(Pidget):
         self.__spin_box.valueChanged.connect(self.__on_spin_box_changed)
 
         slider_widget = QWidget(self)
-        slider_widget.setLayout(QHBoxLayout(slider_widget))
-        slider_widget.layout().setContentsMargins(11, 6, 11, 0)
+        slider_widget_layout = QHBoxLayout(slider_widget)
+        slider_widget_layout.setContentsMargins(11, 6, 11, 0)
 
         lower_limit, upper_limit = factory.limits
         if factory.show_limit_values:
-            slider_widget.layout().addWidget(QLabel(str(lower_limit), slider_widget))
+            slider_widget_layout.addWidget(QLabel(str(lower_limit), slider_widget))
 
         self._slider = _PidgetFloatSlider(
             slider_widget,
@@ -382,32 +382,36 @@ class FloatSliderPidget(Pidget):
             log_scale=factory.log_scale,
         )
         self._slider.wrapped_value_changed.connect(self.__on_slider_changed)
-        slider_widget.layout().addWidget(self._slider)
+        slider_widget_layout.addWidget(self._slider)
 
         if factory.show_limit_values:
-            slider_widget.layout().addWidget(QLabel(str(upper_limit), slider_widget))
+            slider_widget_layout.addWidget(QLabel(str(upper_limit), slider_widget))
 
         if factory.limit_texts is not None:
             label_text_widget = QWidget(self)
-            label_text_widget.setLayout(QHBoxLayout(label_text_widget))
-            label_text_widget.layout().setContentsMargins(11, 0, 11, 0)
-            label_text_widget.layout().setSpacing(0)
+            label_text_widget_layout = QHBoxLayout(label_text_widget)
+            label_text_widget.setLayout(label_text_widget_layout)
+
+            label_text_widget_layout.setContentsMargins(11, 0, 11, 0)
+            label_text_widget_layout.setSpacing(0)
 
             left, right = factory.limit_texts
 
             if left is not None:
                 label = QLabel(left, label_text_widget)
-                label_text_widget.layout().addWidget(label)
+                label_text_widget_layout.addWidget(label)
 
-            label_text_widget.layout().addStretch(1)  # type: ignore[attr-defined]
+            label_text_widget_layout.addStretch(1)
 
             if right is not None:
                 label = QLabel(right, label_text_widget)
-                label_text_widget.layout().addWidget(label)
+                label_text_widget_layout.addWidget(label)
 
             full_row_widgets = [slider_widget, label_text_widget]
         else:
             full_row_widgets = [slider_widget]
+
+        slider_widget.setLayout(slider_widget_layout)
 
         self.set_standard_layout(
             factory,

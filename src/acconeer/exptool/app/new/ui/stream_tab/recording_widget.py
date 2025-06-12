@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -17,12 +17,14 @@ class RecordingWidget(QWidget):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
-        self.setLayout(QHBoxLayout(self))
-        self.layout().setContentsMargins(0, 0, 0, 0)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        self.layout().addWidget(LoadFileButton(app_model, self))
-        self.layout().addWidget(SaveFileButton(app_model, self))
-        self.layout().addWidget(RecordingCheckbox(app_model, self))
+        layout.addWidget(LoadFileButton(app_model, self))
+        layout.addWidget(SaveFileButton(app_model, self))
+        layout.addWidget(RecordingCheckbox(app_model, self))
+
+        self.setLayout(layout)
 
 
 class RecordingCheckbox(QCheckBox):

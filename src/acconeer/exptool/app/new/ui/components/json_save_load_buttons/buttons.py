@@ -250,11 +250,12 @@ def create_json_save_load_buttons(
         This function should always return None if its arguments aren't handled.
     """
     wrapper = QWidget()
-    wrapper.setLayout(QHBoxLayout())
-    wrapper.layout().setContentsMargins(5, 5, 5, 8)
+    wrapper_layout = QHBoxLayout()
+    wrapper.setLayout(wrapper_layout)
+    wrapper_layout.setContentsMargins(5, 5, 5, 8)
 
     if encoder is not None:
-        wrapper.layout().addWidget(
+        wrapper_layout.addWidget(
             _JsonSaveButton(
                 editor.get_data,
                 encoder,
@@ -267,7 +268,7 @@ def create_json_save_load_buttons(
         editor.sig_update.emit(data)
 
     if decoder is not None:
-        wrapper.layout().addWidget(_JsonLoadButton(setter, decoder))
+        wrapper_layout.addWidget(_JsonLoadButton(setter, decoder))
 
     return wrapper
 

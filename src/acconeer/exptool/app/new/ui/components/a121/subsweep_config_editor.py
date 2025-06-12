@@ -122,11 +122,11 @@ class SubsweepConfigEditor(DataEditor[Optional[a121.SubsweepConfig]]):
 
         self._subsweep_config = None
 
-        self.setLayout(QVBoxLayout(self))
-        self.layout().setContentsMargins(0, 0, 0, 0)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         self.range_help_view = RangeHelpView(self)
-        self.layout().addWidget(self.range_help_view)
+        layout.addWidget(self.range_help_view)
 
         collapsible_layout = QVBoxLayout()
 
@@ -136,7 +136,7 @@ class SubsweepConfigEditor(DataEditor[Optional[a121.SubsweepConfig]]):
             if aspect in self.ADVANCED_PARAMETERS:
                 collapsible_layout.addWidget(pidget)
             else:
-                self.layout().addWidget(pidget)
+                layout.addWidget(pidget)
 
             pidget.sig_update.connect(partial(self._update_subsweep_config_aspect, aspect))
 
@@ -148,7 +148,9 @@ class SubsweepConfigEditor(DataEditor[Optional[a121.SubsweepConfig]]):
         dummy.setLayout(collapsible_layout)
         self.collapsible_widget = CollapsibleWidget(label="Advanced", widget=dummy)
 
-        self.layout().addWidget(self.collapsible_widget)
+        layout.addWidget(self.collapsible_widget)
+
+        self.setLayout(layout)
 
     def set_read_only(self, read_only: bool) -> None:
         for pidget in self._subsweep_config_pidgets.values():

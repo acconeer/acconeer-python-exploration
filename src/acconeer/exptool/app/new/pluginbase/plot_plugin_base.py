@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -101,6 +101,9 @@ class PgPlotPlugin(PlotPluginBase):
         self.plot_widget = pg.GraphicsLayoutWidget()
         self.plot_layout = self.plot_widget.ci
 
-        self.setLayout(QVBoxLayout())
-        self.layout().setContentsMargins(0, 0, 0, 0)
-        self.layout().addWidget(self.plot_widget)
+        layout = QVBoxLayout()
+
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.plot_widget)
+
+        self.setLayout(layout)

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -22,14 +22,16 @@ class TwoSensorIdsEditor(QWidget):
             name_label_text=name_label_texts[1], items=[]
         ).create(self)
 
-        self.setLayout(QHBoxLayout(self))
-        self.layout().setContentsMargins(0, 0, 0, 0)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        self.layout().addWidget(self._sensor_id_pidget_1)
-        self.layout().addWidget(self._sensor_id_pidget_2)
+        layout.addWidget(self._sensor_id_pidget_1)
+        layout.addWidget(self._sensor_id_pidget_2)
 
         self._sensor_id_pidget_1.sig_update.connect(lambda: self.sig_update.emit(self.sensor_ids))
         self._sensor_id_pidget_2.sig_update.connect(lambda: self.sig_update.emit(self.sensor_ids))
+
+        self.setLayout(layout)
 
     @property
     def sensor_ids(self) -> list[int]:

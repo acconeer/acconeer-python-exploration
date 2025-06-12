@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -36,24 +36,26 @@ class UserHintWidget(QWidget):
         self._hints: List[HintObject] = []
         self._how_to_fix_url: Optional[str] = None
 
-        self.setLayout(QHBoxLayout(self))
-        self.layout().setContentsMargins(0, 0, 0, 0)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         self.icon = qta.IconWidget()
         self.icon.setHidden(True)
         self.icon.setIcon(WARNING())
-        self.layout().addWidget(self.icon)
+        layout.addWidget(self.icon)
 
         self.label = QLabel(self)
         self.label.setHidden(True)
-        self.layout().addWidget(self.label)
+        layout.addWidget(self.label)
 
         self.button = QPushButton(self)
         self.button.setIcon(EXTERNAL_LINK())
         self.button.setText("How to fix")
         self.button.clicked.connect(self._on_click)
         self.button.setHidden(True)
-        self.layout().addWidget(self.button)
+        layout.addWidget(self.button)
+
+        self.setLayout(layout)
 
     def add_hint(self, hint: HintObject) -> None:
         self._hints.append(hint)
@@ -132,14 +134,17 @@ class InaccessibleDeviceHint(HintObject):
 class HintWidget(QWidget):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
-        self.setLayout(QHBoxLayout(self))
-        self.layout().setContentsMargins(0, 0, 0, 0)
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         hint_widget = UserHintWidget(app_model, self)
-        self.layout().addWidget(hint_widget)
+        layout.addWidget(hint_widget)
 
         # Prioritized hint order:
         # The first will have priority over the second
         # The second will have priority over the third...
         hint_widget.add_hint(InaccessibleDeviceHint())
         hint_widget.add_hint(UnflashedDeviceHint())
+
+        self.setLayout(layout)

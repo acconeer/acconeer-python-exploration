@@ -104,17 +104,19 @@ class CentralWidget(QWidget):
 
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        self.setLayout(QHBoxLayout(self))
+        layout = QHBoxLayout(self)
 
         with as_file(files(et_app_resources) / "new_gui.png") as path:
             new_app_button = ImageButton("A121", path.as_posix(), QSize(500, 300))
             new_app_button.clicked.connect(self.sig_new_app_clicked)
-            self.layout().addWidget(new_app_button)
+            layout.addWidget(new_app_button)
 
         with as_file(files(et_app_resources) / "old_gui.png") as path:
             old_app_button = ImageButton("A111", path.as_posix(), QSize(500, 300))
             old_app_button.clicked.connect(self.sig_old_app_clicked)
-            self.layout().addWidget(old_app_button)
+            layout.addWidget(old_app_button)
+
+        self.setLayout(layout)
 
 
 class ValueHolder:

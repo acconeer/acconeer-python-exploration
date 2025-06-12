@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -55,10 +55,10 @@ class SmartMetadataView(QWidget):
 class ExtendedMetadataView(QWidget):
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
-        self.setLayout(QVBoxLayout(self))
+        layout = QVBoxLayout(self)
 
         group_box = GroupBox.vertical("Metadata", parent=self)
-        self.layout().addWidget(group_box)
+        layout.addWidget(group_box)
 
         self._tab_widget = QTabWidget(parent=self)
         self._tab_widget.setStyleSheet(
@@ -68,6 +68,7 @@ class ExtendedMetadataView(QWidget):
             """
         )
 
+        self.setLayout(layout)
         group_box.layout().addWidget(self._tab_widget)
         self._represent_none()
 

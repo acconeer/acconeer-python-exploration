@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -301,5 +301,8 @@ class ChangelogDialog(QDialog):
         text_browser.setMinimumWidth(round(document.idealWidth() * 1.1))
         text_browser.setMinimumHeight(500)
 
-        self.setLayout(QVBoxLayout())
-        self.layout().addWidget(text_browser)
+        layout = QVBoxLayout()
+
+        layout.addWidget(text_browser)
+
+        self.setLayout(layout)

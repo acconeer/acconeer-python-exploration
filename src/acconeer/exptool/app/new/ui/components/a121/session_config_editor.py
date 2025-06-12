@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -51,9 +51,11 @@ class SensorIdCombobox(DataEditor[Optional[int]]):
         self._combobox.currentIndexChanged.connect(self._emit_data_at_index)
         self.set_data(None)
 
-        self.setLayout(QVBoxLayout())
-        self.layout().setContentsMargins(0, 0, 0, 0)
-        self.layout().addWidget(self._combobox)
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self._combobox)
+
+        self.setLayout(layout)
 
     def setEnabled(self, enabled: bool) -> None:
         """Resets the DataEditor.setEnabled behavior to the default QWidget"""
@@ -298,8 +300,8 @@ class SessionConfigEditor(DataEditor[Optional[a121.SessionConfig]]):
         self._session_config = None
         self._update_rate_erroneous = False
 
-        self.setLayout(QVBoxLayout(self))
-        self.layout().setContentsMargins(0, 0, 0, 0)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         self.session_group_box = GroupBox.vertical(
             "Session parameters",
@@ -318,7 +320,7 @@ class SessionConfigEditor(DataEditor[Optional[a121.SessionConfig]]):
 
         self.session_group_box.layout().addWidget(self._sensor_ids_editor)
 
-        self.layout().addWidget(self.session_group_box)
+        layout.addWidget(self.session_group_box)
 
         self._update_rate_pidget = pidgets.OptionalFloatPidgetFactory(
             name_label_text="Update rate:",
@@ -338,7 +340,9 @@ class SessionConfigEditor(DataEditor[Optional[a121.SessionConfig]]):
 
         self._sensor_config_editor = SensorConfigEditor(supports_multiple_subsweeps, parent=self)
         self._sensor_config_editor.sig_update.connect(self._update_sole_sensor_config)
-        self.layout().addWidget(self._sensor_config_editor)
+        layout.addWidget(self._sensor_config_editor)
+
+        self.setLayout(layout)
 
     def set_selectable_sensors(self, sensor_list: list[int]) -> None:
         self._sensor_ids_editor.set_selectable_sensors(sensor_list)

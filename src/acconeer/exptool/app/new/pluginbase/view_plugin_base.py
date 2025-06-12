@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -23,20 +23,22 @@ class ViewPluginBase(UiPluginBase):
         self.app_model.sig_backend_state_changed.connect(self.on_backend_state_update)
         self.app_model.sig_load_plugin.connect(self.on_load_plugin)
 
-        self.setLayout(QVBoxLayout())
+        layout = QVBoxLayout()
 
         self._sticky_widget = QWidget()
         self._scrolly_widget = QWidget()
 
-        self.layout().addWidget(self._sticky_widget)
-        self.layout().addWidget(utils.HorizontalSeparator())
-        self.layout().addWidget(
+        layout.addWidget(self._sticky_widget)
+        layout.addWidget(utils.HorizontalSeparator())
+        layout.addWidget(
             utils.ScrollAreaDecorator(
                 utils.TopAlignDecorator(
                     self._scrolly_widget,
                 )
             )
         )
+
+        self.setLayout(layout)
 
     def on_load_plugin(self, plugin_spec: t.Optional[t.Any]) -> None:
         if plugin_spec is None:

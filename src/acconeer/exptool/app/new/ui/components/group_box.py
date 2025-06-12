@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -32,12 +32,14 @@ class GroupBox(QWidget, t.Generic[_T]):
         parent: t.Optional[QWidget] = None,
     ) -> None:
         super().__init__(parent)
-        self.setLayout(QVBoxLayout())
+        self._own_layout = QVBoxLayout()
+        self.setLayout(self._own_layout)
 
+        self._frame_layout = layout_type()
         self._frame = QFrame()
         self._frame.setFrameShape(QFrame.Shape.Box)
-        self._frame.setLayout(layout_type())
-        super().layout().addWidget(self._frame)
+        self._frame.setLayout(self._frame_layout)
+        self._own_layout.addWidget(self._frame)
 
         # Header widgets are not added to the layout as their positions are handled manually
         self._header_frames = {}
@@ -117,13 +119,14 @@ class GroupBox(QWidget, t.Generic[_T]):
             ]
         )
 
-        super().layout().setContentsMargins(0, top_margin, 0, 0)
+        self._own_layout.setContentsMargins(0, top_margin, 0, 0)
 
         top_padding = top_margin
-        frame_margins = self._frame.layout().contentsMargins()
+        frame_margins = self._frame_layout.contentsMargins()
         frame_margins.setTop(top_padding + self._EXTRA_MARGIN_TO_AVOID_CLIPPING)
-        self._frame.layout().setContentsMargins(frame_margins)
-        super().layout().activate()
+        self._frame_layout.setContentsMargins(frame_margins)
+
+        self._own_layout.activate()
 
         for position, frame in self._header_frames.items():
             new_rect = QRect(QPoint(), frame.sizeHint())

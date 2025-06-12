@@ -97,12 +97,15 @@ class PluginPresetPlaceholder(QWidget):
         self.app_model.sig_notify.connect(self._on_app_model_update)
 
         self.app_model = app_model
-        self.setLayout(QVBoxLayout(self))
-        self.layout().setContentsMargins(0, 0, 0, 0)
-        self.layout().setSpacing(11)
+        layout = QVBoxLayout(self)
+
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(11)
         self.group_box = GroupBox.vertical("Preset Configurations", parent=self)
-        self.layout().addWidget(self.group_box)
+        layout.addWidget(self.group_box)
         self.preset_buttons_widget: Optional[QWidget] = None
+
+        self.setLayout(layout)
 
     def _clear(self) -> None:
         if self.preset_buttons_widget is not None:
@@ -116,8 +119,9 @@ class PluginPresetPlaceholder(QWidget):
         self._clear()
         if plugin_spec is not None and plugin_spec.presets is not None:
             self.preset_buttons_widget = QWidget(self.group_box)
-            self.preset_buttons_widget.setLayout(QVBoxLayout(self.preset_buttons_widget))
-            self.preset_buttons_widget.layout().setContentsMargins(0, 0, 0, 0)
+            preset_buttons_layout = QVBoxLayout(self.preset_buttons_widget)
+            preset_buttons_layout.setContentsMargins(0, 0, 0, 0)
+
             self.group_box.layout().addWidget(self.preset_buttons_widget)
 
             for preset in plugin_spec.presets:
@@ -127,8 +131,9 @@ class PluginPresetPlaceholder(QWidget):
                     and preset.name.lower() != "default"
                 )
                 button = PluginPresetButton(preset, default_preset, self)
-                self.preset_buttons_widget.layout().addWidget(button)
+                preset_buttons_layout.addWidget(button)
                 button.clicked.connect(partial(self._on_preset_click, preset.preset_id))
+            self.preset_buttons_widget.setLayout(preset_buttons_layout)
 
     def _on_app_model_update(self, app_model: AppModel) -> None:
         self.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
@@ -151,10 +156,10 @@ class PluginSelection(QWidget):
         self.app_model = app_model
 
         app_model.sig_notify.connect(self._on_app_model_update)
+        layout = QVBoxLayout(self)
 
-        self.setLayout(QVBoxLayout(self))
-        self.layout().setContentsMargins(0, 0, 0, 0)
-        self.layout().setSpacing(11)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(11)
 
         group_boxes = {}
         for family in self.PLUGIN_FAMILY_ORDER:
@@ -162,7 +167,7 @@ class PluginSelection(QWidget):
             group_box.setTitle(family.value)
             group_box.setHidden(True)
             group_box.setLayout(QVBoxLayout(group_box))
-            self.layout().addWidget(group_box)
+            layout.addWidget(group_box)
             group_boxes[family] = group_box
 
         self.button_group = PluginSelectionButtonGroup(self)
@@ -175,7 +180,10 @@ class PluginSelection(QWidget):
 
             button_layout = QHBoxLayout()
             button_layout.setContentsMargins(0, 0, 0, 0)
-            group_box.layout().addWidget(LayoutWrapper(button_layout))
+
+            group_box_layout = group_box.layout()
+            assert group_box_layout is not None
+            group_box_layout.addWidget(LayoutWrapper(button_layout))
 
             button = PluginSelectionButton(plugin, group_box)
             self.button_group.addButton(button)
@@ -185,16 +193,17 @@ class PluginSelection(QWidget):
                 label = QLabel(group_box)
                 label.setText(plugin.description)
                 label.setWordWrap(True)
-                group_box.layout().addWidget(label)
+                group_box_layout.addWidget(label)
 
             if plugin.docs_link:
-                info_button = QPushButton(text="docs", icon=EXTERNAL_LINK(color=TEXT_GREY))
+                info_button = QPushButton(QtGui.QIcon(EXTERNAL_LINK(color=TEXT_GREY)), "docs")
                 info_button.setStyleSheet(f"QPushButton {{color: {TEXT_GREY}}}")
                 info_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
                 info_button.clicked.connect(
                     lambda _=False, p=plugin: QtGui.QDesktopServices.openUrl(p.docs_link)
                 )
                 button_layout.addWidget(info_button)
+        self.setLayout(layout)
 
     def layout(self) -> QVBoxLayout:
         return super().layout()  # type: ignore[return-value]
@@ -230,8 +239,9 @@ class PluginSelection(QWidget):
 class PluginSelectionArea(QWidget):
     def __init__(self, app_model: AppModel, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
-        self.setLayout(QVBoxLayout(self))
-        self.layout().setContentsMargins(0, 0, 0, 0)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         a121_selection = ScrollAreaDecorator(
             TopAlignDecorator(
@@ -255,9 +265,10 @@ class PluginSelectionArea(QWidget):
             lambda am: a121_selection.setVisible(am.plugin_generation == PluginGeneration.A121)
         )
 
-        self.layout().addWidget(a121_selection)
-        self.layout().addWidget(HorizontalSeparator())
-        self.layout().addWidget(PluginPresetPlaceholder(app_model, self))
+        layout.addWidget(a121_selection)
+        layout.addWidget(HorizontalSeparator())
+        layout.addWidget(PluginPresetPlaceholder(app_model, self))
+        self.setLayout(layout)
 
 
 class PlotPlaceholder(PlotPluginBase):
@@ -321,10 +332,10 @@ class PluginPlotArea(QFrame):
         self.setStyleSheet("QFrame#PluginPlotArea {background: #fff; border: 0;}")
         self.setFrameStyle(0)
 
-        self.setLayout(QVBoxLayout(self))
-        self.layout().setContentsMargins(0, 0, 0, 0)
-        self.layout().setSpacing(0)
-        self.layout().addWidget(self.plot_plugin)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(self.plot_plugin)
 
         self.startTimer(int(1000 / self._FPS))
 
@@ -334,6 +345,8 @@ class PluginPlotArea(QFrame):
         elif app_model.plugin is not None:
             msg = f"{type(app_model.plugin)} is not a PluginSpecBase."
             raise RuntimeError(msg)
+
+        self.setLayout(layout)
 
     def timerEvent(self, event: QtCore.QTimerEvent) -> None:
         plugin_class_name = type(self.plot_plugin).__name__
@@ -352,14 +365,16 @@ class PluginPlotArea(QFrame):
         else:
             self.plot_plugin = plugin.create_plot_plugin(app_model=self.app_model)
 
-        self.layout().addWidget(self.plot_plugin)
+        layout = self.layout()
+        assert layout is not None
+        layout.addWidget(self.plot_plugin)
 
 
 class ControlPlaceholder(QWidget):
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
 
-        self.setLayout(QGridLayout(self))
+        layout = QGridLayout(self)
 
         with as_file(files(resources) / "icon-black.svg") as path:
             icon = QSvgWidget(str(path), self)
@@ -370,7 +385,8 @@ class ControlPlaceholder(QWidget):
         effect.setOpacity(0.1)
         icon.setGraphicsEffect(effect)
 
-        self.layout().addWidget(icon)
+        layout.addWidget(icon)
+        self.setLayout(layout)
 
 
 class PluginControlArea(QWidget):
@@ -383,16 +399,17 @@ class PluginControlArea(QWidget):
         self.child_widget: QWidget = ControlPlaceholder()
         self.view_plugin: Optional[Any] = None
 
-        self.setLayout(QVBoxLayout(self))
-        self.layout().setContentsMargins(0, 0, 0, 0)
-        self.layout().setSpacing(0)
-        self.layout().addWidget(self.child_widget)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(self.child_widget)
 
         if isinstance(app_model.plugin, PluginSpecBase):
             self._on_app_model_load_plugin(app_model.plugin)
         elif app_model.plugin is not None:
             msg = f"{type(app_model.plugin)} is not a PluginSpecBase."
             raise RuntimeError(msg)
+        self.setLayout(layout)
 
     def _on_app_model_load_plugin(self, plugin_spec: Optional[PluginSpecBase]) -> None:
         log.debug(
@@ -409,4 +426,6 @@ class PluginControlArea(QWidget):
                 app_model=self.app_model,
             )
 
-        self.layout().addWidget(self.child_widget)
+        layout = self.layout()
+        assert layout is not None
+        layout.addWidget(self.child_widget)

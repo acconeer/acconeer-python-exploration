@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -81,15 +81,17 @@ class _SocketConnectionWidget(AppModelAwareWidget):
         super().__init__(app_model, parent)
         self.app_model = app_model
 
-        self.setLayout(QHBoxLayout(self))
-        self.layout().setContentsMargins(0, 0, 0, 0)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         self.ip_line_edit = QLineEdit(self)
         self.ip_line_edit.setPlaceholderText("<IP address>")
         self.ip_line_edit.editingFinished.connect(self._on_line_edit)
         self.ip_line_edit.returnPressed.connect(self._on_return_pressed)
         self.ip_line_edit.setMinimumWidth(125)
-        self.layout().addWidget(self.ip_line_edit)
+        layout.addWidget(self.ip_line_edit)
+
+        self.setLayout(layout)
 
     def _on_line_edit(self) -> None:
         self.app_model.set_socket_connection_ip(self.ip_line_edit.text())
@@ -108,10 +110,12 @@ class _SerialConnectionWidget(AppModelAwareWidget):
         super().__init__(app_model, parent)
         self.app_model = app_model
 
-        self.setLayout(QHBoxLayout(self))
-        self.layout().setContentsMargins(0, 0, 0, 0)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        self.layout().addWidget(SerialPortComboBox(app_model, self))
+        layout.addWidget(SerialPortComboBox(app_model, self))
+
+        self.setLayout(layout)
 
 
 class _ConnectSettingsButton(QPushButton):
@@ -224,8 +228,11 @@ class _SimulatedConnectionWidget(AppModelAwareWidget):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(app_model, parent)
         self.app_model = app_model
-        self.setLayout(QHBoxLayout(self))
-        self.layout().setContentsMargins(0, 0, 0, 0)
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        self.setLayout(layout)
 
 
 class ClientConnectionWidget(AppModelAwareWidget):

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -149,8 +149,8 @@ class SensorConfigEditor(DataEditor[Optional[a121.SensorConfig]]):
         self._read_only = False
         self._supports_multiple_subsweeps = supports_multiple_subsweeps
 
-        self.setLayout(QVBoxLayout(self))
-        self.layout().setContentsMargins(0, 0, 0, 0)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         self.sensor_group_box = GroupBox.vertical(
             "Sensor parameters",
@@ -162,7 +162,7 @@ class SensorConfigEditor(DataEditor[Optional[a121.SensorConfig]]):
             parent=self,
         )
         self.sensor_group_box.layout().setSpacing(self.SPACING)
-        self.layout().addWidget(self.sensor_group_box)
+        layout.addWidget(self.sensor_group_box)
 
         for aspect, factory in self.SENSOR_CONFIG_FACTORIES.items():
             pidget = factory.create(self.sensor_group_box)
@@ -174,7 +174,7 @@ class SensorConfigEditor(DataEditor[Optional[a121.SensorConfig]]):
 
         self.subsweep_group_box = GroupBox.vertical("Subsweep parameters", parent=self)
         self.subsweep_group_box.layout().setSpacing(self.SPACING)
-        self.layout().addWidget(self.subsweep_group_box)
+        layout.addWidget(self.subsweep_group_box)
 
         self._tab_widget = QTabWidget(self)
         self._tab_widget.setStyleSheet("QTabWidget::pane { padding: 5px;}")
@@ -186,10 +186,12 @@ class SensorConfigEditor(DataEditor[Optional[a121.SensorConfig]]):
 
             self._plus_button = QToolButton(self)
             self._plus_button.setText("+")
-            self.layout().addWidget(self._plus_button)
+            layout.addWidget(self._plus_button)
             self._plus_button.clicked.connect(self._add_subsweep_config)
             self._tab_widget.setCornerWidget(self._plus_button)
             self._tab_widget.cornerWidget().setMinimumSize(self._plus_button.sizeHint())
+
+        self.setLayout(layout)
 
     def set_read_only(self, read_only: bool) -> None:
         self._read_only = read_only

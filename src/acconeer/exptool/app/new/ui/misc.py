@@ -122,10 +122,11 @@ class ExceptionWidget(QMessageBox):
 class VerticalSeparator(QWidget):
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
-
-        self.setLayout(QHBoxLayout(self))
-        self.layout().setContentsMargins(5, 5, 5, 5)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(5, 5, 5, 5)
 
         frame = QFrame(self)
         frame.setFrameShape(QFrame.Shape.VLine)
-        self.layout().addWidget(frame)
+        layout.addWidget(frame)
+
+        self.setLayout(layout)
