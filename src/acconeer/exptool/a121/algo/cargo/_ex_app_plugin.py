@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum, auto
-from typing import Callable, Mapping, Optional
+from typing import Callable, List, Mapping, Optional
 
 import attrs
 import h5py
@@ -238,12 +238,12 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
 class PlotPlugin(PgPlotPlugin):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model=app_model)
-        self._plot_job: Optional[ExAppResult] = None
+        self._plot_jobs: List[ExAppResult] = []
         self._is_setup = False
 
     def handle_message(self, message: backend.GeneralMessage) -> None:
         if isinstance(message, backend.PlotMessage):
-            self._plot_job = message.result
+            self._plot_jobs.append(message.result)
         elif isinstance(message, SetupMessage):
             self.setup(
                 message.ex_app_config,
@@ -254,13 +254,19 @@ class PlotPlugin(PgPlotPlugin):
             log.warn(f"{self.__class__.__name__} got an unsupported command: {message.name!r}.")
 
     def draw(self) -> None:
-        if not self._is_setup or self._plot_job is None:
+        if not self._is_setup or self._plot_jobs is None:
             return
 
+        plot_distance = True
+        plot_presence = True
         try:
-            self.draw_plot_job(result=self._plot_job)
+            for plot_job in self._plot_jobs:
+                if (plot_job.mode == _Mode.DISTANCE and plot_distance) or (
+                    plot_job.mode == _Mode.PRESENCE and plot_presence
+                ):
+                    self.draw_plot_job(result=plot_job)
         finally:
-            self._plot_job = None
+            self._plot_jobs = []
 
     def setup(
         self,
