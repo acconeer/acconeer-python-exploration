@@ -103,6 +103,8 @@ class GroupBox(QWidget, t.Generic[_T]):
         layout.addWidget(widget)
 
         frame = QFrame(parent=self)
+        frame.setObjectName("GroupBoxQFrameHeader")
+        frame.setStyleSheet("#GroupBoxQFrameHeader { border: none; padding: 1px; }")
         frame.setFrameShape(QFrame.Shape.NoFrame)
         frame.setLayout(layout)
 
