@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -269,6 +269,7 @@ class PlotPlugin(PgPlotPlugin):
         self.intra_fifo: List[float] = []
         self.inter_fifo: List[float] = []
         self.switch_data: Optional[RefAppResult] = None
+        self.switch_data_sectors: List[pg.QtWidgets.QGraphicsEllipseItem] = []
 
         win = self.plot_layout
 
@@ -577,8 +578,9 @@ class PlotPlugin(PgPlotPlugin):
         if data.presence_detected:
             self.color_zones(data, show_all_zones, sectors)
             self.switch_data = data
+            self.switch_data_sectors = sectors
         elif data.switch_delay and self.switch_data is not None:
-            self.color_zones(self.switch_data, True, self.wake_up_sectors[1:])
+            self.color_zones(self.switch_data, True, self.switch_data_sectors)
 
         self.nominal_sectors[0].setPen(pg.mkPen(color_nominal, width=1))
         self.nominal_sectors[0].setBrush(pg.mkBrush(color_nominal))
