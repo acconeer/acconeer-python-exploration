@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -346,6 +346,8 @@ class PGUpdater:
                 time_series_text = "Initializing breathing detection"
             elif self.displayed_breathing_rate is not None:
                 time_series_text = "Breathing rate: " + self.displayed_breathing_rate + " bpm"
+            else:
+                time_series_text = ""
         else:
             time_series_text = "Waiting for distance"
 

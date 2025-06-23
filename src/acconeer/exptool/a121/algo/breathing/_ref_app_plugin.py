@@ -463,6 +463,8 @@ class PlotPlugin(PgPlotPlugin):
                 time_series_text = "Initializing breathing detection"
             elif self.displayed_breathing_rate is not None:
                 time_series_text = "Breathing rate: " + self.displayed_breathing_rate + " bpm"
+            else:
+                time_series_text = ""
         else:
             time_series_text = "Waiting for distance"
 
