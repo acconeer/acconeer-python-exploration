@@ -1,3 +1,5 @@
+.. _exploration_tool-a121-distance_detector:
+
 Distance Detector
 =================
 
