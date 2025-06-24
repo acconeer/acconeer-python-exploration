@@ -102,9 +102,9 @@ def input_path(resource_name: str) -> Path:
             "presence-low_power.h5",
         ),
         (
-            presence_test.presence_medium_range_phase_boost_no_timeout,
+            presence_test.presence_medium_range_no_timeout,
             t.List[presence_test.ProcessorResultSlice],
-            "presence-medium_range_phase_boost_no_timeout.h5",
+            "presence-medium_range_no_timeout.h5",
         ),
         (
             distance_test.distance_processor,

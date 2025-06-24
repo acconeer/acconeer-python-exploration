@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 import typing as t
@@ -92,10 +92,9 @@ def presence_low_power(record: a121.H5Record) -> ProcessorWrapper:
     )
 
 
-def presence_medium_range_phase_boost_no_timeout(record: a121.H5Record) -> ProcessorWrapper:
+def presence_medium_range_no_timeout(record: a121.H5Record) -> ProcessorWrapper:
     processor_config = presence.Detector._get_processor_config(get_medium_range_config())
     processor_config.inter_frame_presence_timeout = 0
-    processor_config.inter_phase_boost = True
     return ProcessorWrapper(
         presence.Processor(
             sensor_config=record.session_config.sensor_config,

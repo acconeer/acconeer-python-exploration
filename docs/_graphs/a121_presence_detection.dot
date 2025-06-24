@@ -38,25 +38,14 @@ digraph {
         noise_diff -> noise_dev
         noise_dev -> noise_comp -> noise_lpf
     }
-
-    subgraph cluster_phase_boost {
-        label="Inter-frame phase boost\ndepthwise"
-        style=rounded
-
-        {for_phase_lpf, phase_mean} -> phase_shift
-        for_amp_lpf -> amp_mean -> amp_norm -> amp_trunc
-        {amp_trunc, phase_shift} -> phase_boost_weight -> phase_boost
-
-        {rank = same; for_phase_lpf; for_amp_lpf}
-    }
   }
 
-  in -> {abs_sweep_mean, sweep_dev, noise_diff, for_phase_lpf, phase_mean, for_amp_lpf}
+  in -> {abs_sweep_mean, sweep_dev, noise_diff}
   {inter_threshold, intra_threshold} -> presence
   {inter_out_argmax, intra_out_argmax} -> distance
 
   {presence, distance} -> out
-  noise_lpf -> {amp_norm, intra_norm, inter_norm}
+  noise_lpf -> {intra_norm, inter_norm}
 
   in [shape=Mdiamond, label="Input frame"]
 
@@ -87,16 +76,6 @@ digraph {
   noise_dev [label="Absolute\ndeviation"]
   noise_comp [label="Compensate\nfor\ndifferentiation"]
   noise_lpf [label="LPF"]
-
-  phase_mean [label="Mean\nphase\nover\nsweeps"]
-  phase_shift [label="Phase\nshift"]
-  for_phase_lpf [label="LPF"]
-  for_amp_lpf [label="LPF"]
-  amp_mean [label="Mean amplitude\nover sweeps"]
-  amp_norm [label="Noise\nnormalization"]
-  amp_trunc [label="Truncate values"]
-  phase_boost_weight [label="Multiplication"]
-  phase_boost [label="Phase\nboost\nweighting"]
 
   presence [label="Combine presence\ndetection"]
   distance [label="Combine distance\nestimate"]

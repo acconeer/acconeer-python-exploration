@@ -112,10 +112,6 @@ def get_pidget_mapping() -> PidgetGroupFactoryMapping:
         ),
     }
     inter_parameters = {
-        "inter_phase_boost": pidgets.CheckboxPidgetFactory(
-            name_label_text="Enable phase boost",
-            name_label_tooltip=get_attribute_docstring(DetectorConfig, "inter_phase_boost"),
-        ),
         "inter_detection_threshold": pidgets.FloatSliderPidgetFactory(
             name_label_text="Inter detection threshold:",
             name_label_tooltip=get_attribute_docstring(

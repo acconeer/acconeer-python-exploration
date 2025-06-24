@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -13,6 +13,7 @@ import numpy.typing as npt
 from attributes_doc import attributes_doc
 
 from acconeer.exptool import a121
+from acconeer.exptool import type_migration as tm
 from acconeer.exptool._core.class_creation.attrs import attrs_ndarray_isclose
 from acconeer.exptool.a121._core.entities.configs.config_enums import IdleState, Profile
 from acconeer.exptool.a121._core.utils import is_divisor_of, is_multiple_of
@@ -120,9 +121,6 @@ class DetectorConfig(AlgoConfigBase):
 
     inter_output_time_const: float = attrs.field(default=2)
     """Time constant for the output in the inter-frame part."""
-
-    inter_phase_boost: bool = attrs.field(default=False)
-    """Enables the inter-frame phase boost. Used to increase slow motion detection."""
 
     inter_frame_presence_timeout: Optional[int] = attrs.field(default=3)
     """Number of seconds the inter-frame presence score needs to decrease before exponential
@@ -404,7 +402,6 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
             inter_frame_slow_cutoff=config.inter_frame_slow_cutoff,
             inter_frame_deviation_time_const=config.inter_frame_deviation_time_const,
             inter_output_time_const=config.inter_output_time_const,
-            inter_phase_boost=config.inter_phase_boost,
             inter_frame_presence_timeout=config.inter_frame_presence_timeout,
         )
 
@@ -478,10 +475,85 @@ def _load_algo_data(
     algo_group: h5py.Group,
 ) -> Tuple[int, DetectorConfig, Optional[DetectorContext]]:
     sensor_id = algo_group["sensor_id"][()]
-    config = DetectorConfig.from_json(algo_group["detector_config"][()])
+    try:
+        config = detector_config_timeline.migrate(algo_group["detector_config"][()].decode())
+    except tm.core.MigrationErrorGroup as exc:
+        raise TypeError() from exc
+
     context_data_set = algo_group.get("detector_context")
     if context_data_set is None:
         context = None
     else:
         context = DetectorContext.from_json(context_data_set[()])
+
     return sensor_id, config, context
+
+
+@attrs.mutable(kw_only=True)
+class _DetectorConfig_v0(AlgoConfigBase):
+    start_m: float = attrs.field(default=0.3)
+    end_m: float = attrs.field(default=2.5)
+    profile: Optional[a121.Profile] = attrs.field(
+        default=None, converter=optional_profile_converter
+    )
+    step_length: Optional[int] = attrs.field(default=None)
+    frame_rate: float = attrs.field(default=12.0)
+    sweeps_per_frame: int = attrs.field(default=16)
+    automatic_subsweeps: bool = attrs.field(default=False)
+    signal_quality: float = attrs.field(default=15.0)
+    hwaas: int = attrs.field(default=32)
+    inter_frame_idle_state: a121.IdleState = attrs.field(
+        default=a121.IdleState.DEEP_SLEEP, converter=idle_state_converter
+    )
+    intra_enable: bool = attrs.field(default=True)
+    intra_detection_threshold: float = attrs.field(default=1.3)
+    intra_frame_time_const: float = attrs.field(default=0.15)
+    intra_output_time_const: float = attrs.field(default=0.3)
+    inter_enable: bool = attrs.field(default=True)
+    inter_detection_threshold: float = attrs.field(default=1)
+    inter_frame_fast_cutoff: float = attrs.field(default=6.0)
+    inter_frame_slow_cutoff: float = attrs.field(default=0.2)
+    inter_frame_deviation_time_const: float = attrs.field(default=0.5)
+    inter_output_time_const: float = attrs.field(default=2)
+    inter_frame_presence_timeout: Optional[int] = attrs.field(default=3)
+    inter_phase_boost: bool = attrs.field(default=False)
+
+    def _collect_validation_results(self) -> list[a121.ValidationResult]:
+        return []
+
+    def migrate(self) -> DetectorConfig:
+        return DetectorConfig(
+            start_m=self.start_m,
+            end_m=self.end_m,
+            profile=self.profile,
+            step_length=self.step_length,
+            frame_rate=self.frame_rate,
+            sweeps_per_frame=self.sweeps_per_frame,
+            automatic_subsweeps=self.automatic_subsweeps,
+            signal_quality=self.signal_quality,
+            hwaas=self.hwaas,
+            inter_frame_idle_state=self.inter_frame_idle_state,
+            intra_enable=self.intra_enable,
+            intra_detection_threshold=self.intra_detection_threshold,
+            intra_frame_time_const=self.intra_frame_time_const,
+            intra_output_time_const=self.intra_output_time_const,
+            inter_enable=self.inter_enable,
+            inter_detection_threshold=self.inter_detection_threshold,
+            inter_frame_fast_cutoff=self.inter_frame_fast_cutoff,
+            inter_frame_slow_cutoff=self.inter_frame_slow_cutoff,
+            inter_frame_deviation_time_const=self.inter_frame_deviation_time_const,
+            inter_output_time_const=self.inter_output_time_const,
+            inter_frame_presence_timeout=self.inter_frame_presence_timeout,
+            # inter_phase_boost is removed
+        )
+
+
+detector_config_timeline = (
+    tm.start(_DetectorConfig_v0)
+    .load(str, _DetectorConfig_v0.from_json, fail=[TypeError])
+    .load(dict, _DetectorConfig_v0.from_dict, fail=[TypeError])
+    .nop()
+    .epoch(DetectorConfig, _DetectorConfig_v0.migrate, fail=[])
+    .load(str, DetectorConfig.from_json, fail=[TypeError])
+    .load(dict, DetectorConfig.from_dict, fail=[TypeError])
+)

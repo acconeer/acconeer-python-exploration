@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ import numpy as np
 from attributes_doc import attributes_doc
 
 from acconeer.exptool import a121
+from acconeer.exptool import type_migration as tm
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo import (
     APPROX_BASE_STEP_LENGTH_M,
@@ -28,6 +29,7 @@ from acconeer.exptool.a121.algo.breathing._processor import (
 )
 from acconeer.exptool.a121.algo.presence import ProcessorConfig as PresenceProcessorConfig
 from acconeer.exptool.a121.algo.presence import ProcessorResult as PresenceProcessorResult
+from acconeer.exptool.a121.algo.presence._processors import processor_config_timeline
 
 
 def get_presence_config() -> PresenceProcessorConfig:
@@ -77,7 +79,10 @@ class RefAppConfig(AlgoConfigBase):
     def from_dict(cls, d: dict[str, Any]) -> RefAppConfig:
         presence_dict = d["presence_config"]
         if presence_dict is not None:
-            d["presence_config"] = PresenceProcessorConfig.from_dict(presence_dict)
+            try:
+                d["presence_config"] = processor_config_timeline.migrate(presence_dict)
+            except tm.core.MigrationErrorGroup as exc:
+                raise TypeError() from exc
 
         breathing_dict = d["breathing_config"]
         if breathing_dict is not None:

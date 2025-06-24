@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 from __future__ import annotations
 
@@ -293,7 +293,7 @@ PHASE_TRACKING = [
 ]
 
 PRESENCE = [
-    presence.ProcessorConfig(inter_phase_boost=True),
+    presence.ProcessorConfig(),
     presence.ProcessorResult(
         intra_presence_score=random(),
         intra=_array(np.float64),

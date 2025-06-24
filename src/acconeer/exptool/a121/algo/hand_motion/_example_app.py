@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -342,8 +342,6 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
             inter_enable=True,
             intra_detection_threshold=config.threshold,
             inter_detection_threshold=config.threshold,
-            inter_phase_boost=False,
-            phase_adaptivity_tc=5,
             inter_frame_presence_timeout=None,
             inter_frame_fast_cutoff=3.0,
             inter_frame_slow_cutoff=0.8,

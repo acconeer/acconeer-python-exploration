@@ -15,6 +15,7 @@ import numpy.typing as npt
 from attributes_doc import attributes_doc
 
 from acconeer.exptool import a121
+from acconeer.exptool import type_migration as tm
 from acconeer.exptool._core.class_creation.attrs import attrs_ndarray_isclose
 from acconeer.exptool.a121._core.entities.configs.config_enums import IdleState, Profile
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
@@ -104,8 +105,11 @@ class RefAppConfig(AlgoConfigBase):
 
     @classmethod
     def from_dict(cls: type[AlgoBaseT], d: dict[str, Any]) -> AlgoBaseT:
-        d["nominal_config"] = PresenceZoneConfig.from_dict(d["nominal_config"])
-        d["wake_up_config"] = PresenceWakeUpConfig.from_dict(d["wake_up_config"])
+        try:
+            d["nominal_config"] = presence_zone_config_timeline.migrate(d["nominal_config"])
+            d["wake_up_config"] = presence_wake_up_config_timeline.migrate(d["wake_up_config"])
+        except tm.core.MigrationErrorGroup as exc:
+            raise TypeError() from exc
 
         return cls(**d)
 
@@ -466,3 +470,149 @@ def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, RefAppConfig, RefAppCo
     config = RefAppConfig.from_json(algo_group["ref_app_config"][()])
     ref_app_context = RefAppContext.from_json(algo_group["ref_app_context"][()])
     return sensor_id, config, ref_app_context
+
+
+@attrs.mutable(kw_only=True)
+class _PresenceZoneConfig_v0(AlgoConfigBase):
+    num_zones: int = attrs.field(default=7)
+    start_m: float = attrs.field(default=0.3)
+    end_m: float = attrs.field(default=2.5)
+    profile: Optional[a121.Profile] = attrs.field(
+        default=None, converter=optional_profile_converter
+    )
+    step_length: Optional[int] = attrs.field(default=None)
+    frame_rate: float = attrs.field(default=12.0)
+    sweeps_per_frame: int = attrs.field(default=16)
+    automatic_subsweeps: bool = attrs.field(default=False)
+    signal_quality: float = attrs.field(default=15.0)
+    hwaas: int = attrs.field(default=32)
+    inter_frame_idle_state: a121.IdleState = attrs.field(
+        default=a121.IdleState.DEEP_SLEEP, converter=idle_state_converter
+    )
+    intra_enable: bool = attrs.field(default=True)
+    intra_detection_threshold: float = attrs.field(default=1.3)
+    intra_frame_time_const: float = attrs.field(default=0.15)
+    intra_output_time_const: float = attrs.field(default=0.3)
+    inter_enable: bool = attrs.field(default=True)
+    inter_detection_threshold: float = attrs.field(default=1)
+    inter_frame_fast_cutoff: float = attrs.field(default=6.0)
+    inter_frame_slow_cutoff: float = attrs.field(default=0.2)
+    inter_frame_deviation_time_const: float = attrs.field(default=0.5)
+    inter_output_time_const: float = attrs.field(default=2)
+    inter_frame_presence_timeout: Optional[int] = attrs.field(default=3)
+    inter_phase_boost: bool = attrs.field(default=False)
+
+    def _collect_validation_results(self) -> list[a121.ValidationResult]:
+        return []
+
+    def migrate(self) -> PresenceZoneConfig:
+        return PresenceZoneConfig(
+            num_zones=self.num_zones,
+            start_m=self.start_m,
+            end_m=self.end_m,
+            profile=self.profile,
+            step_length=self.step_length,
+            frame_rate=self.frame_rate,
+            sweeps_per_frame=self.sweeps_per_frame,
+            automatic_subsweeps=self.automatic_subsweeps,
+            signal_quality=self.signal_quality,
+            hwaas=self.hwaas,
+            inter_frame_idle_state=self.inter_frame_idle_state,
+            intra_enable=self.intra_enable,
+            intra_detection_threshold=self.intra_detection_threshold,
+            intra_frame_time_const=self.intra_frame_time_const,
+            intra_output_time_const=self.intra_output_time_const,
+            inter_enable=self.inter_enable,
+            inter_detection_threshold=self.inter_detection_threshold,
+            inter_frame_fast_cutoff=self.inter_frame_fast_cutoff,
+            inter_frame_slow_cutoff=self.inter_frame_slow_cutoff,
+            inter_frame_deviation_time_const=self.inter_frame_deviation_time_const,
+            inter_output_time_const=self.inter_output_time_const,
+            inter_frame_presence_timeout=self.inter_frame_presence_timeout,
+            # inter_phase_boost is removed
+        )
+
+
+@attrs.mutable(kw_only=True)
+class _PresenceWakeUpConfig_v0(AlgoConfigBase):
+    num_zones_for_wake_up: int = attrs.field(default=1)
+    num_zones: int = attrs.field(default=7)
+    start_m: float = attrs.field(default=0.3)
+    end_m: float = attrs.field(default=2.5)
+    profile: Optional[a121.Profile] = attrs.field(
+        default=None, converter=optional_profile_converter
+    )
+    step_length: Optional[int] = attrs.field(default=None)
+    frame_rate: float = attrs.field(default=12.0)
+    sweeps_per_frame: int = attrs.field(default=16)
+    automatic_subsweeps: bool = attrs.field(default=False)
+    signal_quality: float = attrs.field(default=15.0)
+    hwaas: int = attrs.field(default=32)
+    inter_frame_idle_state: a121.IdleState = attrs.field(
+        default=a121.IdleState.DEEP_SLEEP, converter=idle_state_converter
+    )
+    intra_enable: bool = attrs.field(default=True)
+    intra_detection_threshold: float = attrs.field(default=1.3)
+    intra_frame_time_const: float = attrs.field(default=0.15)
+    intra_output_time_const: float = attrs.field(default=0.3)
+    inter_enable: bool = attrs.field(default=True)
+    inter_detection_threshold: float = attrs.field(default=1)
+    inter_frame_fast_cutoff: float = attrs.field(default=6.0)
+    inter_frame_slow_cutoff: float = attrs.field(default=0.2)
+    inter_frame_deviation_time_const: float = attrs.field(default=0.5)
+    inter_output_time_const: float = attrs.field(default=2)
+    inter_frame_presence_timeout: Optional[int] = attrs.field(default=3)
+    inter_phase_boost: bool = attrs.field(default=False)
+
+    def _collect_validation_results(self) -> list[a121.ValidationResult]:
+        return []
+
+    def migrate(self) -> PresenceWakeUpConfig:
+        return PresenceWakeUpConfig(
+            num_zones_for_wake_up=self.num_zones_for_wake_up,
+            num_zones=self.num_zones,
+            start_m=self.start_m,
+            end_m=self.end_m,
+            profile=self.profile,
+            step_length=self.step_length,
+            frame_rate=self.frame_rate,
+            sweeps_per_frame=self.sweeps_per_frame,
+            automatic_subsweeps=self.automatic_subsweeps,
+            signal_quality=self.signal_quality,
+            hwaas=self.hwaas,
+            inter_frame_idle_state=self.inter_frame_idle_state,
+            intra_enable=self.intra_enable,
+            intra_detection_threshold=self.intra_detection_threshold,
+            intra_frame_time_const=self.intra_frame_time_const,
+            intra_output_time_const=self.intra_output_time_const,
+            inter_enable=self.inter_enable,
+            inter_detection_threshold=self.inter_detection_threshold,
+            inter_frame_fast_cutoff=self.inter_frame_fast_cutoff,
+            inter_frame_slow_cutoff=self.inter_frame_slow_cutoff,
+            inter_frame_deviation_time_const=self.inter_frame_deviation_time_const,
+            inter_output_time_const=self.inter_output_time_const,
+            inter_frame_presence_timeout=self.inter_frame_presence_timeout,
+            # inter_phase_boost is removed
+        )
+
+
+presence_zone_config_timeline = (
+    tm.start(_PresenceZoneConfig_v0)
+    .load(str, _PresenceZoneConfig_v0.from_json, fail=[TypeError])
+    .load(dict, _PresenceZoneConfig_v0.from_dict, fail=[TypeError])
+    .nop()
+    .epoch(PresenceZoneConfig, _PresenceZoneConfig_v0.migrate, fail=[])
+    .load(str, PresenceZoneConfig.from_json, fail=[TypeError])
+    .load(dict, PresenceZoneConfig.from_dict, fail=[TypeError])
+)
+
+
+presence_wake_up_config_timeline = (
+    tm.start(_PresenceWakeUpConfig_v0)
+    .load(str, _PresenceWakeUpConfig_v0.from_json, fail=[TypeError])
+    .load(dict, _PresenceWakeUpConfig_v0.from_dict, fail=[TypeError])
+    .nop()
+    .epoch(PresenceWakeUpConfig, _PresenceWakeUpConfig_v0.migrate, fail=[])
+    .load(str, PresenceWakeUpConfig.from_json, fail=[TypeError])
+    .load(dict, PresenceWakeUpConfig.from_dict, fail=[TypeError])
+)

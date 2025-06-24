@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from acconeer.exptool import a121
@@ -33,7 +33,6 @@ def get_short_range_config() -> DetectorConfig:
         inter_frame_fast_cutoff=5,
         inter_frame_deviation_time_const=0.5,
         inter_output_time_const=2,
-        inter_phase_boost=False,
         inter_frame_presence_timeout=3,
     )
 
@@ -58,7 +57,6 @@ def get_medium_range_config() -> DetectorConfig:
         inter_frame_fast_cutoff=6,
         inter_frame_deviation_time_const=0.5,
         inter_output_time_const=2,
-        inter_phase_boost=False,
         inter_frame_presence_timeout=3,
     )
 
@@ -83,7 +81,6 @@ def get_long_range_config() -> DetectorConfig:
         inter_frame_fast_cutoff=6,
         inter_frame_deviation_time_const=0.5,
         inter_output_time_const=2,
-        inter_phase_boost=False,
         inter_frame_presence_timeout=3,
     )
 
@@ -109,6 +106,5 @@ def get_low_power_config() -> DetectorConfig:
         inter_frame_fast_cutoff=5,
         inter_frame_deviation_time_const=0.5,
         inter_output_time_const=0.5,
-        inter_phase_boost=False,
         inter_frame_presence_timeout=2,
     )

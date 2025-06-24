@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -619,7 +619,6 @@ static void set_config(acc_detector_presence_config_t *config, presence_preset_c
     {inter_comment}acc_detector_presence_config_inter_frame_slow_cutoff_set(config, {config.inter_frame_slow_cutoff:.3f}f);
     {inter_comment}acc_detector_presence_config_inter_frame_deviation_time_const_set(config, {config.inter_frame_deviation_time_const:.3f}f);
     {inter_comment}acc_detector_presence_config_inter_output_time_const_set(config, {config.inter_output_time_const:.3f});
-    {inter_comment}acc_detector_presence_config_inter_phase_boost_set(config, {str(config.inter_phase_boost).lower()});
     {inter_comment}acc_detector_presence_config_inter_frame_presence_timeout_set(config, {config.inter_frame_presence_timeout or 0.0:.3f}f);
 
     // This parameter is needed if the sensor is put in HIBERNATE or OFF.

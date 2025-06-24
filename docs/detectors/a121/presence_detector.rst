@@ -92,12 +92,6 @@ and
 :attr:`~acconeer.exptool.a121.algo.presence._detector.DetectorConfig.intra_enable`
 parameters.
 
-For slow motion detection, there is the possibility to use
-:attr:`~acconeer.exptool.a121.algo.presence._detector.DetectorConfig.inter_phase_boost`
-to increase sensitivity.
-This will increase detection for someone sitting still and breathing, even if the sensor is not placed in an optimal position.
-However, have in mind that it will increase detection of all slow moving objects.
-
 If a stable detection and fast loss of detection is important, for example when a person is leaving the sensor coverage, the
 :attr:`~acconeer.exptool.a121.algo.presence._detector.DetectorConfig.inter_frame_presence_timeout`
 functionality can be enabled.
@@ -132,11 +126,6 @@ Slow motions - looking for a person resting on a sofa
    Values larger than half the
    :attr:`~acconeer.exptool.a121.algo.presence._detector.DetectorConfig.frame_rate`
    disables this filter. If that is not enough, you need a higher frame rate or to use the intra-frame part.
-
-Inter-frame phase boost
-   To increase detection of very slow motions
-   :attr:`~acconeer.exptool.a121.algo.presence._detector.DetectorConfig.inter_phase_boost`
-   can be enabled.
 
 Inter-frame timeout
    For faster loss of detection,
