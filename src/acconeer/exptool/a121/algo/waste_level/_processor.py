@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2024
+# Copyright (c) Acconeer AB, 2024-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -202,6 +202,8 @@ class Processor(ProcessorBase[ProcessorResult]):
             filtered_distance = float(np.nanmedian(list(self.distance_history)))
             level_m = self.bin_end_m - filtered_distance
             level_percent = int(round(level_m / (self.bin_end_m - self.bin_start_m) * 100, 0))
+            if level_percent < 0:
+                level_percent = 0
 
         extra_result = ProcessorExtraResult(phase_std=phase_std, distance_m=filtered_distance)
 
