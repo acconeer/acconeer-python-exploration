@@ -133,6 +133,7 @@ def test_a121_examples(example_script: str, tmp_path: Path) -> None:
         "examples/a121/algo/bilateration/bilaterator.py": ["--mock"],
         "examples/a121/algo/breathing/breathing_with_gui.py": ["--mock"],
         "examples/a121/algo/breathing/breathing.py": ["--mock"],
+        "examples/a121/algo/cargo/example_app.py": ["--mock"],
         "examples/a121/algo/distance/detector.py": ["--mock"],
         "examples/a121/algo/distance/processor.py": ["--mock"],
         "examples/a121/algo/distance/post_process_distance_result.py": [

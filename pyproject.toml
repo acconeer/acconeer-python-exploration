@@ -248,6 +248,7 @@ extend-ignore = ["E741", "SIM108", "SIM105"]
 "examples/*" = ["S11", "SIM"]
 "src/acconeer/exptool/app/old/*" = ["S11", "SIM"]
 "src/acconeer/exptool/a111/*" = ["S11", "SIM"]
+"examples/a121/algo/cargo/example_app.py" = ["F401"]
 
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "parents"
