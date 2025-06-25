@@ -71,6 +71,9 @@ linkcheck_exclude_documents = [
     "exploration_tool/example_scripts/.*",
     "a111/evk_setup/xm112.*",  # Due to instable link to https://ftdichip.com/drivers/vcp-drivers/
 ]
+linkcheck_ignore = [
+    "https://math.stackexchange.com/.*",  # Causes 403 error
+]
 
 # rediraffe
 rediraffe_redirects = "redirects.txt"
