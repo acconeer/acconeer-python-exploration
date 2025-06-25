@@ -85,7 +85,8 @@ def finishBuild(boolean messageOnFailure) {
 
     if (messageOnFailure && (currentBuild.currentResult == 'FAILURE')) {
         withCredentials([string(credentialsId: 'teams-robot', variable: 'TEAMS_API_TOKEN')]) {
-            office365ConnectorSend webhookUrl: TEAMS_API_TOKEN
+            office365ConnectorSend webhookUrl: TEAMS_API_TOKEN,
+            adaptiveCards: true
         }
     }
 }
