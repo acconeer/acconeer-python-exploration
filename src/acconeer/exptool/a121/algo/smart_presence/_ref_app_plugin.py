@@ -763,17 +763,10 @@ class ViewPlugin(A121ViewPluginBase):
 
             self.nominal_config_editor.set_data(state.config.nominal_config)
 
-            self.subsweep_status_nominal.set_data(
-                Detector._get_sensor_config(state.config.nominal_config)
-            )
-
             self.wake_up_config_editor.setHidden(not state.config.wake_up_mode)
 
             if state.config.wake_up_config is not None:
                 self.wake_up_config_editor.set_data(state.config.wake_up_config)
-                self.subsweep_status_wake_up.set_data(
-                    Detector._get_sensor_config(state.config.wake_up_config)
-                )
 
             results = state.config._collect_validation_results()
 
@@ -784,6 +777,15 @@ class ViewPlugin(A121ViewPluginBase):
             not_handled = self.misc_error_view.handle_validation_results(not_handled)
 
             assert not_handled == []
+
+            if len(results) == 0:
+                self.subsweep_status_nominal.set_data(
+                    Detector._get_sensor_config(state.config.nominal_config)
+                )
+                if state.config.wake_up_config is not None:
+                    self.subsweep_status_wake_up.set_data(
+                        Detector._get_sensor_config(state.config.wake_up_config)
+                    )
 
     def on_app_model_update(self, app_model: AppModel) -> None:
         self.sensor_id_pidget.set_selectable_sensors(app_model.connected_sensors)

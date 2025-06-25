@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -94,6 +94,9 @@ class RefAppConfig(AlgoConfigBase):
 
     def _collect_validation_results(self) -> list[a121.ValidationResult]:
         validation_results: list[a121.ValidationResult] = []
+
+        validation_results.extend(self.nominal_config._collect_validation_results())
+
         if self.wake_up_config is not None:
             validation_results.extend(self.wake_up_config._collect_validation_results())
 
