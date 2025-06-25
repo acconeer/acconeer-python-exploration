@@ -1,5 +1,10 @@
 # Changelog
 
+## v7.16.1
+
+### Fixed
+- Pin PySide6 & PyQtGraph
+
 ## v7.16.0
 
 ### Added
