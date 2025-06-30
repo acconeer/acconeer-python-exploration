@@ -1,5 +1,10 @@
 # Changelog
 
+## v7.17.0
+
+### Added
+- Cargo example application added
+
 ## v7.16.1
 
 ### Fixed
