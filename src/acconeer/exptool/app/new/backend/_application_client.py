@@ -11,12 +11,21 @@ from acconeer.exptool import a121
 from acconeer.exptool._core.communication import Client
 from acconeer.exptool.a121._core import utils
 
-from ._message import GeneralMessage, Message
+from ._message import GeneralMessage, Message, StatusMessage
 from ._rate_calc import _RateCalculator, _RateStats
 
 
 ClientT = TypeVar("ClientT", bound=Client[Any, Any, Any, Any, Any])
 ResultT = TypeVar("ResultT")
+
+
+def _format_warning(s: str) -> str:
+    return f'<b style="color: #FD5200;">Warning: {s}</b>'
+
+
+_CALIBRATION_NEEDED_MESSAGE = _format_warning("Calibration needed - restart")
+_DATA_SATURATED_MESSAGE = _format_warning("Data saturated - reduce gain")
+_FRAME_DELAYED_MESSAGE = _format_warning("Frame delayed")
 
 
 class _Extractor(te.Protocol):
@@ -25,6 +34,9 @@ class _Extractor(te.Protocol):
 
     @staticmethod
     def update_rate_calculator(calculator: _RateCalculator, result: Any) -> _RateStats: ...
+
+    @staticmethod
+    def get_status_messages(result: Any) -> list[str]: ...
 
 
 class _A121Extractor(_Extractor):
@@ -45,6 +57,30 @@ class _A121Extractor(_Extractor):
         else:
             (first_result, *_) = utils.iterate_extended_structure_values(result)
             return calculator.update(first_result.tick, first_result.frame_delayed)
+
+    @staticmethod
+    def get_status_messages(
+        result: Union[a121.Result, list[dict[int, a121.Result]]],
+    ) -> list[str]:
+        if isinstance(result, a121.Result):
+            result_list = [result]
+        elif isinstance(result, list):
+            result_list = list(utils.iterate_extended_structure_values(result))
+        else:
+            msg = f"Unexpected type for 'result': {type(result)}"
+            raise AssertionError(msg)
+
+        msgs = []
+        if any(r.data_saturated for r in result_list):
+            msgs.append(_DATA_SATURATED_MESSAGE)
+
+        if any(r.calibration_needed for r in result_list):
+            msgs.append(_CALIBRATION_NEEDED_MESSAGE)
+
+        if any(r.frame_delayed for r in result_list):
+            msgs.append(_FRAME_DELAYED_MESSAGE)
+
+        return msgs
 
 
 class ApplicationClient(Generic[ClientT]):
@@ -98,6 +134,10 @@ class ApplicationClient(Generic[ClientT]):
         self.callback(GeneralMessage(name="rate_stats", data=stats))
         self._frame_count += 1
         self.callback(GeneralMessage(name="frame_count", data=self._frame_count))
+
+        for msg in self.extractor_strategy.get_status_messages(result):
+            self.callback(StatusMessage(status=msg))
+
         return result
 
     def stop_session(self) -> None:

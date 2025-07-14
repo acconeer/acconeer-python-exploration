@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -33,11 +33,6 @@ from acconeer.exptool.app.new.backend import (
     StatusMessage,
     is_task,
 )
-
-
-CALIBRATION_NEEDED_MESSAGE = "Calibration needed - restart"
-DATA_SATURATED_MESSAGE = "Data saturated - reduce gain"
-FRAME_DELAYED_MESSAGE = "Frame delayed"
 
 
 @attrs.mutable(kw_only=True)
@@ -225,10 +220,6 @@ class GenericProcessorBackendPluginBase(
     def get_default_sensor_config(cls) -> a121.SensorConfig:
         pass
 
-    @staticmethod
-    def _format_warning(s: str) -> str:
-        return f'<b style="color: #FD5200;">Warning: {s}</b>'
-
 
 class ProcessorBackendPluginBase(
     GenericProcessorBackendPluginBase[a121.Result, ProcessorConfigT, ResultT, a121.Metadata]
@@ -263,15 +254,6 @@ class ProcessorBackendPluginBase(
         assert self.client
         result = self.client.get_next()
         assert isinstance(result, a121.Result)  # TODO: fix
-
-        if result.data_saturated:
-            self.send_status_message(self._format_warning(DATA_SATURATED_MESSAGE))
-
-        if result.calibration_needed:
-            self.send_status_message(self._format_warning(CALIBRATION_NEEDED_MESSAGE))
-
-        if result.frame_delayed:
-            self.send_status_message(self._format_warning(FRAME_DELAYED_MESSAGE))
 
         processor_result = self._processor_instance.process(result)
 
@@ -311,16 +293,6 @@ class ExtendedProcessorBackendPluginBase(
             results = [{self.client.session_config.sensor_id: result}]
         else:
             results = result
-
-        result_list = list(core_utils.iterate_extended_structure_values(results))
-        if any(r.data_saturated for r in result_list):
-            self.send_status_message(self._format_warning(DATA_SATURATED_MESSAGE))
-
-        if any(r.calibration_needed for r in result_list):
-            self.send_status_message(self._format_warning(CALIBRATION_NEEDED_MESSAGE))
-
-        if any(r.frame_delayed for r in result_list):
-            self.send_status_message(self._format_warning(FRAME_DELAYED_MESSAGE))
 
         processor_result = self._processor_instance.process(results)
 
