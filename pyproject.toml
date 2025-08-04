@@ -1,5 +1,11 @@
 [build-system]
-requires = ["hatchling", "hatch-vcs"]
+requires = [
+    "hatchling",
+    "hatch-vcs",
+    # Below is a temporary fix until 'hatch-vcs' fixes its dependencies
+    # see https://github.com/ofek/hatch-vcs/blob/master/pyproject.toml
+    "setuptools-scm<9.0.0",
+]
 build-backend = "hatchling.build"
 
 [project]
