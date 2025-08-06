@@ -1,7 +1,7 @@
 # Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
-SDK_VERSION = "1.10.0"
+SDK_VERSION = "1.11.0"
 
 # Make these visible under the a121 package to not break api
 from acconeer.exptool._cli import ExampleArgumentParser, get_client_args

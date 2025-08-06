@@ -16,8 +16,8 @@ def pythonVersionsForBuildScope = [
 @Field
 def integrationTestA121RssVersionsForBuildScope = [
     (BuildScope.SANITY)  : [branch: 'master'],
-    (BuildScope.HOURLY)  : [tag: 'a121-v1.10.0'],
-    (BuildScope.NIGHTLY) : [branch: 'master', tag: 'a121-v1.10.0'],
+    (BuildScope.HOURLY)  : [tag: 'a121-v1.11.0'],
+    (BuildScope.NIGHTLY) : [branch: 'master', tag: 'a121-v1.11.0'],
 ]
 
 @Field
@@ -29,9 +29,9 @@ def integrationTestA111RssVersionsForBuildScope = [
 
 @Field
 def modelTestA121RssVersionForBuildScope = [
-    (BuildScope.SANITY)  : [tag: 'a121-v1.10.0'],
-    (BuildScope.HOURLY)  : [tag: 'a121-v1.10.0'],
-    (BuildScope.NIGHTLY) : [tag: 'a121-v1.10.0'],
+    (BuildScope.SANITY)  : [tag: 'a121-v1.11.0'],
+    (BuildScope.HOURLY)  : [tag: 'a121-v1.11.0'],
+    (BuildScope.NIGHTLY) : [tag: 'a121-v1.11.0'],
 ]
 
 boolean messageOnFailure = true
@@ -227,10 +227,10 @@ try {
                         findBuildAndCopyArtifacts(
                             [
                                 projectName: 'sw-main',
-                                artifactNames: ['out/internal_stash_python_libs.tgz', 'out/internal_stash_tests_a121.tgz'],
+                                artifactNames: ['out/internal_stash_python_libs_a121.tgz', 'out/internal_stash_tests_a121.tgz'],
                             ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a121-vX.Y.Z']
                         )
-                        sh "tar -xzf out/internal_stash_python_libs.tgz -C ${stashFolder}"
+                        sh "tar -xzf out/internal_stash_python_libs_a121.tgz -C ${stashFolder}"
                         sh "tar -xzf out/internal_stash_tests_a121.tgz -C ${stashFolder}"
                     }
                 }
