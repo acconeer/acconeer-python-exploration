@@ -265,6 +265,13 @@ try {
                                 glob: 'stash/model_a121/**/tests/a121/**/memory_usage.yaml'
                             )
 
+                            echo "a121_es_binaries=${a121_es_binaries}"
+                            echo "a111_es_binaries=${a111_es_binaries}"
+                            echo "a121_sensor_current_limits_matches=${a121_sensor_current_limits_matches}"
+                            echo "a121_module_current_limits_matches=${a121_module_current_limits_matches}"
+                            echo "a121_inter_sweep_idle_state_current_limits_matches=${a121_inter_sweep_idle_state_current_limits_matches}"
+                            echo "a121_memory_usage_yaml_matches=${a121_memory_usage_yaml_matches}"
+
                             hatchWrap """test ${versionSelection} --parallel tests/ src/ \
                                 --a121-exploration-server-paths ${a121_es_binaries.join(' ')} \
                                 --a111-exploration-server-paths ${a111_es_binaries.join(' ')} \
