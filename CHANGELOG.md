@@ -1,5 +1,13 @@
 # Changelog
 
+## v7.17.1
+
+### Changed
+- Bump SDK version for A121
+
+### Fixed
+- Disallow setuptools_scm>=9.0.0
+
 ## v7.17.0
 
 ### Added
