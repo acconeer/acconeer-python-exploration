@@ -118,6 +118,11 @@ def _get_profile_subsweeps(
             curr_point += step * APPROX_BASE_STEP_LENGTH_M
             n_points_in_subsweep += 1
         curr_point_ind = int(round(curr_point / APPROX_BASE_STEP_LENGTH_M))
+        
+        # Ensure at least 1 point to prevent validation error
+        if n_points_in_subsweep == 0:
+            n_points_in_subsweep = 1
+            
         subsweeps_configs.append(
             a121.SubsweepConfig(
                 profile=profile,
