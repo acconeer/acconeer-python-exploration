@@ -1,9 +1,10 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
 
 import typing as t
+from enum import IntEnum, auto
 
 from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QIcon
@@ -60,22 +61,33 @@ class _PagedLayout(QSplitter):
     """
     The widget that is responsible for the paged main widget:
 
-       Index      Page
-         |         |
-         V         V
-        +-+------------------+
-        |A|                  |
-        +-+                  |
-        |B|      Page A      |
-        +-+                  |
-        | |                  |
-        +-+------------------+
+        Buttons          Page
+           |              |
+           V              V
+        +--------+------------------+
+        | Stream |                  |
+        +--------+                  |
+        | Flash  |                  |
+        +--------+                  |
+        | RC     |                  |
+        +--------+                  |
+        | Help   |                  |
+        +--------+                  |
+        |   .    |                  |
+        |   .    |                  |
+        |        |                  |
+        +--------+------------------+
     """
+
+    class _ButtonId(IntEnum):
+        STREAM = auto()
+        FLASH = auto()
+        RESOURCE_CALCULATOR = auto()
+        HELP = auto()
 
     def __init__(
         self,
         app_model: AppModel,
-        pages: t.Iterable[t.Tuple[QIcon, str, QWidget, str]],
         *,
         index_button_width: int = 60,
     ) -> None:
@@ -88,14 +100,40 @@ class _PagedLayout(QSplitter):
 
         self._page_widget = QStackedWidget()
 
-        for i, (icon, text, page, tooltip) in enumerate(pages):
-            index_button = _IconButton(icon, text, is_active=i == 0, tooltip=tooltip)
+        # Index buttons/Tabs
+        stream_index_button = _IconButton(RECORD(), "Stream", is_active=True, tooltip="")
+        self._stream_main_widget = StreamingMainWidget(app_model, self)
+        self._index_button_group.addButton(stream_index_button, id=self._ButtonId.STREAM)
+        self._index_button_layout.addWidget(stream_index_button)
+        self._page_widget.addWidget(self._stream_main_widget)
 
-            self._index_button_group.addButton(index_button, id=i)
-            self._index_button_layout.addWidget(index_button)
-            self._page_widget.addWidget(page)
+        flash_index_button = _IconButton(FLASH(), "Flash", is_active=False, tooltip="")
+        self._flash_main_widget = FlashMainWidget(app_model, self)
+        self._index_button_group.addButton(flash_index_button, id=self._ButtonId.FLASH)
+        self._index_button_layout.addWidget(flash_index_button)
+        self._page_widget.addWidget(self._flash_main_widget)
 
-        self._index_button_group.idClicked.connect(self._page_widget.setCurrentIndex)
+        rc_tooltip = "Resource Calculator"
+        rc_index_button = _IconButton(GAUGE(), "RC", is_active=False, tooltip=rc_tooltip)
+        self._resource_main_widget = ResourceMainWidget()
+        self._index_button_group.addButton(rc_index_button, id=self._ButtonId.RESOURCE_CALCULATOR)
+        self._index_button_layout.addWidget(rc_index_button)
+        self._page_widget.addWidget(self._resource_main_widget)
+        # Signals for "Goto resource calculator".
+        app_model.sig_resource_tab_input_block_requested.connect(
+            self._resource_main_widget.spawn_input_block
+        )
+        app_model.sig_resource_tab_input_block_requested.connect(
+            lambda: self.setCurrentWidget(self._resource_main_widget)
+        )
+
+        help_index_button = _IconButton(HELP(), "Help", is_active=False, tooltip="")
+        self._help_main_widget = HelpMainWidget(self)
+        self._index_button_group.addButton(help_index_button, id=self._ButtonId.HELP)
+        self._index_button_layout.addWidget(help_index_button)
+        self._page_widget.addWidget(self._help_main_widget)
+
+        self._index_button_group.idClicked.connect(self.switch_page)
         self._index_button_widget = TopAlignDecorator(LayoutWrapper(self._index_button_layout))
         self._index_button_widget.setFixedWidth(index_button_width)
         self.addWidget(self._index_button_widget)
@@ -105,13 +143,35 @@ class _PagedLayout(QSplitter):
     def _on_app_model_update(self, app_model: AppModel) -> None:
         self._index_button_widget.setEnabled(app_model.plugin_state.is_steady)
 
-    def setCurrentWidget(self, widget: QWidget) -> None:
-        idx = self._page_widget.indexOf(widget)
-        if idx == -1:
-            msg = f"Passed widget is not part of {type(self).__name__}"
+    def switch_page(self, index_button_id: int) -> None:
+        if index_button_id == self._ButtonId.STREAM:
+            self.setCurrentWidget(self._stream_main_widget)
+        elif index_button_id == self._ButtonId.FLASH:
+            self.setCurrentWidget(self._flash_main_widget)
+        elif index_button_id == self._ButtonId.RESOURCE_CALCULATOR:
+            self.setCurrentWidget(self._resource_main_widget)
+        elif index_button_id == self._ButtonId.HELP:
+            self.setCurrentWidget(self._help_main_widget)
+        else:
+            msg = f"Unknown index_button_id: {index_button_id}"
             raise ValueError(msg)
 
-        self._index_button_group.button(idx).click()
+    def setCurrentWidget(self, widget: QWidget) -> None:
+        if widget is self._stream_main_widget:
+            self._page_widget.setCurrentWidget(self._stream_main_widget)
+            self._index_button_group.button(self._ButtonId.STREAM).setChecked(True)
+        elif widget is self._flash_main_widget:
+            self._page_widget.setCurrentWidget(self._flash_main_widget)
+            self._index_button_group.button(self._ButtonId.FLASH).setChecked(True)
+        elif widget is self._resource_main_widget:
+            self._page_widget.setCurrentWidget(self._resource_main_widget)
+            self._index_button_group.button(self._ButtonId.RESOURCE_CALCULATOR).setChecked(True)
+        elif widget is self._help_main_widget:
+            self._page_widget.setCurrentWidget(self._help_main_widget)
+            self._index_button_group.button(self._ButtonId.HELP).setChecked(True)
+        else:
+            msg = f"Unknown widget: {widget}"
+            raise ValueError(msg)
 
 
 class MainWindow(QMainWindow):
@@ -122,21 +182,7 @@ class MainWindow(QMainWindow):
 
         self.resize(1280, 720)
 
-        resource_widget = ResourceMainWidget()
-        paged_layout = _PagedLayout(
-            app_model,
-            [
-                (RECORD(), "Stream", StreamingMainWidget(app_model, self), ""),
-                (FLASH(), "Flash", FlashMainWidget(app_model, self), ""),
-                (GAUGE(), "RC", resource_widget, "Resource Calculator"),
-                (HELP(), "Help", HelpMainWidget(self), ""),
-            ],
-        )
-
-        app_model.sig_resource_tab_input_block_requested.connect(resource_widget.spawn_input_block)
-        app_model.sig_resource_tab_input_block_requested.connect(
-            lambda: paged_layout.setCurrentWidget(resource_widget)
-        )
+        paged_layout = _PagedLayout(app_model)
 
         self.setCentralWidget(paged_layout)
 
