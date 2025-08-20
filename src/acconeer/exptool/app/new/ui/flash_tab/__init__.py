@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
-from .widgets import FlashMainWidget
+from .widgets import FlashWizard

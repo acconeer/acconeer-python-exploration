@@ -839,13 +839,6 @@ class FlashWizard(QWizard):
         return transitions[self.currentId()]
 
 
-class FlashMainWidget(QPushButton):
-    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
-        super().__init__()
-        self.setText("Start flashing!")
-        self.clicked.connect(lambda: FlashWizard(app_model).exec())
-
-
 _T = t.TypeVar("_T")
 
 
