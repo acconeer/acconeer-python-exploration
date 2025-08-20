@@ -192,17 +192,17 @@ format-fix = [
     "python -m ruff format .",
 ]
 lint-check = [
-    "python tools/check_permissions.py",
-    "python tools/check_whitespace.py",
-    "python tools/check_line_length.py",
-    "python tools/check_sdk_mentions.py",
-    "python tools/check_changelog.py",
-    "python tools/check_copyright.py",
+    "python internal_tools/check_permissions.py",
+    "python internal_tools/check_whitespace.py",
+    "python internal_tools/check_line_length.py",
+    "python internal_tools/check_sdk_mentions.py",
+    "python internal_tools/check_changelog.py",
+    "python internal_tools/check_copyright.py",
     "python docs/generate_example_script_pages.py check",
     "python -m ruff check .",
 ]
 lint-fix = [
-    "python tools/check_copyright.py --update-year",
+    "python internal_tools/check_copyright.py --update-year",
     "python docs/generate_example_script_pages.py fix",
     "python -m ruff check --fix .",
     "lint-check"
