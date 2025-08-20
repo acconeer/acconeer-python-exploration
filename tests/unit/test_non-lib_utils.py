@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 import sys
@@ -10,7 +10,7 @@ import acconeer.exptool as et
 
 
 HERE = Path(__file__).parent
-path = (HERE / ".." / ".." / "utils").resolve()
+path = (HERE / ".." / ".." / "user_tools").resolve()
 sys.path.append(path.as_posix())
 
 from convert_h5 import A111RecordTableConverter  # noqa: E402

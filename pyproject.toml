@@ -304,7 +304,7 @@ section-order = [
 [tool.mypy]
 packages = [
     "acconeer.exptool",
-    "utils",
+    "user_tools",
 ]
 exclude = [
     ".*/a111/.*",
