@@ -3,6 +3,7 @@
 
 from ._ex_app import (
     CargoPresenceConfig,
+    ContainerSize,
     ExApp,
     ExAppConfig,
     ExAppContext,

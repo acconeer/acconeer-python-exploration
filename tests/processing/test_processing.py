@@ -15,6 +15,7 @@ from acconeer.exptool.a121._core_ext import ReplaySessionsExhaustedError, _StopR
 
 from .a121 import (
     breathing_test,
+    cargo_test,
     data_files,
     distance_test,
     hand_motion_test,
@@ -274,6 +275,51 @@ def input_path(resource_name: str) -> Path:
             hand_motion_test.hand_motion_app,
             t.List[hand_motion_test.ResultSlice],
             "hand-motion-no-presence.h5",
+        ),
+        (
+            cargo_test.cargo_app,
+            t.List[cargo_test.ResultSlice],
+            "cargo_10_feet.h5",
+        ),
+        (
+            cargo_test.cargo_app,
+            t.List[cargo_test.ResultSlice],
+            "cargo_10_feet_only_presence.h5",
+        ),
+        (
+            cargo_test.cargo_app,
+            t.List[cargo_test.ResultSlice],
+            "cargo_10_feet_only_presence_2.h5",
+        ),
+        (
+            cargo_test.cargo_app,
+            t.List[cargo_test.ResultSlice],
+            "cargo_20_feet.h5",
+        ),
+        (
+            cargo_test.cargo_app,
+            t.List[cargo_test.ResultSlice],
+            "cargo_20_feet_no_lens.h5",
+        ),
+        (
+            cargo_test.cargo_app,
+            t.List[cargo_test.ResultSlice],
+            "cargo_20_feet_no_lens_add_presence.h5",
+        ),
+        (
+            cargo_test.cargo_app,
+            t.List[cargo_test.ResultSlice],
+            "cargo_20_feet_utilization_and_presence.h5",
+        ),
+        (
+            cargo_test.cargo_app,
+            t.List[cargo_test.ResultSlice],
+            "cargo_20_feet_utilization_and_presence_2.h5",
+        ),
+        (
+            cargo_test.cargo_app,
+            t.List[cargo_test.ResultSlice],
+            "cargo_40_feet.h5",
         ),
     ],
 )
