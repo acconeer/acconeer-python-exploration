@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -344,7 +344,10 @@ class Processor(ProcessorBase[ProcessorResult]):
         psd_peak_idxs = self.cfar_peaks(psd_cfar, psd)
 
         if len(psd_peak_idxs) > 0:
-            if np.max(np.abs(bin_vertical_vs[psd_peak_idxs])) > bin_vertical_vs[self.slow_zone]:
+            if (
+                np.max(np.abs(bin_vertical_vs[psd_peak_idxs]))
+                > bin_vertical_vs[self.middle_idx + self.slow_zone]
+            ):
                 vertical_v, peak_idx, peak_width = self.get_velocity_estimate(
                     bin_vertical_vs, psd_peak_idxs, psd
                 )
