@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 """Tool dfu/flash devices with bootloader firmware"""
@@ -20,12 +20,6 @@ from acconeer.exptool.flash._xc120._meta import (
     ACCONEER_XC120_BOOTLOADER_PID,
     ACCONEER_XC120_EXPLORATION_SERVER_PID,
 )
-
-
-try:
-    from acconeer.exptool._winusbcdc.usb_cdc import ComPort
-except ImportError:
-    ComPort = None
 
 
 log = logging.getLogger(__name__)
@@ -189,16 +183,10 @@ class BootloaderTool(DeviceFlasherBase):
                     BootloaderTool._try_open_port(exploration_server_port)
                     ser = serial.Serial(exploration_server_port, exclusive=True)
                 else:
-                    if ComPort is not None:
-                        ser = ComPort(
-                            vid=exploration_server_usb_device.vid,
-                            pid=exploration_server_usb_device.pid,
-                        )
-                    else:
-                        ser = PyUsbCdc(
-                            vid=exploration_server_usb_device.vid,
-                            pid=exploration_server_usb_device.pid,
-                        )
+                    ser = PyUsbCdc(
+                        vid=exploration_server_usb_device.vid,
+                        pid=exploration_server_usb_device.pid,
+                    )
                 ser.send_break()
                 time.sleep(0.1)
                 ser.write(bytes('{ "cmd": "stop_application" }\n', "utf-8"))
@@ -253,15 +241,9 @@ class BootloaderTool(DeviceFlasherBase):
         dfu_port = BootloaderTool._find_port(
             ACCONEER_VID, ACCONEER_XC120_BOOTLOADER_PID, device_port
         )
-        usb_dfu = BootloaderTool._find_usb_dfu_device()
         serial_dev = None
         if dfu_port is not None:
             serial_dev = BootloaderTool._try_open_port(dfu_port)
-        elif usb_dfu is not None and ComPort is not None:
-            serial_dev = ComPort(
-                vid=usb_dfu.vid,
-                pid=usb_dfu.pid,
-            )
         else:
             msg = "Flash failed, device not found"
             raise FlashException(msg)

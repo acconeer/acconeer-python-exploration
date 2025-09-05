@@ -5,6 +5,7 @@
 ### Added
 
 ### Changed
+- Use libusb instead of winusb for USB communication on windows
 
 ### Fixed
 

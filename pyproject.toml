@@ -32,6 +32,7 @@ dependencies = [
     "attrs>=22.1.0",
     "cbor2",
     "h5py>=3.8,<4",
+    "libusb==1.0.27",
     "numpy>=1.20",
     "pandas>=1.3.5",
     "packaging",
@@ -249,7 +250,6 @@ extend-ignore = ["E741", "SIM108", "SIM105"]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401", "E402"]
-"src/acconeer/exptool/_winusbcdc/*" = ["F40", "E501"]
 "examples/*" = ["S11", "SIM"]
 "src/acconeer/exptool/app/old/*" = ["S11", "SIM"]
 "src/acconeer/exptool/a111/*" = ["S11", "SIM"]
@@ -313,7 +313,6 @@ exclude = [
     "src/acconeer/exptool/flash/_stm32uart/.*",
     "src/acconeer/exptool/flash/_device_flasher_base.py",
     "src/acconeer/exptool/_tests/.*",
-    "src/acconeer/exptool/_winusbcdc/.*",
     "src/acconeer/exptool/_pyusb/.*",
     "src/acconeer/exptool/utils.py",
     "src/acconeer/exptool/mpl_process.py",
@@ -356,7 +355,7 @@ module = [
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-addopts = "--ignore=src/acconeer/exptool/_winusbcdc --ignore=src/acconeer/exptool/a111 --ignore=tests/gui"
+addopts = "--ignore=src/acconeer/exptool/a111 --ignore=tests/gui"
 doctest_optionflags = [
     "ELLIPSIS",
     "NORMALIZE_WHITESPACE",
@@ -390,7 +389,4 @@ include = [
 ]
 
 [tool.check_copyright]
-ignore_files = [
-    "src/acconeer/exptool/_winusbcdc/*",
-]
 docs_conf_file = "docs/conf.py"

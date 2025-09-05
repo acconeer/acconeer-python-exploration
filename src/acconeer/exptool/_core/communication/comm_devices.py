@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -14,17 +14,11 @@ import serial.tools.list_ports
 import typing_extensions as te
 from packaging import version
 
-from acconeer.exptool._pyusb import PyUsbComm
+from acconeer.exptool._pyusb import PyUsbDeviceFinder
 
 
 class CommDeviceError(Exception):
     pass
-
-
-try:
-    from acconeer.exptool._winusbcdc.winusbpy import WinUsbPy
-except ImportError:
-    WinUsbPy = None  # type: ignore[misc, assignment]
 
 
 _USB_IDS = [  # (vid, pid, 'model number', 'Unflashed')
@@ -177,46 +171,26 @@ def get_serial_devices() -> List[SerialDevice]:
 def get_usb_devices(only_accessible: bool = False) -> List[USBDevice]:
     usb_devices: List[USBDevice] = []
 
-    if WinUsbPy is not None:
-        winusbpy = WinUsbPy()
-        device_list = winusbpy.find_all_devices()
-        for device in device_list:
-            device_vid = device["vid"]
-            device_pid = device["pid"]
-            serial_number = device["serial"]
-            for vid, pid, model_name, unflashed in _USB_IDS:
-                if device_vid == vid and device_pid == pid:
-                    usb_devices.append(
-                        USBDevice(
-                            vid=device_vid,
-                            pid=device_pid,
-                            serial=serial_number,
-                            name=model_name,
-                            unflashed=unflashed,
-                            recognized=True,
-                        )
-                    )
-    else:
-        pyusbcomm = PyUsbComm()
-        for device_vid, device_pid, serial_number in pyusbcomm.iterate_devices():
-            for vid, pid, model_name, unflashed in _USB_IDS:
-                if device_vid == vid and device_pid == pid:
-                    device_name = model_name
-                    accessible = pyusbcomm.is_accessible(vid, pid)
-                    if only_accessible and not accessible:
-                        continue
+    pyusb_device_finder = PyUsbDeviceFinder()
+    for device_vid, device_pid, serial_number in pyusb_device_finder.iterate_devices():
+        for vid, pid, model_name, unflashed in _USB_IDS:
+            if device_vid == vid and device_pid == pid:
+                device_name = model_name
+                accessible = pyusb_device_finder.is_accessible(vid, pid)
+                if only_accessible and not accessible:
+                    continue
 
-                    usb_devices.append(
-                        USBDevice(
-                            vid=device_vid,
-                            pid=device_pid,
-                            serial=serial_number,
-                            name=device_name,
-                            accessible=accessible,
-                            unflashed=unflashed,
-                            recognized=True,
-                        )
+                usb_devices.append(
+                    USBDevice(
+                        vid=device_vid,
+                        pid=device_pid,
+                        serial=serial_number,
+                        name=device_name,
+                        accessible=accessible,
+                        unflashed=unflashed,
+                        recognized=True,
                     )
+                )
 
     return usb_devices
 
