@@ -89,6 +89,24 @@ def test_migrate_properly_migrates_all_leaves(simple_graph: _SG, inp: t.Any) -> 
     assert simple_graph.migrate(inp) == Float(z=10.0)
 
 
+@pytest.mark.parametrize("target_type", [Str, Int, Float], ids=repr)
+def test_migrate_can_stop_early_with_epoch_target_type_argument(
+    simple_graph: _SG, target_type: t.Any
+) -> None:
+    data = '{"x": "10"}'
+    migrated = simple_graph.migrate(data, target_type=target_type)
+    assert isinstance(migrated, target_type)
+
+
+@pytest.mark.parametrize("target_type", [str, float], ids=repr)
+def test_migrate_errors_if_non_epochs_are_target_type(
+    simple_graph: _SG, target_type: t.Any
+) -> None:
+    data = '{"x": "10"}'
+    with pytest.raises(TypeError, match="not an epoch type"):
+        _ = simple_graph.migrate(data, target_type=target_type)
+
+
 def test_api_missuse_raises_type_errors(simple_graph: _SG) -> None:
     with pytest.raises(TypeError):
         # first pos should be an instance of "type"
@@ -144,7 +162,7 @@ def test_can_migrate_if_completer_is_provided(needs_extra_context: _NC) -> None:
         assert issubclass(t, float)
         return 42.0
 
-    migrated = needs_extra_context.migrate('{"x": "10"}', completer)
+    migrated = needs_extra_context.migrate('{"x": "10"}', completer=completer)
     assert migrated == Float2(a=Float(10.0), b=42.0)
 
 
@@ -157,7 +175,7 @@ def test_migrate_fails_with_completer_error_if_completer_raises(
         raise exception_type(msg)
 
     with pytest.raises(exception_type, match="In completer!"):
-        _ = needs_extra_context.migrate('{"x": "10"}', completer)
+        _ = needs_extra_context.migrate('{"x": "10"}', completer=completer)
 
 
 def test_all_error_messages_are_visible_on_failed_migration() -> None:

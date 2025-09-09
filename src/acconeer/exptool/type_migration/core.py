@@ -153,7 +153,7 @@ def _inbounds_validator(_ignored1: t.Any, _ignored2: t.Any, value: t.Any) -> Non
         raise TypeError(msg)
 
 
-@attrs.frozen
+@attrs.frozen(kw_only=True)
 class Node(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
     """
     A single node in a timeline. The type parameters are
@@ -168,6 +168,7 @@ class Node(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
     """
 
     head: type[_HeadT] = attrs.field(validator=av.instance_of(type))
+    is_epoch: bool
     inbounds: t.Sequence[
         tuple[
             _Transform[t.Any, t.Any, _HeadT],
@@ -181,6 +182,25 @@ class Node(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
             ancestor._is_supported(typ) for _, _, ancestor in self.inbounds
         )
 
+    def _node_flatiter(self) -> t.Iterator[Node[t.Any, t.Any, t.Any]]:
+        yield self
+        for _, _, ancestor in self.inbounds:
+            yield from ancestor._node_flatiter()
+
+    def _get_epoch_node_head_types(self) -> set[type]:
+        return set(node.head for node in self._node_flatiter() if node.is_epoch)
+
+    def _get_epoch_node_with_head_type(
+        self, head_type: type[_T]
+    ) -> t.Optional[Node[_T, t.Any, t.Any]]:
+        for node in self._node_flatiter():
+            if not node.is_epoch:
+                continue
+            if node.head is head_type:
+                return node
+
+        return None
+
     def load(
         self,
         src: type[_T],
@@ -188,8 +208,12 @@ class Node(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
         fail: t.Sequence[type[Exception]],
     ) -> Node[_HeadT, _ReqCtxT, _MigT_contra | _T]:
         """Add a loading function to the current epoch"""
-        new_gen = start(src)
-        return Node(self.head, [(_wrap_with_ignored_completer(f), fail, new_gen), *self.inbounds])
+        new_gen: Node[_T, te.Never, te.Never] = Node(head=src, is_epoch=False, inbounds=[])
+        return Node(
+            head=self.head,
+            is_epoch=self.is_epoch,
+            inbounds=[(_wrap_with_ignored_completer(f), fail, new_gen), *self.inbounds],
+        )
 
     def contextual_load(
         self,
@@ -201,8 +225,12 @@ class Node(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
         Add a contextual loading function to the current epoch.
         `f`'s second argument should be a `Completer`
         """
-        new_gen = start(src)
-        return Node(self.head, [(f, fail, new_gen), *self.inbounds])
+        new_gen: Node[_T, te.Never, te.Never] = Node(head=src, is_epoch=False, inbounds=[])
+        return Node(
+            head=self.head,
+            is_epoch=self.is_epoch,
+            inbounds=[(f, fail, new_gen), *self.inbounds],
+        )
 
     def epoch(
         self,
@@ -211,7 +239,11 @@ class Node(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
         fail: t.Sequence[type[Exception]],
     ) -> Node[_T, _ReqCtxT, _MigT_contra | _HeadT]:
         """Append an epoch to the timeline, adding a level to the migration tree"""
-        return Node(typ, [(_wrap_with_ignored_completer(f), fail, self)])
+        return Node(
+            head=typ,
+            is_epoch=True,
+            inbounds=[(_wrap_with_ignored_completer(f), fail, self)],
+        )
 
     def contextual_epoch(
         self,
@@ -220,7 +252,11 @@ class Node(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
         fail: t.Sequence[type[Exception]],
     ) -> Node[_T, _ReqCtxT | _NewCtxT, _MigT_contra | _HeadT]:
         """Append a contextual epoch to the timeline, adding a level to the migration tree"""
-        return Node(typ, [(f, fail, self)])
+        return Node(
+            head=typ,
+            is_epoch=True,
+            inbounds=[(f, fail, self)],
+        )
 
     def _migrate(
         self,
@@ -260,21 +296,53 @@ class Node(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
 
     @te.overload
     def migrate(
+        self: Node[_HeadT, te.Never, _MigT_contra],
+        obj: _HeadT | _MigT_contra,
+        *,
+        target_type: type[_T],
+    ) -> _T: ...
+
+    @te.overload
+    def migrate(
         self: Node[_HeadT, _ReqCtxT, _MigT_contra],
         obj: _HeadT | _MigT_contra,
+        *,
         completer: Completer[_ReqCtxT],
     ) -> _HeadT: ...
 
+    @te.overload
     def migrate(
-        self, obj: _HeadT | _MigT_contra, completer: Completer[t.Any] = _null_completer
-    ) -> _HeadT:
+        self: Node[_HeadT, _ReqCtxT, _MigT_contra],
+        obj: _HeadT | _MigT_contra,
+        *,
+        completer: Completer[_ReqCtxT],
+        target_type: type[_T],
+    ) -> _T: ...
+
+    def migrate(
+        self,
+        obj: _HeadT | _MigT_contra,
+        *,
+        completer: Completer[t.Any] = _null_completer,
+        target_type: t.Optional[type[_T]] = None,
+    ) -> t.Union[_HeadT, _T]:
         """
-        Migrate `obj` be the type of the latest epoch.
+        Migrate `obj` be the type of the latest epoch or to `target_type` if `target_type` is an "epoch type".
 
         raises `MigrationError` if migration was not possible
         """
+        if target_type is not None:
+            target_node = self._get_epoch_node_with_head_type(target_type)
+
+            if target_node is None:
+                allowed_target_types = self._get_epoch_node_head_types()
+                msg = f"Cannot migrate any object to {target_type}. It's not an epoch type in this tree. 'target_type' is allowed to be one of {allowed_target_types}"
+                raise TypeError(msg)
+
+            return target_node.migrate(obj, completer=completer)
+
         if not self._is_supported(type(obj)):
-            msg = f"Cannot migrate objects of type {type(obj)}"
+            msg = f"Cannot migrate objects of type {type(obj)}. It's not part of this tree."
             raise TypeError(msg)
 
         return self._migrate(obj, completer)
@@ -285,4 +353,4 @@ class Node(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
 
 
 def start(typ: type[_T]) -> Node[_T, te.Never, te.Never]:
-    return Node(head=typ, inbounds=[])
+    return Node(head=typ, is_epoch=True, inbounds=[])
