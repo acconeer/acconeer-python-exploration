@@ -24,3 +24,11 @@ h1, h2 {
 .center {
     text-align: center;
 }
+
+span.caption-number::after {
+    content: "\00a0";  /* Unicode non-breaking space */
+}
+
+caption > .caption-number::after {
+    content: "\00a0";  /* Unicode non-breaking space */
+}

@@ -1,11 +1,12 @@
-###########
+################
 Integration
-###########
+################
 
-This section contains information on how to integrate the Acconeer sensor into your product.
+There are several parts that need to be considered when integrating the A111 or A121 sensor.
+
 
 .. toctree::
    :maxdepth: 1
-   :caption: Choose the sensor you are working with:
+   :glob:
 
-   A121 <a121/index>
+   *

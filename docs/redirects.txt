@@ -149,7 +149,7 @@
 "handbook/a121/detectors.rst" "removed.rst"
 "handbook/a121/index.rst" "removed.rst"
 "handbook/a121/introduction.rst" "removed.rst"
-"handbook/physical_integration.rst" "integration/a121/index.rst"
+"handbook/physical_integration.rst" "integration/index.rst"
 "handbook/radar_principles.rst" "pcr_tech/radar_principles.rst"
 "handbook/index.rst" "removed.rst"
 "exploration_tool/example_scripts/vibration/examples-a121-algo-vibration-vibration.rst" "removed.rst"
@@ -158,3 +158,4 @@
 "detectors/a121/distance_detection.rst" "detectors/a121/distance_detector.rst"
 "detectors/a121/speed_detection.rst" "detectors/a121/speed_detector.rst"
 "exploration_tool/example_scripts/python_api/examples-a121-stress.rst" "removed.rst"
+"integration/a121/index.rst" "integration/index.rst"

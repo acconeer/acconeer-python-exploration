@@ -43,7 +43,7 @@ Keep in mind that the relative permittivity is generally frequency dependent and
 
 
 :numref:`tab_material` shows that some materials are semi-transparent to 60 GHz signals and it is hence possible to detect reflecting objects behind a surface of these materials, each boundary with a change in permittivity gives a reflection.
-This is a useful property in applications where the sensor measures through the product housing or when detecting objects behind other objects such as walls and clothing. For optimal design of the product housing, refer to the radome chapter in the `Hardware and physical integration guideline <https://developer.acconeer.com/download/hardware-integration-guideline/?tmstv=1716814588>`_.
+This is a useful property in applications where the sensor measures through the product housing or when detecting objects behind other objects such as walls and clothing. For optimal design of the product housing, (see :ref:`integration-a121-radomes`).
 
 Radar Cross Section
 -------------------

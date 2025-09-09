@@ -173,6 +173,9 @@ latex_elements = {
         \usepackage{titling}
         \usepackage{graphicx}
         \graphicspath{{../../_static/}}
+        \usepackage{caption}
+        \captionsetup[figure]{labelsep=nobreakspace}
+        \captionsetup[table]{labelsep=nobreakspace}
     """,
     "maketitle": r"""
         \vspace*{50mm}
