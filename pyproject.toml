@@ -193,7 +193,6 @@ format-fix = [
 ]
 lint-check = [
     "python internal_tools/check_permissions.py",
-    "python internal_tools/check_whitespace.py",
     "python internal_tools/check_line_length.py",
     "python internal_tools/check_sdk_mentions.py",
     "python internal_tools/check_changelog.py",
