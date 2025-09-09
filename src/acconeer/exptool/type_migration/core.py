@@ -1,14 +1,14 @@
-# Copyright (c) Acconeer AB, 2024
+# Copyright (c) Acconeer AB, 2024-2025
 # All rights reserved
 
 """
-The core of this module is the Epoch class, which has a type-safe[1]
+The core of this module is the Node class, which has a type-safe[1]
 builder-API to build a "migration tree" from the leaves and up.
 
-An instance of Epoch can be seen as a node and the node data is a
+An instance of Node can be seen as a node and the node data is a
 python type (called 'head').
 Each node keeps edges from its children to itself (called 'inbounds').
-Children are also Epochs.
+Children are also Nodes.
 
 Here are some side-by-sides with timeline definitions and the migration tree:
 
@@ -61,7 +61,7 @@ Here are some side-by-sides with timeline definitions and the migration tree:
 When calling 'migrate', a depth-first-search is done in the
 tree to find a matching node for the type of the passed 'obj'.
 
-When a matching Epoch is found, the "edge" function to the parent node then applied
+When a matching Node is found, the "edge" function to the parent node then applied
 for each level of the tree until the root is found. If the "edge" function raises
 one of the Exceptions specified in 'fail', the search continues in the tree.
 If an "edge" function raises and error that is not specified in 'fail', that
@@ -148,13 +148,13 @@ def _inbounds_validator(_ignored1: t.Any, _ignored2: t.Any, value: t.Any) -> Non
         msg = "All elements of the fail sequence needs to be a subclass of BaseExceptions"
         raise TypeError(msg)
 
-    if not isinstance(ancestor, Epoch):
-        msg = "The third element of the tuple needs to be an Epoch"
+    if not isinstance(ancestor, Node):
+        msg = "The third element of the tuple needs to be an Node"
         raise TypeError(msg)
 
 
 @attrs.frozen
-class Epoch(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
+class Node(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
     """
     A single node in a timeline. The type parameters are
 
@@ -172,7 +172,7 @@ class Epoch(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
         tuple[
             _Transform[t.Any, t.Any, _HeadT],
             t.Sequence[type[Exception]],
-            Epoch[t.Any, t.Any, t.Any],
+            Node[t.Any, t.Any, t.Any],
         ],
     ] = attrs.field(validator=av.deep_iterable(_inbounds_validator))
 
@@ -186,41 +186,41 @@ class Epoch(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
         src: type[_T],
         f: t.Callable[[_T], _HeadT],
         fail: t.Sequence[type[Exception]],
-    ) -> Epoch[_HeadT, _ReqCtxT, _MigT_contra | _T]:
+    ) -> Node[_HeadT, _ReqCtxT, _MigT_contra | _T]:
         """Add a loading function to the current epoch"""
         new_gen = start(src)
-        return Epoch(self.head, [(_wrap_with_ignored_completer(f), fail, new_gen), *self.inbounds])
+        return Node(self.head, [(_wrap_with_ignored_completer(f), fail, new_gen), *self.inbounds])
 
     def contextual_load(
         self,
         src: type[_T],
         f: _Transform[_T, _NewCtxT, _HeadT],
         fail: t.Sequence[type[Exception]],
-    ) -> Epoch[_HeadT, _ReqCtxT | _NewCtxT, _MigT_contra | _T]:
+    ) -> Node[_HeadT, _ReqCtxT | _NewCtxT, _MigT_contra | _T]:
         """
         Add a contextual loading function to the current epoch.
         `f`'s second argument should be a `Completer`
         """
         new_gen = start(src)
-        return Epoch(self.head, [(f, fail, new_gen), *self.inbounds])
+        return Node(self.head, [(f, fail, new_gen), *self.inbounds])
 
     def epoch(
         self,
         typ: type[_T],
         f: t.Callable[[_HeadT], _T],
         fail: t.Sequence[type[Exception]],
-    ) -> Epoch[_T, _ReqCtxT, _MigT_contra | _HeadT]:
+    ) -> Node[_T, _ReqCtxT, _MigT_contra | _HeadT]:
         """Append an epoch to the timeline, adding a level to the migration tree"""
-        return Epoch(typ, [(_wrap_with_ignored_completer(f), fail, self)])
+        return Node(typ, [(_wrap_with_ignored_completer(f), fail, self)])
 
     def contextual_epoch(
         self,
         typ: type[_T],
         f: _Transform[_HeadT, _NewCtxT, _T],
         fail: t.Sequence[type[Exception]],
-    ) -> Epoch[_T, _ReqCtxT | _NewCtxT, _MigT_contra | _HeadT]:
+    ) -> Node[_T, _ReqCtxT | _NewCtxT, _MigT_contra | _HeadT]:
         """Append a contextual epoch to the timeline, adding a level to the migration tree"""
-        return Epoch(typ, [(f, fail, self)])
+        return Node(typ, [(f, fail, self)])
 
     def _migrate(
         self,
@@ -255,12 +255,12 @@ class Epoch(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
 
     @te.overload
     def migrate(
-        self: Epoch[_HeadT, te.Never, _MigT_contra], obj: _HeadT | _MigT_contra
+        self: Node[_HeadT, te.Never, _MigT_contra], obj: _HeadT | _MigT_contra
     ) -> _HeadT: ...
 
     @te.overload
     def migrate(
-        self: Epoch[_HeadT, _ReqCtxT, _MigT_contra],
+        self: Node[_HeadT, _ReqCtxT, _MigT_contra],
         obj: _HeadT | _MigT_contra,
         completer: Completer[_ReqCtxT],
     ) -> _HeadT: ...
@@ -284,5 +284,5 @@ class Epoch(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
         return self
 
 
-def start(typ: type[_T]) -> Epoch[_T, te.Never, te.Never]:
-    return Epoch(head=typ, inbounds=[])
+def start(typ: type[_T]) -> Node[_T, te.Never, te.Never]:
+    return Node(head=typ, inbounds=[])
