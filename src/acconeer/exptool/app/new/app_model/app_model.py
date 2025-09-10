@@ -693,9 +693,9 @@ class AppModel(QObject):
 
     def set_port_updates_pause(self, pause: bool) -> None:
         if pause:
-            self._port_updater.pause()
+            self._port_updater.stop()
         else:
-            self._port_updater.resume()
+            self._port_updater.start()
 
     @property
     def connection_interface(self) -> ConnectionInterface:

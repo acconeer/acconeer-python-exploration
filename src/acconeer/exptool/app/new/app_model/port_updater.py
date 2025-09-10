@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -49,23 +49,19 @@ class PortUpdater(QObject):
         self._thread.finished.connect(self.worker.stop)
         self.worker.sig_update.connect(self._on_update)
         self.worker.moveToThread(self._thread)
-        self.signalling = False
+        self.started = False
 
     def start(self) -> None:
-        self._thread.start()
-        self.signalling = True
+        if not self.started:
+            self.started = True
+            self._thread.start()
 
     def stop(self) -> None:
-        self._thread.quit()
-        self._thread.wait()
-        self.signalling = False
-
-    def pause(self) -> None:
-        self.signalling = False
-
-    def resume(self) -> None:
-        self.signalling = True
+        if self.started:
+            self.started = False
+            self._thread.quit()
+            self._thread.wait()
 
     def _on_update(self, serial: Any, usb: Any) -> None:
-        if self.signalling:
+        if self.started:
             self.sig_update.emit(serial, usb)
