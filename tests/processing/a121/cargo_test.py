@@ -8,18 +8,41 @@ import attrs
 import typing_extensions as te
 
 from acconeer.exptool import a121
+from acconeer.exptool._core.class_creation.attrs import attrs_optional_ndarray_isclose
 from acconeer.exptool.a121._core_ext import _ReplayingClient
 from acconeer.exptool.a121.algo import cargo
+
+
+def optional_float(x: object) -> t.Optional[float]:
+    if x is None:
+        return None
+    else:
+        return float(x)
 
 
 @attrs.frozen
 class ResultSlice:
     presence_detected: t.Optional[bool] = attrs.field()
-    inter_presence_score: t.Optional[float] = attrs.field()
-    intra_presence_score: t.Optional[float] = attrs.field()
-    distance: t.Optional[float] = attrs.field()
-    level_m: t.Optional[float] = attrs.field()
-    level_percent: t.Optional[float] = attrs.field()
+    inter_presence_score: t.Optional[float] = attrs.field(
+        eq=attrs_optional_ndarray_isclose,
+        converter=optional_float,
+    )
+    intra_presence_score: t.Optional[float] = attrs.field(
+        eq=attrs_optional_ndarray_isclose,
+        converter=optional_float,
+    )
+    distance: t.Optional[float] = attrs.field(
+        eq=attrs_optional_ndarray_isclose,
+        converter=optional_float,
+    )
+    level_m: t.Optional[float] = attrs.field(
+        eq=attrs_optional_ndarray_isclose,
+        converter=optional_float,
+    )
+    level_percent: t.Optional[float] = attrs.field(
+        eq=attrs_optional_ndarray_isclose,
+        converter=optional_float,
+    )
 
     # Omitted:
     # mode: _Mode = attrs.field()
