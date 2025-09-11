@@ -386,7 +386,7 @@ class AppModel(QObject):
     def _handle_backend_message(self, message: Message) -> None:
         if isinstance(message, ConnectionStateMessage):
             log.debug(f"Got backend connection state message {message.state}")
-            self._connection_state = message.state
+            self.set_connection_state(message.state)
             self.connection_warning = message.warning
             self.broadcast()
         elif isinstance(message, PluginStateMessage):
@@ -696,6 +696,13 @@ class AppModel(QObject):
             self._port_updater.stop()
         else:
             self._port_updater.start()
+
+    def set_connection_state(self, new_connection_state: ConnectionState) -> None:
+        if new_connection_state == ConnectionState.DISCONNECTED:
+            self.set_port_updates_pause(False)
+        else:
+            self.set_port_updates_pause(True)
+        self._connection_state = new_connection_state
 
     @property
     def connection_interface(self) -> ConnectionInterface:
