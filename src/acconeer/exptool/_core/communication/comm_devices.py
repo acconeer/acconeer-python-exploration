@@ -6,15 +6,16 @@ from __future__ import annotations
 import abc
 import json
 import re
-from typing import Any, List, Optional
+from typing import Any, Iterator, List, Optional
 
 import attrs
 import serial.tools
 import serial.tools.list_ports
 import typing_extensions as te
+import usb.core
 from packaging import version
 
-from acconeer.exptool._pyusb import PyUsbDeviceFinder
+from .links.usb_link import get_libusb_backend
 
 
 class CommDeviceError(Exception):
@@ -168,15 +169,52 @@ def get_serial_devices() -> List[SerialDevice]:
     return serial_devices
 
 
+class _UsbDeviceFinder:
+    device_cache: dict[str, bool] = {}
+
+    def __init__(self) -> None:
+        self._backend = get_libusb_backend()
+
+    def iterate_devices(self) -> Iterator[tuple[int, int, Optional[str]]]:
+        devices = usb.core.find(find_all=True, backend=self._backend)
+        for dev in devices:
+            try:
+                serial_number = dev.serial_number
+            except (ValueError, NotImplementedError):
+                serial_number = None
+            vid = dev.idVendor
+            pid = dev.idProduct
+            usb.util.dispose_resources(dev)
+            yield (vid, pid, serial_number)
+
+    def is_accessible(self, vid: int, pid: int) -> bool:
+        vid_pid_str = f"{vid:04x}:{pid:04x}"
+        if vid_pid_str in self.device_cache:
+            return self.device_cache[vid_pid_str]
+        else:
+            try:
+                device = usb.core.find(idVendor=vid, idProduct=pid, backend=self._backend)
+                # This will raise an USBError exception if inaccessible
+                device.is_kernel_driver_active(0)
+                self.device_cache[vid_pid_str] = True
+            except usb.core.USBError:
+                self.device_cache[vid_pid_str] = False
+            except NotImplementedError:
+                # The function is_kernel_driver_active is not implemented in windows libusb
+                self.device_cache[vid_pid_str] = True
+
+        return self.device_cache[vid_pid_str]
+
+
 def get_usb_devices(only_accessible: bool = False) -> List[USBDevice]:
     usb_devices: List[USBDevice] = []
 
-    pyusb_device_finder = PyUsbDeviceFinder()
-    for device_vid, device_pid, serial_number in pyusb_device_finder.iterate_devices():
+    usb_device_finder = _UsbDeviceFinder()
+    for device_vid, device_pid, serial_number in usb_device_finder.iterate_devices():
         for vid, pid, model_name, unflashed in _USB_IDS:
             if device_vid == vid and device_pid == pid:
                 device_name = model_name
-                accessible = pyusb_device_finder.is_accessible(vid, pid)
+                accessible = usb_device_finder.is_accessible(vid, pid)
                 if only_accessible and not accessible:
                     continue
 

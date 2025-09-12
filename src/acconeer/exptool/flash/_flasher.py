@@ -11,7 +11,7 @@ import time
 import typing as t
 
 from acconeer.exptool._core.communication import comm_devices
-from acconeer.exptool._pyusb import UsbPortError
+from acconeer.exptool._core.communication.links.usb_link import UsbPortError
 from acconeer.exptool.flash._bin_fetcher import (
     BIN_FETCH_PROMPT,
     clear_cookies,

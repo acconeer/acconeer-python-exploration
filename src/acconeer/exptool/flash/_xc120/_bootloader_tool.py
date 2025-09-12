@@ -11,7 +11,7 @@ from serial.serialutil import SerialException
 from serial.tools import list_ports
 
 from acconeer.exptool._core.communication.comm_devices import get_usb_devices
-from acconeer.exptool._pyusb.pyusbcomm import PyUsbCdc
+from acconeer.exptool._core.communication.links.usb_link import PyUsbCdc
 from acconeer.exptool.flash._device_flasher_base import DeviceFlasherBase
 from acconeer.exptool.flash._flash_exception import FlashException
 from acconeer.exptool.flash._xc120._bootloader_comm import BLCommunication
