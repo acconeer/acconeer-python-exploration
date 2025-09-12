@@ -303,7 +303,7 @@ class AppModel(QObject):
 
     def start(self) -> None:
         self._listener.start()
-        self._port_updater.start()
+        self.port_updater_enable(True)
 
     def stop(self) -> None:
         WAIT_FOR_UNLOAD_TIMEOUT = 1.0
@@ -337,7 +337,7 @@ class AppModel(QObject):
             log.debug("Backend listening thread did not stop when requested, terminating...")
             self._listener.terminate()
 
-        self._port_updater.stop()
+        self.port_updater_enable(False)
 
     def broadcast(self) -> None:
         self.sig_notify.emit(self)
@@ -691,17 +691,17 @@ class AppModel(QObject):
     ) -> None:
         self.send_warning_message("Failed to autoconnect")
 
-    def set_port_updates_pause(self, pause: bool) -> None:
-        if pause:
-            self._port_updater.stop()
-        else:
+    def port_updater_enable(self, enable: bool) -> None:
+        if enable:
             self._port_updater.start()
+        else:
+            self._port_updater.stop()
 
     def set_connection_state(self, new_connection_state: ConnectionState) -> None:
         if new_connection_state == ConnectionState.DISCONNECTED:
-            self.set_port_updates_pause(False)
+            self.port_updater_enable(True)
         else:
-            self.set_port_updates_pause(True)
+            self.port_updater_enable(False)
         self._connection_state = new_connection_state
 
     @property
