@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -28,8 +28,8 @@ def find_by_first_element_in_value(enum: type[_EnumT], value: object) -> t.Optio
 
 def find_by_name(enum: type[_EnumT], name: object) -> t.Optional[_EnumT]:
     """Helper for writing readable Enum._missing_ methods"""
-    for member in enum:
-        if member.name == name:
+    for member_name, member in enum.__members__.items():
+        if member_name == name:
             return member
     return None
 
