@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -38,8 +38,8 @@ class McuMgrFlashException(Exception):
 
 
 class McuMgrUartFlasher(DeviceFlasherBase):
-    @staticmethod
     def flash(
+        self,
         serial_device: SerialDevice,
         device_name: str,
         image_path: str,

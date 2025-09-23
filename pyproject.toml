@@ -309,7 +309,7 @@ exclude = [
     ".*/a111/.*",
     ".*/old/.*",
     "src/acconeer/exptool/_structs/.*",
-    "src/acconeer/exptool/flash/_xc120/.*",
+    "src/acconeer/exptool/flash/_bootloader_tool/.*",
     "src/acconeer/exptool/flash/_stm32uart/.*",
     "src/acconeer/exptool/flash/_device_flasher_base.py",
     "src/acconeer/exptool/_tests/.*",

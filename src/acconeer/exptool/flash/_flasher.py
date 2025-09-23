@@ -22,13 +22,13 @@ from acconeer.exptool.flash._bin_fetcher import (
     login,
     save_cookies,
 )
+from acconeer.exptool.flash._bootloader_tool import BootloaderTool
 from acconeer.exptool.flash._flash_exception import FlashException
 from acconeer.exptool.flash._products import (
     EVK_TO_PRODUCT_MAP,
     PRODUCT_NAME_TO_FLASH_MAP,
     PRODUCT_PID_TO_FLASH_MAP,
 )
-from acconeer.exptool.flash._xc120 import BootloaderTool
 
 from ._dev_license import DevLicense
 from ._dev_license_tui import DevLicenseTuiDialog
@@ -83,20 +83,21 @@ def flash_image(
             msg = "Unknown device type"
             raise FlashException(msg)
         serial_device_name = serial_device_name.upper()
+
         if (
             isinstance(flash_device, comm_devices.USBDevice)
             and flash_device.pid in PRODUCT_PID_TO_FLASH_MAP
         ):
-            PRODUCT_PID_TO_FLASH_MAP[flash_device.pid].flash(
-                flash_device, serial_device_name, image_path, progress_callback
+            bootloader = PRODUCT_PID_TO_FLASH_MAP[flash_device.pid]()
+            bootloader.flash(
+                flash_device, serial_device_name, image_path, progress_callback=progress_callback
             )
         elif (
             isinstance(flash_device, comm_devices.SerialDevice)
             and serial_device_name in PRODUCT_NAME_TO_FLASH_MAP
         ):
-            PRODUCT_NAME_TO_FLASH_MAP[serial_device_name].flash(
-                flash_device, serial_device_name, image_path, progress_callback
-            )
+            bootloader = PRODUCT_NAME_TO_FLASH_MAP[serial_device_name]()
+            bootloader.flash(flash_device, serial_device_name, image_path, progress_callback)
         else:
             msg = f"No flash support device {str(flash_device)}"
             raise FlashException(msg)
@@ -106,7 +107,7 @@ def flash_image(
 
 
 def _is_usb_device(name: str) -> bool:
-    return PRODUCT_NAME_TO_FLASH_MAP[name] == BootloaderTool
+    return issubclass(PRODUCT_NAME_TO_FLASH_MAP[name], BootloaderTool)
 
 
 def _get_flash_device_from_args(

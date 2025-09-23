@@ -1,16 +1,13 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
 
-from abc import abstractmethod
 from typing import Optional
 
 
 class DeviceFlasherBase:
-    @staticmethod
-    @abstractmethod
-    def flash(device_port, device_name, image_path, progress_callback=None):
+    def flash(self, device_port, device_name, image_path, progress_callback=None) -> None:
         pass
 
     @staticmethod

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -45,8 +45,7 @@ class Stm32FlashException(Exception):
 
 
 class Stm32UartFlasher(DeviceFlasherBase):
-    @staticmethod
-    def flash(serial_device, device_name, image_path, progress_callback=None):
+    def flash(self, serial_device, device_name, image_path, progress_callback=None):
         if device_name not in DEVICE_NAME_TO_ID:
             msg = f"Unknown device '{device_name}'"
             raise Stm32DeviceException(msg)
