@@ -73,7 +73,7 @@ Automatically Download and Flash Using the CLI
 
 Run the following command from the CLI::
 
-   python -m acconeer.exptool.flash flash -d XC120 -f
+   python -m acconeer.exptool.flash flash XC120 -f
 
 Manually Download and Flash
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -101,4 +101,4 @@ and flash XC120 with the downloaded binary file:
 
 Flash:
 
-   python -m acconeer.exptool.flash flash -d XC120 -i acc_exploration_server_a121.bin
+   python -m acconeer.exptool.flash flash XC120 -i acc_exploration_server_a121.bin

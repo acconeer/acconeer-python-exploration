@@ -28,6 +28,7 @@ from acconeer.exptool.flash._products import (
     PRODUCT_NAME_TO_FLASH_MAP,
     PRODUCT_PID_TO_FLASH_MAP,
 )
+from acconeer.exptool.flash._xc120 import BootloaderTool
 
 from ._dev_license import DevLicense
 from ._dev_license_tui import DevLicenseTuiDialog
@@ -104,73 +105,62 @@ def flash_image(
         raise FlashException(msg)
 
 
-def _find_flash_device(
-    device_name: t.Optional[str] = None,
-    port: t.Optional[str] = None,
-    serial_number: t.Optional[str] = None,
-    use_usb: bool = True,
-    use_serial: bool = True,
+def _is_usb_device(name: str) -> bool:
+    return PRODUCT_NAME_TO_FLASH_MAP[name] == BootloaderTool
+
+
+def _get_flash_device_from_args(
+    args: argparse.Namespace,
 ) -> t.Union[comm_devices.SerialDevice, comm_devices.USBDevice]:
-    all_devices: list[t.Union[comm_devices.SerialDevice, comm_devices.USBDevice]] = []
-    found_devices = []
-    flash_device = None
+    device_name: str = args.device
+    port = args.port if hasattr(args, "port") else None
+    serial_number = args.serial_number if hasattr(args, "serial_number") else None
+    flash_device: t.Optional[t.Union[comm_devices.SerialDevice, comm_devices.USBDevice]] = None
 
     if device_name == "XM125":
         device_name = "XE125"
     elif device_name == "XM126":
         device_name = "XB122"
 
-    if use_serial:
-        all_devices.extend(comm_devices.get_serial_devices())
+    # Handle serial port devices
+    if not _is_usb_device(device_name):
+        flash_device = None
+        for serial_device in comm_devices.get_serial_devices():
+            if isinstance(serial_device, comm_devices.SerialDevice) and port == serial_device.port:
+                flash_device = serial_device
+                break
+        if flash_device is None:
+            msg = f"Port '{port}' could not be found\n"
+            raise FlashException(msg)
+        return flash_device
 
-    if use_usb:
-        all_devices.extend(comm_devices.get_usb_devices())
-
-    if port is not None:
-        for device in all_devices:
-            if isinstance(device, comm_devices.SerialDevice) and port == device.port:
-                return device
-
-    for device in all_devices:
-        if device_name is not None and device.name != device_name:
+    # Handle USB devices
+    found_usb_devices = []
+    for usb_device in comm_devices.get_usb_devices():
+        if device_name is not None and usb_device.name != device_name:
             # Device name did not match
             continue
-        elif serial_number is not None and device.serial != serial_number:
+        elif serial_number is not None and usb_device.serial != serial_number:
             # Serial number did not match
             continue
         else:
-            found_devices.append(device)
+            found_usb_devices.append(usb_device)
 
-    if len(found_devices) == 0:
-        print("No devices connected")
-    elif len(found_devices) > 1:
-        print("Found multiple Acconeer products:")
-        print("".join([f" - {dev}\n" for dev in found_devices]))
-    else:
-        flash_device = found_devices[0]
-        print(f"Flashing {flash_device}")
-
-    if flash_device is None:
-        msg = (
-            "Device couldn't be autodetected\n"
-            "Specify the device by using the"
-            " --port, --device, --interface or --serial-number flags."
-        )
+    if len(found_usb_devices) == 0:
+        if serial_number is not None:
+            msg = f"No {device_name} device with serial={serial_number} could be found\n"
+        else:
+            msg = f"No {device_name} device could be found\n"
+        raise FlashException(msg)
+    elif len(found_usb_devices) > 1:
+        print(f"Found multiple {device_name} devices:")
+        print("".join([f" - {dev}\n" for dev in found_usb_devices]))
+        msg = "Use --serial-number to select device to be flashed"
         raise FlashException(msg)
 
-    return flash_device
+    flash_device = found_usb_devices[0]
+    print(f"Flashing {flash_device}")
 
-
-def _get_flash_device_from_args(args: argparse.Namespace) -> comm_devices.CommDevice:
-    use_usb = args.interface is None or args.interface == "usb"
-    use_serial = args.interface is None or args.interface == "serial"
-    flash_device = _find_flash_device(
-        port=args.port,
-        device_name=args.device,
-        serial_number=args.serial_number,
-        use_usb=use_usb,
-        use_serial=use_serial,
-    )
     return flash_device
 
 
@@ -318,45 +308,8 @@ def _flash(args: argparse.Namespace) -> None:
     )
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Image Flasher")
-    parser.prog = "python -m acconeer.exptool.flash"
-    subparsers = parser.add_subparsers(help="sub-command help", dest="operation", required=True)
-    subparsers.add_parser("list", help="List connected devices")
-    subparsers.add_parser("clear", help="Clears saved login session")
-    subparser = subparsers.add_parser("flash", help="Flash device")
-
-    subparser.add_argument(
-        "--port",
-        dest="port",
-        help="Serial port. Only used if device type can't be autodetected.",
-        type=str,
-    )
-    subparser.add_argument(
-        "--device",
-        "-d",
-        dest="device",
-        help="Device type. Only used if device type can't be autodetected.",
-        type=str.upper,
-        choices=["XC120", "XE125", "XM125", "XM126"],
-    )
-    subparser.add_argument(
-        "--serial-number",
-        "-sn",
-        dest="serial_number",
-        help="Device serial number. Only used if device type can't be autodetected.",
-        type=str,
-    )
-    subparser.add_argument(
-        "--interface",
-        "-if",
-        dest="interface",
-        help="Interface. Only used if device type can't be autodetected.",
-        type=str.lower,
-        choices=["usb", "serial"],
-    )
-
-    image_group = subparser.add_mutually_exclusive_group(required=True)
+def _add_common_options(parser: argparse.ArgumentParser) -> None:
+    image_group = parser.add_mutually_exclusive_group(required=True)
     image_group.add_argument("--image", "-i", dest="image", help="Image file to flash")
     image_group.add_argument(
         "--fetch",
@@ -368,6 +321,51 @@ def main() -> None:
             "Requires an Acconeer Developer Account."
         ),
     )
+
+
+def _add_usb_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--serial-number",
+        "-s",
+        dest="serial_number",
+        help="Device serial number. Only needed if multiple devices are connected.",
+        type=str,
+    )
+    _add_common_options(parser)
+
+
+def _add_serial_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--port",
+        "-p",
+        dest="port",
+        help="Serial port",
+        type=str,
+        required=True,
+    )
+    _add_common_options(parser)
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Image Flasher")
+    parser.prog = "python -m acconeer.exptool.flash"
+    action_subparsers = parser.add_subparsers(
+        help="sub-command help", dest="operation", required=True
+    )
+    action_subparsers.add_parser("list", help="List connected devices")
+    action_subparsers.add_parser("clear", help="Clears saved login session")
+    flash_subparser = action_subparsers.add_parser("flash", help="Flash device")
+    device_subparsers = flash_subparser.add_subparsers(
+        help="sub-command help", dest="device", required=True
+    )
+
+    for key in PRODUCT_NAME_TO_FLASH_MAP:
+        if _is_usb_device(key):
+            usb_subparser = device_subparsers.add_parser(key, help=f"Flash {key} device")
+            _add_usb_options(usb_subparser)
+        else:
+            serial_subparser = device_subparsers.add_parser(key, help=f"Flash {key} device")
+            _add_serial_options(serial_subparser)
 
     args = parser.parse_args()
 

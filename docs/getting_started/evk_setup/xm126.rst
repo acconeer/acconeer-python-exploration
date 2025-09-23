@@ -74,7 +74,7 @@ Automatically Download and Flash Using the CLI
 
 Run the following command from the CLI::
 
-   python -m acconeer.exptool.flash flash -d XM126 -f
+   python -m acconeer.exptool.flash flash XM126 -p <port> -f
 
 Put the XM126 in DFU mode by following the instructions in the prompt. Use the images in :ref:`xm126-hw-overview` for reference.
 
@@ -118,6 +118,6 @@ Use the images in :ref:`xm126-hw-overview` for reference.
 
 Flash:
 
-   python -m acconeer.exptool.flash flash -d XM126 -i app_update.bin
+   python -m acconeer.exptool.flash flash XM126 -p <port> -i app_update.bin
 
 After the XM126 has been flashed, it needs to be reset. This is done by pressing and releasing the RESET-button.
