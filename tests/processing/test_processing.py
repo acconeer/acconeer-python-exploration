@@ -321,6 +321,11 @@ def input_path(resource_name: str) -> Path:
             t.List[cargo_test.ResultSlice],
             "cargo_40_feet.h5",
         ),
+        (
+            cargo_test.cargo_app,
+            t.List[cargo_test.ResultSlice],
+            "cargo_util_and_pres_steering_distance.h5",
+        ),
     ],
 )
 def test_input_output(
