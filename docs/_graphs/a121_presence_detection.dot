@@ -16,8 +16,8 @@ digraph {
         style=rounded
 
         abs_sweep_mean -> {fast_lpf, slow_lpf} -> fast_slow_dev -> abs_dev -> inter_lpf -> inter_norm
-        inter_norm -> {inter_out_argmax, phase_boost}
-        phase_boost -> inter_out_max -> inter_lp_out -> timeout -> timeout_scaling -> inter_threshold
+        inter_norm -> {inter_out_argmax, inter_out_max}
+        inter_out_max -> inter_lp_out -> timeout -> timeout_scaling -> inter_threshold
 
         {rank = same; inter_threshold; inter_out_argmax}
     }

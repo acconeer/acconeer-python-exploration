@@ -205,46 +205,6 @@ to get a more stable metric:
 This is the basis of the inter-frame presence detection.
 As with the intra-frame deviation, it's favorable to normalize this with the noise floor.
 
-Inter-frame phase boost
-^^^^^^^^^^^^^^^^^^^^^^^
-
-To increase detection of very slow motions, we utilize the phase information in the Sparse IQ data.
-The first step is to calculate the phase shift over time.
-Let :math:`u(f, d)` be the *mean sweep*:
-
-.. math::
-   u(f, d) = \frac{1}{N_s} \sum_s x(f, s, d)
-
-The mean sweep is low pass filtered and the smoothing factor, :math:`\alpha_\text{for_phase}`, is set from a fixed and quite high time constant, :math:`\tau_{for_phase}`, of 5 s:
-
-.. math::
-   \bar{u}_\text{for_phase}(f, d) = \alpha_\text{for_phase} \cdot \bar{u}_\text{for_phase}(f-1, d) + (1 - \alpha_\text{for_phase}) \cdot u(f, d)
-
-When a new frame is sampled, we take the mean sweep and calculate the phase shift between this mean sweep and the previous low pass filtered mean sweep.
-We define the phase shift to never exceed :math:`\pi` radians by adding :math:`2\pi k` for some integer :math:`k`:
-
-.. math::
-   \phi(f, d) = |angle(u(f, d)) - angle(\bar{u}_\text{for_phase}(f, d)) + 2\pi k|
-
-In open air where only noise is measured, the phase will jump around. To amplify the phase shift boost for human breathing, while at the same time decreasing it for open air, the phase shift is weighted with the amplitude.
-For a more stable weighting, the mean sweep is low pass filtered before the amplitude is calculated:
-
-.. math::
-   \bar{u}_\text{for_amp}(f, d) = \alpha_\text{inter_dev} \cdot \bar{u}_\text{for_amp}(f-1, d) + (1 - \alpha_\text{inter_dev}) \cdot u(f, d)
-
-.. math::
-   A(f, d) = |\bar{u}_\text{for_amp}(f, d)|
-
-The amplitude is noise normalized(see next section) and truncated to reduce unwanted detections from very strong static objects:
-
-.. math::
-   A(f, d) = \max(A(f, d), 15)
-
-Before the final output is generated, the depth-wise inter-frame presence score is multiplied with the phase and amplitude weight:
-
-.. math::
-   \bar{s}_\text{inter_dev}(f, d) = \bar{s}_\text{inter_dev}(f, d) \cdot \phi(f, d) \cdot A(f, d)
-
 Noise estimation
 ^^^^^^^^^^^^^^^^
 
@@ -292,7 +252,7 @@ Finally, apply an exponential smoothing filter with a smoothing factor :math:`\a
 
 This smoothing factor is set from a fixed time constant of 10 s.
 
-Both the intra-frame deviation, :math:`\bar{s}_\text{intra_dev}(f, d)`, and the inter-frame deviation, :math:`\bar{s}_\text{inter_dev}(f, d)`, as well as the amplitude in the inter-frame phase boost is normalized by the noise estimate, :math:`\bar{n}(f, d)`, as:
+Both the intra-frame deviation, :math:`\bar{s}_\text{intra_dev}(f, d)`, and the inter-frame deviation, :math:`\bar{s}_\text{inter_dev}(f, d)` are normalized by the noise estimate, :math:`\bar{n}(f, d)`, as:
 
 .. math::
    \bar{s}(f, d) = \frac{
@@ -344,15 +304,6 @@ And the inter-frame presence score is scaled as:
 
 .. math::
    \bar{v}_\text{inter}(f) = \frac{\bar{v}_\text{inter}(f)}{C_\text{inter}}
-
-To reduce the effect of the inter-frame phase boost when the score is scaled, the time constant, :math:`\tau_\text{for_phase}`, controlling the smoothing factor :math:`\alpha_\text{for_phase}`, is scaled in a similar way.
-With scale factor :math:`C_\tau`, the time constant, :math:`\tau_\text{scaled}`, is calculated as:
-
-.. math::
-   C_\tau = \exp\left(\frac{\max(n - (t \cdot f_f), 0) \cdot \tau_\text{for_phase}}{t}\right)
-
-.. math::
-   \tau_\text{scaled} = \frac{\tau_\text{for_phase}}{C_\tau}
 
 Graphical overview
 ^^^^^^^^^^^^^^^^^^
