@@ -182,12 +182,6 @@ For test cases 1-4, the configuration in :numref:`table_smart_presence_configura
      - True
      - True
      - True
-   * - Enable phase boost
-     - False
-     - False
-     - False
-     - False
-     - False / True
    * - Inter detection threshold
      - 1.0
      - 1.0
