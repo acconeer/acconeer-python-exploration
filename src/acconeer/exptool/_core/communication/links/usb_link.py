@@ -3,13 +3,10 @@
 from __future__ import annotations
 
 import contextlib
-import pathlib
-import platform
-import sys
 import time
 from typing import Any, Optional
 
-import libusb
+import libusb_package
 import usb.backend.libusb1
 import usb.core
 from usb.util import CTRL_RECIPIENT_INTERFACE, CTRL_TYPE_CLASS
@@ -19,18 +16,7 @@ from .buffered_link import BufferedLink, LinkError
 
 def get_libusb_backend() -> Any:
     """Helper function to setup libusb backend"""
-    backend = None
-    if platform.system().lower() in ["windows"]:
-        win_arch = "x64" if sys.maxsize > 2**32 else "x86"
-        libusb_dll_path = (
-            pathlib.Path(libusb.__file__).parent
-            / "_platform"
-            / "_windows"
-            / win_arch
-            / "libusb-1.0.dll"
-        )
-        backend = usb.backend.libusb1.get_backend(find_library=lambda x: str(libusb_dll_path))
-    return backend
+    return libusb_package.get_libusb1_backend()
 
 
 class UsbPortError(Exception):
