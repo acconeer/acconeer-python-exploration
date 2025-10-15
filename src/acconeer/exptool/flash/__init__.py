@@ -19,4 +19,5 @@ from ._flasher import (
     get_flash_download_name,
     get_flash_known_devices,
     get_post_dfu_description,
+    is_fw_downloadable,
 )

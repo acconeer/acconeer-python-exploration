@@ -26,6 +26,7 @@ from acconeer.exptool.flash._bootloader_tool import BootloaderTool
 from acconeer.exptool.flash._flash_exception import FlashException
 from acconeer.exptool.flash._products import (
     EVK_TO_PRODUCT_MAP,
+    EVKS_THAT_HAVE_FW_ON_DEVSITE,
     PRODUCT_NAME_TO_FLASH_MAP,
     PRODUCT_PID_TO_FLASH_MAP,
 )
@@ -213,6 +214,13 @@ def get_post_dfu_description(
     return None
 
 
+def is_fw_downloadable(device_name: str) -> bool:
+    device_name_upper = device_name.upper()
+    if device_name_upper in EVK_TO_PRODUCT_MAP:
+        return EVK_TO_PRODUCT_MAP[device_name_upper] in EVKS_THAT_HAVE_FW_ON_DEVSITE
+    return False
+
+
 def _fetch_and_flash(args: argparse.Namespace) -> None:
     flash_device = _get_flash_device_from_args(args)
 
@@ -389,7 +397,10 @@ def main() -> None:
     elif args.operation == "flash":
         try:
             if args.fetch:
-                _fetch_and_flash(args)
+                if is_fw_downloadable(args.device):
+                    _fetch_and_flash(args)
+                else:
+                    print(f"The image file for {args.device} is not available for download")
             elif args.image:
                 _flash(args)
         except FlashException as e:

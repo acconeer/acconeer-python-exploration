@@ -50,6 +50,7 @@ from acconeer.exptool.flash import (
     get_flash_download_name,
     get_flash_known_devices,
     get_post_dfu_description,
+    is_fw_downloadable,
     login,
     save_cookies,
 )
@@ -226,20 +227,28 @@ class SelectLocalFileOrDownloadFromDevsitePage(QWizardPage):
 
         self.setTitle("Application binary source")
 
-        download_btn = QRadioButton("Automatically download from developer.acconeer.com")
-        download_btn.setChecked(True)
-        self.registerField(WizardField.DOWNLOAD_SELECTED, download_btn, "checked", "toggled")
+        self._download_btn = QRadioButton("Automatically download from developer.acconeer.com")
+        self._download_btn.setChecked(True)
+        self.registerField(WizardField.DOWNLOAD_SELECTED, self._download_btn, "checked", "toggled")
 
-        local_file_btn = QRadioButton("Local file")
+        self._local_file_btn = QRadioButton("Local file")
 
         button_group = QButtonGroup(parent=self)
-        button_group.addButton(download_btn)
-        button_group.addButton(local_file_btn)
+        button_group.addButton(self._download_btn)
+        button_group.addButton(self._local_file_btn)
 
         layout = QVBoxLayout()
-        layout.addWidget(download_btn)
-        layout.addWidget(local_file_btn)
+        layout.addWidget(self._download_btn)
+        layout.addWidget(self._local_file_btn)
         self.setLayout(layout)
+
+    def initializePage(self) -> None:
+        if is_fw_downloadable(self.field(WizardField.MODULE)):
+            self._download_btn.setEnabled(True)
+            self._download_btn.setChecked(True)
+        else:
+            self._download_btn.setEnabled(False)
+            self._local_file_btn.setChecked(True)
 
 
 class BrowseLocalFilePage(QWizardPage):
