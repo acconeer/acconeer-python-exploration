@@ -259,7 +259,9 @@ class BrowseLocalFilePage(QWizardPage):
         self.setLayout(layout)
 
     def _select_local_file(self) -> None:
-        filename, _ = QFileDialog.getOpenFileName(caption="caption", filter="Bin files (*.bin)")
+        filename, _ = QFileDialog.getOpenFileName(
+            caption="caption", filter="Bin files (*.bin *.image)"
+        )
         self.path_label.setText(filename)
         self.setField(WizardField.BIN_PATH, filename)
 
