@@ -144,24 +144,6 @@ class BootloaderTool(DeviceFlasherBase):
             return None
 
     @staticmethod
-    def _try_open_port(device_port):
-        retries = 5
-        port_ok = False
-        while retries > 0:
-            time.sleep(0.2)
-            try:
-                ser = serial.Serial(device_port, exclusive=True)
-                ser.close()
-                port_ok = True
-                break
-            except SerialException:
-                retries -= 1
-
-        if not port_ok:
-            msg = f"Device port {device_port} cannot be opened"
-            raise FlashException(msg)
-
-    @staticmethod
     def _is_usb_dfu_device(device_port):
         usb_device = BootloaderTool._find_usb_device(device_port)
         return usb_device is not None and usb_device.unflashed
@@ -246,11 +228,3 @@ class BootloaderTool(DeviceFlasherBase):
         with ImageFlasher(serial_dev) as image_flasher:
             image_flasher.set_progress_callback(progress_callback)
             image_flasher.flash_image_file(image_path)
-
-    def erase(self, device_port):
-        """Erase application image from device"""
-        self.enter_dfu(device_port)
-        dfu_port = BootloaderTool._find_port(self.device_vid, self.bootloader_pid, device_port)
-        self._try_open_port(dfu_port)
-        with ImageFlasher(dfu_port) as image_flasher:
-            image_flasher.erase_image(1024)  # It is enough to erase the header
