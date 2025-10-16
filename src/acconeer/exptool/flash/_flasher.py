@@ -260,51 +260,52 @@ def _fetch_and_flash(args: argparse.Namespace) -> None:
     ):
         save_cookies(cookies)
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        print("Preparing license agreement... ", end="", flush=True)
-        license = DevLicense()
-        license.load()
-        print("[OK]")
+    try:
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            print("Preparing license agreement... ", end="", flush=True)
+            license = DevLicense()
+            license.load()
+            print("[OK]")
 
-        time.sleep(1)
-        DevLicenseTuiDialog.run(log="textual.log", license=license)
-        license_accepted = DevLicenseTuiDialog.get_accept()
+            time.sleep(1)
+            DevLicenseTuiDialog.run(log="textual.log", license=license)
+            license_accepted = DevLicenseTuiDialog.get_accept()
 
-        if license_accepted:
-            device_name = get_flash_download_name(flash_device, args.device)
-            print(f"Downloading {device_name} image file... ", end="", flush=True)
-            bin_path, version = download(
-                session=session,
-                cookies=cookies,
-                path=tmp_dir,
-                device=device_name,
-            )
-            print(f"[OK] (version: {version})")
-
-            boot_description = get_boot_description(flash_device, device_name)
-            if boot_description:
-                boot_description = re.sub("<li>", " - ", boot_description)
-                boot_description = re.sub("</[p|li]+?>", "\n", boot_description)
-                boot_description = re.sub("<[^<]+?>", "", boot_description)
-                print("\n\n" + boot_description)
-            if _query_yes_no("Proceed to flashing you device?"):
-                print("Flashing...")
-                flash_image(
-                    bin_path,
-                    flash_device,
-                    device_name=device_name,
-                    progress_callback=_flasher_progress_callback,
+            if license_accepted:
+                device_name = get_flash_download_name(flash_device, args.device)
+                print(f"Downloading {device_name} image file... ", end="", flush=True)
+                bin_path, version = download(
+                    session=session,
+                    cookies=cookies,
+                    path=tmp_dir,
+                    device=device_name,
                 )
-            post_dfu_description = get_post_dfu_description(flash_device, device_name)
-            if post_dfu_description:
-                post_dfu_description = re.sub("<li>", " - ", post_dfu_description)
-                post_dfu_description = re.sub("</[p|li]+?>", "\n", post_dfu_description)
-                post_dfu_description = re.sub("<[^<]+?>", "", post_dfu_description)
-                print("\n\n" + post_dfu_description)
-        else:
-            print("You need to accept the license agreement to download the image file.")
+                print(f"[OK] (version: {version})")
 
-    session.close()
+                boot_description = get_boot_description(flash_device, device_name)
+                if boot_description:
+                    boot_description = re.sub("<li>", " - ", boot_description)
+                    boot_description = re.sub("</[p|li]+?>", "\n", boot_description)
+                    boot_description = re.sub("<[^<]+?>", "", boot_description)
+                    print("\n\n" + boot_description)
+                if _query_yes_no("Proceed to flashing you device?"):
+                    print("Flashing...")
+                    flash_image(
+                        bin_path,
+                        flash_device,
+                        device_name=device_name,
+                        progress_callback=_flasher_progress_callback,
+                    )
+                post_dfu_description = get_post_dfu_description(flash_device, device_name)
+                if post_dfu_description:
+                    post_dfu_description = re.sub("<li>", " - ", post_dfu_description)
+                    post_dfu_description = re.sub("</[p|li]+?>", "\n", post_dfu_description)
+                    post_dfu_description = re.sub("<[^<]+?>", "", post_dfu_description)
+                    print("\n\n" + post_dfu_description)
+            else:
+                print("You need to accept the license agreement to download the image file.")
+    finally:
+        session.close()
 
 
 def _flash(args: argparse.Namespace) -> None:
