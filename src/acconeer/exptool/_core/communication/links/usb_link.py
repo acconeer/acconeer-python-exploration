@@ -66,18 +66,16 @@ class PyUsbCdc:
 
         self._dev = usb.core.find(custom_match=match, backend=self._backend)
 
-        # Detach kernel driver
         if self._dev is None:
             msg = "Port is not open"
             raise UsbPortError(msg)
         try:
-            if self._dev.is_kernel_driver_active(0):
-                self._dev.detach_kernel_driver(0)
+            self._dev.set_configuration()
         except usb.core.USBError:
             msg = "Could not access USB device, are USB permissions setup correctly?"
             raise UsbPortError(msg)
         except NotImplementedError:
-            # The function is_kernel_driver_active is not implemented in windows libusb
+            # The function set_configuration is not implemented in windows libusb
             pass
 
         # The Acconeer USB device descriptor only has one config
@@ -169,11 +167,7 @@ class PyUsbCdc:
         if self._dev is not None:
             try:
                 usb.util.dispose_resources(self._dev)
-                self._dev.attach_kernel_driver(0)
             except usb.core.USBError:
-                pass
-            except NotImplementedError:
-                # The function attach_kernel_driver is not implemented in windows libusb
                 pass
 
             self._dev = None

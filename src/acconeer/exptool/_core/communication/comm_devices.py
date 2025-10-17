@@ -189,18 +189,16 @@ class _UsbDeviceFinder:
 
     def is_accessible(self, vid: int, pid: int) -> bool:
         vid_pid_str = f"{vid:04x}:{pid:04x}"
-        if vid_pid_str in self.device_cache:
-            return self.device_cache[vid_pid_str]
-        else:
+        if vid_pid_str not in self.device_cache:
             try:
                 device = usb.core.find(idVendor=vid, idProduct=pid, backend=self._backend)
                 # This will raise an USBError exception if inaccessible
-                device.is_kernel_driver_active(0)
+                device.set_configuration()
                 self.device_cache[vid_pid_str] = True
             except usb.core.USBError:
                 self.device_cache[vid_pid_str] = False
             except NotImplementedError:
-                # The function is_kernel_driver_active is not implemented in windows libusb
+                # The function set_configuration is not implemented in windows libusb
                 self.device_cache[vid_pid_str] = True
 
         return self.device_cache[vid_pid_str]

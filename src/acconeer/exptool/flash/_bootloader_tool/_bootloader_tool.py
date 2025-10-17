@@ -153,8 +153,6 @@ class BootloaderTool(DeviceFlasherBase):
 
         cdc_port = BootloaderTool._find_port(self.device_vid, self.bootloader_pid, device_port)
 
-        BootloaderTool._try_open_port(cdc_port)
-
         if cdc_port is not None or BootloaderTool._is_usb_dfu_device(device_port):
             log.debug("Device already in DFU mode")
         else:
