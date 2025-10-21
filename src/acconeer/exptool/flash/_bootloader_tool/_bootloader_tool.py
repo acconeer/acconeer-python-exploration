@@ -15,7 +15,7 @@ from acconeer.exptool._core.communication.links.usb_link import PyUsbCdc
 from acconeer.exptool.flash._device_flasher_base import DeviceFlasherBase
 from acconeer.exptool.flash._flash_exception import FlashException
 
-from ._bootloader_comm import BLCommunication
+from ._bootloader_comm import BLCommunication, CommandFailed
 
 
 log = logging.getLogger(__name__)
@@ -223,6 +223,15 @@ class BootloaderTool(DeviceFlasherBase):
             msg = "Flash failed, device not found"
             raise FlashException(msg)
 
-        with ImageFlasher(serial_dev) as image_flasher:
-            image_flasher.set_progress_callback(progress_callback)
-            image_flasher.flash_image_file(image_path)
+        try:
+            with ImageFlasher(serial_dev) as image_flasher:
+                image_flasher.set_progress_callback(progress_callback)
+                image_flasher.flash_image_file(image_path)
+        except CommandFailed as exc:
+            if "Data does not contain a valid image" in str(exc):
+                error_string = (
+                    f"ERROR: The selected file does not contain a valid image for {device_name}"
+                )
+            else:
+                error_string = f"ERROR: {str(exc)}"
+            raise FlashException(error_string)
