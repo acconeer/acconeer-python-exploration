@@ -255,6 +255,12 @@ class BrowseLocalFilePage(QWizardPage):
     def __init__(self) -> None:
         super().__init__()
 
+        # The state management gets weird if going back to here from the FlashPage.
+        # Making this a "commit page" makes it impossible to go back here
+        # (and the user needs to cancel the wizard instead)
+        self.setCommitPage(True)
+        self.setButtonText(QWizard.WizardButton.CommitButton, "Next")
+
         self.path_label = QLineEdit()
         self.path_label.setReadOnly(True)
         self.path_label.setPlaceholderText("Path to local file")
@@ -273,6 +279,10 @@ class BrowseLocalFilePage(QWizardPage):
         )
         self.path_label.setText(filename)
         self.setField(WizardField.BIN_PATH, filename)
+        self.completeChanged.emit()
+
+    def isComplete(self) -> bool:
+        return len(self.field(WizardField.BIN_PATH)) > 0
 
     def initializePage(self) -> None:
         self.setTitle(f"Browse for local binary to flash your {self.field('module')} with")
