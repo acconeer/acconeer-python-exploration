@@ -40,6 +40,7 @@ class PyUsbCdc:
         self.vid = vid
         self.pid = pid
         self._dev = None
+        self._iface = None
         self._cdc_data_out_ep = None
         self._cdc_data_in_ep = None
         self._rxremaining = b""
@@ -70,6 +71,7 @@ class PyUsbCdc:
             msg = "Port is not open"
             raise UsbPortError(msg)
         try:
+            self._dev.reset()
             self._dev.set_configuration()
         except usb.core.USBError:
             msg = "Could not access USB device, are USB permissions setup correctly?"
@@ -78,14 +80,18 @@ class PyUsbCdc:
             # The function set_configuration is not implemented in windows libusb
             pass
 
-        # The Acconeer USB device descriptor only has one config
-        config = self._dev[0]
+        config = self._dev.get_active_configuration()
 
         # Interface 1 is the CDC Data interface
-        iface1 = config.interfaces()[1]
+        self._iface = config.interfaces()[1]
+        try:
+            usb.util.claim_interface(self._dev, self._iface.bInterfaceNumber)
+        except usb.core.USBError:
+            msg = "Could not claim USB device interface, is somebody else using it?"
+            raise UsbPortError(msg)
         # Interface 0 has one Endpoint for data out and one Endpoint for data in
-        self._cdc_data_out_ep = iface1.endpoints()[0]
-        self._cdc_data_in_ep = iface1.endpoints()[1]
+        self._cdc_data_out_ep = self._iface.endpoints()[0]
+        self._cdc_data_in_ep = self._iface.endpoints()[1]
 
         return True
 
@@ -164,6 +170,12 @@ class PyUsbCdc:
         )
 
     def disconnect(self) -> None:
+        if self._iface is not None:
+            try:
+                usb.util.release_interface(self._dev, self._iface.bInterfaceNumber)
+                self._iface = None
+            except usb.core.USBError:
+                pass
         if self._dev is not None:
             try:
                 usb.util.dispose_resources(self._dev)
