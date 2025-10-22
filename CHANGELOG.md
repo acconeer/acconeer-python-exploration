@@ -1,5 +1,14 @@
 # Changelog
 
+## v7.17.3
+
+### Changed
+- Use libusb instead of winusb for USB communication on windows
+- Use libusb_package to get backend for USB communication on windows
+
+### Removed
+- A121 presence detection phase boost removed
+
 ## v7.17.2
 
 ### Changed

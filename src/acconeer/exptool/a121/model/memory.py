@@ -96,7 +96,7 @@ def presence_external_heap_memory(config: PresenceConfig) -> int:
 def presence_rss_heap_memory(config: PresenceConfig) -> int:
     sensor_cfg = PresenceDetector._get_sensor_config(config)
 
-    PREC_FILTER_PARAMS = 13
+    PREC_FILTER_PARAMS = 7
 
     num_points = sum([subsweep.num_points for subsweep in sensor_cfg.subsweeps])
     prec_rss_heap = num_points * PREC_FILTER_PARAMS * SIZE_OF_FLOAT

@@ -90,6 +90,7 @@ kB
 Keras
 kwargs
 libgpio
+libusb
 loopback
 lowpass
 mA
@@ -182,6 +183,7 @@ Wayland
 Welch
 Welch's
 wideband
+winusb
 wirelessly
 Zadig
 zipimporter
