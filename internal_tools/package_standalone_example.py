@@ -73,26 +73,52 @@ def main() -> None:
         (et_wheel_path,) = build_dir.glob("*.whl")
 
         print("--- Generating double-click scripts")
-        linux_run_app_path = build_dir / "run_app.bash"
-        linux_run_app_path.write_text(
+        linux_run_example_path = build_dir / f"run_{example_path.stem}_py.bash"
+        linux_run_example_path.write_text(
             LINUX_BASH_DOUBLE_CLICK_SCRIPT_CONTENT.format(
-                example_file_name=example_path.name,
                 et_wheel_file_name=et_wheel_path.name,
+                launcher=LINUX_BASH_DOUBLE_CLICK_EXAMPLE_SCRIPT_LAUNCHER.format(
+                    example_file_name=example_path.name
+                ),
             )
         )
-        linux_run_app_path.chmod(0o777)
+        linux_run_example_path.chmod(0o777)
 
-        windows_run_app_path = build_dir / "run_app.bat"
-        windows_run_app_path.write_text(
-            WINDOWS_BATCH_DOUBLE_CLICK_SCRIPT_CONTENT.format(
-                example_file_name=example_path.name,
+        linux_run_et_path = build_dir / "run_exploration_tool.bash"
+        linux_run_et_path.write_text(
+            LINUX_BASH_DOUBLE_CLICK_SCRIPT_CONTENT.format(
                 et_wheel_file_name=et_wheel_path.name,
+                launcher=LINUX_BASH_DOUBLE_CLICK_ET_LAUNCHER,
+            )
+        )
+        linux_run_et_path.chmod(0o777)
+
+        windows_run_example_path = build_dir / f"run_{example_path.stem}_py.bat"
+        windows_run_example_path.write_text(
+            WINDOWS_BATCH_DOUBLE_CLICK_SCRIPT_CONTENT.format(
+                et_wheel_file_name=et_wheel_path.name,
+                launcher=WINDOWS_BATCH_DOUBLE_CLICK_EXAMPLE_SCRIPT_LAUNCHER.format(
+                    example_file_name=example_path.name,
+                ),
+            )
+        )
+
+        windows_run_et_path = build_dir / "run_exploration_tool.bat"
+        windows_run_et_path.write_text(
+            WINDOWS_BATCH_DOUBLE_CLICK_SCRIPT_CONTENT.format(
+                et_wheel_file_name=et_wheel_path.name,
+                launcher=WINDOWS_BATCH_DOUBLE_CLICK_ET_LAUNCHER,
             )
         )
 
         print("--- Generating README")
         readme_path = build_dir / "README.txt"
-        readme_path.write_text(README_CONTENT)
+        readme_path.write_text(
+            README_CONTENT.format(
+                run_example_bat_filename=windows_run_example_path,
+                run_example_bash_filename=linux_run_example_path,
+            )
+        )
 
         print("--- Zipping")
         # sorting out archive paths
@@ -100,15 +126,20 @@ def main() -> None:
         readme_archive_path = arcdir / readme_path.name
         example_archive_path = arcdir / example_path.name
         et_wheel_archive_path = arcdir / et_wheel_path.name
-        linux_run_app_archive_path = arcdir / linux_run_app_path.name
-        windows_run_app_archive_path = arcdir / windows_run_app_path.name
+
+        linux_run_example_archive_path = arcdir / linux_run_example_path.name
+        windows_run_example_archive_path = arcdir / windows_run_example_path.name
+        linux_run_et_archive_path = arcdir / linux_run_et_path.name
+        windows_run_et_archive_path = arcdir / windows_run_et_path.name
 
         with zipfile.ZipFile(output_zip, "w") as zip:
             zip.write(filename=readme_path, arcname=readme_archive_path)
             zip.write(filename=et_wheel_path, arcname=et_wheel_archive_path)
             zip.write(filename=example_path, arcname=example_archive_path)
-            zip.write(filename=linux_run_app_path, arcname=linux_run_app_archive_path)
-            zip.write(filename=windows_run_app_path, arcname=windows_run_app_archive_path)
+            zip.write(filename=linux_run_example_path, arcname=linux_run_example_archive_path)
+            zip.write(filename=windows_run_example_path, arcname=windows_run_example_archive_path)
+            zip.write(filename=linux_run_et_path, arcname=linux_run_et_archive_path)
+            zip.write(filename=windows_run_et_path, arcname=windows_run_et_archive_path)
 
             for src_path, archive_path in resources:
                 zip.write(filename=src_path, arcname=arcdir / archive_path)
@@ -119,11 +150,12 @@ def main() -> None:
 README_CONTENT = """\
 Windows users
 =============
-Double-click "run_app.bat".
+Double-click "run_exploration_tool.bat" to start Exploration Tool Application.
+Double-click "{run_example_bat_filename}" to run the example script.
 
 Linux users
 ===========
-Double-click "run_app.bash".
+Double-click "run_exploration_tool.bash" or "{run_example_bash_filename}".
 
 If that doesn't start executing the script, try:
 
@@ -177,8 +209,21 @@ if [ $? -gt 0 ]; then
     exit 1
 fi
 
+{launcher}
+"""
+
+LINUX_BASH_DOUBLE_CLICK_EXAMPLE_SCRIPT_LAUNCHER = """\
 echo "--- Starting {example_file_name} ..."
 python3 {example_file_name}
+if [ $? -gt 0 ]; then
+    read -p "Press ENTER to exit"
+    exit 1
+fi
+"""
+
+LINUX_BASH_DOUBLE_CLICK_ET_LAUNCHER = """\
+echo "--- Starting Exploration Tool ..."
+python3 -m acconeer.exptool.app.new
 if [ $? -gt 0 ]; then
     read -p "Press ENTER to exit"
     exit 1
@@ -220,8 +265,21 @@ if %errorlevel% neq 0 (
     exit
 )
 
+{launcher}
+"""
+
+WINDOWS_BATCH_DOUBLE_CLICK_EXAMPLE_SCRIPT_LAUNCHER = """\
 echo --- Starting {example_file_name} ...
 python {example_file_name}
+if %errorlevel% neq 0 (
+    echo Press ENTER to exit
+    pause
+    exit
+)
+"""
+WINDOWS_BATCH_DOUBLE_CLICK_ET_LAUNCHER = """\
+echo --- Starting Exploration Tool ...
+python -m acconeer.exptool.app.new
 if %errorlevel% neq 0 (
     echo Press ENTER to exit
     pause
