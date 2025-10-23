@@ -31,7 +31,10 @@ def main() -> None:
         description=PROLOGUE,
         epilog="Example: $ python internal_tools/package_standalone_example.py examples/a121/plot.py --resource README.md:a/b/c/README.md",
     )
-    parser.add_argument("example_path")
+    parser.add_argument(
+        "example_path",
+        nargs="?",
+    )
     parser.add_argument(
         "--resource",
         action="append",
@@ -42,8 +45,8 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    example_path = Path(args.example_path)
-    if not example_path.is_file():
+    example_path = None if (args.example_path is None) else Path(args.example_path)
+    if example_path is not None and not example_path.is_file():
         print(f"Cannot find file '{example_path}'")
         exit(1)
 
@@ -58,11 +61,17 @@ def main() -> None:
 
     resources = [tuple(map(Path, mapping.split(":"))) for mapping in args.resources]
 
-    zip_example_part = "".join(c if c.isalnum() else "-" for c in example_path.as_posix())
-    git_description = sp.check_output(["git", "describe", "--tags"], text=True).strip()
+    if example_path is None:
+        zip_example_part = "packaged"
+    else:
+        zip_example_part = "packaged_with_" + "".join(
+            c if c.isalnum() else "-" for c in example_path.as_posix()
+        )
+
+    git_description = sp.check_output(["git", "describe", "--tags", "--dirty"], text=True).strip()
 
     output_zip = Path(
-        f"./acconeer_exptool_with_{zip_example_part}_{git_description}_{datetime.date.today()}.zip"
+        f"./acconeer_exptool_{zip_example_part}_{git_description}_{datetime.date.today()}.zip"
     )
 
     with tempfile.TemporaryDirectory() as build_dir_strpath:
@@ -73,16 +82,30 @@ def main() -> None:
         (et_wheel_path,) = build_dir.glob("*.whl")
 
         print("--- Generating double-click scripts")
-        linux_run_example_path = build_dir / f"run_{example_path.stem}_py.bash"
-        linux_run_example_path.write_text(
-            LINUX_BASH_DOUBLE_CLICK_SCRIPT_CONTENT.format(
-                et_wheel_file_name=et_wheel_path.name,
-                launcher=LINUX_BASH_DOUBLE_CLICK_EXAMPLE_SCRIPT_LAUNCHER.format(
-                    example_file_name=example_path.name
-                ),
+        if example_path is not None:
+            linux_run_example_path = build_dir / f"run_{example_path.stem}_py.bash"
+            linux_run_example_path.write_text(
+                LINUX_BASH_DOUBLE_CLICK_SCRIPT_CONTENT.format(
+                    et_wheel_file_name=et_wheel_path.name,
+                    launcher=LINUX_BASH_DOUBLE_CLICK_EXAMPLE_SCRIPT_LAUNCHER.format(
+                        example_file_name=example_path.name
+                    ),
+                )
             )
-        )
-        linux_run_example_path.chmod(0o777)
+            linux_run_example_path.chmod(0o777)
+
+            windows_run_example_path = build_dir / f"run_{example_path.stem}_py.bat"
+            windows_run_example_path.write_text(
+                WINDOWS_BATCH_DOUBLE_CLICK_SCRIPT_CONTENT.format(
+                    et_wheel_file_name=et_wheel_path.name,
+                    launcher=WINDOWS_BATCH_DOUBLE_CLICK_EXAMPLE_SCRIPT_LAUNCHER.format(
+                        example_file_name=example_path.name,
+                    ),
+                )
+            )
+        else:
+            windows_run_example_path = None
+            linux_run_example_path = None
 
         linux_run_et_path = build_dir / "run_exploration_tool.bash"
         linux_run_et_path.write_text(
@@ -92,16 +115,6 @@ def main() -> None:
             )
         )
         linux_run_et_path.chmod(0o777)
-
-        windows_run_example_path = build_dir / f"run_{example_path.stem}_py.bat"
-        windows_run_example_path.write_text(
-            WINDOWS_BATCH_DOUBLE_CLICK_SCRIPT_CONTENT.format(
-                et_wheel_file_name=et_wheel_path.name,
-                launcher=WINDOWS_BATCH_DOUBLE_CLICK_EXAMPLE_SCRIPT_LAUNCHER.format(
-                    example_file_name=example_path.name,
-                ),
-            )
-        )
 
         windows_run_et_path = build_dir / "run_exploration_tool.bat"
         windows_run_et_path.write_text(
@@ -113,31 +126,43 @@ def main() -> None:
 
         print("--- Generating README")
         readme_path = build_dir / "README.txt"
-        readme_path.write_text(
-            README_CONTENT.format(
-                run_example_bat_filename=windows_run_example_path,
-                run_example_bash_filename=linux_run_example_path,
+        if example_path is None:
+            readme_path.write_text(README_NO_EXAMPLE_CONTENT)
+        else:
+            readme_path.write_text(
+                README_W_EXAMPLE_CONTENT.format(
+                    run_example_bat_filename=windows_run_example_path,
+                    run_example_bash_filename=linux_run_example_path,
+                )
             )
-        )
 
         print("--- Zipping")
         # sorting out archive paths
         arcdir = Path(output_zip.with_suffix("").name)  # archive root dir
         readme_archive_path = arcdir / readme_path.name
-        example_archive_path = arcdir / example_path.name
+        example_archive_path = None if example_path is None else arcdir / example_path.name
         et_wheel_archive_path = arcdir / et_wheel_path.name
 
-        linux_run_example_archive_path = arcdir / linux_run_example_path.name
-        windows_run_example_archive_path = arcdir / windows_run_example_path.name
+        linux_run_example_archive_path = (
+            None if linux_run_example_path is None else arcdir / linux_run_example_path.name
+        )
+        windows_run_example_archive_path = (
+            None if windows_run_example_path is None else arcdir / windows_run_example_path.name
+        )
         linux_run_et_archive_path = arcdir / linux_run_et_path.name
         windows_run_et_archive_path = arcdir / windows_run_et_path.name
 
         with zipfile.ZipFile(output_zip, "w") as zip:
             zip.write(filename=readme_path, arcname=readme_archive_path)
             zip.write(filename=et_wheel_path, arcname=et_wheel_archive_path)
-            zip.write(filename=example_path, arcname=example_archive_path)
-            zip.write(filename=linux_run_example_path, arcname=linux_run_example_archive_path)
-            zip.write(filename=windows_run_example_path, arcname=windows_run_example_archive_path)
+            if example_path is not None:
+                zip.write(filename=example_path, arcname=example_archive_path)
+            if linux_run_example_path is not None:
+                zip.write(filename=linux_run_example_path, arcname=linux_run_example_archive_path)
+            if windows_run_example_path is not None:
+                zip.write(
+                    filename=windows_run_example_path, arcname=windows_run_example_archive_path
+                )
             zip.write(filename=linux_run_et_path, arcname=linux_run_et_archive_path)
             zip.write(filename=windows_run_et_path, arcname=windows_run_et_archive_path)
 
@@ -147,7 +172,7 @@ def main() -> None:
         print(f"Successfully created {output_zip}")
 
 
-README_CONTENT = """\
+README_W_EXAMPLE_CONTENT = """\
 Windows users
 =============
 Double-click "run_exploration_tool.bat" to start Exploration Tool Application.
@@ -156,6 +181,25 @@ Double-click "{run_example_bat_filename}" to run the example script.
 Linux users
 ===========
 Double-click "run_exploration_tool.bash" or "{run_example_bash_filename}".
+
+If that doesn't start executing the script, try:
+
+1. Right click on "run_app.bash"
+2. In the right-click menu, click "Run as a Program" (tested on Ubuntu 24.04)
+
+Or run the script from the terminal:
+
+$ ./run_app.bash
+"""
+
+README_NO_EXAMPLE_CONTENT = """\
+Windows users
+=============
+Double-click "run_exploration_tool.bat" to start Exploration Tool Application.
+
+Linux users
+===========
+Double-click "run_exploration_tool.bash"
 
 If that doesn't start executing the script, try:
 
