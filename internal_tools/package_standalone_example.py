@@ -75,7 +75,7 @@ def main() -> None:
         print("--- Generating double-click scripts")
         linux_run_app_path = build_dir / "run_app.bash"
         linux_run_app_path.write_text(
-            LINUX_BASH_DOUBLE_CLICK_SCRIPT.format(
+            LINUX_BASH_DOUBLE_CLICK_SCRIPT_CONTENT.format(
                 example_file_name=example_path.name,
                 et_wheel_file_name=et_wheel_path.name,
             )
@@ -84,7 +84,7 @@ def main() -> None:
 
         windows_run_app_path = build_dir / "run_app.bat"
         windows_run_app_path.write_text(
-            WINDOWS_BATCH_DOUBLE_CLICK_SCRIPT.format(
+            WINDOWS_BATCH_DOUBLE_CLICK_SCRIPT_CONTENT.format(
                 example_file_name=example_path.name,
                 et_wheel_file_name=et_wheel_path.name,
             )
@@ -135,7 +135,7 @@ Or run the script from the terminal:
 $ ./run_app.bash
 """
 
-LINUX_BASH_DOUBLE_CLICK_SCRIPT = """\
+LINUX_BASH_DOUBLE_CLICK_SCRIPT_CONTENT = """\
 #!/usr/bin/env bash
 
 echo "--- Trying to install python3 with apt ..."
@@ -177,7 +177,7 @@ if [ $? -gt 0 ]; then
     exit 1
 fi
 
-echo "--- Starting Acconeer Exptool ..."
+echo "--- Starting {example_file_name} ..."
 python3 {example_file_name}
 if [ $? -gt 0 ]; then
     read -p "Press ENTER to exit"
@@ -185,9 +185,10 @@ if [ $? -gt 0 ]; then
 fi
 """
 
-WINDOWS_BATCH_DOUBLE_CLICK_SCRIPT = """\
+WINDOWS_BATCH_DOUBLE_CLICK_SCRIPT_CONTENT = """\
 @echo off
 
+echo --- Trying to install virtualenv with system-level pip ...
 python -m pip install virtualenv
 if %errorlevel% neq 0 (
     echo Press ENTER to exit
@@ -195,6 +196,7 @@ if %errorlevel% neq 0 (
     exit
 )
 
+echo --- Creating virtualenv with name run_app_venv ...
 python -m virtualenv run_app_venv
 if %errorlevel% neq 0 (
     echo Press ENTER to exit
@@ -202,6 +204,7 @@ if %errorlevel% neq 0 (
     exit
 )
 
+echo --- Activating virtualenv with name run_app_venv ...
 call run_app_venv\\Scripts\\activate.bat
 if %errorlevel% neq 0 (
     echo Press ENTER to exit
@@ -209,6 +212,7 @@ if %errorlevel% neq 0 (
     exit
 )
 
+echo --- Installing acconeer-exptool with its dependencies ...
 python -m pip install {et_wheel_file_name}[app]
 if %errorlevel% neq 0 (
     echo Press ENTER to exit
@@ -216,6 +220,7 @@ if %errorlevel% neq 0 (
     exit
 )
 
+echo --- Starting {example_file_name} ...
 python {example_file_name}
 if %errorlevel% neq 0 (
     echo Press ENTER to exit
