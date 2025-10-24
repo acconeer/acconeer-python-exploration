@@ -1,5 +1,10 @@
 # Changelog
 
+## v7.17.4
+
+### Added
+- Bugfix & improvement in USB code
+
 ## v7.17.3
 
 ### Changed
