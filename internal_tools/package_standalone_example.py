@@ -277,6 +277,14 @@ fi
 WINDOWS_BATCH_DOUBLE_CLICK_SCRIPT_CONTENT = """\
 @echo off
 
+echo --- Checking installed Python version
+python -c "import sys; exit(0 if sys.version_info[:2] in [(3, 9), (3, 10), (3, 11), (3, 12)] else 1)"
+if %errorlevel% neq 0 (
+    echo Python not of optimal version. Install one of Python 3.9, 3.10, 3.11, or 3.12.
+    pause
+    exit
+)
+
 echo --- Trying to install virtualenv with system-level pip ...
 python -m pip install virtualenv
 if %errorlevel% neq 0 (
