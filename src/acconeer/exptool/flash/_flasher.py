@@ -75,7 +75,7 @@ def _flasher_progress_callback(progress: int, end: bool = False) -> None:
 def flash_image(
     image_path: str,
     flash_device: comm_devices.CommDevice,
-    device_name: t.Optional[str] = None,
+    device_name: str,
     progress_callback: t.Callable[[int, bool], t.Any] = lambda *_: None,
 ) -> None:
     if flash_device:

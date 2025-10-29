@@ -700,7 +700,7 @@ class FlashPage(QWizardPage):
 
         BGTask.create_task(
             flash_image,
-            args=(self.field(WizardField.BIN_PATH), comm_device),
+            args=(self.field(WizardField.BIN_PATH), comm_device, self.field(WizardField.MODULE)),
             return_cb=self.handle_flash_return,
             exception_cb=self.handle_flash_exception,
         )
