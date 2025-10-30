@@ -36,9 +36,9 @@ For an in-depth evaluation, we recommend a full installation as described below.
 Documentation is available at [docs.acconeer.com](https://docs.acconeer.com),
 where you can also find the [FAQ](https://docs.acconeer.com/en/latest/exploration_tool/faq.html).
 
-## News
+## What's New in Acconeer Exploration Tool
 
-* v7.4.0 released. See the [Changelog](https://docs.acconeer.com/en/latest/changelog.html).
+* See the [Changelog](https://docs.acconeer.com/en/latest/changelog.html).
 
 ## Setting up your evaluation kit
 
@@ -62,8 +62,8 @@ Python 3.9 or newer. Older versions have limited or no support.
 Tested on:
 
 * Python 3 (developed and tested on 3.9, 3.10, 3.11, 3.12 and 3.13)
-* Windows 10
-* Ubuntu 20.04
+* Windows 11
+* Ubuntu 24.04
 
 ### Setup
 
