@@ -1,5 +1,10 @@
 # Changelog
 
+## v7.17.5
+
+### Fixed
+- Module not recognized when flashing on Windows
+
 ## v7.17.4
 
 ### Added
