@@ -67,7 +67,7 @@ app = [
     "pyperclip",
     "pyside6==6.8.3",
     "pyqtdarktheme",
-    "pyqtgraph==0.13.7",
+    "pyqtgraph>=0.13.7,<=0.14.0",
     "qtawesome",
     "qtpy>=2.3.0",
 ]
@@ -121,6 +121,7 @@ dependencies = [
     "pandas==1.3.5",
     "pandas-stubs",
     "PySide6==6.8.3",
+    "pyqtgraph==0.13.7",
     "types-beautifulsoup4",
     "hypothesis==6.128.2",
 ]
