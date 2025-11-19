@@ -841,6 +841,7 @@ class AppModel(QObject):
 
     def set_plugin_generation(self, new_generation: PluginGeneration) -> None:
         self._persistent_state.plugin_generation = new_generation
+        self.load_plugin(None)
         self.broadcast()
 
     def load_plugin(self, plugin: Optional[PluginSpec]) -> None:
