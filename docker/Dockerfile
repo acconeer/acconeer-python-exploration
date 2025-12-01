@@ -41,7 +41,7 @@ RUN groupadd -g 1000 jenkins \
 USER jenkins
 
 ENV PATH="$PATH:/home/jenkins/.local/bin"
-RUN pipx install "hatch>=1.13.0" "twine==6.0.1"
+RUN pipx install "hatch>=1.13.0,<1.16.0" "twine==6.0.1"
 
 RUN mkdir -p /home/jenkins/.cache/pip
 RUN mkdir -p /home/jenkins/.cache/uv
