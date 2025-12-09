@@ -25,6 +25,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.graphviz",
     "sphinx.ext.extlinks",
+    "sphinx_copybutton",
     "sphinx_design",
     "myst_parser",
     "sphinxext.rediraffe",
