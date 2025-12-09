@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2025
 # All rights reserved
 
 from __future__ import annotations
@@ -14,7 +14,11 @@ from attributes_doc import attributes_doc
 
 from acconeer.exptool import a121, opser
 from acconeer.exptool.a121._core.entities.configs.config_enums import PRF
-from acconeer.exptool.a121._core.utils import map_over_extended_structure
+from acconeer.exptool.a121._core.utils import (
+    is_divisor_of,
+    is_multiple_of,
+    map_over_extended_structure,
+)
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo import (
     APPROX_BASE_STEP_LENGTH_M,
@@ -42,6 +46,9 @@ from ._processors import (
     ProcessorResult,
     apply_max_depth_filter,
 )
+
+
+SPARSE_IQ_PPC = 24
 
 
 @attrs.mutable(kw_only=True)
@@ -127,6 +134,14 @@ class DetectorConfig(AlgoConfigBase):
     kalman_sensitivity: float = attrs.field(default=0.5)
     """Specify the sensitivity of the Kalman filter. A higher value yields a more responsive
     filter. A lower value yields a more robust filter."""
+
+    @step_length.validator
+    def _validate_step_length(self, _: Any, step_length: int) -> None:
+        if step_length is not None and not (
+            is_divisor_of(SPARSE_IQ_PPC, step_length) or is_multiple_of(SPARSE_IQ_PPC, step_length)
+        ):
+            msg = f"step_length must be a divisor or multiple of {SPARSE_IQ_PPC}"
+            raise ValueError(msg)
 
     def _collect_validation_results(self) -> list[a121.ValidationResult]:
         validation_results: list[a121.ValidationResult] = []
