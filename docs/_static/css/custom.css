@@ -32,3 +32,16 @@ span.caption-number::after {
 caption > .caption-number::after {
     content: "\00a0";  /* Unicode non-breaking space */
 }
+
+html[data-theme="dark"] .sphinx-tabs-tab[aria-selected="true"],
+html[data-theme="dark"] .sphinx-tabs-tab:hover {
+    background-color: var(--pst-color-surface);
+    color: var(--sd-color-primary);
+    border-color: var(--pst-color-border);
+}
+
+html[data-theme="dark"] .sphinx-tabs-panel {
+    background-color: var(--pst-color-background);
+    color: var(--pst-color-text-base);
+    border-color: var(--pst-color-border);
+}
