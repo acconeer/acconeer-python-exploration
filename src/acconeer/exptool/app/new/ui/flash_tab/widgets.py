@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QRadioButton,
+    QTextEdit,
     QVBoxLayout,
     QWizard,
     QWizardPage,
@@ -441,7 +442,7 @@ class FlashPage(QWizardPage):
         bin_path_line_edit.setReadOnly(True)
         self.registerField(WizardField.BIN_PATH.required(), bin_path_line_edit)
 
-        self.feedback_lbl = QLineEdit()
+        self.feedback_lbl = QTextEdit()
         self.feedback_lbl.setReadOnly(True)
         self.feedback_lbl.setVisible(False)
         self.feedback_lbl.setStyleSheet(FeedbackStyleSheet.ERROR)
@@ -547,7 +548,15 @@ class FlashPage(QWizardPage):
         self._flash_button.setEnabled(True)
 
         self.feedback_lbl.setVisible(True)
-        self.feedback_lbl.setText("Flash failed. Please try again.")
+        self.feedback_lbl.setText(
+            "\n\n".join(
+                [
+                    "Flash failed with error:",
+                    str(exception),
+                    "Please try again, restarting ET, or flashing another file if the error persists",
+                ]
+            )
+        )
 
         self.app_model.port_updater_enable(True)
 
