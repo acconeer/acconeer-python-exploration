@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -7,7 +7,6 @@ import time
 from typing import Any, Optional
 
 import libusb_package
-import usb.backend.libusb1
 import usb.core
 from usb.util import CTRL_RECIPIENT_INTERFACE, CTRL_TYPE_CLASS
 
