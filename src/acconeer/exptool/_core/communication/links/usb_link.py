@@ -232,9 +232,9 @@ class USBLink(BufferedLink):
             msg = "Port is not connected"
             raise LinkError(msg)
 
-        t0 = time.time()
+        t0 = time.monotonic()
         while len(self._buf) < num_bytes:
-            if time.time() - t0 > self._timeout:
+            if time.monotonic() - t0 > self._timeout:
                 msg = "recv timeout"
                 raise LinkError(msg)
 
@@ -253,7 +253,7 @@ class USBLink(BufferedLink):
             msg = "Port is not connected"
             raise LinkError(msg)
 
-        t0 = time.time()
+        t0 = time.monotonic()
         while True:
             try:
                 i = self._buf.index(bs)
@@ -262,7 +262,7 @@ class USBLink(BufferedLink):
             else:
                 break
 
-            if time.time() - t0 > self._timeout:
+            if time.monotonic() - t0 > self._timeout:
                 msg = "recv timeout"
                 raise LinkError(msg)
 

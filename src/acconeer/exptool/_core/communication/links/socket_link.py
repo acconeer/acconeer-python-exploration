@@ -1,9 +1,9 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
 import socket
-from time import time
+from time import monotonic
 from typing import Optional
 
 from .buffered_link import BufferedLink, LinkError
@@ -53,7 +53,7 @@ class SocketLink(BufferedLink):
 
     def recv_until(self, bs: bytes) -> bytes:
         assert self._sock is not None
-        t0 = time()
+        t0 = monotonic()
         while True:
             try:
                 i = self._buf.index(bs)
@@ -62,7 +62,7 @@ class SocketLink(BufferedLink):
             else:
                 break
 
-            if time() - t0 > self._timeout:
+            if monotonic() - t0 > self._timeout:
                 msg = "recv timeout"
                 raise LinkError(msg)
 
