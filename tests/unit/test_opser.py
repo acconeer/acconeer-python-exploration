@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -518,13 +518,13 @@ def test_equality(instance: t.Any, tmp_h5_file: h5py.File) -> None:
             UnionParent(
                 Simple(integer=1, string=1),
             ),
-            "",
+            None,
         ),
     ],
     ids=lambda i: type(i).__name__,
 )
 def test_sanitize_instance_points_out_fields_of_wrong_type(
-    instance: t.Any, err_match: str
+    instance: t.Any, err_match: t.Optional[str]
 ) -> None:
     tree = opser.core.create_type_tree(type(instance))
 
