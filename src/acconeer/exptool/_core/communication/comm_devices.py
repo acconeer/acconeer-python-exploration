@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -171,6 +171,7 @@ def get_serial_devices() -> List[SerialDevice]:
 
 class _UsbDeviceFinder:
     device_cache: dict[str, bool] = {}
+    serial_port_cache: dict[str, bool] = {}
 
     def __init__(self) -> None:
         self._backend = get_libusb_backend()
@@ -184,8 +185,25 @@ class _UsbDeviceFinder:
                 serial_number = None
             vid = dev.idVendor
             pid = dev.idProduct
+            if self._is_com_port(vid, pid):
+                continue
             usb.util.dispose_resources(dev)
             yield (vid, pid, serial_number)
+
+    def _is_com_port(self, vid: int, pid: int) -> bool:
+        vid_pid_str = f"{vid:04x}:{pid:04x}"
+        if vid_pid_str not in self.serial_port_cache:
+            port_objects = serial.tools.list_ports.comports()
+            for port_object in port_objects:
+                if port_object.vid is None or port_object.pid is None:
+                    continue
+                port_vid_pid_str = f"{port_object.vid:04x}:{port_object.pid:04x}"
+                self.serial_port_cache[port_vid_pid_str] = True
+
+        if vid_pid_str not in self.serial_port_cache:
+            self.serial_port_cache[vid_pid_str] = False
+
+        return self.serial_port_cache[vid_pid_str]
 
     def is_accessible(self, vid: int, pid: int) -> bool:
         vid_pid_str = f"{vid:04x}:{pid:04x}"

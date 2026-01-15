@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -149,6 +149,12 @@ def _get_flash_device_from_args(
             found_usb_devices.append(usb_device)
 
     if len(found_usb_devices) == 0:
+        # Handle Serial Port USB devices (Bootloader)
+        flash_device = None
+        for serial_device in comm_devices.get_serial_devices():
+            if serial_device.name == device_name:
+                return serial_device
+
         if serial_number is not None:
             msg = f"No {device_name} device with serial={serial_number} could be found\n"
         else:
