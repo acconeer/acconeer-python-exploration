@@ -10,7 +10,9 @@
    to be launched directly from the command line using acconeer-flash.
 
 ### Changed
-
+- Change high frequency pre-set in Vibration.
+  Previous pre-set only utilized half the radar data.
+  Now all radar data gathered is used.
 ### Fixed
 
 ### Removed

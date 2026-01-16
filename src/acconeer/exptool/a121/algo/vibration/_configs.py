@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from acconeer.exptool import a121
@@ -35,7 +35,7 @@ def get_high_frequency_config() -> ExampleAppConfig:
     example_app_config = _get_base_config()
     example_app_config.continuous_sweep_mode = False
     example_app_config.double_buffering = False
-    example_app_config.sweeps_per_frame = 2048
+    example_app_config.sweeps_per_frame = 1024
     example_app_config.sweep_rate = 10000
     example_app_config.low_frequency_enhancement = False
     example_app_config.lp_coeff = 0.5

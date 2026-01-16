@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -76,6 +76,15 @@ class ProcessorConfig(AlgoProcessorConfigBase):
                     self,
                     "time_series_length",
                     "Should be power of 2 for efficient usage of fast fourier transform",
+                )
+            )
+
+        if self.time_series_length < config.sensor_config.sweeps_per_frame:
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "time_series_length",
+                    "Should be greater or equal to sweeps_per_frame",
                 )
             )
 
