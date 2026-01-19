@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -31,9 +31,7 @@ DFU_BOOT_DESCRIPTION = {
     ),
 }
 
-POST_DFU_DESCRIPTION = {
-    "XM125": ("<p>" "<ol>" "<li>Press and Release the <b>RESET</b> button</li>" "</ol>" "</p>"),
-}
+POST_DFU_DESCRIPTION = {}
 
 
 class Stm32DeviceException(Exception):
@@ -63,7 +61,7 @@ class Stm32UartFlasher(DeviceFlasherBase):
             image_data = image_file.read()
             flasher.extended_erase()
             flasher.write_image(image_data, FLASH_ADDRESS, progress_callback=progress_callback)
-            flasher.go(FLASH_ADDRESS)
+            flasher.write_unprotect()
 
         flasher.close()
 
@@ -212,11 +210,10 @@ class Stm32FlashProtocol:
         if progress_callback is not None:
             progress_callback(100, True)
 
-    def go(self, address):
-        GO = 0x21
-
-        self._command(GO)
-        self._send_address(address)
+    def write_unprotect(self):
+        WRITE_UNPROTECT = 0x73
+        self._command(WRITE_UNPROTECT)
+        self._wait_for_ack()
 
 
 class UartComm:
