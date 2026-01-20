@@ -1,8 +1,9 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 """Tool dfu/flash devices with bootloader firmware"""
 
+import abc
 import logging
 import time
 
@@ -10,7 +11,7 @@ import serial
 from serial.serialutil import SerialException
 from serial.tools import list_ports
 
-from acconeer.exptool._core.communication.comm_devices import get_usb_devices
+from acconeer.exptool._core.communication.comm_devices import SerialDevice
 from acconeer.exptool._core.communication.links.usb_link import PyUsbCdc
 from acconeer.exptool.flash._device_flasher_base import DeviceFlasherBase
 from acconeer.exptool.flash._flash_exception import FlashException
@@ -124,75 +125,60 @@ class BootloaderTool(DeviceFlasherBase):
         return None
 
     @staticmethod
-    def _find_usb_device(search_port):
-        try:
-            usb_devices = get_usb_devices()
-            if search_port in usb_devices:
-                return search_port
-        except ImportError:
-            return None
+    def _get_pid_from_port(port_path):
+        all_ports = list_ports.comports()
+        found_ports = [port for port in all_ports if port.device == port_path]
+
+        if len(found_ports) != 1:
+            msg = "Couldn't find a device on the specified port"
+            raise FlashException(msg)
+        return found_ports[0].pid
 
     @staticmethod
-    def _find_usb_dfu_device():
-        try:
-            usb_devices = get_usb_devices()
-            for dev in usb_devices:
-                if dev.unflashed:
-                    return dev
-            return None
-        except ImportError:
-            return None
+    def exploration_server_to_dfu(vid, pid):
+        ser = PyUsbCdc(
+            vid=vid,
+            pid=pid,
+        )
+        ser.send_break()
+        time.sleep(0.1)
+        ser.write(bytes('{ "cmd": "stop_application" }\n', "utf-8"))
+        ser.close()
+        return True
 
-    @staticmethod
-    def _is_usb_dfu_device(device_port):
-        usb_device = BootloaderTool._find_usb_device(device_port)
-        return usb_device is not None and usb_device.unflashed
+    @abc.abstractmethod
+    def device_enter_dfu(self, device_pid, device_port):
+        """Implemented in <device>_dfu_config.py"""
 
     def enter_dfu(self, device_port):
         """Function to make the devices enter Bootloader/DFU mode"""
-
-        cdc_port = BootloaderTool._find_port(self.device_vid, self.bootloader_pid, device_port)
-
-        if cdc_port is not None or BootloaderTool._is_usb_dfu_device(device_port):
-            log.debug("Device already in DFU mode")
+        if isinstance(device_port, SerialDevice):
+            device_pid = self._get_pid_from_port(device_port.port)
+            serial_port_name = device_port.port
         else:
-            log.debug("Reset to DFU mode")
-            exploration_server_usb_device = BootloaderTool._find_usb_device(device_port)
+            device_pid = device_port.pid
+            serial_port_name = None
 
-            if exploration_server_usb_device:
-                log.debug("Exploration server active, enter DFU mode")
-                ser = PyUsbCdc(
-                    vid=exploration_server_usb_device.vid,
-                    pid=exploration_server_usb_device.pid,
-                )
-                ser.send_break()
-                time.sleep(0.1)
-                ser.write(bytes('{ "cmd": "stop_application" }\n', "utf-8"))
-                ser.close()
+        if not self.device_enter_dfu(device_pid, serial_port_name):
+            msg = "Device not found"
+            raise FlashException(msg)
 
-            else:
-                msg = "Device not found"
-                raise FlashException(msg)
+        # Wait for DFU device to appear
+        retries = 5
+        device_found = False
+        cdc_port = None
+        while retries > 0:
+            log.debug("Wait for DFU device...")
+            time.sleep(1)
+            cdc_port = BootloaderTool._find_port(self.device_vid, self.bootloader_pid, device_port)
+            if cdc_port is not None:
+                device_found = True
+                break
+            retries -= 1
 
-            # Wait for DFU device to appear
-            retries = 5
-            device_found = False
-            cdc_port = None
-            while retries > 0:
-                log.debug("Wait for DFU device...")
-                time.sleep(1)
-                cdc_port = BootloaderTool._find_port(
-                    self.device_vid, self.bootloader_pid, device_port
-                )
-                usb_dfu = BootloaderTool._find_usb_dfu_device()
-                if cdc_port is not None or usb_dfu is not None:
-                    device_found = True
-                    break
-                retries -= 1
-
-            if not device_found:
-                msg = "DFU device not found"
-                raise FlashException(msg)
+        if not device_found:
+            msg = "DFU device not found"
+            raise FlashException(msg)
 
     @staticmethod
     def _try_open_port(serial_port):
