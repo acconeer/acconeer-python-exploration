@@ -76,7 +76,7 @@ docs = [
     "acconeer-exptool[algo]",
     "docutils>=0.17,!=0.18",
     "myst-parser>=2.0.0",
-    "sphinx>=7.2.6",
+    "sphinx>=7.2.6,<9.0.0",
     "sphinx-copybutton",
     "sphinx-design",
     "sphinxext-rediraffe",
