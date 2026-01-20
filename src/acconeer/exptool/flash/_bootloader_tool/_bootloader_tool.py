@@ -146,6 +146,12 @@ class BootloaderTool(DeviceFlasherBase):
         ser.close()
         return True
 
+    def protocol_server_to_dfu(self, serial_port, protocol_id):
+        ser = self._try_open_port(serial_port)
+        ser.write(bytes([0xCC, 0x02, 0x00, protocol_id, 0xFF, 0xFF, 0xCD]))
+        ser.close()
+        return True
+
     @abc.abstractmethod
     def device_enter_dfu(self, device_pid, device_port):
         """Implemented in <device>_dfu_config.py"""
