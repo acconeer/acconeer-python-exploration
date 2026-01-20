@@ -47,7 +47,7 @@ dependencies = [
     "exceptiongroup==1.1.1",
     "attributes-doc==0.4.0",
 ]
-scripts = { acconeer-exptool = "acconeer.exptool.app.new:main" }
+scripts = { acconeer-exptool = "acconeer.exptool.app.new:main", acconeer-flash = "acconeer.exptool.flash._flasher:main" }
 
 [project.urls]
 Documentation = "https://docs.acconeer.com"
