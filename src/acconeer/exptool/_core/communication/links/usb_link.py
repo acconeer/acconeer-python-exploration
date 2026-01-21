@@ -173,7 +173,7 @@ class PyUsbCdc:
             try:
                 usb.util.release_interface(self._dev, self._iface.bInterfaceNumber)
                 self._iface = None
-            except usb.core.USBError:
+            except (usb.core.USBError, AttributeError):
                 pass
         if self._dev is not None:
             try:
