@@ -9,6 +9,7 @@ from typing import Callable, Mapping, Optional
 
 import attrs
 import h5py
+from packaging.version import Version
 
 from PySide6.QtWidgets import QLayout, QPushButton, QVBoxLayout
 
@@ -54,6 +55,8 @@ from .plot import VibrationPlot
 
 
 log = logging.getLogger(__name__)
+
+REORDER_SUBSWEEP_ET_VERSION = Version("7.17.5")
 
 
 class PluginPresetId(Enum):
@@ -126,6 +129,15 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
         self.broadcast()
 
     def load_from_record_setup(self, *, record: a121.H5Record) -> None:
+        try:
+            client_cfg = record.session_config.sensor_config
+        except Exception as e:
+            msg = "Unexpectedly couldn't get sole SensorConfig. Is this file recorded with Vibration?"
+            raise ValueError(msg) from e
+        if client_cfg.num_subsweeps == 2 and client_cfg.subsweeps[1].enable_loopback:
+            msg = f"Subsweep order has changed. Try opening the file in an earlier version of ET <= {REORDER_SUBSWEEP_ET_VERSION}"
+            raise ValueError(msg)
+
         algo_group = record.get_algo_group(self.key)
         _, config = _load_algo_data(algo_group)
         self.shared_state.config = config

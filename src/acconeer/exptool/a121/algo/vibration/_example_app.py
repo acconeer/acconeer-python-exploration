@@ -252,7 +252,7 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
                 receiver_gain=10,
             )
 
-            subsweeps = [measure_config, loopback_config]
+            subsweeps = [loopback_config, measure_config]
         else:
             subsweeps = [measure_config]
 

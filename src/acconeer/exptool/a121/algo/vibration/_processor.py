@@ -27,7 +27,8 @@ from acconeer.exptool.utils import is_power_of_2
 
 
 RANGE_SUBSWEEP = 0
-LOOPBACK_SUBSWEEP = 1
+LOW_FREQ_LOOPBACK_SUBSWEEP = 0
+LOW_FREQ_RANGE_SUBSWEEP = 1
 MAX_REPORTED_PEAKS = 30
 
 
@@ -155,20 +156,20 @@ class ProcessorConfig(AlgoProcessorConfigBase):
                         "Low frequency enhancement requires a loopback subsweep",
                     )
                 )
-            if config.sensor_config.subsweeps[RANGE_SUBSWEEP].enable_loopback:
+            if config.sensor_config.subsweeps[LOW_FREQ_RANGE_SUBSWEEP].enable_loopback:
                 validation_results.append(
                     a121.ValidationError(
                         self,
                         "low_frequency_enhancement",
-                        "The first subsweep must not have loopback enabled",
+                        "The second subsweep must not have loopback enabled",
                     )
                 )
-            if not config.sensor_config.subsweeps[LOOPBACK_SUBSWEEP].enable_loopback:
+            if not config.sensor_config.subsweeps[LOW_FREQ_LOOPBACK_SUBSWEEP].enable_loopback:
                 validation_results.append(
                     a121.ValidationError(
                         self,
                         "low_frequency_enhancement",
-                        "Low frequency enhancement requires that loopback is enabled for the second subsweep",
+                        "Low frequency enhancement requires that loopback is enabled for the first subsweep",
                     )
                 )
 
@@ -282,8 +283,8 @@ class Processor(ProcessorBase[ProcessorResult]):
         if not self.low_frequency_enhancement:
             frame = result.subframes[RANGE_SUBSWEEP]
         else:
-            measured_frame = result.subframes[RANGE_SUBSWEEP]
-            loopback_frame = result.subframes[LOOPBACK_SUBSWEEP]
+            measured_frame = result.subframes[LOW_FREQ_RANGE_SUBSWEEP]
+            loopback_frame = result.subframes[LOW_FREQ_LOOPBACK_SUBSWEEP]
             frame = measured_frame * np.exp(-1j * np.angle(loopback_frame))
 
         # Determine if an object is in front of the sensor
