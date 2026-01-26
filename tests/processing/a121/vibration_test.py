@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -23,8 +23,8 @@ from acconeer.exptool.a121.algo.vibration._example_app import ExampleApp, _load_
 class ResultSlice:
     _REL_TOL = 1e-9
 
-    max_displacement: Optional[float] = attrs.field()
-    max_displacement_freq: Optional[float] = attrs.field()
+    peak_displacements: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
+    peak_frequencies: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
     max_sweep_amplitude: float
     lp_displacements: Optional[npt.NDArray[np.float64]] = attrs.field(eq=attrs_ndarray_isclose)
     lp_displacements_freqs: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
@@ -33,8 +33,8 @@ class ResultSlice:
     @classmethod
     def from_processor_result(cls, result: vibration.ExampleAppResult) -> te.Self:
         return cls(
-            max_displacement=result.max_displacement,
-            max_displacement_freq=result.max_displacement_freq,
+            peak_displacements=result.peak_displacements,
+            peak_frequencies=result.peak_frequencies,
             max_sweep_amplitude=result.max_sweep_amplitude,
             lp_displacements=result.lp_displacements,
             lp_displacements_freqs=result.lp_displacements_freqs,
@@ -45,8 +45,8 @@ class ResultSlice:
         if not isinstance(other, self.__class__):
             return False
 
-        if other.max_displacement is None:
-            # Handle NoneType values
+        if other.peak_displacements.size == 0:
+            # Handle missing values
             return math.isclose(
                 self.max_sweep_amplitude, other.max_sweep_amplitude, rel_tol=self._REL_TOL
             ) and math.isclose(self.time_series_std, other.time_series_std, rel_tol=self._REL_TOL)
@@ -55,10 +55,8 @@ class ResultSlice:
             math.isclose(
                 self.max_sweep_amplitude, other.max_sweep_amplitude, rel_tol=self._REL_TOL
             )
-            and math.isclose(self.max_displacement, other.max_displacement, rel_tol=self._REL_TOL)
-            and math.isclose(
-                self.max_displacement_freq, other.max_displacement_freq, rel_tol=self._REL_TOL
-            )
+            and np.allclose(self.peak_displacements, other.peak_displacements, rtol=self._REL_TOL)
+            and np.allclose(self.peak_frequencies, other.peak_frequencies, rtol=self._REL_TOL)
             and math.isclose(self.time_series_std, other.time_series_std, rel_tol=self._REL_TOL)
             and np.allclose(self.lp_displacements, other.lp_displacements, rtol=self._REL_TOL)
             and np.allclose(

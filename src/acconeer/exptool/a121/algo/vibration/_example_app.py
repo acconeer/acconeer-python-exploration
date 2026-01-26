@@ -26,7 +26,12 @@ from acconeer.exptool.a121.algo import (
 )
 from acconeer.exptool.utils import is_power_of_2
 
-from ._processor import Processor, ProcessorConfig, ProcessorExtraResult, ReportedDisplacement
+from ._processor import (
+    Processor,
+    ProcessorConfig,
+    ProcessorExtraResult,
+    ReportedDisplacement,
+)
 
 
 def optional_profile_converter(profile: Optional[Profile]) -> Optional[Profile]:
@@ -149,11 +154,15 @@ class ExampleAppResult:
     lp_displacements_freqs: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
     """Array of frequencies where displacement is estimated (Hz)."""
 
-    max_displacement: Optional[float] = attrs.field(default=None)
-    """Largest detected displacement (μm)."""
+    peak_displacements: npt.NDArray[np.float64] = attrs.field(
+        factory=lambda: np.empty(0), eq=attrs_ndarray_isclose
+    )
+    """Array of detected displacements above threshold (μm)."""
 
-    max_displacement_freq: Optional[float] = attrs.field(default=None)
-    """Frequency of largest detected displacement (Hz)."""
+    peak_frequencies: npt.NDArray[np.float64] = attrs.field(
+        factory=lambda: np.empty(0), eq=attrs_ndarray_isclose
+    )
+    """Array of frequencies for detected displacements (Hz)."""
 
     time_series_std: Optional[float] = attrs.field(default=None)
     """Time series standard deviation."""
@@ -285,8 +294,8 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
             max_sweep_amplitude=processor_result.max_sweep_amplitude,
             lp_displacements=processor_result.lp_displacements,
             lp_displacements_freqs=processor_result.lp_displacements_freqs,
-            max_displacement=processor_result.max_displacement,
-            max_displacement_freq=processor_result.max_displacement_freq,
+            peak_displacements=processor_result.peak_displacements,
+            peak_frequencies=processor_result.peak_frequencies,
             time_series_std=processor_result.time_series_std,
             processor_extra_result=processor_result.extra_result,
             service_result=result,

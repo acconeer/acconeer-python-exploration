@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 
@@ -1526,14 +1526,14 @@ class A121ProcessedData:
         self.processed_data.setdefault("peak_status", []).append(processed_data.peak_status)
 
     def vibration_as_row(self, processed_data: vibration.ExampleAppResult) -> None:
-        self.processed_data.setdefault("max_displacement", []).append(
-            processed_data.max_displacement
+        self.processed_data.setdefault("peak_displacements", []).append(
+            processed_data.peak_displacements
         )
         self.processed_data.setdefault("max_sweep_amplitude", []).append(
             processed_data.max_sweep_amplitude
         )
-        self.processed_data.setdefault("max_displacement_freq", []).append(
-            processed_data.max_displacement_freq
+        self.processed_data.setdefault("peak_frequencies", []).append(
+            processed_data.peak_frequencies
         )
 
 

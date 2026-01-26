@@ -28,6 +28,7 @@ from acconeer.exptool.utils import is_power_of_2
 
 RANGE_SUBSWEEP = 0
 LOOPBACK_SUBSWEEP = 1
+MAX_REPORTED_PEAKS = 30
 
 
 class ReportedDisplacement(AlgoParamEnum):
@@ -210,11 +211,15 @@ class ProcessorResult:
     lp_displacements_freqs: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
     """Array of frequencies where displacement is estimated (Hz)."""
 
-    max_displacement: Optional[float] = attrs.field(default=None)
-    """Largest detected displacement (μm)."""
+    peak_displacements: npt.NDArray[np.float64] = attrs.field(
+        factory=lambda: np.empty(0), eq=attrs_ndarray_isclose
+    )
+    """Array of detected displacements above threshold (μm)."""
 
-    max_displacement_freq: Optional[float] = attrs.field(default=None)
-    """Frequency of largest detected displacement (Hz)."""
+    peak_frequencies: npt.NDArray[np.float64] = attrs.field(
+        factory=lambda: np.empty(0), eq=attrs_ndarray_isclose
+    )
+    """Array of frequencies for detected displacements (Hz)."""
 
     time_series_std: Optional[float] = attrs.field(default=None)
     """Time series standard deviation."""
@@ -357,22 +362,28 @@ class Processor(ProcessorBase[ProcessorResult]):
         )
 
         if len(idx_over_threshold) != 0:
-            displacements_over_threshold = self.lp_displacements[idx_over_threshold]
-            max_displacement = np.max(displacements_over_threshold)
-            max_displacement_freq = self.freq[
-                idx_over_threshold[np.argmax(displacements_over_threshold)]
-            ]
+            peak_displacements = self.lp_displacements[idx_over_threshold]
+            peak_frequencies = self.freq[idx_over_threshold]
+
+            # Sort in descending displacement order
+            sorting_indices = np.argsort(-peak_displacements)
+            peak_displacements = peak_displacements[sorting_indices]
+            peak_frequencies = peak_frequencies[sorting_indices]
+
+            if len(peak_displacements) > MAX_REPORTED_PEAKS:
+                peak_displacements = peak_displacements[:MAX_REPORTED_PEAKS]
+                peak_frequencies = peak_frequencies[:MAX_REPORTED_PEAKS]
         else:
-            max_displacement = None
-            max_displacement_freq = None
+            peak_displacements = np.empty(0)
+            peak_frequencies = np.empty(0)
 
         return ProcessorResult(
             time_series_std=time_series_rms,
             lp_displacements_freqs=self.freq,
             lp_displacements=self.lp_displacements,
             max_sweep_amplitude=max_sweep_amplitude,
-            max_displacement=max_displacement,
-            max_displacement_freq=max_displacement_freq,
+            peak_displacements=peak_displacements,
+            peak_frequencies=peak_frequencies,
             extra_result=ProcessorExtraResult(
                 zm_time_series=zm_time_series_um,
                 amplitude_threshold=self.amplitude_threshold,

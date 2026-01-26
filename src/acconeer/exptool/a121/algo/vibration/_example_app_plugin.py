@@ -10,7 +10,7 @@ from typing import Callable, Mapping, Optional
 import attrs
 import h5py
 
-from PySide6.QtWidgets import QPushButton, QVBoxLayout
+from PySide6.QtWidgets import QLayout, QPushButton, QVBoxLayout
 
 from acconeer.exptool import a121
 from acconeer.exptool._core.docstrings import get_attribute_docstring
@@ -45,7 +45,10 @@ from acconeer.exptool.app.new import (
 )
 from acconeer.exptool.app.new.ui.components.a121 import RangeHelpView
 
-from ._configs import get_high_frequency_config, get_low_frequency_config
+from ._configs import (
+    get_high_frequency_config,
+    get_low_frequency_config,
+)
 from ._example_app import ExampleApp, ExampleAppConfig, ExampleAppResult, _load_algo_data
 from .plot import VibrationPlot
 
@@ -409,9 +412,9 @@ class ViewPlugin(A121ViewPluginBase):
 class PlotPlugin(PgPlotPlugin):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model=app_model)
+        self._vibration_plot = VibrationPlot()
         self._plot_job: Optional[ExampleAppResult] = None
         self._is_setup = False
-        self._vibration_plot = VibrationPlot()
 
     def handle_message(self, message: backend.GeneralMessage) -> None:
         if isinstance(message, backend.PlotMessage):
@@ -434,7 +437,14 @@ class PlotPlugin(PgPlotPlugin):
     def _setup(self, example_app_config: ExampleAppConfig) -> None:
         self.plot_layout.clear()
         meas_dist_m = example_app_config.measured_point * APPROX_BASE_STEP_LENGTH_M
-        self._vibration_plot.setup_plot(self.plot_layout, meas_dist_m)
+
+        layout = self.layout()
+
+        if isinstance(self.layout(), QLayout):
+            self._vibration_plot.setup_plot(self.plot_layout, meas_dist_m, layout)
+        else:
+            msg = f"Unexpected layout found during setup: '{layout}' (expected a QLayout)"
+            raise AssertionError(msg)
 
     def _draw_plot_job(self, example_app_result: ExampleAppResult) -> None:
         self._vibration_plot.update_plot(
