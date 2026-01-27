@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2025
+# Copyright (c) Acconeer AB, 2025-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -673,7 +673,7 @@ class ViewPlugin(A121ViewPluginBase):
                 ),
                 "activate_presence": pidgets.CheckboxPidgetFactory(
                     name_label_text="Activate presence detection",
-                    name_label_tooltip=get_attribute_docstring(ExAppConfig, "presence"),
+                    name_label_tooltip=get_attribute_docstring(ExAppConfig, "activate_presence"),
                 ),
                 "activate_utilization_level": pidgets.CheckboxPidgetFactory(
                     name_label_text="Activate utilization level",

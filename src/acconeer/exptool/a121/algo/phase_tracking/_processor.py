@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -8,15 +8,18 @@ from typing import Optional
 import attrs
 import numpy as np
 import numpy.typing as npt
+from attributes_doc import attributes_doc
 
 from acconeer.exptool import a121
 from acconeer.exptool._core.class_creation.attrs import attrs_ndarray_isclose
 from acconeer.exptool.a121.algo import PERCEIVED_WAVELENGTH, AlgoProcessorConfigBase, ProcessorBase
 
 
+@attributes_doc
 @attrs.mutable(kw_only=True)
 class ProcessorConfig(AlgoProcessorConfigBase):
     threshold: Optional[float] = attrs.field(default=25.0)
+    """Threshold for detection"""
 
     def _collect_validation_results(
         self, config: a121.SessionConfig

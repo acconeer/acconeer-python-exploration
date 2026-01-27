@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -704,7 +704,7 @@ class ViewPlugin(A121ViewPluginBase):
                 "obstruction_distance_threshold": pidgets.FloatSliderPidgetFactory(
                     name_label_text="Obstruction distance threshold:",
                     name_label_tooltip=get_attribute_docstring(
-                        RefAppConfig, "obstruction_distance_threhsold"
+                        RefAppConfig, "obstruction_distance_threshold"
                     ),
                     limits=(0.001, 1.0),
                     decimals=3,

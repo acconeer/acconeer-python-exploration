@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -13,6 +13,7 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool import a121
+from acconeer.exptool._core.docstrings import get_attribute_docstring
 from acconeer.exptool.a121.algo._plugins import (
     ProcessorBackendPluginBase,
     ProcessorBackendPluginSharedState,
@@ -88,6 +89,7 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
         return {
             "threshold": pidgets.FloatPidgetFactory(
                 name_label_text="Threshold:",
+                name_label_tooltip=get_attribute_docstring(ProcessorConfig, "threshold"),
                 decimals=1,
                 limits=(0.0, 10000),
             ),

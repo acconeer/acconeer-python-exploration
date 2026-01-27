@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -31,7 +31,12 @@ from acconeer.exptool.a121.algo.breathing import (
     get_infant_config,
     get_sitting_config,
 )
-from acconeer.exptool.a121.algo.presence import ProcessorConfig as PresenceProcessorConfig
+from acconeer.exptool.a121.algo.presence import (
+    DetectorConfig as PresenceDetectorConfig,
+)
+from acconeer.exptool.a121.algo.presence import (
+    ProcessorConfig as PresenceProcessorConfig,
+)
 from acconeer.exptool.app.new import (
     AppModel,
     AttrsConfigEditor,
@@ -681,17 +686,29 @@ class ViewPlugin(A121ViewPluginBase):
             pidgets.FlatPidgetGroup(): {
                 "intra_detection_threshold": pidgets.FloatSliderPidgetFactory(
                     name_label_text="Intra detection threshold:",
+                    name_label_tooltip=get_attribute_docstring(
+                        PresenceDetectorConfig,  # DetectorConfig is not used, but has all the descriptions
+                        "intra_detection_threshold",
+                    ),
                     decimals=2,
                     limits=(0, 15),
                 ),
                 "intra_frame_time_const": pidgets.FloatSliderPidgetFactory(
                     name_label_text="Intra time constant:",
+                    name_label_tooltip=get_attribute_docstring(
+                        PresenceDetectorConfig,  # DetectorConfig is not used, but has all the descriptions
+                        "intra_frame_time_const",
+                    ),
                     suffix=" s",
                     decimals=2,
                     limits=(0, 1),
                 ),
                 "intra_output_time_const": pidgets.FloatSliderPidgetFactory(
                     name_label_text="Intra output time constant:",
+                    name_label_tooltip=get_attribute_docstring(
+                        PresenceDetectorConfig,  # DetectorConfig is not used, but has all the descriptions
+                        "intra_output_time_const",
+                    ),
                     suffix=" s",
                     decimals=2,
                     limits=(0.01, 20),
@@ -699,11 +716,19 @@ class ViewPlugin(A121ViewPluginBase):
                 ),
                 "inter_detection_threshold": pidgets.FloatSliderPidgetFactory(
                     name_label_text="Inter detection threshold:",
+                    name_label_tooltip=get_attribute_docstring(
+                        PresenceDetectorConfig,  # DetectorConfig is not used, but has all the descriptions
+                        "inter_detection_threshold",
+                    ),
                     decimals=2,
                     limits=(0, 5),
                 ),
                 "inter_frame_fast_cutoff": pidgets.FloatSliderPidgetFactory(
                     name_label_text="Inter fast cutoff freq.:",
+                    name_label_tooltip=get_attribute_docstring(
+                        PresenceDetectorConfig,  # DetectorConfig is not used, but has all the descriptions
+                        "inter_frame_fast_cutoff",
+                    ),
                     suffix=" Hz",
                     decimals=2,
                     limits=(1, 50),
@@ -711,6 +736,10 @@ class ViewPlugin(A121ViewPluginBase):
                 ),
                 "inter_frame_slow_cutoff": pidgets.FloatSliderPidgetFactory(
                     name_label_text="Inter slow cutoff freq.:",
+                    name_label_tooltip=get_attribute_docstring(
+                        PresenceDetectorConfig,  # DetectorConfig is not used, but has all the descriptions
+                        "inter_frame_slow_cutoff",
+                    ),
                     suffix=" Hz",
                     decimals=2,
                     limits=(0.01, 1),
@@ -718,6 +747,10 @@ class ViewPlugin(A121ViewPluginBase):
                 ),
                 "inter_frame_deviation_time_const": pidgets.FloatSliderPidgetFactory(
                     name_label_text="Inter time constant:",
+                    name_label_tooltip=get_attribute_docstring(
+                        PresenceDetectorConfig,  # DetectorConfig is not used, but has all the descriptions
+                        "inter_frame_deviation_time_const",
+                    ),
                     suffix=" s",
                     decimals=2,
                     limits=(0.01, 20),
@@ -725,6 +758,10 @@ class ViewPlugin(A121ViewPluginBase):
                 ),
                 "inter_output_time_const": pidgets.FloatSliderPidgetFactory(
                     name_label_text="Inter output time constant:",
+                    name_label_tooltip=get_attribute_docstring(
+                        PresenceDetectorConfig,  # DetectorConfig is not used, but has all the descriptions
+                        "inter_output_time_const",
+                    ),
                     suffix=" s",
                     decimals=2,
                     limits=(0.01, 20),

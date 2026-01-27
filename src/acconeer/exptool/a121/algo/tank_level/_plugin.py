@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -755,6 +755,7 @@ class ViewPlugin(A121ViewPluginBase):
         return {
             "max_step_length": pidgets.OptionalIntPidgetFactory(
                 name_label_text="Max step length:",
+                name_label_tooltip=get_attribute_docstring(RefAppConfig, "max_step_length"),
                 checkbox_label_text="Set",
                 limits=(1, None),
                 init_set_value=1,

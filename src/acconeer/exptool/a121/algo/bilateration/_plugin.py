@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -17,6 +17,7 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool import a121, opser
+from acconeer.exptool._core.docstrings import get_attribute_docstring
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo import distance
 from acconeer.exptool.a121.algo._plugins import (
@@ -537,21 +538,29 @@ class ViewPlugin(A121ViewPluginBase):
         return {
             "sensor_spacing_m": pidgets.FloatPidgetFactory(
                 name_label_text="Sensor spacing:",
+                name_label_tooltip=get_attribute_docstring(ProcessorConfig, "sensor_spacing_m"),
                 suffix=" m",
                 decimals=3,
             ),
             "max_anticipated_velocity_mps": pidgets.FloatPidgetFactory(
                 name_label_text="Max anticipated velocity:",
+                name_label_tooltip=get_attribute_docstring(
+                    ProcessorConfig, "max_anticipated_velocity_mps"
+                ),
                 suffix=" m/s",
                 decimals=1,
             ),
             "dead_reckoning_duration_s": pidgets.FloatPidgetFactory(
                 name_label_text="Dead reckoning duration:",
+                name_label_tooltip=get_attribute_docstring(
+                    ProcessorConfig, "dead_reckoning_duration_s"
+                ),
                 suffix=" s",
                 decimals=1,
             ),
             "sensitivity": pidgets.FloatSliderPidgetFactory(
                 name_label_text="Sensitivity:",
+                name_label_tooltip=get_attribute_docstring(ProcessorConfig, "sensitivity"),
                 decimals=2,
                 limits=(0.001, 1),
                 show_limit_values=False,
@@ -565,7 +574,8 @@ class ViewPlugin(A121ViewPluginBase):
 
         # Bilateration requires an update rate, so replace the optional float with a mandatory
         distance_pidget_mapping["update_rate"] = pidgets.FloatPidgetFactory(
-            name_label_text="Update rate:",
+            name_label_text=distance_pidget_mapping["update_rate"].name_label_text,
+            name_label_tooltip=distance_pidget_mapping["update_rate"].name_label_tooltip,
             decimals=1,
             limits=(1, None),
         )

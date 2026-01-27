@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ def get_pidget_mapping() -> PidgetFactoryMapping:
         "close_range_leakage_cancellation": pidgets.CheckboxPidgetFactory(
             name_label_text="Enable close range leakage cancellation",
             name_label_tooltip=get_attribute_docstring(
-                DetectorConfig, "close_range_leakage_cancellationet"
+                DetectorConfig, "close_range_leakage_cancellation"
             ),
         ),
         "max_step_length": pidgets.OptionalIntPidgetFactory(

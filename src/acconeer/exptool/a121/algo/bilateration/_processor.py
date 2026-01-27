@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ import attrs
 import h5py
 import numpy as np
 import numpy.typing as npt
+from attributes_doc import attributes_doc
 
 from acconeer.exptool import a121, opser
 from acconeer.exptool.a121.algo import AlgoProcessorConfigBase
@@ -50,6 +51,7 @@ class ProcessorResult:
     objects_without_counterpart: t.List[ObjectWithoutCounterpart]
 
 
+@attributes_doc
 @attrs.mutable(kw_only=True)
 class ProcessorConfig(AlgoProcessorConfigBase):
     sensor_spacing_m: float = attrs.field(default=0.1)
