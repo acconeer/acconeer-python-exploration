@@ -250,6 +250,7 @@ class AppModel(QObject):
         self._port_updater = PortUpdater(self)
         self._port_updater.sig_update.connect(self._handle_port_update)
 
+        self._num_errors = 0
         self._backend_task_callbacks: dict[UUID, Any] = {}
         self._backend_task_send_timestamps: dict[UUID, float] = {}
         self._force_autoconnect = force_autoconnect
@@ -286,6 +287,8 @@ class AppModel(QObject):
         if simulated_autocconnect:
             self.set_connection_interface(ConnectionInterface.SIMULATED)
             self.connect_client(auto=True)
+
+        self.sig_error.connect(self.increment_num_errors)
 
     @contextlib.contextmanager
     def report_timing(self, name: str) -> Iterator[None]:
@@ -775,6 +778,13 @@ class AppModel(QObject):
     @property
     def plugin_generation(self) -> PluginGeneration:
         return self._persistent_state.plugin_generation
+
+    @property
+    def num_errors(self) -> int:
+        return self._num_errors
+
+    def increment_num_errors(self) -> None:
+        self._num_errors += 1
 
     def set_connection_interface(self, connection_interface: ConnectionInterface) -> None:
         self._persistent_state.connection_interface = connection_interface

@@ -217,6 +217,7 @@ class MainWindow(QMainWindow):
                 self,
                 exc=exception,
                 traceback_str=traceback_str,
+                title=f"Error #{app_model.num_errors}",
             ).open()
         )
 
