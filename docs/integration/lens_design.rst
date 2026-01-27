@@ -125,7 +125,7 @@ Constraining the inner surface to planar results in a plano-convex lens, see :nu
     :label: eq_planoconvex_1
 
     \begin{cases}
-    x_{2} = \frac{\left((n-1)T \sqrt{F^{2}+y_{1}^{2}}\right) \sqrt{(n^{2}-1)y_{1}^2 + n^{2}F^{2}} + n^{2}F\sqrt{F^{2}+y_{1}^{2}}}{n^{2}\sqrt{F^{2}+y_{1}^{2}} - \sqrt{(n^{2} - 1)y_{1}^{2} + n^{2}F^{2}}} \\
+    x_{2} = \frac{\left((n-1)T-\sqrt{F^{2}+y_{1}^{2}}\right) \sqrt{(n^{2}-1)y_{1}^2 + n^{2}F^{2}} + n^{2}F\sqrt{F^{2}+y_{1}^{2}}}{n^{2}\sqrt{F^{2}+y_{1}^{2}} - \sqrt{(n^{2} - 1)y_{1}^{2} + n^{2}F^{2}}} \\
     y_{2} = y_{1}\left(1+\frac{x_{2}-F}{\sqrt{(n^{2} - 1)y_{1}^{2} + n^{2}F^{2}}} \right)
     \end{cases}
 
@@ -230,8 +230,6 @@ Lens thickness comparison
 
 For mass production, injection molding is usually cost effective but producing thick lenses can be challenging as sink marks and other deformations can occur. It is therefore of interest to find lens designs which are as thin as possible. In :numref:`fig_lens_thickness_comp` we have compared the lens thickness to diameter ratio (T/D) as a function of :math:`\varepsilon_r`. Common thermoplastics have :math:`\varepsilon_r` in the range 2-4 and the hyperboloidal lens is the thinnest lens. To obtain even thinner lenses, the F/D ratio can be increased; however, this may also increase side lobe levels due to spillover radiation, especially for small-diameter lenses.
 
-Smaller F/D ratios can be chosen than 0.5 with the cost of increased thickness. For short focal distance lenses, the FZP lens is a good options its thickness only depend on :math:`\varepsilon_r`.
-
 .. _fig_lens_thickness_comp:
 .. figure:: /_static/handbook/a121/in-depth_topics/integration/lens_thickness_comparison.svg
     :align: center
@@ -244,7 +242,7 @@ Lens design guidelines and prototyping
 
 In general, multiple design aspects must be considered when choosing a lens type. Whenever possible, the lens can be made as a part of the outer enclosure and therefore avoid the need for an additional radome. For applications requiring a flat outer surface, convex-planar or FZP lenses are good choices. Outdoor applications may need to consider rain or ice buildup and here the lens outer surface is chosen to minimize this impact. For example, an upwards pointing convex surface would collect less rain.
 
-Manufacturing lenses by injection molding may pose limitations on the lens maximum thickness. For the refracting type lenses, thin lenses are obtained by choosing a high F/D ratio and higher :term:`permittivity<Permittivity>` materials. On the other hand, higher F/D ratios occupy more space as well as increased spillover energy which in turn leads to larger side lobes. For the plano-convex and convex-planar lenses, it is therefore recommended to keep 0.4 < F/D < 0.8. Lens design with F/D outside this range is certainly possible, but with additional loss in directivity and increased side lobes. When large diameter lenses are required, FZP type lenses should be considered as it's thickness only depends on the :term:`permittivity<Permittivity>` and are thus generally thinner than :term:`refracting<Refraction>` type lenses.
+Manufacturing lenses by injection molding may pose limitations on the lens maximum thickness. For the refracting type lenses, thin lenses are obtained by choosing a high F/D ratio and higher :term:`permittivity<Permittivity>` materials. On the other hand, higher F/D ratios occupy more space as well as increased spillover energy which in turn leads to larger side lobes. For the plano-convex and convex-planar lenses, it is therefore recommended to keep 0.3 < F/D < 0.6. Lens design with F/D outside this range is certainly possible, but with additional loss in directivity and increased side lobes. When large diameter lenses are required, FZP type lenses should be considered as it's thickness only depends on the :term:`permittivity<Permittivity>` and are thus generally thinner than :term:`refracting<Refraction>` type lenses.
 
 For maximum gain and low side-lobe levels, it is important to also follow the PCB ground plane guidelines in :ref:`integration-a121-EM_PCB_groundplane_size`.
 
