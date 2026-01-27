@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -212,10 +212,13 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Acconeer Exploration Tool")
         self.moveEvent = lambda _: self.saveGeometry()  # type: ignore[method-assign,assignment]
 
-        app_model.sig_error.connect(self.on_app_model_error)
-
-    def on_app_model_error(self, exception: Exception, traceback_str: t.Optional[str]) -> None:
-        ExceptionWidget(self, exc=exception, traceback_str=traceback_str).exec()
+        app_model.sig_error.connect(
+            lambda exception, traceback_str: ExceptionWidget(
+                self,
+                exc=exception,
+                traceback_str=traceback_str,
+            ).open()
+        )
 
     def closeEvent(self, *args: t.Any, **kwargs: t.Any) -> None:
         self.sig_closing.emit()

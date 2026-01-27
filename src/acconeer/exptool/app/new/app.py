@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -152,6 +152,7 @@ def main() -> None:
 
     model.broadcast()
 
+    sys.excepthook = model.excepthook
     sys.exit(app.exec())
 
 

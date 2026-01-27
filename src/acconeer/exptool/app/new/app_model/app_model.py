@@ -9,7 +9,10 @@ import json
 import logging
 import queue
 import shutil
+import sys
 import time
+import traceback
+import types
 from enum import Enum
 from pathlib import Path
 from typing import (
@@ -293,6 +296,31 @@ class AppModel(QObject):
             end = time.perf_counter()
             self.sig_timing.emit((name, start, end))
 
+    def excepthook(
+        self, etype: type[BaseException], value: BaseException, tb: Optional[types.TracebackType]
+    ) -> None:
+        """
+        An excepthook is a top-level exception handler.
+
+        This custom excepthook that emits sig_error (which in turn shows a pop-up).
+
+        Enabled by doing:
+
+            app_model = AppModel(...)
+            sys.excepthook = app_model.excepthook
+
+        Read more here: https://docs.python.org/3/library/sys.html#sys.excepthook
+        """
+        try:
+            traceback_format_exc = "".join(traceback.format_exception(etype, value, tb))
+            self.emit_error(value, traceback_format_exc)
+        except BaseException:
+            print(
+                "WARNING: Something went wrong with custom excepthook, falling back.",
+                file=sys.stderr,
+            )
+            sys.__excepthook__(etype, value, tb)
+
     @property
     def plugin_state(self) -> PluginState:
         """Read-only property of the plugin state"""
@@ -347,7 +375,9 @@ class AppModel(QObject):
     def broadcast_backend_state(self) -> None:
         self.sig_backend_state_changed.emit(self.backend_plugin_state)
 
-    def emit_error(self, exception: Exception, traceback_format_exc: Optional[str] = None) -> None:
+    def emit_error(
+        self, exception: BaseException, traceback_format_exc: Optional[str] = None
+    ) -> None:
         log.debug("Emitting error")
         self.sig_error.emit(exception, traceback_format_exc)
 
