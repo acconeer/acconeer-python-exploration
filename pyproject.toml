@@ -155,6 +155,21 @@ cov-report = "coverage report"  # default
 # That enables raw use of e.g. pytest with 'hatch run test:pytest -h'
 template = "hatch-test"
 
+[tool.hatch.envs.test.scripts]
+error-popup-a121 = """
+python -m acconeer.exptool.app.new --list-plugin-modules --generation a121 \
+    | xargs -I % \
+        sh -x -c '\
+            timeout 10 \
+                python -m acconeer.exptool.app.new \
+                    --dump-exceptions \
+                    --generation a121 --plugin-key % \
+                    --simulated-autoconnect --tasks pseudo:quit \
+            || exit 255 \
+        '
+"""
+
+
 [tool.hatch.envs.docs]
 features = ["docs"]
 dependencies = ["sphinx_autobuild"]
