@@ -88,6 +88,18 @@ def main() -> None:
     plugins = load_plugins()
     plugin_keys = [p.key for p in plugins]
 
+    if args.list_plugin_modules:
+        if args.generation_str:
+            specified_generation = PluginGeneration[args.generation_str.upper()]
+        else:
+            specified_generation = None
+
+        for plugin in plugins:
+            if specified_generation is not None and plugin.generation != specified_generation:
+                continue
+            print(plugin.key)
+        sys.exit(0)
+
     if args.plugin_key is not None and args.plugin_key not in plugin_keys:
         parser.print_usage()
         print(f"ERROR: Could not find plugin with key {args.plugin_key!r}")
@@ -233,6 +245,14 @@ class _ExptoolArgumentParser(argparse.ArgumentParser):
                 + "is not a path (e.g. not 'my_processor/latest/plugin.py'), it's a "
                 + "python module (e.g. 'my_processor.latest.plugin'). "
                 + "This option can be repeated."
+            ),
+        )
+        plugin_group.add_argument(
+            "--list-plugin-modules",
+            action="store_true",
+            help=(
+                "Print the key of each known plugin, then exit. "
+                + "'--generation' will filter the plugin keys printed."
             ),
         )
 
