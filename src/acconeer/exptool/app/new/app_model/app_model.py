@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -287,9 +287,11 @@ class AppModel(QObject):
     @contextlib.contextmanager
     def report_timing(self, name: str) -> Iterator[None]:
         start = time.perf_counter()
-        yield
-        end = time.perf_counter()
-        self.sig_timing.emit((name, start, end))
+        try:
+            yield
+        finally:
+            end = time.perf_counter()
+            self.sig_timing.emit((name, start, end))
 
     @property
     def plugin_state(self) -> PluginState:
