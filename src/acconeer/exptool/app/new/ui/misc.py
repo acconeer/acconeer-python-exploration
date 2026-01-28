@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -29,8 +29,7 @@ def get_installed_packages_via_pip() -> Optional[list[str]]:
             from pip.operations.freeze import freeze  # type: ignore
 
         return list(freeze())
-    except Exception as e:
-        _LOG.exception(e)
+    except Exception:
         return None
 
 
