@@ -44,6 +44,7 @@ from PySide6.QtWidgets import (
 from acconeer.exptool._core.entities.validation_result import Criticality
 from acconeer.exptool.app.new.ui import icons
 from acconeer.exptool.app.new.ui.components.data_editor import DataEditor
+from acconeer.exptool.testing import is_running_in_ci
 
 from .common import MaybeIterable, as_sequence
 
@@ -85,6 +86,9 @@ class PidgetFactory(abc.ABC):
 
     @name_label_tooltip.validator
     def check_has_tooltip(self, attribute: Any, value: str) -> None:
+        if not is_running_in_ci():
+            return
+
         if not value:
             msg = "Missing required 'name_label_tooltip'"
             raise ValueError(msg)
