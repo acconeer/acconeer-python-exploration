@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -66,7 +66,7 @@ def _hooks_converter(a: MaybeIterable[PidgetHook]) -> Sequence[PidgetHook]:
 @attrs.frozen(kw_only=True, slots=False)
 class PidgetFactory(abc.ABC):
     name_label_text: str = attrs.field()
-    name_label_tooltip: Optional[str] = None
+    name_label_tooltip: Optional[str] = attrs.field(default=None)
     note_label_text: Optional[str] = None
     extra_widget_factory: Callable[[], Optional[QWidget]] = lambda: None
     hooks: Sequence[PidgetHook] = attrs.field(factory=tuple, converter=_hooks_converter)
@@ -81,6 +81,12 @@ class PidgetFactory(abc.ABC):
     def check_label_text_format(self, attribute: Any, value: str) -> None:
         if len(value) > 0 and value[-1] != ":":
             msg = "Labels have to end with ':'"
+            raise ValueError(msg)
+
+    @name_label_tooltip.validator
+    def check_has_tooltip(self, attribute: Any, value: str) -> None:
+        if not value:
+            msg = "Missing required 'name_label_tooltip'"
             raise ValueError(msg)
 
     @abc.abstractmethod

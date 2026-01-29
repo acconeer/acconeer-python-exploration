@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 # type: ignore
@@ -71,7 +71,9 @@ def qapplication() -> QApplication:
             editor_class=pc.AttrsConfigEditor,
             editor_kwargs={
                 "title": "title",
-                "factory_mapping": {"a": pc.pidgets.IntPidgetFactory(name_label_text="")},
+                "factory_mapping": {
+                    "a": pc.pidgets.IntPidgetFactory(name_label_text="", name_label_tooltip="tt")
+                },
                 "config_type": StubAttrsClass,
             },
             data_prototype=StubAttrsClass(1),
@@ -143,7 +145,9 @@ def config_editor_fixt(request: pytest.FixtureRequest) -> EditorFixture[t.Any]:
         EditorFixture(
             editor_class=pc.pidgets.IntPidget,
             editor_kwargs={
-                "factory": pc.pidgets.IntPidgetFactory(name_label_text="", limits=(0, 2)),
+                "factory": pc.pidgets.IntPidgetFactory(
+                    name_label_text="", limits=(0, 2), name_label_tooltip="tt"
+                ),
                 "parent": None,
             },
             data_prototype=1,
@@ -155,7 +159,9 @@ def config_editor_fixt(request: pytest.FixtureRequest) -> EditorFixture[t.Any]:
         EditorFixture(
             editor_class=pc.pidgets.OptionalIntPidget,
             editor_kwargs={
-                "factory": pc.pidgets.OptionalIntPidgetFactory(name_label_text="", limits=(0, 2)),
+                "factory": pc.pidgets.OptionalIntPidgetFactory(
+                    name_label_text="", limits=(0, 2), name_label_tooltip="tt"
+                ),
                 "parent": None,
             },
             data_prototype=1,
@@ -167,7 +173,9 @@ def config_editor_fixt(request: pytest.FixtureRequest) -> EditorFixture[t.Any]:
         EditorFixture(
             editor_class=pc.pidgets.FloatPidget,
             editor_kwargs={
-                "factory": pc.pidgets.FloatPidgetFactory(name_label_text="", limits=(0.0, 2.0)),
+                "factory": pc.pidgets.FloatPidgetFactory(
+                    name_label_text="", limits=(0.0, 2.0), name_label_tooltip="tt"
+                ),
                 "parent": None,
             },
             data_prototype=1.0,
@@ -180,7 +188,9 @@ def config_editor_fixt(request: pytest.FixtureRequest) -> EditorFixture[t.Any]:
             editor_class=pc.pidgets.FloatSliderPidget,
             editor_kwargs={
                 "factory": pc.pidgets.FloatSliderPidgetFactory(
-                    name_label_text="", limits=(0.0, 2.0)
+                    name_label_text="",
+                    limits=(0.0, 2.0),
+                    name_label_tooltip="tt",
                 ),
                 "parent": None,
             },
@@ -193,7 +203,9 @@ def config_editor_fixt(request: pytest.FixtureRequest) -> EditorFixture[t.Any]:
         EditorFixture(
             editor_class=pc.pidgets.OptionalFloatPidget,
             editor_kwargs={
-                "factory": pc.pidgets.OptionalFloatPidgetFactory(name_label_text=""),
+                "factory": pc.pidgets.OptionalFloatPidgetFactory(
+                    name_label_text="", name_label_tooltip="tt"
+                ),
                 "parent": None,
             },
             data_prototype=1.0,
@@ -205,7 +217,9 @@ def config_editor_fixt(request: pytest.FixtureRequest) -> EditorFixture[t.Any]:
         EditorFixture(
             editor_class=pc.pidgets.CheckboxPidget,
             editor_kwargs={
-                "factory": pc.pidgets.CheckboxPidgetFactory(name_label_text=""),
+                "factory": pc.pidgets.CheckboxPidgetFactory(
+                    name_label_text="", name_label_tooltip="tt"
+                ),
                 "parent": None,
             },
             data_prototype=True,
@@ -220,6 +234,7 @@ def config_editor_fixt(request: pytest.FixtureRequest) -> EditorFixture[t.Any]:
                 "factory": pc.pidgets.ComboboxPidgetFactory(
                     name_label_text="",
                     items=[("1", 1), ("2", 2)],
+                    name_label_tooltip="tt",
                 ),
                 "parent": None,
             },
@@ -236,6 +251,7 @@ def config_editor_fixt(request: pytest.FixtureRequest) -> EditorFixture[t.Any]:
                     name_label_text="",
                     enum_type=StubEnum,
                     label_mapping={StubEnum.A: "A", StubEnum.B: "B"},
+                    name_label_tooltip="tt",
                 ),
                 "parent": None,
             },
@@ -252,6 +268,7 @@ def config_editor_fixt(request: pytest.FixtureRequest) -> EditorFixture[t.Any]:
                     name_label_text="",
                     enum_type=StubEnum,
                     label_mapping={StubEnum.A: "A", StubEnum.B: "B"},
+                    name_label_tooltip="tt",
                 ),
                 "parent": None,
             },

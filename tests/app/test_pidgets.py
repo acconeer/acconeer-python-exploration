@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -58,6 +58,7 @@ class TestPidgets:
 
         factory = factory_class(
             name_label_text="",
+            name_label_tooltip="tt",
             hooks=hooks_argument,
             **EXTRA_KWARGS.get(factory_class, {}),
         )
