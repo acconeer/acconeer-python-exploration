@@ -159,3 +159,5 @@
 "detectors/a121/speed_detection.rst" "detectors/a121/speed_detector.rst"
 "exploration_tool/example_scripts/python_api/examples-a121-stress.rst" "removed.rst"
 "integration/a121/index.rst" "integration/index.rst"
+radar_data_and_control/a121/profiles.rst glossary.rst
+radar_data_and_control/a121/in_depth_topics/fom.rst figure_of_merits/a121.rst

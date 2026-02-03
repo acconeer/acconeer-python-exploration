@@ -24,7 +24,7 @@ Consider a signal transmitted through free space to a radar target located at di
 
     SNR=C \sigma \gamma \frac{1}{R^{4}}
 
-Where :math:`R` is the distance of the radar to the target, :math:`C` is the :term:`radar loop gain<RLG>`, including both the transmitter and receiver chain (two-ways signal path), :math:`\sigma` is the :term:`Radar Cross Section (RCS)<Radar Cross Section>` of the scattering object and :math:`\gamma` determines the reflected power of the object's material. :term:`RCS<Radar Cross Section>` depends on the size and shape of the scattering object. Moreover, :term:`SNR` depends on the sensor profile setting. A comprehensive explanation of the sensor profiles can be found under section :ref:`rdac-a121-profiles`.
+Where :math:`R` is the distance of the radar to the target, :math:`C` is the :term:`radar loop gain<RLG>`, including both the transmitter and receiver chain (two-ways signal path), :math:`\sigma` is the :term:`Radar Cross Section (RCS)<Radar Cross Section>` of the scattering object and :math:`\gamma` determines the reflected power of the object's material. :term:`RCS<Radar Cross Section>` depends on the size and shape of the scattering object. Moreover, :term:`SNR` depends on the sensor profile setting. A comprehensive explanation of the sensor profiles can be found under section :term:`profiles<Profile>`.
 
 Radar loop gain pattern
 =======================

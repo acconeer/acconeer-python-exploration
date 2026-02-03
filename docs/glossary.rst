@@ -14,7 +14,33 @@ Glossary
       Pulse repetition frequency. The frequency at which the radar transmits wavelets.
 
    Profile
-      Profiles are used to set the transmitted pulse length in discreet steps. The higher the Profile, the longer the transmitted pulse length.
+      Profiles are used to set the transmitted pulse length in discrete steps. The higher the Profile, the longer the transmitted pulse length.
+
+      .. _fig_a121_profiles:
+      .. figure:: /_static/handbook/a121/profiles.png
+         :align: center
+         :width: 80%
+
+         Mocked data for different profiles with three objects in the range.
+
+      One of the most important configuration parameters is the *profile*, which mainly sets the duration and shape of emitted pulses.
+      Other internal parameters are set up accordingly to maximize the efficiency of the system, which affects the measurement time of a point.
+      Higher numbered profiles use longer pulses, which generally:
+
+      - Increases SNR due to increased emitted energy.
+      - Decreases measurement time for a given configuration.
+      - Gives the possibility to sample more sparsely, decreasing measurement time and memory usage.
+
+      On the flip side, longer pulses also:
+
+      - Decreases precision due to lower bandwidth.
+      - Increases TX to RX leakage length, i.e., how far into the range the transmitted pulse is visible.
+        The closest usable range due to this is referred to as the "close-in distance".
+      - Decreases distance resolution (ability to resolve objects close to each other).
+
+      :numref:`fig_a121_profiles` illustrates the difference between two profiles.
+      Profile 2 correctly resolves three objects where 3 cannot.
+      However, profile 3 gives more energy for the same object.
 
    SNR
       Abbreviation of *Signal-to-noise ratio*.
@@ -24,9 +50,37 @@ Glossary
       .. math::
          :label: eq_snr_glossary
 
-         SNR=C \sigma \gamma \frac{1}{R^{4}}
+         \text{SNR} &= \text{RLG} \sigma \gamma \frac{1}{d^{4}},
 
-      Where :math:`R` is the distance of the radar to the target, :math:`C` is the radar loop gain, including both the transmitter and receiver chain (two-ways signal path), :math:`\sigma` is the :term:`Radar Cross Section (RCS)<Radar Cross Section>` of the scattering object and :math:`\gamma` determines the reflected power of the object's material. :term:`RCS<Radar Cross Section>` depends on the size and shape of the scattering object.
+	 \text{SNR}_{dB} &= 10 \log_{10} \left( \text{RLG} \sigma \gamma \frac{1}{d^{4}}, \right)
+
+      where
+
+      - :math:`d` is the radial distance of the radar to the target,
+      - :math:`RLG` is the :term:`Radar Loop Gain<RLG>`, including both the transmitter and receiver chain (two-ways signal path),
+      - :math:`\sigma` is the :term:`Radar Cross Section (RCS)<Radar Cross Section>` of the scattering object,
+      - :math:`\gamma` is the :term:`Reflectivity` and determines the reflected power of the object's material.
+
+      The signal-to-noise ration can also be expressed with the Radar Equation:
+
+      .. math::
+	 :label: eq_snr_glossary_full
+
+	 \text{SNR} &= \frac{P_{\verb|TX|} G_{\verb|TX|} G_{\verb|RX|} \lambda^2 \sigma \gamma}{(4 \pi)^3 d^4 k T_s B},
+
+	 \text{SNR}_{dB} &= 10 \log_{10} \left( \frac{P_{\verb|TX|} G_{\verb|TX|} G_{\verb|RX|} \lambda^2 \sigma \gamma}{(4 \pi)^3 d^4 k T_s B} \right),
+
+      where
+
+      - :math:`𝑃_{\verb|TX|}` is the transmit peak envelope power of the radar,
+      - :math:`𝐺_{\verb|TX|}` is the TX antenna gain of the radar,
+      - :math:`𝐺_{\verb|RX|}` is the RX antenna gain of the radar,
+      - :math:`\lambda` is the wavelength of the radar,
+      - :math:`\sigma` is the Radar Cross-Section (RCS) of the target,
+      - :math:`\gamma` is the reflectivity of the target,
+      - :math:`𝑑` is the radial distance to the target,
+      - :math:`𝑘` is the Boltzmann constant,
+      - :math:`𝑇_s` is the system noise temperature.
 
    Reflectivity
       A property of physical materials.

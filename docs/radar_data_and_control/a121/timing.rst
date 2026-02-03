@@ -44,7 +44,7 @@ Sample duration
 
 The time to measure a sample :math:`\tau_\text{sample}` is the *added* time per HWAAS for every single measured point.
 In most cases, this accounts for the largest part of the sensor measurement time.
-The sample duration :math:`\tau_\text{sample}` depends on the configured :ref:`profile <rdac-a121-profiles>` and :class:`PRF <acconeer.exptool.a121.PRF>` according to :numref:`tab_a121_sample_dur` below.
+The sample duration :math:`\tau_\text{sample}` depends on the configured :term:`profile<Profile>` and :class:`PRF <acconeer.exptool.a121.PRF>` according to :numref:`tab_a121_sample_dur` below.
 
 .. _tab_a121_sample_dur:
 .. table:: Approximate sample durations :math:`\tau_\text{sample}` for all profile and PRF :math:`f_p` combinations.

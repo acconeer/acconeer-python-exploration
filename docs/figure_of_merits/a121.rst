@@ -1,0 +1,102 @@
+*********************
+A121 Figure of Merits
+*********************
+
+The :doc:`sparse_iq` applies to A121 sensors.
+The definitions below apply **only** to the A121 sensor.
+
+.. _rdac-a121-fom-radial-resolution:
+
+Radial resolution
+=================
+
+Radial resolution is described by the `full width at half maximum (FWHM) <https://en.wikipedia.org/wiki/Full_width_at_half_maximum>`_ envelope power.
+
+Let
+:math:`x(f, s, d)`
+be a (complex) point
+at a radial distance :math:`d` where the number of distances is :math:`N_d`,
+in a sweep :math:`s` where the number of sweeps per frame is :math:`N_s`,
+in a frame :math:`f` where the number of frames collected is :math:`N_f`.
+
+Then, let the (average) envelope power
+
+.. math::
+    :label:
+
+    y(d) = |\text{mean}_{f,s}(x)|^2
+
+The FWHM of :math:`y` is what describes the radial resolution.
+
+
+Distance
+========
+
+Preliminaries
+-------------
+
+Let :math:`d_{est}(f, d)` be the estimated distance to a target located at distance :math:`d`,
+formed by processing frame :math:`f` in accordance with the steps outline in the
+:doc:`/detectors/a121/distance_detector` documentation.
+:math:`f` is a single frame in a set of frames of size :math:`N_f`.
+
+Next, let :math:`e(f, d)=d_{est}(f, d) - d` be the estimation error of a single frame/measurement.
+
+Lastly, form the mean error by averaging over the frames, :math:`\overline{e}(d)=\text{mean}_{f}(e(f,d))`.
+
+:math:`\overline{e}(d)` describes the average error for a single sensor.
+The metrics calculated in the following sections are based on data from a set of sensors.
+To indicate what sensor the mean error is associated with, the argument :math:`s` is added,
+:math:`\overline{e}(d,s)`.
+
+Accuracy
+--------
+
+The distance estimation accuracy is characterized through the following two sets of metrics:
+
+- Mean error(:math:`\mu`) and standard deviation(:math:`\sigma`).
+- Mean absolute error(:math:`\text{MAE}`).
+
+Mean and standard deviation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The mean error for a set of sensors is given by :math:`\mu=\text{mean}_{d,s}(\overline{e}(d,s))`.
+
+The standard deviation for a set of sensors is given by :math:`\sigma=\text{std}_{d,s}(\overline{e}(d,s))`.
+
+Mean absolute error
+^^^^^^^^^^^^^^^^^^^
+
+The mean absolute error for a set of sensor is given by :math:`\text{MAE}=mean_{d,s}(|\overline{e}(d,s)|)`.
+
+Linearity
+---------
+
+Linearity refers to the variation in the distance estimate error as a function of the distance to the target.
+
+The distance linearity is characterized through the mean of the standard deviation of the estimation error
+over a number of distances, :math:`\sigma=\text{mean}_{s}(\text{std}_{d}(\overline{e}(d,s)))`.
+
+The distance linearity is evaluated over two sets of distances:
+
+- Micro: A number of distances within a few wavelengths.
+- Macro: A number of distances over many wavelengths.
+
+Temperature sensing
+===================
+
+The accuracy of the built-in temperature sensor is described by the *relative deviation*:
+
+.. math::
+    :label:
+
+    k = \left| \frac{\hat{x} - x}{x} \right|
+
+where :math:`x` is the actual temperature change and :math:`\hat{x}` is the measured temperature change.
+
+The evaluated temperature span is typically the range from -40°C to 105°C.
+
+.. note::
+
+    The built-in temperature sensor is not designed for *absolute* measurements and should therefore not be used for that.
+    For this reason, the absolute accuracy is not described as a FoM.
