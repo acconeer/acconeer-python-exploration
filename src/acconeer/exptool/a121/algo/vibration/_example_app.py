@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2024
+# Copyright (c) Acconeer AB, 2024-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -266,6 +266,7 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
             lp_coeff=config.lp_coeff,
             threshold_margin=config.threshold_margin,
             amplitude_threshold=config.amplitude_threshold,
+            reported_displacement_mode=config.reported_displacement_mode,
             low_frequency_enhancement=config.low_frequency_enhancement,
         )
 
