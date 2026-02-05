@@ -170,7 +170,7 @@ fullbuild = ["build", "linkcheck"]
 platform.windows.scripts = [
     # Remove directory recursively (/s) & without prompt (/s).
     # The "|| echo ..." is both friendly and supresses a non-zero exit code if "docs/_build" was missing
-    'clean=rmdir /s /q docs/_build || echo Could not find "docs\_build" and that is OK!',
+    'clean=rmdir /s /q "docs\_build" || echo Could not find "docs\_build" and that is OK!',
 ]
 
 [tool.hatch.envs.hatch-static-analysis]
