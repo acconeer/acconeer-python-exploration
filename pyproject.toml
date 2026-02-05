@@ -179,6 +179,13 @@ rediraffe-check = "python -m sphinx -b rediraffecheckdiff docs docs/_build"
 build = ["clean", "html", "latexpdf", "spelling", "rediraffe-check"]
 fullbuild = ["clean", "html", "latexpdf", "linkcheck", "spelling", "rediraffe-check"]
 
+[tool.hatch.envs.docs.overrides]
+platform.windows.scripts = [
+    # Remove directory recursively (/s) & without prompt (/s).
+    # The "|| echo ..." is both friendly and supresses a non-zero exit code if "docs/_build" was missing
+    'clean=rmdir /s /q docs/_build || echo Could not find "docs\_build" and that is OK!',
+]
+
 [tool.hatch.envs.hatch-static-analysis]
 # This is the environment for "hatch fmt"
 config-path = "none"
