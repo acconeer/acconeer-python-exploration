@@ -165,7 +165,7 @@ dependencies = ["sphinx_autobuild"]
 
 [tool.hatch.envs.docs.scripts]
 clean = "rm -rf docs/_build"
-default-sphinx-build = "python -m sphinx --fail-on-warning {args} docs docs/_build"
+default-sphinx-build = "python -m sphinx --fail-on-warning --jobs auto {args} docs docs/_build"
 
 autobuild = [
     "clean",
