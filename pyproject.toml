@@ -166,18 +166,20 @@ dependencies = ["sphinx_autobuild"]
 
 [tool.hatch.envs.docs.scripts]
 clean = "rm -rf docs/_build"
+default-sphinx-build = "python -m sphinx --fail-on-warning {args} docs docs/_build"
+
 autobuild = [
     "clean",
     "python -m sphinx_autobuild -t internal -b html docs docs/_build --watch src",
 ]
-html = "python -m sphinx -W -b html docs docs/_build"
-linkcheck = "python -m sphinx -W -b linkcheck docs docs/_build"
-spelling = "python -m sphinx -W -b spelling docs docs/_build"
-latexpdf = "python -m sphinx -M latexpdf docs docs/_build"
-rediraffe-write = "python -m sphinx -b rediraffewritediff docs docs/_build"
-rediraffe-check = "python -m sphinx -b rediraffecheckdiff docs docs/_build"
-build = ["clean", "html", "latexpdf", "spelling", "rediraffe-check"]
-fullbuild = ["clean", "html", "latexpdf", "linkcheck", "spelling", "rediraffe-check"]
+html = "default-sphinx-build -b html"
+linkcheck = "default-sphinx-build -b linkcheck"
+spelling = "default-sphinx-build -b spelling"
+latexpdf = "default-sphinx-build -b latexpdf"
+rediraffe-write = "default-sphinx-build -b rediraffewritediff"
+rediraffe-check = "default-sphinx-build -b rediraffecheckdiff"
+build = ["clean", "html", "spelling", "rediraffe-check"]
+fullbuild = ["build", "linkcheck"]
 
 [tool.hatch.envs.docs.overrides]
 platform.windows.scripts = [
