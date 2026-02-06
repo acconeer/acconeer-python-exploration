@@ -175,7 +175,6 @@ autobuild = [
 html = "default-sphinx-build -b html"
 linkcheck = "default-sphinx-build -b linkcheck"
 spelling = "default-sphinx-build -b spelling"
-latexpdf = "default-sphinx-build -b latexpdf"
 rediraffe-write = "default-sphinx-build -b rediraffewritediff"
 rediraffe-check = "default-sphinx-build -b rediraffecheckdiff"
 build = ["clean", "html", "spelling", "rediraffe-check"]

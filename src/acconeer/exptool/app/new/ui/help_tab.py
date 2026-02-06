@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ these links might be of help:
 
 ## Information and further reading
 
-- [Handbook](https://docs.acconeer.com/en/latest/handbook/index.html):
+- [Pulsed Coherent Radar](https://docs.acconeer.com/en/latest/pcr_tech/index.html):
 Overview of radar concepts, information about Acconeer's radars.
 
 - [Exploration Tool docs](https://docs.acconeer.com/en/latest/exploration_tool/index.html):

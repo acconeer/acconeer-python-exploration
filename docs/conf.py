@@ -153,60 +153,6 @@ if os.environ.get("READTHEDOCS", "") == "True":
     if "html_context" not in globals():
         html_context = {}
     html_context["READTHEDOCS"] = True
-
-
-############################ LaTeX Builder Options #############################
-
-latex_elements = {
-    "papersize": "a4paper",
-    "pointsize": "11pt",
-    "fontpkg": r"""
-        \usepackage{helvet}
-        \renewcommand{\familydefault}{\sfdefault}
-    """,
-    "tableofcontents": "",
-    "sphinxsetup": ",".join(
-        [
-            r"hmargin={1.2in, 1.2in}",
-        ]
-    ),
-    "preamble": r"""
-        \usepackage{titling}
-        \usepackage{graphicx}
-        \graphicspath{{../../_static/}}
-        \usepackage{caption}
-        \captionsetup[figure]{labelsep=nobreakspace}
-        \captionsetup[table]{labelsep=nobreakspace}
-    """,
-    "maketitle": r"""
-        \vspace*{50mm}
-        \begin{center}
-            \includegraphics[width=100mm]{logo.pdf}
-            \par
-            \vspace*{15mm}
-            {
-                \huge
-                \thetitle
-            }
-        \end{center}
-        \newpage
-        \tableofcontents
-        \newpage
-    """,
-}
-
-# (startdocname, targetname, title, author, documentclass, toctree_only)
-latex_documents = [
-    (
-        "handbook/index",
-        "handbook.tex",
-        "Handbook",
-        author,
-        "howto",
-        False,
-    )
-]
-
 numfig = True
 numfig_format = {"figure": "Figure %s"}
 math_eqref_format = "Eq. {number}"
