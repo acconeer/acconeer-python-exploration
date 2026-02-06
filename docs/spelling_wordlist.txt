@@ -177,6 +177,7 @@ uniformness
 Ultrawide
 untick
 utils
+uvx
 vias
 virtualenv
 Wayland
