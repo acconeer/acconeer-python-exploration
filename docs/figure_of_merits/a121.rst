@@ -1,5 +1,5 @@
 *********************
-A121 Figure of Merits
+A121 Figures of Merit
 *********************
 
 The :doc:`sparse_iq` applies to A121 sensors.

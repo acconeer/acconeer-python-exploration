@@ -1,5 +1,5 @@
 **************************
-Sparse IQ Figure of Merits
+Sparse IQ Figures of Merit
 **************************
 
 The definitions below apply to any of Acconeer's products implementing the Sparse IQ service.
