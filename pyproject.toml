@@ -82,7 +82,6 @@ docs = [
     "sphinxext-rediraffe",
     "sphinx-notfound-page>=1.0.0",
     "sphinx-book-theme==1.1.2",
-    "sphinx-tabs",
     "sphinxcontrib-youtube",
     "sphinxcontrib-spelling",
 ]

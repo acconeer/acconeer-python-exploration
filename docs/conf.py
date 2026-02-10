@@ -30,7 +30,6 @@ extensions = [
     "myst_parser",
     "sphinxext.rediraffe",
     "notfound.extension",
-    "sphinx_tabs.tabs",
     "sphinxcontrib.youtube",
     "sphinxcontrib.spelling",
 ]

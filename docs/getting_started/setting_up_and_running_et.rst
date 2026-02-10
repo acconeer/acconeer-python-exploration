@@ -20,9 +20,9 @@ Exploration Tool Installation
 Depending on what you wish to accomplish with Exploration Tool or the :doc:`Python API </exploration_tool/api/index>`,
 you can install in different ways:
 
-.. tabs::
+.. tab-set::
 
-   .. tab:: :fab:`windows;fa-xl` Quick Start
+   .. tab-item:: :fab:`windows;fa-xl` Quick Start
 
       If you have a Windows PC and you're only interested in running Exploration Tool to see visualizations,
       experiment with configurations or use the :doc:`/resource_calc`, the Portable Windows
@@ -36,7 +36,7 @@ you can install in different ways:
       #. Double-click the ``run_app`` script to start the Exploration Tool Application
 
 
-   .. tab:: :fab:`python;fa-xl` Python Package (PyPi)
+   .. tab-item:: :fab:`python;fa-xl` Python Package (PyPi)
 
       If you have a PC with Windows or Ubuntu, want to use Python,
       want to run the Exploration Tool Application,
@@ -47,9 +47,9 @@ you can install in different ways:
       Python is needed to install the package. If you don't have Python installed, see below for instructions,
       otherwise go to next step.
 
-      .. tabs::
+      .. tab-set::
 
-         .. tab:: :fab:`windows;fa-xl` Windows
+         .. tab-item:: :fab:`windows;fa-xl` Windows
 
             #. Go to `python.org <https://www.python.org/downloads/>`_ and download the latest version
             #. Start the installer
@@ -58,7 +58,7 @@ you can install in different ways:
             #. Disable path length limit
             #. Click 'Close'
 
-         .. tab:: :fab:`ubuntu;fa-xl` Ubuntu
+         .. tab-item:: :fab:`ubuntu;fa-xl` Ubuntu
 
             Go to `how-to-install-python <https://phoenixnap.com/kb/how-to-install-python-3-ubuntu>`_ for example how to install.
 
@@ -97,7 +97,7 @@ you can install in different ways:
          Running the command ``python -m acconeer.exptool.app.new``
          will start the new Exploration Tool directly
 
-   .. tab:: :fab:`github;fa-xl` Source Installation
+   .. tab-item:: :fab:`github;fa-xl` Source Installation
 
       If you have a PC with Windows or Ubuntu and want a more flexible install than what's offered
       in the **Python Package** install, Exploration Tool is open source on `GitHub <et_github_>`_.
@@ -153,16 +153,16 @@ you can install in different ways:
 Additional Setup
 ****************
 
-.. tabs::
+.. tab-set::
 
-   .. tab:: :fab:`windows;fa-xl`
+   .. tab-item:: :fab:`windows;fa-xl`
 
       If you encounter any connection issues while following along :ref:`installation-and-setup` you *might* be missing
       drivers that allow proper function of Acconeer's modules.
 
       See :doc:`evk_setup/index` for your specific module for more information.
 
-   .. tab:: :fab:`ubuntu;fa-xl`
+   .. tab-item:: :fab:`ubuntu;fa-xl`
 
       After installing the ``acconeer-exptool`` package, you can run:
 
