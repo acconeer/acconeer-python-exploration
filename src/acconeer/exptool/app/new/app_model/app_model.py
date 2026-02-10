@@ -784,7 +784,11 @@ class AppModel(QObject):
         self._persistent_state.plugin_generation = new_generation
         self.broadcast()
 
-    def _unload_current_plugin(self) -> None:
+    def load_plugin(self, plugin: Optional[PluginSpec]) -> None:
+        log.debug(f"AppModel is loading the plugin {plugin}")
+        if plugin == self.plugin:
+            return
+
         log.debug("AppModel is unloading its current plugin")
         self.sig_load_plugin.emit(None)
         self._update_saveable_file(None)
@@ -792,13 +796,6 @@ class AppModel(QObject):
         self.broadcast()
 
         Model.unload_plugin.rpc(self.put_task)
-
-    def load_plugin(self, plugin: Optional[PluginSpec]) -> None:
-        log.debug(f"AppModel is loading the plugin {plugin}")
-        if plugin == self.plugin:
-            return
-
-        self._unload_current_plugin()
 
         if plugin is not None:
             Model.load_plugin.rpc(

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2024
+# Copyright (c) Acconeer AB, 2024-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -100,4 +100,4 @@ class UiPluginBase(QWidget, metaclass=_UiPluginMeta):
     def panic(self) -> None:
         """Signals the AppModel to unload the current plugin (i.e. self)"""
         _LOG.error("Plugin panicked.")
-        self.__app_model._unload_current_plugin()
+        self.__app_model.load_plugin(None)
