@@ -110,6 +110,8 @@ def main() -> None:
     )
     model.start()
 
+    if args.dump_exceptions:
+        model.sig_error.connect(lambda _, traceback_str: print(traceback_str, sep="\n"))
     app.aboutToQuit.connect(model.stop)
     app.aboutToQuit.connect(backend.stop)
 
@@ -288,6 +290,11 @@ class _ExptoolArgumentParser(argparse.ArgumentParser):
             "--amv",
             action="store_true",
             help="Start the AppModelViewer alongside Exploration Tool",
+        )
+        dbg_group.add_argument(
+            "--dump-exceptions",
+            action="store_true",
+            help="Prints exceptions caught in the application to stdout",
         )
 
         verbosity_group = self.add_mutually_exclusive_group(required=False)
