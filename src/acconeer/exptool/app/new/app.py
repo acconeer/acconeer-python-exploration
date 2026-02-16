@@ -208,6 +208,13 @@ def _send_startup_tasks(app_model: AppModel, tasks: tuple[str, ...], deadline: f
     elif app_model.plugin_state is not PluginState.LOADED_IDLE:
         _LOG.info(f"Cannot execute {task_to_send!r}: No plugin loaded yet. {retry_str}")
         _retry()
+    elif task_to_send == "pseudo:quit":
+        qapp = QApplication.instance()
+        assert qapp is not None
+        _LOG.info("Executing 'pseudo:quit' ...")
+        qapp.processEvents()
+        qapp.quit()
+        sys.exit(app_model.num_errors)
     else:
         _LOG.info(f"Executing {task_to_send!r} ...")
         app_model.put_task(

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -65,7 +65,12 @@ class MpBackend:
         self._stop_event.set()
         self._send(("stop", None))
 
-        self._process.join(timeout=3)
+        try:
+            self._process.join(timeout=3)
+        except ValueError:
+            # process has already stopped/closed, see
+            # http://docs.python.org/3/library/multiprocessing.html#multiprocessing.Process.close
+            return
 
         if self._process.exitcode is None:
             log.warning("Backend process join timed out, killing...")
