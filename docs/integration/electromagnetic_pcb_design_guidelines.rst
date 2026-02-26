@@ -100,7 +100,7 @@ As no RF components are required for the sensor integration, low-cost FR-4 type 
          :alt: Routing example with thermal reliefs
          :width: 100%
 
-         Routing example with with GND thermal reliefs. Trace copper clearance is 0.127 mm
+         Routing example with GND thermal reliefs. Trace copper clearance is 0.127 mm
 
 .. _fig_radiation_pattern_vs_groundpads:
 .. figure:: /_static/handbook/a121/in-depth_topics/integration/ground_pad_simulation.svg
