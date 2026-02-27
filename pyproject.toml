@@ -102,10 +102,6 @@ source = "vcs"
 [tool.hatch.build.hooks.vcs]
 version-file = "src/acconeer/exptool/_version.py"
 
-
-[tool.hatch.envs.hatch-uv]
-dependencies = ["uv==0.8.9"]
-
 [tool.hatch.envs.app]
 features = ["app"]
 
