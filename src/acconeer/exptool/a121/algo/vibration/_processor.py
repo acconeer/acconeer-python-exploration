@@ -147,22 +147,28 @@ class ProcessorConfig(AlgoProcessorConfigBase):
 
         if self.low_frequency_enhancement:
             if config.sensor_config.num_subsweeps != 2:
-                a121.ValidationError(
-                    self.low_frequency_enhancement,
-                    "low_frequency_enhancement",
-                    "Low frequency enhancement requires a loopback subsweep",
+                validation_results.append(
+                    a121.ValidationError(
+                        self,
+                        "low_frequency_enhancement",
+                        "Low frequency enhancement requires a loopback subsweep",
+                    )
                 )
             if config.sensor_config.subsweeps[RANGE_SUBSWEEP].enable_loopback:
-                a121.ValidationError(
-                    self.low_frequency_enhancement,
-                    "low_frequency_enhancement",
-                    "The first subsweep must not have loopback enabled",
+                validation_results.append(
+                    a121.ValidationError(
+                        self,
+                        "low_frequency_enhancement",
+                        "The first subsweep must not have loopback enabled",
+                    )
                 )
             if not config.sensor_config.subsweeps[LOOPBACK_SUBSWEEP].enable_loopback:
-                a121.ValidationError(
-                    self.low_frequency_enhancement,
-                    "low_frequency_enhancement",
-                    "Low frequency enhancement requires that loopback is enabled for the second subsweep",
+                validation_results.append(
+                    a121.ValidationError(
+                        self,
+                        "low_frequency_enhancement",
+                        "Low frequency enhancement requires that loopback is enabled for the second subsweep",
+                    )
                 )
 
         return validation_results
