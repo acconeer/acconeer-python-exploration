@@ -1,8 +1,13 @@
+ARG UV_VERSION=0.9.26
+FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv_build_stage
+
 FROM ubuntu:24.04
 
 RUN userdel -r ubuntu
 
 ARG DEBIAN_FRONTEND=noninteractive
+
+COPY --from=uv_build_stage /uv /bin/uv
 
 RUN apt-get update -qq \
     && apt-get install software-properties-common -qq \
@@ -24,7 +29,6 @@ RUN apt-get update -qq \
     make \
     ninja-build \
     python3-full \
-    pipx \
     texlive-fonts-recommended \
     texlive-latex-extra \
     texlive-latex-recommended \
@@ -41,7 +45,11 @@ RUN groupadd -g 1000 jenkins \
 USER jenkins
 
 ENV PATH="$PATH:/home/jenkins/.local/bin"
-RUN pipx install "hatch>=1.13.0,<1.16.0" "twine==6.0.1"
+# The "--exclude-newer" is due to an issue that come from
+# virtualenv==21.0.0 + the hatch version pin.
+# This should be revisited in the future.
+RUN uv tool install --exclude-newer 2026-02-24T00:00:00Z "hatch>=1.13.0,<1.16.0"
+RUN uv tool install "twine==6.0.1"
 
 RUN mkdir -p /home/jenkins/.cache/pip
 RUN mkdir -p /home/jenkins/.cache/uv
