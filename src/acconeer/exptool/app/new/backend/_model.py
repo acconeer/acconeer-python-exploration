@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -115,8 +115,7 @@ class Model:
     @is_task
     def disconnect_client(self) -> None:
         if self.client is None:
-            msg = "Backend has no client to disconnect."
-            raise RuntimeError(msg)
+            return
 
         self.task_callback(ConnectionStateMessage(state=ConnectionState.DISCONNECTING))
 

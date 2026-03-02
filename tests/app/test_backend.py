@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -68,7 +68,7 @@ class DisconnectedBackend:
             ],
         )
 
-    def test_disconnecting_fails_and_does_not_update_connection_state(
+    def test_disconnecting_succeeds_but_does_not_update_connection_state(
         self,
         backend: Backend,
         assert_messages: t.Callable[..., None],
@@ -77,7 +77,7 @@ class DisconnectedBackend:
         backend.put_task(tasks.DISCONNECT_CLIENT_TASK)
         assert_messages(
             backend,
-            received=[tasks.FAILED_CLOSED_TASK],
+            received=[tasks.SUCCESSFULLY_CLOSED_TASK],
             not_received=[ConnectionStateMessage(state=de.AnyThing)],
         )
 
