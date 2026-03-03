@@ -16,6 +16,7 @@ RUN apt-get update -qq \
     git \
     graphviz \
     latexmk \
+    libusb-1.0-0 \
     libasan5 \
     libdbus-1-3 \
     libegl1 \
