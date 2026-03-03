@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import os
@@ -7,6 +7,8 @@ import typing as t
 from pathlib import Path
 
 import pytest
+
+import acconeer.exptool.testing
 
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
@@ -20,12 +22,8 @@ def _existing_path(path_str: str) -> Path:
     return p
 
 
-def _is_running_in_jenkins() -> bool:
-    return os.environ.get("CI", False)
-
-
 def _validate_parametrization(iterable: t.Sized, err_msg: str) -> t.Sized:
-    if _is_running_in_jenkins() and len(iterable) < 1:
+    if acconeer.exptool.testing.is_running_in_ci() and len(iterable) < 1:
         raise ValueError(err_msg)
     return iterable
 
@@ -148,5 +146,5 @@ def should_update_outputs(request):
 
 
 @pytest.fixture(scope="session")
-def is_running_in_jenkins() -> bool:
-    return _is_running_in_jenkins()
+def is_running_in_ci() -> bool:
+    return acconeer.exptool.testing.is_running_in_ci()

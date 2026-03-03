@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2025
+# Copyright (c) Acconeer AB, 2025-2026
 # All rights reserved
 """
 pytest is configured to skip these test unless '--test-devsite'
@@ -20,12 +20,12 @@ pytestmark = pytest.mark.devsite
 
 
 @pytest.fixture
-def valid_credentials(is_running_in_jenkins: bool) -> tuple[str, str]:
+def valid_credentials(is_running_in_ci: bool) -> tuple[str, str]:
     username = os.getenv("DEV_USERNAME")
     password = os.getenv("DEV_PASSWORD")
 
     if username is None or password is None:
-        if is_running_in_jenkins:
+        if is_running_in_ci:
             reason = "DEV_USERNAME & DEV_PASSWORD needs to be specified when running in Jenkins."
             pytest.fail(reason=reason)
         else:
