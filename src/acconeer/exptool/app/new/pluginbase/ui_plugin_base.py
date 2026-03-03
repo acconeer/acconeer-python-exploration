@@ -16,8 +16,3 @@ class UiPluginBase(QWidget):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__()
         self.__app_model = app_model
-
-    def panic(self) -> None:
-        """Signals the AppModel to unload the current plugin (i.e. self)"""
-        _LOG.error("Plugin panicked.")
-        self.__app_model.load_plugin(None)

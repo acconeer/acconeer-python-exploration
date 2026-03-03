@@ -323,6 +323,8 @@ class AppModel(QObject):
                 file=sys.stderr,
             )
             sys.__excepthook__(etype, value, tb)
+        finally:
+            self.load_plugin(None)  # plugin was *probably* the source of the exception: unload it!
 
     @property
     def plugin_state(self) -> PluginState:
