@@ -58,10 +58,11 @@ Embedded C
 An embedded C application is provided in the Acconeer SDK, available at the `Acconeer Developer Site <https://developer.acconeer.com/>`_.
 
 The embedded application has the same presets as Exploration Tool and has most of the output Exploration Tool has.
-Max amplitude (upper left plot), peak displacement and frequency of the spectrum (peak in lower plot)
+Max amplitude (upper left plot), peak displacements and frequencies of the spectrum (peak(s) in lower plot)
 are available in the result struct.
 
-By default, the application prints the result using ``printf`` which usually is connected to stdout or a debug UART, depending on environment. The application is provided in source code.
+By default, the application prints the result using ``printf`` which usually is connected to stdout or a debug UART,
+depending on environment. The application is provided in source code.
 
 Presets
 ^^^^^^^
