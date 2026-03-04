@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -179,6 +179,7 @@ class DetectorConfig(AlgoConfigBase):
 
     def _collect_validation_results(self) -> list[a121.ValidationResult]:
         validation_results: list[a121.ValidationResult] = []
+        bad_detector_config = False
 
         if self.end_m < self.start_m:
             validation_results.append(
@@ -196,6 +197,7 @@ class DetectorConfig(AlgoConfigBase):
                     "Must be greater than 'Range start'",
                 )
             )
+            bad_detector_config = True
 
         if self.max_step_length is not None and (
             not utils.is_divisor_of(24, self.max_step_length)
@@ -214,6 +216,10 @@ class DetectorConfig(AlgoConfigBase):
                     + f"to the closest valid step length ({valid_step_length}).",
                 )
             )
+
+        if bad_detector_config:
+            # Return to avoid calling detector_config_to_session_config with bad config.
+            return validation_results
 
         session_config = detector_config_to_session_config(self, [1])
         if any(
