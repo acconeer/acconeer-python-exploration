@@ -238,6 +238,7 @@ class AppModel(QObject):
         self,
         backend: Backend,
         plugins: list[PluginSpec],
+        use_port_updater: bool,
         force_autoconnect: bool = False,
         socket_autoconnect: Optional[str] = None,
         simulated_autocconnect: bool = False,
@@ -247,8 +248,11 @@ class AppModel(QObject):
         self._listener = _BackendListeningThread(self._backend, self)
         self._listener.sig_backend_message.connect(self._handle_backend_message)
         self._listener.sig_backend_closed_task.connect(self._handle_backend_closed_task)
-        self._port_updater = PortUpdater(self)
-        self._port_updater.sig_update.connect(self._handle_port_update)
+
+        self._port_updater: Optional[PortUpdater] = None
+        if use_port_updater:
+            self._port_updater = PortUpdater(self)
+            self._port_updater.sig_update.connect(self._handle_port_update)
 
         self._num_errors = 0
         self._backend_task_callbacks: dict[UUID, Any] = {}
@@ -729,6 +733,9 @@ class AppModel(QObject):
         self.send_warning_message("Failed to autoconnect")
 
     def port_updater_enable(self, enable: bool) -> None:
+        if self._port_updater is None:
+            return
+
         if enable:
             self._port_updater.start()
         else:

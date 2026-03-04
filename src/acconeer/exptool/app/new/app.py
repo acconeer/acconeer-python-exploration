@@ -116,6 +116,7 @@ def main() -> None:
     model = AppModel(
         backend,
         plugins,
+        args.use_port_updater,
         args.usb_or_serial_autoconnect,
         args.socket_autoconnect,
         args.simulated_autoconnect,
@@ -322,6 +323,12 @@ class _ExptoolArgumentParser(argparse.ArgumentParser):
             "--dump-exceptions",
             action="store_true",
             help="Prints exceptions caught in the application to stdout",
+        )
+        dbg_group.add_argument(
+            "--no-port-updater",
+            action="store_false",
+            dest="use_port_updater",
+            help="Disable port (Serial/USB) discovery, limiting server connections socket (and simulated)",
         )
 
         verbosity_group = self.add_mutually_exclusive_group(required=False)

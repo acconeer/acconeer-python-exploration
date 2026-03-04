@@ -163,6 +163,7 @@ python -m acconeer.exptool.app.new --list-plugin-modules --generation a121 \
             timeout 10 \
                 python -m acconeer.exptool.app.new \
                     --dump-exceptions \
+                    --no-port-updater \
                     --generation a121 --plugin-key % \
                     --simulated-autoconnect --tasks pseudo:quit \
             || exit 255 \
