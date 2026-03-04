@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import enum
 import warnings
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 import attrs
 import h5py
@@ -131,8 +131,8 @@ class DetectorConfig(AlgoConfigBase):
     )
     """Sorting method of estimated distances.
 
-    The distance estimates are sorted according to the selected strategy, before being return
-    by th application.
+    The distance estimates are sorted according to the selected strategy, before being returned
+    by the application.
     """
 
     reflector_shape: ReflectorShape = attrs.field(
@@ -144,7 +144,7 @@ class DetectorConfig(AlgoConfigBase):
     num_frames_in_recorded_threshold: int = attrs.field(default=100)
     """Number of frames used when calibrating threshold.
 
-    A lower number reduce calibration time and a higher number results in a more statistically
+    A lower number reduces calibration time and a higher number results in a more statistically
     significant threshold.
     """
 
@@ -287,14 +287,14 @@ class DetectorResult:
     absolute accuracy.
     """
 
-    processor_results: List[ProcessorResult] = attrs.field()
+    processor_results: list[ProcessorResult] = attrs.field()
     """Processing result. Used for visualization in Exploration Tool."""
 
-    service_extended_result: List[Dict[int, a121.Result]] = attrs.field()
+    service_extended_result: list[dict[int, a121.Result]] = attrs.field()
     """Service extended result. Used for visualization in Exploration Tool."""
 
 
-class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
+class Detector(Controller[DetectorConfig, dict[int, DetectorResult]]):
     """Distance detector
     :param client: Client
     :param sensor_id: Sensor id
@@ -306,7 +306,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
     MAX_DIST_M = 23.0
 
     session_config: a121.SessionConfig
-    processor_specs: List[ProcessorSpec]
+    processor_specs: list[ProcessorSpec]
     context: DetectorContext
 
     def __init__(
@@ -494,9 +494,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         )
 
         assert isinstance(extended_metadata, list)
-        assert np.all(
-            [self.context.offset_calibration is not None for sensor_id in self.context.sensor_ids]
-        )
+        assert self.context.offset_calibration is not None
         aggregator_config = AggregatorConfig(peak_sorting_method=self.config.peaksorting_method)
         self.aggregators = {
             sensor_id: Aggregator(
@@ -529,7 +527,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
         self.client.start_session()
         self.started = True
 
-    def get_next(self) -> Dict[int, DetectorResult]:
+    def get_next(self) -> dict[int, DetectorResult]:
         """Called from host to get next measurement."""
         if not self.started:
             msg = "Not started"
@@ -617,7 +615,7 @@ class Detector(Controller[DetectorConfig, Dict[int, DetectorResult]]):
             bg_noise_stds = self.context.noise_calibration.bg_noise_std(
                 sensor_id, self.processor_specs, self.session_config
             )
-            updated_specs: List[ProcessorSpec] = []
+            updated_specs: list[ProcessorSpec] = []
 
             if self.context.recorded_threshold_calibration is not None:
                 recorded_thresholds_mean_sweep = (
@@ -723,7 +721,7 @@ def _record_algo_data(
 
 def _load_algo_data(
     algo_group: h5py.Group,
-) -> Tuple[list[int], DetectorConfig, DetectorContext]:
+) -> tuple[list[int], DetectorConfig, DetectorContext]:
     sensor_ids = algo_group["sensor_ids"][()].tolist()
     try:
         config = detector_config_timeline.migrate(algo_group["detector_config"][()].decode())
@@ -745,7 +743,6 @@ def _load_algo_data(
     return sensor_ids, config, context
 
 
-@attrs.mutable
 @attrs.mutable(kw_only=True)
 class _DetectorConfig_v0(AlgoConfigBase):
     start_m: float = attrs.field(default=0.25)

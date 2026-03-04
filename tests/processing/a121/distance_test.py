@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ class ResultSlice:
 
     @classmethod
     def from_semi_extended_detector_result(
-        cls, results: t.Dict[int, distance.DetectorResult]
+        cls, results: dict[int, distance.DetectorResult]
     ) -> te.Self:
         (result,) = results.values()
         return cls(

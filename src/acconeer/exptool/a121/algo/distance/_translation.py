@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2025
+# Copyright (c) Acconeer AB, 2025-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -543,7 +543,7 @@ def get_num_far_subsweeps(
 
     far_sensor_group = session_config.groups[-1]
     # same config for each sensor. Grab first sensor id.
-    num_far_subsweeps = far_sensor_group[list(far_sensor_group.keys())[0]].num_subsweeps
+    num_far_subsweeps = far_sensor_group[next(iter(far_sensor_group.keys()))].num_subsweeps
     return num_far_subsweeps
 
 
@@ -626,7 +626,7 @@ def _m_to_point(start_m: float, distance_m: float, step_length: int) -> int:
     return (round(point_frac) // step_length) * step_length
 
 
-def remove_dup(breakpoints: t.List[int]) -> t.List[int]:
+def remove_dup(breakpoints: list[int]) -> list[int]:
     unique_bps = sorted(set(breakpoints[1:]))
 
     unique_bps = [breakpoints[0]] + unique_bps

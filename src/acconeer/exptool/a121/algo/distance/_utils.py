@@ -1,10 +1,9 @@
-# Copyright (c) Acconeer AB, 2024-2025
+# Copyright (c) Acconeer AB, 2024-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import copy
-from typing import List
 
 import attrs
 
@@ -29,7 +28,7 @@ def get_calibrate_offset_sensor_config() -> a121.SensorConfig:
 
 
 def get_calibrate_noise_session_config(
-    session_config: a121.SessionConfig, sensor_ids: List[int]
+    session_config: a121.SessionConfig, sensor_ids: list[int]
 ) -> a121.SessionConfig:
     noise_session_config = copy.deepcopy(session_config)
 

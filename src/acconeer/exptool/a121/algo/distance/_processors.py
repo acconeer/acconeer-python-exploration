@@ -1,11 +1,11 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import copy
 import enum
-from typing import List, Optional
+from typing import Optional
 
 import attrs
 import numpy as np
@@ -55,7 +55,7 @@ class ProcessorMode(AlgoParamEnum):
 class ThresholdMethod(AlgoParamEnum):
     """Threshold methods.
     ``CFAR`` Constant False Alarm Rate.
-    ``FIXED_AMPLITUDE`` Fixed amplitude threshold.
+    ``FIXED`` Fixed amplitude threshold.
     ``FIXED_STRENGTH`` Fixed strength threshold.
     ``RECORDED`` Recorded threshold."""
 
@@ -102,10 +102,10 @@ class ProcessorContext:
     recorded_threshold_mean_sweep: Optional[npt.NDArray[np.float64]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    recorded_threshold_noise_std: Optional[List[np.float64]] = attrs.field(
+    recorded_threshold_noise_std: Optional[list[np.float64]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    bg_noise_std: Optional[List[float]] = attrs.field(default=None)
+    bg_noise_std: Optional[list[float]] = attrs.field(default=None)
     reference_temperature: Optional[int] = attrs.field(default=None)
     loopback_peak_location_m: Optional[float] = attrs.field(default=None)
 
@@ -129,13 +129,13 @@ class ProcessorExtraResult:
 
 @attrs.frozen(kw_only=True)
 class ProcessorResult:
-    estimated_distances: Optional[List[float]] = attrs.field(default=None)
-    estimated_strengths: Optional[List[float]] = attrs.field(default=None)
+    estimated_distances: Optional[list[float]] = attrs.field(default=None)
+    estimated_strengths: Optional[list[float]] = attrs.field(default=None)
     near_edge_status: Optional[bool] = attrs.field(default=None)
     recorded_threshold_mean_sweep: Optional[npt.NDArray[np.float64]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    recorded_threshold_noise_std: Optional[List[np.float64]] = attrs.field(
+    recorded_threshold_noise_std: Optional[list[np.float64]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
     direct_leakage: Optional[npt.NDArray[np.complex128]] = attrs.field(
@@ -345,7 +345,7 @@ class Processor(ProcessorBase[ProcessorResult]):
 
     @classmethod
     def _validate_close_config(
-        cls, sensor_config: a121.SensorConfig, subsweep_indexes: List[int]
+        cls, sensor_config: a121.SensorConfig, subsweep_indexes: list[int]
     ) -> None:
         ERROR_MSG = "Incorrect subsweep config for close range measurement"
 
@@ -652,10 +652,8 @@ class Processor(ProcessorBase[ProcessorResult]):
             subsweep_slice = slice(bpts[idx] - filt_margin, bpts[idx + 1] - filt_margin)
             threshold[subsweep_slice] += (
                 np.sqrt(
-                    (
-                        noise_adjustment_factor * std_tx_off**2
-                        + threshold[subsweep_slice] ** 2 * std_recorded_threshold**2
-                    )
+                    noise_adjustment_factor * std_tx_off**2
+                    + threshold[subsweep_slice] ** 2 * std_recorded_threshold**2
                 )
                 * num_stds
             )

@@ -1,11 +1,11 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import copy
 import enum
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -166,7 +166,7 @@ def get_distances_m(
 
 def get_approx_fft_vels(
     metadata: a121.Metadata, config: a121.SensorConfig
-) -> Tuple[npt.NDArray[np.float64], float]:
+) -> tuple[npt.NDArray[np.float64], float]:
     if config.sweep_rate is not None:
         sweep_rate = config.sweep_rate
     else:
@@ -185,7 +185,7 @@ def interpolate_peaks(
     start_point: int,
     step_length: int,
     step_length_m: float,
-) -> Tuple[list[float], list[float]]:
+) -> tuple[list[float], list[float]]:
     """Quadratic interpolation around a peak using the amplitudes of the peak and its two
     neighboring points.
 
@@ -236,7 +236,7 @@ def calculate_loopback_peak_location(result: a121.Result, config: a121.SensorCon
 
 
 def find_peaks(
-    abs_sweep: npt.NDArray[np.float64], threshold: npt.NDArray[np.float64]
+    abs_sweep: npt.NDArray[np.float64], threshold_values: npt.NDArray[np.float64]
 ) -> list[int]:
     """Identifies peaks above threshold.
 
@@ -244,23 +244,23 @@ def find_peaks(
     three points are above the threshold.
 
     :param abs_sweep: Absolute value of mean sweep.
-    :param threshold: Array of values, defining the threshold throughout the sweep.
+    :param threshold_values: Array of values, defining the threshold throughout the sweep.
     """
-    if threshold is None:
+    if threshold_values is None:
         raise ValueError
     found_peaks = []
     d = 1
     N = len(abs_sweep)
     while d < (N - 1):
-        if np.isnan(threshold[d - 1]):
+        if np.isnan(threshold_values[d - 1]):
             d += 1
             continue
-        if np.isnan(threshold[d + 1]):
+        if np.isnan(threshold_values[d + 1]):
             break
-        if abs_sweep[d] <= threshold[d]:
+        if abs_sweep[d] <= threshold_values[d]:
             d += 2
             continue
-        if abs_sweep[d - 1] <= threshold[d - 1]:
+        if abs_sweep[d - 1] <= threshold_values[d - 1]:
             d += 1
             continue
         if abs_sweep[d - 1] >= abs_sweep[d]:
@@ -270,9 +270,9 @@ def find_peaks(
         while True:
             if (d_upper) >= (N - 1):
                 break
-            if np.isnan(threshold[d_upper]):
+            if np.isnan(threshold_values[d_upper]):
                 break
-            if abs_sweep[d_upper] <= threshold[d_upper]:
+            if abs_sweep[d_upper] <= threshold_values[d_upper]:
                 break
             if abs_sweep[d_upper] > abs_sweep[d]:
                 break
@@ -287,7 +287,7 @@ def find_peaks(
 
 def get_temperature_adjustment_factors(
     reference_temperature: float, current_temperature: float, profile: a121.Profile
-) -> Tuple[float, float]:
+) -> tuple[float, float]:
     """Calculate temperature compensation for mean sweep and background noise(tx off) standard
     deviation.
 
@@ -581,7 +581,7 @@ def _convert_multiple_amplitudes_to_strengths(
     # Loop over amplitude/distance pairs.
     for amplitude, distance in zip(amplitudes, distances):
         # For the current distance, get corresponding sensor parameters and background noise.
-        subsweep_idx = np.sum(bpts_m < distance) - 1
+        subsweep_idx = int(np.sum(bpts_m < distance) - 1)
         subsweep_config = subsweeps[subsweep_idx]
         sigma = bg_noise_std[subsweep_idx]
 

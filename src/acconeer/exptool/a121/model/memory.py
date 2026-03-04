@@ -61,17 +61,17 @@ def _sweep_rss_heap_memory(config: SensorConfig) -> int:
 def session_external_heap_memory(config: SessionConfig) -> int:
     sensor_cfgs = list(core_utils.iterate_extended_structure_values(config.groups))
 
-    return max([_sweep_external_heap_memory(cfg) for cfg in sensor_cfgs])
+    return max(_sweep_external_heap_memory(cfg) for cfg in sensor_cfgs)
 
 
 def _session_config_rss_heap_memory(config: SessionConfig) -> int:
     sensor_cfgs = list(core_utils.iterate_extended_structure_values(config.groups))
 
-    return sum([_sweep_rss_heap_memory(cfg) for cfg in sensor_cfgs])
+    return sum(_sweep_rss_heap_memory(cfg) for cfg in sensor_cfgs)
 
 
 def session_rss_heap_memory(config: SessionConfig) -> int:
-    sensor_ids = set([x[1] for x in core_utils.iterate_extended_structure(config.groups)])
+    sensor_ids = {x[1] for x in core_utils.iterate_extended_structure(config.groups)}
 
     return RSS_HEAP_PER_SENSOR * len(sensor_ids) + _session_config_rss_heap_memory(config)
 
@@ -84,7 +84,7 @@ def presence_external_heap_memory(config: PresenceConfig) -> int:
     sensor_cfg = config.to_sensor_config()
 
     session_ext_heap = session_external_heap_memory(SessionConfig(sensor_cfg))
-    num_points = sum([subsweep.num_points for subsweep in sensor_cfg.subsweeps])
+    num_points = sum(subsweep.num_points for subsweep in sensor_cfg.subsweeps)
     prec_ext_heap = num_points * 2 * SIZE_OF_FLOAT
 
     return session_ext_heap + prec_ext_heap
@@ -95,7 +95,7 @@ def presence_rss_heap_memory(config: PresenceConfig) -> int:
 
     PREC_FILTER_PARAMS = 7
 
-    num_points = sum([subsweep.num_points for subsweep in sensor_cfg.subsweeps])
+    num_points = sum(subsweep.num_points for subsweep in sensor_cfg.subsweeps)
     prec_rss_heap = num_points * PREC_FILTER_PARAMS * SIZE_OF_FLOAT
 
     return (
@@ -120,7 +120,7 @@ def distance_external_heap_memory(config: DistanceConfig) -> int:
     session_ext_heap = session_external_heap_memory(session_config)
     noise_ext_heap = session_external_heap_memory(noise_session_config)
 
-    sensor_buffer = max([offset_ext_heap, session_ext_heap, noise_ext_heap])
+    sensor_buffer = max(offset_ext_heap, session_ext_heap, noise_ext_heap)
 
     NOISE_NUM_POINTS = 220
     FILTFILT_PAD_LEN = 9
@@ -145,7 +145,7 @@ def distance_external_heap_memory(config: DistanceConfig) -> int:
             subsweep_cfgs = [sensor_cfg.subsweeps[i] for i in proc_spec.subsweep_indexes]
             det_calib_buffer += len(subsweep_cfgs) * SIZE_OF_FLOAT
 
-        num_points = sum([sub_cfg.num_points for sub_cfg in subsweep_cfgs])
+        num_points = sum(sub_cfg.num_points for sub_cfg in subsweep_cfgs)
         filt_margin = get_distance_filter_edge_margin(
             subsweep_cfgs[0].profile, subsweep_cfgs[0].step_length
         )
@@ -172,7 +172,7 @@ def distance_external_heap_memory(config: DistanceConfig) -> int:
         aggr_work_buffer += proc_work_buffer
         aggr_calib_buffer += proc_calib_buffer
 
-    work_buffer = max([noise_work_buffer, aggr_work_buffer])
+    work_buffer = max(noise_work_buffer, aggr_work_buffer)
 
     return sensor_buffer + work_buffer + det_calib_buffer + aggr_calib_buffer
 

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import numpy as np
@@ -137,8 +137,8 @@ def test_get_distance_filter_coeffs() -> None:
 
 def test_find_peaks() -> None:
     abs_sweep = np.array([1, 2, 3, 2, 1, 1, 1, 1, 1, 2, 3, 2, 1, 1, 1])
-    threshold = np.ones_like(abs_sweep)
-    actual_found_peaks = find_peaks(abs_sweep=abs_sweep, threshold=threshold)
+    threshold_values = np.ones_like(abs_sweep)
+    actual_found_peaks = find_peaks(abs_sweep=abs_sweep, threshold_values=threshold_values)
 
     assert actual_found_peaks[0] == 2
     assert actual_found_peaks[1] == 10

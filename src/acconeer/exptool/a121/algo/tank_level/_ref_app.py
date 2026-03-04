@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -515,7 +515,6 @@ def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, RefAppConfig, RefAppCo
     return sensor_id, config, tank_level_context
 
 
-@attrs.mutable
 @attrs.mutable(kw_only=True)
 class _RefAppConfig_v1(AlgoConfigBase):
     start_m: float = attrs.field(default=0.03)
@@ -570,7 +569,6 @@ class _RefAppConfig_v1(AlgoConfigBase):
         )
 
 
-@attrs.mutable
 @attrs.mutable(kw_only=True)
 class _RefAppConfig_v0(_DetectorConfig_v0):
     start_m: float = attrs.field(default=0.03)

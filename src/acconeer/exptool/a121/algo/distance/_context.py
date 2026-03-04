@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2024
+# Copyright (c) Acconeer AB, 2024-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import copy
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Optional
 
 import attrs
 import h5py
@@ -39,7 +39,7 @@ class DetectorContext(AlgoBase):
     recorded_threshold_calibration: Optional[RecordedThresholdCalibration] = attrs.field(
         default=None
     )
-    sensor_ids: List[int] = attrs.field(factory=list)
+    sensor_ids: list[int] = attrs.field(factory=list)
     session_config_used_during_calibration: Optional[a121.SessionConfig] = attrs.field(
         default=None
     )
@@ -49,10 +49,10 @@ class DetectorContext(AlgoBase):
 class OffsetCalibration:
     """Estimates sensor offset error based on loopback measurement."""
 
-    results: List[Dict[int, a121.Result]]
+    results: list[dict[int, a121.Result]]
 
     @classmethod
-    def create(cls, client: a121.Client, sensor_ids: List[int]) -> te.Self:
+    def create(cls, client: a121.Client, sensor_ids: list[int]) -> te.Self:
         sensor_config = get_calibrate_offset_sensor_config()
 
         session_config = a121.SessionConfig(
@@ -83,16 +83,16 @@ class NoiseCalibration:
     The calibration procedure can be done at any time as it is performed with Tx off, and is
     not effected by objects in front of the sensor.
 
-    This function is called from the start() in the case of CFAR and Fixed threshold and from
+    This function is called from start() in the case of CFAR and Fixed threshold and from
     record_threshold() in the case of Recorded threshold. The reason for calling from
     record_threshold() is that it is used when calculating the threshold.
     """
 
-    results: List[Dict[int, a121.Result]]
+    results: list[dict[int, a121.Result]]
 
     @classmethod
     def create(
-        cls, client: a121.Client, sensor_ids: List[int], session_config: a121.SessionConfig
+        cls, client: a121.Client, sensor_ids: list[int], session_config: a121.SessionConfig
     ) -> te.Self:
         session_config = get_calibrate_noise_session_config(session_config, sensor_ids)
 
@@ -109,9 +109,9 @@ class NoiseCalibration:
     def bg_noise_std(
         self,
         sensor_id: int,
-        processor_specs: List[ProcessorSpec],
+        processor_specs: list[ProcessorSpec],
         session_config: a121.SessionConfig,
-    ) -> List[List[float]]:
+    ) -> list[list[float]]:
         bg_noise_one_sensor = []
         for spec in processor_specs:
             result = self.results[spec.group_index][sensor_id]
@@ -137,9 +137,9 @@ class CloseRangeCalibration:
     the amount of phase jitter, with the purpose of reducing the residual.
     """
 
-    extended_metadata: List[Dict[int, a121.Metadata]]
-    results: List[Dict[int, a121.Result]]
-    sensor_calibrations: Dict[int, a121.SensorCalibration]
+    extended_metadata: list[dict[int, a121.Metadata]]
+    results: list[dict[int, a121.Result]]
+    sensor_calibrations: dict[int, a121.SensorCalibration]
 
     @classmethod
     def create(cls, client: a121.Client, session_config: a121.SessionConfig) -> te.Self:
@@ -161,9 +161,9 @@ class CloseRangeCalibration:
     def _close_range_calibration(
         self,
         sensor_id: int,
-        processor_specs: List[ProcessorSpec],
+        processor_specs: list[ProcessorSpec],
         session_config: a121.SessionConfig,
-    ) -> Tuple[npt.NDArray[np.complex128], npt.NDArray[np.float64]]:
+    ) -> tuple[npt.NDArray[np.complex128], npt.NDArray[np.float64]]:
         close_range_spec = filter_close_range_spec(processor_specs)
         spec = update_processor_mode(close_range_spec, ProcessorMode.LEAKAGE_CALIBRATION)
 
@@ -185,7 +185,7 @@ class CloseRangeCalibration:
     def direct_leakage(
         self,
         sensor_id: int,
-        processor_specs: List[ProcessorSpec],
+        processor_specs: list[ProcessorSpec],
         session_config: a121.SessionConfig,
     ) -> npt.NDArray[np.complex128]:
         direct_leakage, _ = self._close_range_calibration(
@@ -196,7 +196,7 @@ class CloseRangeCalibration:
     def phase_jitter_comp_reference(
         self,
         sensor_id: int,
-        processor_specs: List[ProcessorSpec],
+        processor_specs: list[ProcessorSpec],
         session_config: a121.SessionConfig,
     ) -> npt.NDArray[np.float64]:
         _, phase_jitter_comp_reference = self._close_range_calibration(
@@ -209,8 +209,8 @@ class CloseRangeCalibration:
 class RecordedThresholdCalibration:
     """Calibrates the parameters used when forming the recorded threshold."""
 
-    extended_metadata: List[Dict[int, a121.Metadata]]
-    results: List[List[Dict[int, a121.Result]]]
+    extended_metadata: list[dict[int, a121.Metadata]]
+    results: list[list[dict[int, a121.Result]]]
 
     @classmethod
     def create(
@@ -240,13 +240,13 @@ class RecordedThresholdCalibration:
         sensor_id: int,
         processor_specs: list[ProcessorSpec],
         session_config: a121.SessionConfig,
-    ) -> List[ProcessorSpec]:
+    ) -> list[ProcessorSpec]:
         """
         Create and add processor context to processor specification.
         """
 
         bg_noise_stds = noise_calibration.bg_noise_std(sensor_id, processor_specs, session_config)
-        updated_specs: List[ProcessorSpec] = []
+        updated_specs: list[ProcessorSpec] = []
 
         for idx, (spec, bg_noise_std) in enumerate(zip(processor_specs, bg_noise_stds)):
             processor_context = ProcessorContext(
@@ -276,13 +276,13 @@ class RecordedThresholdCalibration:
     def _recorded_threshold_calibration(
         self,
         sensor_id: int,
-        processor_specs: List[ProcessorSpec],
+        processor_specs: list[ProcessorSpec],
         session_config: a121.SessionConfig,
         noise_calibration: NoiseCalibration,
         close_range_calibration: Optional[CloseRangeCalibration],
-    ) -> Tuple[
-        List[npt.NDArray[np.float64]],
-        List[List[np.float64]],
+    ) -> tuple[
+        list[npt.NDArray[np.float64]],
+        list[list[np.float64]],
         int,
     ]:
         specs_updated = update_processor_mode(
@@ -327,11 +327,11 @@ class RecordedThresholdCalibration:
     def recorded_thresholds_mean_sweep(
         self,
         sensor_id: int,
-        processor_specs: List[ProcessorSpec],
+        processor_specs: list[ProcessorSpec],
         session_config: a121.SessionConfig,
         noise_calibration: NoiseCalibration,
         close_range_calibration: Optional[CloseRangeCalibration],
-    ) -> List[npt.NDArray[np.float64]]:
+    ) -> list[npt.NDArray[np.float64]]:
         mean_sweep, _, _ = self._recorded_threshold_calibration(
             sensor_id,
             processor_specs,
@@ -344,11 +344,11 @@ class RecordedThresholdCalibration:
     def recorded_thresholds_noise_std(
         self,
         sensor_id: int,
-        processor_specs: List[ProcessorSpec],
+        processor_specs: list[ProcessorSpec],
         session_config: a121.SessionConfig,
         noise_calibration: NoiseCalibration,
         close_range_calibration: Optional[CloseRangeCalibration],
-    ) -> List[List[np.float64]]:
+    ) -> list[list[np.float64]]:
         _, noise_std, _ = self._recorded_threshold_calibration(
             sensor_id,
             processor_specs,
@@ -361,7 +361,7 @@ class RecordedThresholdCalibration:
     def reference_temperature(
         self,
         sensor_id: int,
-        processor_specs: List[ProcessorSpec],
+        processor_specs: list[ProcessorSpec],
         session_config: a121.SessionConfig,
         noise_calibration: NoiseCalibration,
         close_range_calibration: Optional[CloseRangeCalibration],
@@ -398,7 +398,7 @@ def _get_group_items(group: h5py.Group) -> list[npt.NDArray[Any]]:
 
 @attrs.mutable(kw_only=True)
 class _DetectorContext_v0(AlgoBase):
-    single_sensor_contexts: Optional[Dict[int, _SingleSensorContext_v0]] = attrs.field(
+    single_sensor_contexts: Optional[dict[int, _SingleSensorContext_v0]] = attrs.field(
         default=None
     )
     _GROUP_NAME = "sensor_id_"
@@ -428,7 +428,7 @@ class _DetectorContext_v0(AlgoBase):
 
     @staticmethod
     def _get_calibrate_noise_session_config(
-        session_config: a121.SessionConfig, sensor_ids: List[int]
+        session_config: a121.SessionConfig, sensor_ids: list[int]
     ) -> a121.SessionConfig:
         noise_session_config = copy.deepcopy(session_config)
 
@@ -459,22 +459,18 @@ class _DetectorContext_v0(AlgoBase):
 
         base_step_length_m = 0.00250227400101721
         has_close_range = any(
-            [
-                ctx.extra_context.close_range_frames is not None
-                for ctx in self.single_sensor_contexts.values()
-            ]
+            ctx.extra_context.close_range_frames is not None
+            for ctx in self.single_sensor_contexts.values()
         )
         has_recorded_threshold = any(
-            [
-                ctx.extra_context.recorded_threshold_frames is not None
-                for ctx in self.single_sensor_contexts.values()
-            ]
+            ctx.extra_context.recorded_threshold_frames is not None
+            for ctx in self.single_sensor_contexts.values()
         )
 
         # Session config
-        session_config_used_during_calibration = list(self.single_sensor_contexts.values())[
-            0
-        ].session_config_used_during_calibration
+        session_config_used_during_calibration = next(
+            iter(self.single_sensor_contexts.values())
+        ).session_config_used_during_calibration
 
         assert session_config_used_during_calibration is not None
 
@@ -546,7 +542,7 @@ class _DetectorContext_v0(AlgoBase):
                 assert noise_frames is not None
                 if sensor_id not in frame_offset:
                     frame_offset[sensor_id] = 0
-                result_frame: List[npt.NDArray[np.complex128]] = []
+                result_frame: list[npt.NDArray[np.complex128]] = []
                 num_points = []
                 subsweep_data_offset = []
                 total_num_points = 0
@@ -648,9 +644,9 @@ class _DetectorContext_v0(AlgoBase):
         # Recorded threshold result
         if has_recorded_threshold:
             recorded_threshold_result = []
-            rec_thres_frames = list(self.single_sensor_contexts.values())[
-                0
-            ].extra_context.recorded_threshold_frames
+            rec_thres_frames = next(
+                iter(self.single_sensor_contexts.values())
+            ).extra_context.recorded_threshold_frames
             assert rec_thres_frames is not None
             num_rec_sweeps = len(rec_thres_frames[0])
 
@@ -713,12 +709,12 @@ class _DetectorContext_v0(AlgoBase):
                 recorded_threshold_result.append(group_results)
 
         # Sensor calibrations
-        sensor_calibrations: Dict[int, Optional[a121.SensorCalibration]] = {
+        sensor_calibrations: dict[int, Optional[a121.SensorCalibration]] = {
             k: v.sensor_calibration for k, v in self.single_sensor_contexts.items()
         }
-        sensor_calibrations_re: Dict[int, a121.SensorCalibration] = (
+        sensor_calibrations_re: dict[int, a121.SensorCalibration] = (
             {k: v for k, v in sensor_calibrations.items() if v is not None}
-            if all([x is not None for x in sensor_calibrations.values()])
+            if all(x is not None for x in sensor_calibrations.values())
             else {}
         )
         return DetectorContext(
@@ -743,16 +739,16 @@ class _DetectorContext_v0(AlgoBase):
 
 @attrs.mutable(kw_only=True)
 class _SingleSensorExtraContext_v0(AlgoBase):
-    offset_frames: Optional[List[List[npt.NDArray[np.complex128]]]] = attrs.field(
+    offset_frames: Optional[list[list[npt.NDArray[np.complex128]]]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    noise_frames: Optional[List[List[npt.NDArray[np.complex128]]]] = attrs.field(
+    noise_frames: Optional[list[list[npt.NDArray[np.complex128]]]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    close_range_frames: Optional[List[List[npt.NDArray[np.complex128]]]] = attrs.field(
+    close_range_frames: Optional[list[list[npt.NDArray[np.complex128]]]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    recorded_threshold_frames: Optional[List[List[npt.NDArray[np.complex128]]]] = attrs.field(
+    recorded_threshold_frames: Optional[list[list[npt.NDArray[np.complex128]]]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
 
@@ -766,13 +762,13 @@ class _SingleSensorContext_v0(AlgoBase):
     phase_jitter_comp_reference: Optional[npt.NDArray[np.float64]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    recorded_thresholds_mean_sweep: Optional[List[npt.NDArray[np.float64]]] = attrs.field(
+    recorded_thresholds_mean_sweep: Optional[list[npt.NDArray[np.float64]]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    recorded_thresholds_noise_std: Optional[List[List[np.float64]]] = attrs.field(
+    recorded_thresholds_noise_std: Optional[list[list[np.float64]]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    bg_noise_std: Optional[List[List[float]]] = attrs.field(
+    bg_noise_std: Optional[list[list[float]]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
     session_config_used_during_calibration: Optional[a121.SessionConfig] = attrs.field(
@@ -781,7 +777,7 @@ class _SingleSensorContext_v0(AlgoBase):
     reference_temperature: Optional[int] = attrs.field(default=None)
     sensor_calibration: Optional[a121.SensorCalibration] = attrs.field(default=None)
     extra_context: _SingleSensorExtraContext_v0 = attrs.field(factory=_SingleSensorExtraContext_v0)
-    # TODO: Make recorded_thresholds Optional[List[Optional[npt.NDArray[np.float64]]]]
+    # TODO: Make recorded_thresholds Optional[list[Optional[npt.NDArray[np.float64]]]]
 
     def to_h5(self, group: h5py.Group) -> None:
         for k, v in attrs.asdict(self, recurse=False).items():
@@ -861,7 +857,7 @@ class _SingleSensorContext_v0(AlgoBase):
 
     @classmethod
     def from_h5(cls, group: h5py.Group) -> _SingleSensorContext_v0:
-        context_dict: Dict[str, Any] = {}
+        context_dict: dict[str, Any] = {}
         context_dict["extra_context"] = {}
 
         unknown_keys = set(group.keys()) - set(attrs.fields_dict(_SingleSensorContext_v0).keys())

@@ -1,9 +1,9 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
+from typing import Optional
 
 import attrs
 import numpy as np
@@ -120,7 +120,7 @@ class Aggregator:
         profile_fwhms: npt.NDArray[np.float64],
         dists: npt.NDArray[np.float64],
         strengths: npt.NDArray[np.float64],
-    ) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         sorting_order = np.argsort(dists)
         distances_sorted = dists[sorting_order]
         strengths_sorted = strengths[sorting_order]
@@ -144,7 +144,7 @@ class Aggregator:
         dists: npt.NDArray[np.float64],
         strengths: npt.NDArray[np.float64],
         method: PeakSortingMethod,
-    ) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         if method == PeakSortingMethod.CLOSEST:
             quantity_to_sort = dists
         elif method == PeakSortingMethod.STRONGEST:
