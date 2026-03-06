@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import copy
 import enum
 from typing import Optional
 
@@ -16,21 +15,19 @@ from acconeer.exptool import a121
 from acconeer.exptool._core.class_creation.attrs import attrs_optional_ndarray_isclose
 from acconeer.exptool.a121.algo import (
     APPROX_BASE_STEP_LENGTH_M,
-    ENVELOPE_FWHM_M,
-    RLG_PER_HWAAS_MAP,
     AlgoParamEnum,
     AlgoProcessorConfigBase,
     ProcessorBase,
     ReflectorShape,
     _convert_multiple_amplitudes_to_strengths,
-    calc_processing_gain,
     find_peaks,
     get_distance_filter_coeffs,
     get_distance_filter_edge_margin,
     get_distance_offset,
-    get_temperature_adjustment_factors,
     interpolate_peaks,
 )
+
+from . import _thresholds as thresholds
 
 
 DEFAULT_SC_BG_NUM_STD_DEV = 6.0
@@ -202,9 +199,6 @@ class Processor(ProcessorBase[ProcessorResult]):
     :param context: Context
     """
 
-    CFAR_GUARD_LENGTH_ADJUSTMENT = 4
-    CFAR_WINDOW_LENGTH_ADJUSTMENT = 0.25
-
     # Standard deviation of angle in direct leakage over multiple sensor restarts.
     PHASE_JITTER_RESTART_STD = 0.05
 
@@ -259,6 +253,9 @@ class Processor(ProcessorBase[ProcessorResult]):
         self.approx_step_length_m = self.step_length * APPROX_BASE_STEP_LENGTH_M
         self.start_point = self._get_start_point(self.range_subsweep_configs)
         self.num_points = self._get_num_points(self.range_subsweep_configs)
+        self.distance_points = self.start_point + np.arange(self.num_points) * self.step_length
+        self.start_points = [c.start_point for c in self.range_subsweep_configs]
+        self.hwaas_per_subsweep = [c.hwaas for c in self.range_subsweep_configs]
 
         # Matched filter
         self.distance_filter = DistanceFilter(self.profile, self.start_point, self.step_length)
@@ -271,6 +268,14 @@ class Processor(ProcessorBase[ProcessorResult]):
         self.subsweep_bpts = self._get_subsweep_breakpoints(
             self.range_subsweep_configs, self.filt_margin
         )
+        self.subsweep_slices_cropped = [
+            slice(
+                self.subsweep_bpts[idx] - self.filt_margin,
+                self.subsweep_bpts[idx + 1] - self.filt_margin,
+                1,
+            )
+            for idx in range(len(self.subsweep_bpts) - 1)
+        ]
 
         self.base_step_length_m = self.metadata.base_step_length_m
         self.distances_m = (
@@ -279,7 +284,7 @@ class Processor(ProcessorBase[ProcessorResult]):
 
         self.processor_mode = processor_config.processor_mode
         self.threshold_method = processor_config.threshold_method
-        self.num_stds_in_threshold = self._sensitivity_to_standard_deviations(
+        self.num_stds_in_threshold = thresholds.sensitivity_to_standard_deviations(
             self.processor_config.threshold_sensitivity
         )
 
@@ -291,19 +296,6 @@ class Processor(ProcessorBase[ProcessorResult]):
             self._init_recorded_threshold_calibration()
         else:
             raise RuntimeError
-
-    @staticmethod
-    def _sensitivity_to_standard_deviations(sensitivity: float) -> float:
-        """Convert sensitivity to standard deviations used by recorded threshold and CFAR.
-
-        0 sensitivity corresponds to 15 standard deviations. 1 sensitivity corresponds to 2
-        standard deviations.
-        """
-        if sensitivity < 0.0 or sensitivity > 1.0:
-            msg = "Sensitivity outside of valid interval(0.0 <= Sensitivity <= 1.0)."
-            raise ValueError(msg)
-
-        return 8.0 - 7.0 * sensitivity
 
     @classmethod
     def _get_subsweep_configs(
@@ -341,7 +333,7 @@ class Processor(ProcessorBase[ProcessorResult]):
     def _get_subsweep_breakpoints(
         cls, subsweep_configs: list[a121.SubsweepConfig], filt_margin: int
     ) -> list[int]:
-        """Calculate the subsweep breakpoints of the full sweep(including filter margins).
+        """Calculate the subsweep breakpoints of the full sweep (including filter margins).
 
         The breakpoints are calculated as the cumulative sum of the number of points in each
         subsweep. Then, the breakpoints are formed by adding filt_margin to the front
@@ -441,87 +433,70 @@ class Processor(ProcessorBase[ProcessorResult]):
         return frame - adjusted_leakage  # type: ignore[no-any-return]
 
     def _init_process_distance_estimation(self) -> None:
+        self.threshold: thresholds.Threshold
+
         if self.threshold_method == ThresholdMethod.RECORDED:
             if (
                 self.context.recorded_threshold_mean_sweep is None
                 or self.context.recorded_threshold_noise_std is None
+                or self.context.bg_noise_std is None
+                or self.context.reference_temperature is None
             ):
                 msg = "Missing recorded threshold inputs in context"
                 raise ValueError(msg)
+
+            self.threshold = thresholds.RecordedThreshold(
+                recorded_mean_sweep=self.context.recorded_threshold_mean_sweep,
+                rec_noise_std_per_subsweep=self.context.recorded_threshold_noise_std,
+                bg_noise_std_per_subsweep=self.context.bg_noise_std,
+                reference_temperature=self.context.reference_temperature,
+                sensitivity=self.processor_config.threshold_sensitivity,
+                profile=self.profile,
+                subsweep_slices_cropped=self.subsweep_slices_cropped,
+            )
+
         elif self.threshold_method == ThresholdMethod.FIXED:
-            self.threshold = np.full(
-                self.num_points_cropped, self.processor_config.fixed_threshold_value
+            self.threshold = thresholds.FixedThreshold(
+                fixed_value=self.processor_config.fixed_threshold_value,
             )
+
         elif self.threshold_method == ThresholdMethod.FIXED_STRENGTH:
-            self.threshold = self._calculate_fixed_strength_threshold(
-                self.range_subsweep_configs,
-                self.context.bg_noise_std,  # type: ignore[arg-type]
-                self.processor_config.reflector_shape,
-                self.processor_config.fixed_strength_threshold_value,
+            if self.context.bg_noise_std is None:
+                msg = "Missing bg_noise_std in context"
+                raise ValueError(msg)
+
+            self.threshold = thresholds.FixedStrengthThreshold(
+                fixed_strength=self.processor_config.fixed_strength_threshold_value,
+                bg_noise_std_per_subsweep=self.context.bg_noise_std,
+                reflector_shape=self.processor_config.reflector_shape,
+                profile=self.profile,
+                step_length=self.step_length,
+                distance_points=self.distance_points[self.filt_margin : -self.filt_margin],
+                start_points=self.start_points,
+                hwaas_per_subsweep=self.hwaas_per_subsweep,
             )
+
         elif self.threshold_method == ThresholdMethod.CFAR:
-            self.cfar_abs_noise = np.zeros(shape=self.num_points_cropped)
-            if self.context.bg_noise_std is not None:
-                for idx, tx_off_noise_std in enumerate(self.context.bg_noise_std):
-                    self.cfar_abs_noise[self.subsweep_bpts[idx] : self.subsweep_bpts[idx + 1]] = (
-                        tx_off_noise_std
-                    )
-            self.cfar_margin = self.calc_cfar_margin(self.profile, self.step_length)
-            self.window_length = self._calc_cfar_window_length(self.profile, self.step_length)
-            self.guard_half_length = self._calc_cfar_guard_half_length(
-                self.profile, self.step_length
+            self.threshold = thresholds.CfarThreshold(
+                sensitivity=self.processor_config.threshold_sensitivity,
+                bg_noise_std_per_subsweep=self.context.bg_noise_std,
+                profile=self.profile,
+                start_point=self.start_point,
+                step_length=self.step_length,
+                subsweep_slices_cropped=self.subsweep_slices_cropped,
             )
-
-            # breakpoint_lim defines at what distance cfar should go from being calculated
-            # one-sided to symmetrical. One-sided is used to avoid introducing the direct leakage
-            # in the threshold. The limit is based on a multiple of the envelope width.
-            breakpoint_lim = (
-                int(
-                    round(
-                        (ENVELOPE_FWHM_M[a121.Profile.PROFILE_1] * 3) / APPROX_BASE_STEP_LENGTH_M
-                    )
-                )
-                + self.cfar_margin
-            )
-
-            if breakpoint_lim >= self.start_point:
-                self.one_sided_breakpoint_in_sweep: Optional[int] = (
-                    (breakpoint_lim - self.start_point) // self.step_length
-                ) + 1
-            else:
-                self.one_sided_breakpoint_in_sweep = None
 
         self.offset_m = get_distance_offset(
             self.context.loopback_peak_location_m, self.profile, self.context.reference_temperature
         )
 
-    @classmethod
-    def _calc_cfar_window_length(cls, profile: a121.Profile, step_length: int) -> int:
-        window_length_m = ENVELOPE_FWHM_M[profile] * cls.CFAR_WINDOW_LENGTH_ADJUSTMENT
-        step_length_m = step_length * APPROX_BASE_STEP_LENGTH_M
-        return max([1, int(window_length_m / step_length_m)])
-
-    @classmethod
-    def _calc_cfar_guard_half_length(cls, profile: a121.Profile, step_length: int) -> int:
-        guard_length_m = ENVELOPE_FWHM_M[profile] * cls.CFAR_GUARD_LENGTH_ADJUSTMENT
-        step_length_m = step_length * APPROX_BASE_STEP_LENGTH_M
-        guard_half_length_m = guard_length_m / 2
-        return int(guard_half_length_m / step_length_m)
-
-    @classmethod
-    def calc_cfar_margin(cls, profile: a121.Profile, step_length: int) -> int:
-        return cls._calc_cfar_window_length(
-            profile, step_length
-        ) + cls._calc_cfar_guard_half_length(profile, step_length)
-
     def _process_distance_estimation(
         self, frame: npt.NDArray[np.complex128], temperature: int
     ) -> ProcessorResult:
         abs_sweep = self.distance_filter.compute_envelope(frame)
-        self.threshold = self._update_threshold(abs_sweep, temperature)
-
-        found_peaks_idx = find_peaks(abs_sweep, self.threshold)
-        (estimated_distances, estimated_amplitudes) = interpolate_peaks(
+        threshold_values = self.threshold.compute(abs_sweep, temperature)
+        found_peaks_idx = find_peaks(abs_sweep, threshold_values)
+        estimated_distances, estimated_amplitudes = interpolate_peaks(
             abs_sweep,
             found_peaks_idx,
             self.start_point_cropped,
@@ -529,18 +504,15 @@ class Processor(ProcessorBase[ProcessorResult]):
             self.base_step_length_m,
         )
 
-        if self.processor_config.threshold_method == ThresholdMethod.CFAR:
-            cfar_margin_slice = slice(self.cfar_margin, -self.cfar_margin)
-            abs_sweep = abs_sweep[cfar_margin_slice]
-            threshold = self.threshold[cfar_margin_slice]
-            distances_m = self.distances_m[cfar_margin_slice]
-        else:
-            threshold = self.threshold
-            distances_m = self.distances_m
-
+        # Crop to valid range after thresholding
+        m = self.threshold.margin
+        valid_range = slice(m, -m or None)
+        abs_sweep = abs_sweep[valid_range]
+        threshold_values = threshold_values[valid_range]
+        distances_m = self.distances_m[valid_range]
         extra_result = ProcessorExtraResult(
             abs_sweep=abs_sweep,
-            used_threshold=threshold,
+            used_threshold=threshold_values,
             distances_m=distances_m,
         )
 
@@ -556,10 +528,13 @@ class Processor(ProcessorBase[ProcessorResult]):
         )
 
         estimated_distances = [dist - self.offset_m for dist in estimated_distances]
+
+        near_edge_status = self._detect_close_object(abs_sweep, threshold_values)
+
         return ProcessorResult(
             estimated_distances=estimated_distances,
             estimated_strengths=estimated_strengths,
-            near_edge_status=self._detect_close_object(abs_sweep, threshold),
+            near_edge_status=near_edge_status,
             extra_result=extra_result,
         )
 
@@ -617,160 +592,9 @@ class Processor(ProcessorBase[ProcessorResult]):
             recorded_threshold_noise_std=recorded_threshold_noise_std,
         )
 
-    def _update_threshold(
-        self, abs_sweep: npt.NDArray[np.float64], temperature: int
-    ) -> npt.NDArray[np.float64]:
-        if self.threshold_method == ThresholdMethod.CFAR:
-            return self._calculate_cfar_threshold(
-                abs_sweep,
-                self.window_length,
-                self.guard_half_length,
-                self.num_stds_in_threshold,
-                self.cfar_abs_noise,
-                self.one_sided_breakpoint_in_sweep,
-            )
-        elif (
-            self.threshold_method == ThresholdMethod.FIXED
-            or self.threshold_method == ThresholdMethod.FIXED_STRENGTH
-        ):
-            return self.threshold
-        elif self.threshold_method == ThresholdMethod.RECORDED:
-            assert self.context.reference_temperature is not None
-            assert self.context.bg_noise_std is not None
-            (
-                signal_adjustment_factor,
-                noise_adjustment_factor,
-            ) = get_temperature_adjustment_factors(
-                reference_temperature=self.context.reference_temperature,
-                current_temperature=temperature,
-                profile=self.profile,
-            )
-            return self._update_recorded_threshold(
-                self.context,
-                self.subsweep_bpts,
-                self.num_stds_in_threshold,
-                self.filt_margin,
-                signal_adjustment_factor,
-                noise_adjustment_factor,
-            )
-        else:
-            raise RuntimeError
-
-    @classmethod
-    def _update_recorded_threshold(
-        cls,
-        context: ProcessorContext,
-        bpts: list[int],
-        num_stds: float,
-        filt_margin: int,
-        signal_adjustment_factor: float,
-        noise_adjustment_factor: float,
-    ) -> npt.NDArray[np.float64]:
-        """Updates the recorded threshold to account for temperature effects.
-
-        The threshold is constructed by adding a number of standard deviations of the background
-        noise(tx off) and the signal noise(calculated during calibration) to the mean sweep. The
-        mean sweep is adjusted by a factor and the background noise is adjusted before fed to this
-        method to account for the temperature effect.
-        """
-
-        assert context.recorded_threshold_mean_sweep is not None
-        assert context.recorded_threshold_noise_std is not None
-        assert context.bg_noise_std is not None
-
-        threshold = copy.deepcopy(context.recorded_threshold_mean_sweep) * signal_adjustment_factor
-
-        for idx, (std_tx_off, std_recorded_threshold) in enumerate(
-            zip(context.bg_noise_std, context.recorded_threshold_noise_std)
-        ):
-            # Subtract filt_margin from breakpoint to transform from full to cropped sweep
-            subsweep_slice = slice(bpts[idx] - filt_margin, bpts[idx + 1] - filt_margin)
-            threshold[subsweep_slice] += (
-                np.sqrt(
-                    noise_adjustment_factor * std_tx_off**2
-                    + threshold[subsweep_slice] ** 2 * std_recorded_threshold**2
-                )
-                * num_stds
-            )
-
-        return threshold
-
-    @staticmethod
-    def _calculate_cfar_threshold(
-        abs_sweep: npt.NDArray[np.float64],
-        window_length: int,
-        guard_half_length: int,
-        num_stds: float,
-        abs_noise_std: npt.NDArray[np.float64],
-        one_sided_breakpoint_in_sweep: Optional[int] = None,
-    ) -> npt.NDArray[np.float64]:
-        """Calculate CFAR threshold.
-
-        Each point of the threshold is formed by using data from neighboring segments of the
-        sweep.
-
-        The distance between a point and the start of the neighboring segment is determined by
-        the guard half length. The width of the segment by the window length.
-
-        For each point, the threshold is calculated as the average of the points located in the
-        segments to the left and to the right.
-
-        One-sided theshold is applied for all points below one_sided_breakpoint_in_sweep. The
-        purpose is to avoid the influence of direct leakage in the threshold.
-        """
-
-        threshold = np.full(abs_sweep.shape, np.nan)
-        margin = window_length + guard_half_length
-        sweep_len_without_margins = abs_sweep.shape[0] - 2 * margin
-
-        filt_abs_sweep = np.convolve(abs_sweep, np.ones(window_length), "valid") / window_length
-        left_cfar_component = filt_abs_sweep[:sweep_len_without_margins] / 2
-        right_cfar_component = filt_abs_sweep[-sweep_len_without_margins:] / 2
-        if one_sided_breakpoint_in_sweep is not None:
-            left_cfar_component[:one_sided_breakpoint_in_sweep] = 0
-
-        threshold[margin:-margin] = left_cfar_component + right_cfar_component
-
-        threshold += abs_noise_std * num_stds
-        return threshold
-
-    def _calculate_fixed_strength_threshold(
-        self,
-        subsweeps: list[a121.SubsweepConfig],
-        bg_noise_std: list[float],
-        reflector_shape: ReflectorShape,
-        strength: float,
-    ) -> npt.NDArray[np.float64]:
-        """Calculates the threshold corresponding to a given RCS."""
-        distances_m = (
-            self.start_point_cropped + np.arange(self.num_points_cropped) * self.step_length
-        ) * APPROX_BASE_STEP_LENGTH_M
-        processing_gain_db = 10 * np.log10(calc_processing_gain(self.profile, self.step_length))
-        start_points = [subsweep.start_point for subsweep in subsweeps]
-        bpts_m = np.array(start_points) * APPROX_BASE_STEP_LENGTH_M
-        profile = self.profile
-
-        threshold = []
-        for distance_m in distances_m:
-            if distance_m > 0.0:
-                subsweep_idx = np.sum(bpts_m < distance_m) - 1
-                sigma = bg_noise_std[subsweep_idx]
-                hwaas = subsweeps[subsweep_idx].hwaas
-
-                n_db = 20 * np.log10(sigma)
-                r_db = reflector_shape.exponent * 10 * np.log10(distance_m)
-                rlg_db = RLG_PER_HWAAS_MAP[profile] + 10 * np.log10(hwaas)
-
-                thold_element = 10 ** ((processing_gain_db + n_db + rlg_db - r_db + strength) / 20)
-                threshold.append(thold_element)
-            else:
-                threshold.append(0.0)
-
-        return np.array(threshold)
-
     @staticmethod
     def _detect_close_object(
-        abs_sweep: npt.NDArray[np.float64], threshold: npt.NDArray[np.float64]
+        abs_sweep: npt.NDArray[np.float64], threshold_values: npt.NDArray[np.float64]
     ) -> bool:
         """This function determine if an object is present close to the start point, but
         not far enough into the measurement interval to result in a distinct peak.
@@ -784,7 +608,8 @@ class Processor(ProcessorBase[ProcessorResult]):
             return False
 
         return bool(
-            np.sum(abs_sweep[0:3]) >= np.sum(abs_sweep[3:6]) and abs_sweep[0] >= threshold[0]
+            np.sum(abs_sweep[0:3]) >= np.sum(abs_sweep[3:6])
+            and abs_sweep[0] >= threshold_values[0]
         )
 
 

@@ -2,7 +2,6 @@
 # All rights reserved
 
 import numpy as np
-import numpy.testing as npt
 import pytest
 
 from acconeer.exptool import a121
@@ -189,65 +188,3 @@ def test_distance_filter_edge_margin() -> None:
     )
 
     assert actual_filter_edge_margin == 14
-
-
-def test_calculate_cfar_threshold() -> None:
-    abs_sweep = np.ones(30)
-    abs_sweep[4:6] = 2
-    window_length = 3
-    guard_half_length = 1
-    num_stds = 1
-
-    actual_threshold = distance.Processor._calculate_cfar_threshold(
-        abs_sweep=abs_sweep,
-        window_length=window_length,
-        guard_half_length=guard_half_length,
-        num_stds=num_stds,
-        abs_noise_std=np.array([0.0]),
-    )
-    actual_threshold = actual_threshold[~np.isnan(actual_threshold)]
-    threshold = np.array(
-        [
-            1.0,
-            1.0,
-            1.1666,
-            1.3333,
-            1.3333,
-            1.1666,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
-        ]
-    )
-    npt.assert_almost_equal(actual_threshold, threshold, decimal=4)
-
-
-def test_calc_cfar_guard_half_length() -> None:
-    profile = a121.Profile.PROFILE_3
-    step_length = 4
-    actual_guard_half_length = distance.Processor._calc_cfar_guard_half_length(
-        profile=profile, step_length=step_length
-    )
-    assert actual_guard_half_length == 28
-
-
-def test_calc_cfar_window_length() -> None:
-    profile = a121.Profile.PROFILE_3
-    step_length = 2
-    actual_margin = distance.Processor._calc_cfar_window_length(
-        profile=profile, step_length=step_length
-    )
-    assert actual_margin == 7

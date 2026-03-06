@@ -19,7 +19,8 @@ from acconeer.exptool.a121.algo import (
 )
 
 from ._aggregator import ProcessorSpec
-from ._processors import MeasurementType, Processor, ProcessorConfig, ThresholdMethod
+from ._processors import MeasurementType, ProcessorConfig, ThresholdMethod
+from ._thresholds import CfarThreshold
 
 
 if t.TYPE_CHECKING:
@@ -163,7 +164,7 @@ def _get_range_types(config: DetectorConfig) -> RangeTypes:
 
 
 def _cfar_margins(profile: a121.Profile, step_length: int) -> int:
-    cfar_margin = Processor.calc_cfar_margin(profile, step_length) * step_length
+    cfar_margin = CfarThreshold.calc_margin(profile, step_length) * step_length
     return cfar_margin
 
 
@@ -643,7 +644,7 @@ def _calc_leakage_free_min_dist(config: DetectorConfig) -> dict[a121.Profile, fl
         if config.threshold_method == ThresholdMethod.CFAR:
             step_length = _limit_step_length(profile, config.max_step_length)
             cfar_margin_m = (
-                Processor.calc_cfar_margin(profile, step_length)
+                CfarThreshold.calc_margin(profile, step_length)
                 * step_length
                 * APPROX_BASE_STEP_LENGTH_M
             )
