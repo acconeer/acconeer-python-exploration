@@ -38,8 +38,6 @@ DEFAULT_FIXED_AMPLITUDE_THRESHOLD_VALUE = 100.0
 DEFAULT_FIXED_STRENGTH_THRESHOLD_VALUE = 0.0
 DEFAULT_THRESHOLD_SENSITIVITY = 0.5
 
-NARROW_DISTANCE_FILTER_BREAKPOINT = 40  # corresponding to 0.1m
-
 
 class MeasurementType(AlgoParamEnum):
     CLOSE_RANGE = enum.auto()
@@ -147,6 +145,50 @@ class ProcessorResult:
     extra_result: ProcessorExtraResult = attrs.field(factory=ProcessorExtraResult)
 
 
+class DistanceFilter:
+    NARROW_DISTANCE_FILTER_BREAKPOINT = 40  # corresponding to 0.1m
+
+    def __init__(self, profile: a121.Profile, start_point: int, step_length: int) -> None:
+        use_narrow_filter = start_point < self.NARROW_DISTANCE_FILTER_BREAKPOINT
+
+        self._margin = get_distance_filter_edge_margin(profile, step_length)
+        self._b, self._a = get_distance_filter_coeffs(
+            profile, step_length, narrow_filter=use_narrow_filter
+        )
+
+    def apply(self, sweep_or_frame: npt.NDArray[np.complex128]) -> npt.NDArray[np.complex128]:
+        """
+        Apply the distance filter. Result is cropped to the valid range.
+
+        If a frame (2D array) is passed, the sweeps are averaged before filtering.
+        """
+        sweep = self._to_sweep(sweep_or_frame)
+        filtered: npt.NDArray[np.complex128] = filtfilt(self._b, self._a, sweep)
+        end = -self._margin if self._margin > 0 else None
+        return filtered[self._margin : end]
+
+    def compute_envelope(
+        self, sweep_or_frame: npt.NDArray[np.complex128]
+    ) -> npt.NDArray[np.float64]:
+        """Return the magnitude of the distance-filtered sweep (cropped to valid range)."""
+        filtered_sweep = self.apply(sweep_or_frame)
+        return np.abs(filtered_sweep)
+
+    @property
+    def margin(self) -> int:
+        return self._margin
+
+    def _to_sweep(self, sweep_or_frame: npt.NDArray[np.complex128]) -> npt.NDArray[np.complex128]:
+        if sweep_or_frame.ndim == 1:
+            return sweep_or_frame
+        if sweep_or_frame.ndim == 2:
+            result: npt.NDArray[np.complex128] = sweep_or_frame.mean(axis=0)
+            return result
+
+        msg = f"Expected sweep_or_frame to be 1D or 2D, got {sweep_or_frame.ndim}D."
+        raise ValueError(msg)
+
+
 class Processor(ProcessorBase[ProcessorResult]):
     """Distance processor
 
@@ -218,10 +260,11 @@ class Processor(ProcessorBase[ProcessorResult]):
         self.start_point = self._get_start_point(self.range_subsweep_configs)
         self.num_points = self._get_num_points(self.range_subsweep_configs)
 
-        self.base_step_length_m = self.metadata.base_step_length_m
-        self.step_length_m = self.step_length * self.base_step_length_m
+        # Matched filter
+        self.distance_filter = DistanceFilter(self.profile, self.start_point, self.step_length)
+        self.filt_margin = self.distance_filter.margin
 
-        self.filt_margin = get_distance_filter_edge_margin(self.profile, self.step_length)
+        # Valid points after filtering
         self.start_point_cropped = self.start_point + self.filt_margin * self.step_length
         self.num_points_cropped = self.num_points - 2 * self.filt_margin
 
@@ -229,15 +272,10 @@ class Processor(ProcessorBase[ProcessorResult]):
             self.range_subsweep_configs, self.filt_margin
         )
 
+        self.base_step_length_m = self.metadata.base_step_length_m
         self.distances_m = (
             self.start_point_cropped + np.arange(self.num_points_cropped) * self.step_length
-        ) * self.metadata.base_step_length_m
-
-        (self.b, self.a) = get_distance_filter_coeffs(
-            self.profile,
-            self.step_length,
-            narrow_filter=self.start_point < NARROW_DISTANCE_FILTER_BREAKPOINT,
-        )
+        ) * self.base_step_length_m
 
         self.processor_mode = processor_config.processor_mode
         self.threshold_method = processor_config.threshold_method
@@ -374,20 +412,15 @@ class Processor(ProcessorBase[ProcessorResult]):
             if self.processor_mode != ProcessorMode.LEAKAGE_CALIBRATION:
                 frame = self._apply_phase_jitter_compensation(self.context, frame, lb_angle)
 
-        sweep = frame.mean(axis=0)
-        filtered_sweep = filtfilt(self.b, self.a, sweep)
-        abs_sweep = np.abs(filtered_sweep)
-        abs_sweep = abs_sweep[self.filt_margin : -self.filt_margin]
-
         if self.processor_mode == ProcessorMode.DISTANCE_ESTIMATION:
-            return self._process_distance_estimation(abs_sweep, result.temperature)
+            return self._process_distance_estimation(frame, result.temperature)
         elif self.processor_mode == ProcessorMode.LEAKAGE_CALIBRATION:
             return ProcessorResult(
                 phase_jitter_comp_reference=lb_angle,
                 direct_leakage=frame,
             )
         elif self.processor_mode == ProcessorMode.RECORDED_THRESHOLD_CALIBRATION:
-            return self._process_recorded_threshold_calibration(abs_sweep)
+            return self._process_recorded_threshold_calibration(frame)
 
         raise RuntimeError
 
@@ -482,8 +515,9 @@ class Processor(ProcessorBase[ProcessorResult]):
         ) + cls._calc_cfar_guard_half_length(profile, step_length)
 
     def _process_distance_estimation(
-        self, abs_sweep: npt.NDArray[np.float64], temperature: int
+        self, frame: npt.NDArray[np.complex128], temperature: int
     ) -> ProcessorResult:
+        abs_sweep = self.distance_filter.compute_envelope(frame)
         self.threshold = self._update_threshold(abs_sweep, temperature)
 
         found_peaks_idx = find_peaks(abs_sweep, self.threshold)
@@ -535,10 +569,11 @@ class Processor(ProcessorBase[ProcessorResult]):
         self.sc_bg_num_sweeps = 1.0
 
     def _process_recorded_threshold_calibration(
-        self, abs_sweep: npt.NDArray[np.float64]
+        self, frame: npt.NDArray[np.complex128]
     ) -> ProcessorResult:
         min_num_sweeps_in_valid_threshold = 2
 
+        abs_sweep = self.distance_filter.compute_envelope(frame)
         self.bg_sc_mean += abs_sweep
         self.bg_sc_sum_squared_bg_sweeps += np.square(abs_sweep)
         mean_sweep = self.bg_sc_mean / self.sc_bg_num_sweeps
@@ -757,14 +792,9 @@ def calculate_bg_noise_std(
     subframe: npt.NDArray[np.complex128], subsweep_config: a121.SubsweepConfig
 ) -> float:
     profile = subsweep_config.profile
+    start_point = subsweep_config.start_point
     step_length = subsweep_config.step_length
-    narrow_filter = subsweep_config.start_point < NARROW_DISTANCE_FILTER_BREAKPOINT
-    (B, A) = get_distance_filter_coeffs(profile, step_length, narrow_filter)
-    filt_margin = get_distance_filter_edge_margin(profile, step_length)
-
-    sweep = subframe.squeeze(axis=0)
-    filtered_sweep = filtfilt(B, A, sweep)
-    abs_sweep = np.abs(filtered_sweep)
-    abs_sweep = abs_sweep[filt_margin:-filt_margin]
+    distance_filter = DistanceFilter(profile, start_point, step_length)
+    abs_sweep = distance_filter.compute_envelope(subframe)
 
     return float(np.sqrt(np.mean(np.square(abs_sweep))))
