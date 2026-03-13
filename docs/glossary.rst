@@ -170,19 +170,9 @@ Glossary
    FR-4
       Flame Retardant 4, is a standardized grade of glass-reinforced epoxy laminate material. It serves as the primary substrate for printed circuit boards (PCBs) due to its excellent strength-to-weight ratio, near-zero water absorption, and reliable electrical insulation properties across varying environmental conditions.
 
-   Surface Waves
-      Surface waves are electromagnetic waves that propagate along the interface between two different media, such as the boundary between a dielectric material and air. These waves can travel along the surface of the structure, often leading to unintended signal interference or edge diffraction at the boundaries of the material.
-
-   Near-field
-      The near-field region exists in close proximity to the sensor or target, where the radiation pattern and field intensity are highly dependent on the distance.
-
-      .. math::
-         :label: eq_nearfieldistance
-
-         R_{nearfield} < \frac{2A^{2}}{\lambda_{0}}
-
-      where :math:`A` is the largest dimension of either the sensor or the radar target, and :math:`\lambda_{0}` is the wavelength in free-space. In this region, the electromagnetic fields are not yet planar, and the waves from different parts of the aperture have not converged.
-
+   Surface waves
+      Surface waves are electromagnetic waves that propagate along the interface between two different media, such as the boundary between a dielectric material and air. As these waves can travel along the surfaces, they can cause interference and edge diffraction at material boundaries.
 
    RF material
       RF-material refers to specialized substrates—such as PTFE-based laminates or high-frequency ceramics—engineered specifically for high-speed and high-frequency applications.
+

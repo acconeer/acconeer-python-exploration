@@ -1,87 +1,98 @@
 ============================================================
-Electromagnetic band-gap (:term:`EBG`) structures guidelines
+Electromagnetic bandgap structures for side lobe suppression
 ============================================================
 
-The radar :term:`far-field` performances can be degraded by side lobes, which represent unintentional sensitivity to directions outside the main beam. In fact, a reflection from a side lobe direction can produce a stronger response than from a weaker target in the main lobe direction.
-Applications where this typically happens are level sensing in tanks, silos and cargo container measurements where sidewall corners close to the radar with low path loss can produce strong response in comparison to the target object.
+The radiation pattern can be degraded by sidelobes, which represent unintentional sensitivity to directions outside the main beam. In fact, a reflection from a sidelobe direction can produce a stronger radar response than from a target in the main lobe direction. Applications where this typically happens are level sensing in tanks and silos and cargo container measurements where sidewall corners close to the radar with low path loss can produce a strong response in comparison to the target object.
 
-At millimeter-wave frequencies, side lobes are often caused by surface currents and surface waves in the PCB.
-The side lobe level can be significantly improved with the use of horn antennas or reflectors. However, an alternative cost-effective way to improve the side lobe level is by implementing electromagnetic band-gap (EBG) structures.
+The sidelobe level can be significantly improved with the use of horn antennas or reflectors. However, an alternative cost-effective way to improve the sidelobe level is by implementing Electromagnetic bandgap (EBG) structures. EBGs are periodic structures that can be implemented on the PCB top layer close to the sensor. This is shown in :numref:`fig_A121_with_ebgs_lens_and_casing`, where square patch mushroom type EBGs have been added to the PCB.
 
+.. _fig_A121_with_ebgs_lens_and_casing:
+.. figure:: /_static/hw_images/A121_ebg_pcb_lens_and_casing_3D.png
+    :align: center
+    :width: 100%
 
-.. At millimeter-wave bands, strong surface currents can flow on the PCB metal layers (even without any routing) and surface waves can propagate in the substrate, which degrade the TX + RX performance. The PCB also acts as a reflector for the radar patterns. All these factors contribute to the TX + RX pattern side lobes that can provide wrong sensing data.
+    A1 radar sensor with EBGs, dielectric lens and casing.
 
-.. .. _fig_PCB_sidelobe:
-.. .. figure:: /_static/handbook/a121/in-depth_topics/EBG/PCBcauseSideLobe.png
-..     :align: center
-..     :width: 65%
+Side lobe suppression
+=====================
 
-..     Electric field distribution for A121 sensor on XS121 PCB at 60.5 GHz.
+:numref:`fig_XS121-20_EBG_eplane_3D` and :numref:`fig_XS121-20_EBG_ehplane_3D` shows two example EBG array variants. The first variant has EBGs distributed in the E-plane only (:numref:`fig_XS121-20_EBG_eplane_3D`) whereas second variant have EBG cells covering both E and H-planes.
 
-EBG
-==================================================
+.. list-table::
+   :widths: 50 50
 
-We recommend using EBGs on the PCB to suppress surface waves and surface currents that cause unwanted side lobes and edge effects, therefore preserving the far-field performance. Mushroom-type EBGs are common and effective band-gap structures.
-Mushroom type EBGs are two-dimensional periodic structures as shown in :numref:`fig_EBG_schematic`. In each EBG unit, there is a square patch metal layer (always on top of the PCB) connected with a centered metallic via to the ground plane (always a separate layer with PCB routing).
-Both blind vias and through hole vias can be used to construct the EBG units.
+   * - .. figure:: /_static/hw_images/XS121_20_EBG_06_03_19x15x7x15_3D.png
+          :name: fig_XS121-20_EBG_eplane_3D
 
+          E-plane EBG example.
+
+     - .. figure:: /_static/hw_images/XS121_20_EBG_06_03_19x19x7x7_3D.png
+          :name: fig_XS121-20_EBG_ehplane_3D
+
+          E and H-plane EBG example.
+
+:numref:`fig_XS121_ebg_farfields` shows Tx+Rx far-field measurements with and without EBGs for two EBG variants. Both variants improve the E-plane side lobe level by approximately 10 dB at +/-90 deg angles. We also notice a small increase in boresight gain as the EBG reflection phase have been optimized. The E and H-plane EBG implementation yields some further SLL improvement with the cost of additional PCB routing complexity.
+
+.. _fig_XS121_ebg_farfields:
+.. figure:: /_static/hw_images/XS121-20-EBG_v1.1.svg
+    :align: center
+    :width: 100%
+
+    Normalized far-fields with and without EBGs.
+
+Impact of product enclosure
+===========================
+
+Increased side lobes can occur from spillover radiation hitting the product enclosure walls, PCB standoffs and other nearby structures if these need to be close to the sensor (:numref:`fig_A121_with_ebgs_lens_and_casing`). :numref:`fig_EBGs_farfields_with_lens_and_casing` shows how the side lobe level improve with the addition of EBGs, especially in the E-plane. Again, we observe a small increase in boresight gain (~2 dB) with the addition of EBGs.
+
+.. _fig_EBGs_farfields_with_lens_and_casing:
+.. figure:: /_static/hw_images/XS121-20-EBG_v1.1_with_lens_and_casing.svg
+    :align: center
+    :width: 100%
+
+    Normalized far-fields with and without EBGs with lens and casing.
+
+Mushroom type EBGs
+==================
+
+The EBGs used here are mushroom-type EBGs and these are one of the most common and effective structures. A mushroom unit cell consist of a square patch on the top layer with a centered metallic via connected to the ground plane underneath (layer 2), see :numref:`fig_EBG_schematic`. As multiple EBG cells are formed in an array, we obtain a periodic structure that can manipulate the material properties of the PCB. This allows us to create a spatial filter for suppressing surface currents as well as optimizing the PCB reflection phase.
+
+Both blind vias and through hole vias can be used for constructing the EBG cells. The patch size, element spacing, dielectric thickness and dielectric properties are important tuning parameters for obtaining the desired performance.
 
 .. _fig_EBG_schematic:
-.. figure:: /_static/handbook/a121/in-depth_topics/EBG/EBGschematic1.svg
+.. figure:: /_static/hw_images/EBG_top_and_side_views.svg
     :align: center
     :width: 95%
 
-    Schematic views of mushroom-type EBGs.
+    Mushroom-type EBGs.
 
 
-:numref:`fig_EBG_sensor_field` shows the comparison of the A1 sensor :term:`near-field` with and without EBG integration on the PCB. The PCB has multiple layers.
-On the :emphasis:`PCB without EBGs`, the sensor near-field spreads in all space around and inside the PCB. These fields can cause crosstalk among integrated components.
-Compared to the :emphasis:`PCB with 5-row mushroom EBGs`, the sensor near-field is confined within the EBGs, so less fields are spread in space or inside the PCB.
-Therefore, the far-field radiated from the sensor is well preserved.
+PCB guidelines with EBGs
+========================
 
-.. _fig_EBG_sensor_field:
-.. figure:: /_static/handbook/a121/in-depth_topics/EBG/EBGsensorfield.svg
+EBGs for 60 GHz are commonly implemented using RF PCB laminates. However, the EBG variants shown in :numref:`fig_XS121-20_EBG_eplane_3D` and :numref:`fig_XS121-20_EBG_ehplane_3D` are both using FR4 PCB materials to avoid adding material costs. This is possible by tuning the EBG dimensions to allow FR4 material tolerances and choosing specific stackups.
+
+When laying out a PCB, the preferred way is to place all external components such as decoupling capacitors and crystal on the opposite side of the sensor as this typically results in the highest directivity and lowest side lobe level. In addition, to maximize the radiated performance, consider the following:
+
+- Layer 2 must be a solid ground plane without routing where the EBGs are applied.
+- The EBGs have been optimized for 0.20 - 0.25 mm via diameters. This also allows placing signal vias close to the footprint pads.
+- Minimize the amount of routing on the sensor layer, at least within the clearance region. This can be done by routing the signals to the sensor with vias placed as close as possible to the sensor pads. The ground plane area inside the footprint has lower impact on the radiated performance and therefore some vias and short traces are preferably placed there.
+- Whenever the assembly process allows, remove thermal reliefs on all sensor pads.
+- Minimize copper clearance for traces, vias, and pads on the sensor layer to maximize the ground plane area close to the sensor.
+- Add stitching vias with <0.6 mm spacing at the PCB outer edge to suppress potential edge radiation.
+- Contact Acconeer support to obtain more information on EBG implementations.
+
+The exact location and dimensions of the EBG cells are important for optimal performance. When using through-hole vias, signals can be routed between the EBG vias, see :numref:`fig_XS121_ebg_routing_example`. The E-plane only variant allows more routing area with a small loss in SLL performance. Occasionally, some EBG vias may need to be slightly shifted or removed to fit other signals and components. When this is needed, it is strongly recommended to do this on EBGs farthest away from the sensor as the innermost elements are most important.
+
+.. _fig_XS121_ebg_routing_example:
+.. figure:: /_static/hw_images/XS121_ebg_routing.svg
     :align: center
     :width: 75%
 
-    Side views of the electric field distribution for A121 sensor on PCB with and without EBGs.
+    Example mushroom type EBG implementation with routing.
 
+More information
+================
 
+EBGs can be implemented using both low-cost FR-4 as well as RF PCBs. To implement EBG structures into your design, please contact the Acconeer customer support for layout recommendations: https://support.acconeer.com.
 
-PCB routing with EBGs
-====================================
-
-The placement of the EBGs with respect to the sensor is important for the best results.
-EBGs are periodically distributed in horizontal and vertical directions and are always symmetrical on both sides of a plane.
-As :numref:`fig_EBGroutingonPCB` shows, EBGs can be distributed in the E-plane only, which allows more routing area, or distributed in both the E- and H-planes (see :ref:`integration-a121-EM_PCB`).
-It is recommended to use at least 5 rows of EBGs in each side next to the sensor.
-
-When using through hole vias for EBGs, we need to zigzag through the vias. In certain regions, EBG vias may need to be removed to avoid short-circuiting component pads on the bottom side. When this is needed, it is strongly recommended to do this on EBGs farther away from the sensor as the innermost EBGs are more important.
-Layers 1 and 2 should be kept clear from any routing where EBGs are applied. Layer 2 must be a solid ground plane where EBGs are applied.
-Routing is easier if EBGs can be placed only in the E-plane sides (the left figure).
-
-
-.. _fig_EBGroutingonPCB:
-.. figure:: /_static/handbook/a121/in-depth_topics/EBG/EBGroutingonPCB.png
-    :align: center
-    :width: 95%
-
-    PCB routing example with E-plane EBGs, E- and H-plane EBGs using through hole vias.
-
-
-Performance benefits with EBGs
-================================================
-
-:numref:`fig_EBGperformance` shows an example of the TX + RX channel far-field performance improvements for A1 sensor on XS121 board with EBGs. Compared to PCB only (no EBG) solution, adding EBGs in the E-plane or both planes can increase the channel beam roll-off rate thus creating a directive channel performance. We also notice an small increase in the far-field boresight gain.
-Adding EBGs on both the front and back of the PCB can further improve the performance at a cost of occupying more space.
-
-
-.. _fig_EBGperformance:
-.. figure:: /_static/handbook/a121/in-depth_topics/EBG/EBGperformance1.svg
-    :align: center
-    :width: 95%
-
-    Channel performance comparison (profile 3 excitation) of A121 sensor on PCB and with EBGs.
-
-
-The dimensions of the EBG unit (patch + via) and the PCB material (:term:`FR-4` or :term:`RF materials<RF material>`) define the band-gap frequencies, which should at least cover the radar operating band of 57--64 GHz, so as to suppress the surface waves propagation effectively. Please contact our customer support for more details.
