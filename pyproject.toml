@@ -181,7 +181,7 @@ default-sphinx-build = "python -m sphinx --fail-on-warning --jobs auto {args} do
 
 autobuild = [
     "clean",
-    "python -m sphinx_autobuild -t internal -b html docs docs/_build --watch src",
+    "python -m sphinx_autobuild -b html docs docs/_build --watch src",
 ]
 html = "default-sphinx-build -b html"
 linkcheck = "default-sphinx-build -b linkcheck"

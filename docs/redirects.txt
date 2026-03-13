@@ -161,3 +161,7 @@
 "integration/a121/index.rst" "integration/index.rst"
 radar_data_and_control/a121/profiles.rst glossary.rst
 radar_data_and_control/a121/in_depth_topics/fom.rst figure_of_merits/a121.rst
+
+# temporary redirects. will be removed shortly
+how_to_docs.rst removed.rst
+template_detector_ref_app_ex_app.rst removed.rst
