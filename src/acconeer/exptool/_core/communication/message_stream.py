@@ -2,6 +2,7 @@
 # All rights reserved
 from __future__ import annotations
 
+import collections
 import json
 import time
 import typing as t
@@ -59,6 +60,8 @@ class MessageStream:
             if timeout_s is set and that amount of time has elapsed
             without predicate evaluating to True
         """
+        seen_message_types = []
+
         deadline = None if (timeout_s is None) else time.monotonic() + timeout_s
 
         for msg in self._stream:
@@ -67,8 +70,17 @@ class MessageStream:
             else:
                 self._message_handler(msg)
 
+            seen_message_types.append(type(msg))
+
             if deadline is not None and time.monotonic() > deadline:
-                err_msg = f"Deadline was reached without finding message of type {message_type.__name__!r}"
+                counts_str = ", ".join(
+                    f"{cnt}x{typ.__name__!r}"
+                    for typ, cnt in collections.Counter(seen_message_types).items()
+                )
+                err_msg = (
+                    f"Deadline was reached ({timeout_s:.2f}s) without finding message "
+                    + f"of type {message_type.__name__!r} (saw {counts_str})"
+                )
                 raise MessageStreamError(err_msg)
 
         err_msg = "No messages to consume"
