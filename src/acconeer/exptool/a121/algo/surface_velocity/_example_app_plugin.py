@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -43,7 +43,7 @@ from acconeer.exptool.app.new import (
     pidgets,
     visual_policies,
 )
-from acconeer.exptool.app.new.ui.components.a121 import RangeHelpView
+from acconeer.exptool.app.new.ui.components import RangeHelpView
 
 from ._example_app import ExampleApp, ExampleAppConfig, ExampleAppResult, _load_algo_data
 

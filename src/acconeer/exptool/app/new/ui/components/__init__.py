@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from . import a121, pidgets
@@ -10,6 +10,7 @@ from .group_box import GroupBox
 from .json_save_load_buttons import PresentationType, PresenterFunc
 from .misc_error_view import MiscErrorView
 from .overlay import Overlay
+from .range_help_view import RangeHelpView
 from .tab_pg_widget import TabPGWidget
 from .two_sensor_ids_editor import TwoSensorIdsEditor
 from .types import PidgetFactoryMapping, PidgetGroupFactoryMapping

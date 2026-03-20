@@ -44,7 +44,7 @@ from acconeer.exptool.app.new import (
     pidgets,
     visual_policies,
 )
-from acconeer.exptool.app.new.ui.components.a121 import RangeHelpView
+from acconeer.exptool.app.new.ui.components import RangeHelpView
 
 from ._configs import (
     get_high_frequency_config,

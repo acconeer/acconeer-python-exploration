@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -16,9 +16,9 @@ from acconeer.exptool._core.docstrings import get_attribute_docstring
 from acconeer.exptool._core.entities.validation_result import Criticality
 from acconeer.exptool.app.new.ui import icons
 from acconeer.exptool.app.new.ui.components import pidgets
-from acconeer.exptool.app.new.ui.components.a121 import RangeHelpView
 from acconeer.exptool.app.new.ui.components.collapsible_widget import CollapsibleWidget
 from acconeer.exptool.app.new.ui.components.data_editor import DataEditor
+from acconeer.exptool.app.new.ui.components.range_help_view import RangeHelpView
 from acconeer.exptool.app.new.ui.components.types import PidgetFactoryMapping
 
 
