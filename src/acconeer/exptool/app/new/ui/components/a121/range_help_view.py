@@ -1,14 +1,23 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Protocol
 
 from PySide6 import QtCore
 from PySide6.QtWidgets import QGridLayout, QGroupBox, QLabel, QLineEdit, QWidget
 
-from acconeer.exptool import a121
+
+class _RssLikeRangeSpec(Protocol):
+    """
+    This is a protocol for object that specifies measured
+    range in the same way as e.g. ``a121.SubsweepConfig`` does.
+    """
+
+    start_point: int
+    step_length: int
+    num_points: int
 
 
 class RangeHelpView(QGroupBox):
@@ -36,15 +45,15 @@ class RangeHelpView(QGroupBox):
 
         self.set_data(None)
 
-    def set_data(self, subsweep_config: Optional[a121.SubsweepConfig]) -> None:
-        if subsweep_config:
+    def set_data(self, rsslike_range_spec: Optional[_RssLikeRangeSpec]) -> None:
+        if rsslike_range_spec:
             end_point = (
-                subsweep_config.start_point
-                + (subsweep_config.num_points - 1) * subsweep_config.step_length
+                rsslike_range_spec.start_point
+                + (rsslike_range_spec.num_points - 1) * rsslike_range_spec.step_length
             )
-            start_m = subsweep_config.start_point * self.APPROX_BASE_STEP_LENGTH_M
+            start_m = rsslike_range_spec.start_point * self.APPROX_BASE_STEP_LENGTH_M
             end_m = end_point * self.APPROX_BASE_STEP_LENGTH_M
-            step_m = subsweep_config.step_length * self.APPROX_BASE_STEP_LENGTH_M
+            step_m = rsslike_range_spec.step_length * self.APPROX_BASE_STEP_LENGTH_M
 
             self._start.setText(f"{start_m:.3f} m")
             self._end.setText(f"{end_m:.3f} m")
