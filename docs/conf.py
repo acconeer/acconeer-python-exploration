@@ -77,7 +77,7 @@ linkcheck_ignore = [
 
 # rediraffe
 rediraffe_redirects = "redirects.txt"
-rediraffe_branch = "HEAD~1"
+rediraffe_branch = "origin/master"
 rediraffe_auto_redirect_perc = 95
 
 # sphinx tabs
