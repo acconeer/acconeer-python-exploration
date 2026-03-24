@@ -11,6 +11,8 @@ import pytest
 import acconeer.exptool.testing
 
 
+PYTEST_XDIST_MAX_NUM_PROCESSES = 8
+
 sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 
 
@@ -20,6 +22,17 @@ def _existing_path(path_str: str) -> Path:
         msg = f"Could not find '{p}'."
         raise FileNotFoundError(msg)
     return p
+
+
+def pytest_xdist_auto_num_workers(config: t.Any) -> int:
+    # This hook is called for both pytest-xdists's "-n auto" and "-n logical" [1].
+    #   Hatch's documentation indicates that only "-n logical" is used [2], but lets
+    # cap all the number of cores in both cases.
+    #
+    # [1] https://pytest-xdist.readthedocs.io/en/latest/reference.html#pytest_xdist_auto_num_workers
+    # [2] https://hatch.pypa.io/dev/tutorials/testing/overview/#parallelize-test-execution
+    num_cpus = os.cpu_count() or 1
+    return min(num_cpus, PYTEST_XDIST_MAX_NUM_PROCESSES)
 
 
 def _validate_parametrization(iterable: t.Sized, err_msg: str) -> t.Sized:
