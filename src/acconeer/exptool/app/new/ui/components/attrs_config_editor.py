@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -75,6 +75,7 @@ class AttrsConfigEditor(DataEditor[Optional[T]]):
         factory_mapping: Union[PidgetFactoryMapping, PidgetGroupFactoryMapping],
         config_type: Type[T],
         *,
+        header_widgets: Sequence[QWidget] = (),
         save_load_buttons: bool = True,
         min_top_padding: int = 0,
         extra_presenter: PresenterFunc = lambda i, t: None,
@@ -82,9 +83,6 @@ class AttrsConfigEditor(DataEditor[Optional[T]]):
     ) -> None:
         super().__init__(parent=parent)
         self._config = None
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(11)
 
         group_box = GroupBox.vertical(
             title,
@@ -98,7 +96,6 @@ class AttrsConfigEditor(DataEditor[Optional[T]]):
             min_top_padding=min_top_padding,
             parent=self,
         )
-        layout.addWidget(group_box)
 
         self._pidget_mapping: dict[str, Pidget] = {}
         self._pidget_hooks: dict[str, Sequence[PidgetHook]] = {}
@@ -118,10 +115,18 @@ class AttrsConfigEditor(DataEditor[Optional[T]]):
                 pidgets.append(pidget)
 
             group_widget = pidget_group.get_container(pidgets)
-            group_box.layout().addWidget(group_widget)
 
             self._group_widgets.append(group_widget)
             self._group_hooks.append(pidget_group.hooks)
+
+        for w in [*header_widgets, *self._group_widgets]:
+            group_box.layout().addWidget(w)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(11)
+
+        layout.addWidget(group_box)
 
         self.setLayout(layout)
 
