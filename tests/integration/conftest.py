@@ -27,13 +27,33 @@ def exploration_server_process_fixture(
     args = [server_binary_path.as_posix(), "--port", str(tcp_port)]
     env = {"ACC_MOCK_TEST_PATTERN": "1"}
 
-    with sp.Popen(args, stdout=sp.PIPE, text=True, env=env) as server:
-        while "waiting" not in server.stdout.readline().lower():
-            if server.poll() is not None:
+    server_logs = []
+    with sp.Popen(args, stdout=sp.PIPE, stderr=sp.STDOUT, text=True, env=env) as server_process:
+        server_stdout = server_process.stdout
+        assert server_stdout is not None
+
+        while True:
+            if server_process.poll() is not None:
                 pytest.fail("Server exited prematurely")
 
-        yield
-        server.terminate()
+            server_log = server_stdout.readline()
+            server_logs.append(server_log)
+
+            if "waiting" in server_log.lower():
+                break
+
+        yield  # give control to test function
+
+        server_process.terminate()  # stop server and close write-end of pipe
+
+        while True:
+            server_log = server_stdout.readline()
+            server_logs.append(server_log)
+
+            if server_log == "":  # "" is read when no more data is left to read
+                break
+
+        print(*server_logs, sep="")
 
 
 @pytest.fixture(scope="function")
