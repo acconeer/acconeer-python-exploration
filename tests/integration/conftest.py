@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2024-2025
+# Copyright (c) Acconeer AB, 2024-2026
 # All rights reserved
 
 import subprocess as sp
@@ -21,11 +21,10 @@ def worker_tcp_port(worker_id: str) -> int:
         raise ValueError(msg)
 
 
-@pytest.fixture(scope="function")
-def a121_exploration_server(
-    worker_tcp_port: int, a121_exploration_server_path: Path
+def exploration_server_process_fixture(
+    tcp_port: int, server_binary_path: Path
 ) -> t.Iterator[None]:
-    args = [a121_exploration_server_path.as_posix(), "--port", str(worker_tcp_port)]
+    args = [server_binary_path.as_posix(), "--port", str(tcp_port)]
     env = {"ACC_MOCK_TEST_PATTERN": "1"}
 
     with sp.Popen(args, stdout=sp.PIPE, text=True, env=env) as server:
@@ -35,19 +34,17 @@ def a121_exploration_server(
 
         yield
         server.terminate()
+
+
+@pytest.fixture(scope="function")
+def a121_exploration_server(
+    worker_tcp_port: int, a121_exploration_server_path: Path
+) -> t.Iterator[None]:
+    yield from exploration_server_process_fixture(worker_tcp_port, a121_exploration_server_path)
 
 
 @pytest.fixture(scope="function")
 def a111_exploration_server(
     worker_tcp_port: int, a111_exploration_server_path: Path
 ) -> t.Iterator[None]:
-    args = [a111_exploration_server_path.as_posix(), "--port", str(worker_tcp_port)]
-    env = {"ACC_MOCK_TEST_PATTERN": "1"}
-
-    with sp.Popen(args, stdout=sp.PIPE, text=True, env=env) as server:
-        while "waiting" not in server.stdout.readline().lower():
-            if server.poll() is not None:
-                pytest.fail("Server exited prematurely")
-
-        yield
-        server.terminate()
+    yield from exploration_server_process_fixture(worker_tcp_port, a111_exploration_server_path)
