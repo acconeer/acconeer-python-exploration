@@ -1,9 +1,10 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import logging
+import time
 from typing import NoReturn, Optional, Tuple, Type, TypeVar, Union
 
 import attrs
@@ -23,6 +24,7 @@ from acconeer.exptool._core.communication.communication_protocol.messages.log_me
     ServerLog,
 )
 from acconeer.exptool._core.communication.links.helpers import ensure_connected_link
+from acconeer.exptool._core.communication.time_drift_monitor import TimeDriftMonitor
 from acconeer.exptool._core.communication.unwrap_ticks import unwrap_ticks
 from acconeer.exptool._core.entities import ClientInfo
 from acconeer.exptool.a121._core.entities import (
@@ -36,6 +38,7 @@ from acconeer.exptool.a121._core.entities import (
 from acconeer.exptool.a121._core.utils import (
     create_extended_structure,
     iterate_extended_structure,
+    iterate_extended_structure_values,
     unextend,
 )
 from acconeer.exptool.a121._perf_calc import _SessionPerformanceCalc
@@ -50,6 +53,8 @@ from .exploration_protocol import (
 )
 from .utils import get_calibrations_provided
 
+
+MAX_RESULT_DRIFT_S = 1.0
 
 _MessageT = TypeVar("_MessageT", bound=Message)
 log = logging.getLogger(__name__)
@@ -103,6 +108,8 @@ class ExplorationClient(Client, register=True):
         self._log_queue = []
         self._closed = False
         self._crashing = False
+
+        self._time_drift_monitor: Optional[TimeDriftMonitor] = None
 
         self._protocol = ExplorationProtocol
 
@@ -253,6 +260,8 @@ class ExplorationClient(Client, register=True):
 
         assert self._session_config is not None
 
+        self._time_drift_monitor = None
+
         pc = _SessionPerformanceCalc(self._session_config, self._metadata)
 
         try:
@@ -296,6 +305,21 @@ class ExplorationClient(Client, register=True):
         )
 
         extended_results = self._tick_unwrapper.unwrap_ticks(extended_results)
+
+        (a_result, *_) = iterate_extended_structure_values(extended_results)
+        result_server_time = a_result.tick_time
+
+        if self._time_drift_monitor is None:
+            self._time_drift_monitor = TimeDriftMonitor(
+                server_reference_s=result_server_time,
+                wall_reference_s=time.monotonic(),
+                max_allowed_drift_s=MAX_RESULT_DRIFT_S,
+            )
+
+        self._time_drift_monitor.warn_if_current_drift_is_too_high(
+            server_timestamp_s=result_server_time,
+            wall_timestamp_s=time.monotonic(),
+        )
 
         self._recorder_sample(extended_results)
         return self._return_results(extended_results)

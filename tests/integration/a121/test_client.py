@@ -1,6 +1,9 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 from __future__ import annotations
+
+import time
+import warnings
 
 import pytest
 
@@ -409,3 +412,49 @@ class TestADisconnectedClient(TestAClosedClient):
         yield c
         if c.connected:
             c.close()
+
+
+def test_calling_get_next_fast_enough_does_not_warn(
+    worker_tcp_port: int, a121_exploration_server: None
+) -> None:
+    update_rate = 1000
+    update_period = 1 / update_rate
+
+    with a121.Client.open(ip_address="localhost", tcp_port=worker_tcp_port) as c:
+        c.setup_session(a121.SessionConfig(update_rate=update_rate))
+
+        c.start_session()
+
+        with warnings.catch_warnings(record=True) as caught_warnings:
+            for _ in range(int(update_rate)):
+                time.sleep(update_period / 2)
+                c.get_next()
+        assert len(caught_warnings) == 0
+
+        c.stop_session()
+
+
+def test_calling_get_next_too_slowly_puts_out_warnings(
+    worker_tcp_port: int, a121_exploration_server: None
+) -> None:
+    update_rate = 1000
+    update_period = 1 / update_rate
+
+    with a121.Client.open(ip_address="localhost", tcp_port=worker_tcp_port) as c:
+        c.setup_session(a121.SessionConfig(update_rate=update_rate))
+
+        c.start_session()
+
+        with pytest.warns(
+            UserWarning, match=r"^Server timestamp was from (\d+\.\d+)s ago.*$"
+        ) as warns:
+            for _ in range(int(update_rate)):
+                # Double the "update period",
+                # this would cause <result ET is handling> & measurement to drift in time. NOT OK!
+                time.sleep(update_period * 2.1)
+                c.get_next()
+
+        # Make sure warnings point to call site (this file in this case)
+        assert all((w.filename == __file__) for w in warns)
+
+        c.stop_session()
