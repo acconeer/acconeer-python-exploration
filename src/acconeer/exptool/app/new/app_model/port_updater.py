@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -32,13 +32,19 @@ class PortUpdater(QObject):
             self.killTimer(self.timer_id)
 
         def timerEvent(self, event: QTimerEvent) -> None:
-            serial_devices = get_serial_devices()  # type: ignore[name-defined]
-            usb_devices = get_usb_devices()  # type: ignore[name-defined]
+            try:
+                serial_devices = get_serial_devices()  # type: ignore[name-defined]
+                usb_devices = get_usb_devices()  # type: ignore[name-defined]
 
-            if self.serial_devices != serial_devices or self.usb_devices != usb_devices:
-                self.serial_devices = serial_devices
-                self.usb_devices = usb_devices
-                self.sig_update.emit(serial_devices, usb_devices)
+                if self.serial_devices != serial_devices or self.usb_devices != usb_devices:
+                    self.serial_devices = serial_devices
+                    self.usb_devices = usb_devices
+                    self.sig_update.emit(serial_devices, usb_devices)
+            except Exception as e:
+                print(f"Exception occured in {self.__class__.__name__}.timerEvent:")
+                print(str(e))
+                print("Stopping periodic call")
+                self.stop()
 
     def __init__(self, parent: QObject) -> None:
         super().__init__(parent)
