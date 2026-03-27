@@ -18,14 +18,32 @@ def get_libusb_backend() -> Any:
     return libusb_package.get_libusb1_backend()
 
 
+def get_libusb_bulk_interface(dev: usb.core.Device) -> Optional[usb.core.Interface]:
+    """
+    Helper function to find vendor specific USB interfaces with 2 endpoints
+    """
+    USB_INTERFACE_CLASS_VENDOR_SPECIFIC = 0xFF
+    USB_INTERFACE_NUMBER_OF_ENDPOINTS = 2
+
+    selected_interface = None
+    config = dev[0]
+    for interface in config.interfaces():
+        if (
+            interface.bInterfaceClass == USB_INTERFACE_CLASS_VENDOR_SPECIFIC
+            and interface.bNumEndpoints == USB_INTERFACE_NUMBER_OF_ENDPOINTS
+        ):
+            selected_interface = interface
+            break
+
+    return selected_interface
+
+
 class UsbPortError(Exception):
     pass
 
 
 class PyUsbCdc:
     USB_CDC_CMD_SEND_BREAK = 0x23
-    USB_INTERFACE_CLASS_VENDOR_SPECIFIC = 0xFF
-    USB_INTERFACE_NUMBER_OF_ENDPOINTS = 2
     USB_MESSAGE_TIMEOUT = 2
     USB_MESSAGE_TIMEOUT_MS = 1000 * USB_MESSAGE_TIMEOUT
     USB_PACKET_TIMEOUT_MS = 200
@@ -73,32 +91,14 @@ class PyUsbCdc:
             raise UsbPortError(msg)
         try:
             self._dev.reset()
-            self._dev.set_configuration()
         except usb.core.USBError:
             msg = "Could not access USB device, are USB permissions setup correctly?"
             raise UsbPortError(msg)
-        except NotImplementedError:
-            # The function set_configuration is not implemented in windows libusb
-            pass
 
-        config = self._dev.get_active_configuration()
-        self._iface = None
-        for interface in config.interfaces():
-            if (
-                interface.bInterfaceClass == self.USB_INTERFACE_CLASS_VENDOR_SPECIFIC
-                and interface.bNumEndpoints == self.USB_INTERFACE_NUMBER_OF_ENDPOINTS
-            ):
-                self._iface = interface
-                break
+        self._iface = get_libusb_bulk_interface(self._dev)
 
         if self._iface is None:
             msg = "Could not find USB device interface"
-            raise UsbPortError(msg)
-
-        try:
-            usb.util.claim_interface(self._dev, self._iface.bInterfaceNumber)
-        except usb.core.USBError:
-            msg = "Could not claim USB device interface, is somebody else using it?"
             raise UsbPortError(msg)
 
         # Interface should have one Endpoint for data out and one Endpoint for data in
@@ -112,6 +112,12 @@ class PyUsbCdc:
 
         if self._cdc_data_in_ep is None or self._cdc_data_out_ep is None:
             msg = "Could not find all necessary USB device endpoints"
+            raise UsbPortError(msg)
+
+        try:
+            usb.util.claim_interface(self._dev, self._iface.bInterfaceNumber)
+        except usb.core.USBError:
+            msg = "Could not claim USB device interface, is somebody else using it?"
             raise UsbPortError(msg)
 
         return True
