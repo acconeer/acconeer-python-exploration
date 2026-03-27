@@ -1,8 +1,9 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
 
+import warnings
 from typing import Any, Callable, Generic, Optional, TypeVar, Union, cast
 
 import typing_extensions as te
@@ -128,7 +129,18 @@ class ApplicationClient(Generic[ClientT]):
     def get_next(self) -> Any:
         assert self._rate_stats_calc is not None
 
-        result = self._wrapped_client.get_next()
+        with warnings.catch_warnings(record=True) as caught_warnings:
+            result = self._wrapped_client.get_next()
+
+        for w in caught_warnings:
+            if isinstance(w.message, str):
+                status = _format_warning(w.message)
+            elif isinstance(w.message, Warning):
+                status = _format_warning("".join(w.message.args))
+            else:
+                raise AssertionError
+            self.callback(StatusMessage(status=status))
+
         stats = self.extractor_strategy.update_rate_calculator(self._rate_stats_calc, result)
 
         self.callback(GeneralMessage(name="rate_stats", data=stats))
