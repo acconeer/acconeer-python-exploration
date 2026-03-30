@@ -1,27 +1,36 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
+import sys
+import traceback
 from importlib.resources import as_file, files
 from typing import Optional
 
 from typing_extensions import Literal
 
-from PySide6.QtCore import QEasingCurve, QEvent, QObject, QSize, Qt, QVariantAnimation, Signal
-from PySide6.QtGui import QColor
-from PySide6.QtWidgets import (
-    QApplication,
-    QGraphicsDropShadowEffect,
-    QHBoxLayout,
-    QLabel,
-    QMainWindow,
-    QToolButton,
-    QVBoxLayout,
-    QWidget,
-)
-
 import acconeer.exptool.app.resources as et_app_resources
+from acconeer.exptool.app.install_missing_app_extra import INSTALL_MISSING_APP_EXTRA_INSTRUCTIONS
+
+
+try:
+    from PySide6.QtCore import QEasingCurve, QEvent, QObject, QSize, Qt, QVariantAnimation, Signal
+    from PySide6.QtGui import QColor
+    from PySide6.QtWidgets import (
+        QApplication,
+        QGraphicsDropShadowEffect,
+        QHBoxLayout,
+        QLabel,
+        QMainWindow,
+        QToolButton,
+        QVBoxLayout,
+        QWidget,
+    )
+except ImportError:
+    traceback.print_exc(file=sys.stdout)
+    print(INSTALL_MISSING_APP_EXTRA_INSTRUCTIONS)
+    exit(1)
 
 
 class ImageButton(QToolButton):

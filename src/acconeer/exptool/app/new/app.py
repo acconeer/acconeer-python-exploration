@@ -9,18 +9,27 @@ import logging
 import re
 import sys
 import time
+import traceback
 import typing as t
 from importlib.resources import as_file, files
 
-import qdarktheme
-
-from PySide6 import QtCore, QtGui
-from PySide6.QtWidgets import QApplication
-
-import pyqtgraph as pg
-
 from acconeer.exptool.app import resources
+from acconeer.exptool.app.install_missing_app_extra import INSTALL_MISSING_APP_EXTRA_INSTRUCTIONS
 from acconeer.exptool.utils import config_logging
+
+
+try:
+    import qdarktheme
+
+    from PySide6 import QtCore, QtGui
+    from PySide6.QtWidgets import QApplication
+
+    import pyqtgraph as pg
+except ImportError:
+    traceback.print_exc(file=sys.stdout)
+    print(INSTALL_MISSING_APP_EXTRA_INSTRUCTIONS)
+    exit(1)
+
 
 from ._enums import ConnectionState, PluginGeneration, PluginState
 from .app_model import AppModel
