@@ -7,7 +7,7 @@ import contextlib
 import logging
 import sys
 import traceback
-from typing import Iterator, Optional
+from typing import Any, ClassVar, Iterator, Optional
 
 import pyperclip
 
@@ -34,6 +34,9 @@ def get_installed_packages_via_pip() -> Optional[list[str]]:
 
 
 class ExceptionWidget(QMessageBox):
+    MAX_NUM_EXCEPTION_POPUPS: ClassVar[int] = 20
+    num_exception_popups: ClassVar[int] = 0
+
     def __init__(
         self,
         parent: Optional[QWidget],
@@ -43,6 +46,8 @@ class ExceptionWidget(QMessageBox):
         title: str = "Error",
     ) -> None:
         super().__init__(parent)
+
+        self._traceback_str = traceback_str
 
         self.setIcon(QMessageBox.Icon.Warning)
         self.setStandardButtons(QMessageBox.StandardButton.Ok)
@@ -95,6 +100,29 @@ class ExceptionWidget(QMessageBox):
             self.addButton(copy_button, QMessageBox.ButtonRole.ActionRole)
             copy_button.clicked.disconnect()
             copy_button.clicked.connect(self._on_copy_clicked)
+
+    def _should_show_error_popup(self) -> bool:
+        if type(self).num_exception_popups < type(self).MAX_NUM_EXCEPTION_POPUPS:
+            type(self).num_exception_popups += 1
+            return True
+        else:
+            msg = "!!! {cls_name} has displayed the maximum of {n_err} errors. Dumping traceback: !!!".format(
+                cls_name=type(self).__name__,
+                n_err=type(self).MAX_NUM_EXCEPTION_POPUPS,
+            )
+            print()
+            print(msg)
+            print(self._traceback_str)
+
+            return False
+
+    def open(self, *args: Any, **kwargs: Any) -> Any:
+        if self._should_show_error_popup():
+            return super().open(*args, **kwargs)
+
+    def exec(self, *args: Any, **kwargs: Any) -> Any:
+        if self._should_show_error_popup():
+            return super().exec(*args, **kwargs)
 
     @classmethod
     @contextlib.contextmanager
