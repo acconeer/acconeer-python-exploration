@@ -1,7 +1,8 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 from __future__ import annotations
 
+from copy import copy
 from typing import Any, Tuple
 
 import pytest
@@ -90,7 +91,7 @@ def test_to_from_dict_equality(client_info_fixture: Tuple[ClientInfo, dict[str, 
 
 
 def test_from_dict_extra_kwarg(client_info_fixture: Tuple[ClientInfo, dict[str, Any]]) -> None:
-    client_info_dict = client_info_fixture[1]
+    client_info_dict = copy(client_info_fixture[1])
     client_info_dict["extra"] = "kwarg"
     with pytest.raises(TypeError):
         ClientInfo.from_dict(client_info_dict)
