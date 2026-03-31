@@ -1,5 +1,14 @@
 # Changelog
 
+## v7.18.0
+
+### Changed
+ - Bump SDK version for A121
+
+### Fixed
+ - A121 Distance: Avoid creation of session config when range is invalid
+ - Fix vibration low frequency subsweep order so that longer ranges can be set
+
 ## v7.17.6
 
 ### Added
