@@ -18,7 +18,11 @@ Exploration Tool Installation
 *****************************
 
 Depending on what you wish to accomplish with Exploration Tool or the :doc:`Python API </exploration_tool/api/index>`,
-you can install in different ways:
+you can install in different ways.
+
+If you are unsure, pick the *Quick Start* for your operating system.
+
+Refer to the :ref:`capability table <install-options-capability-table>` if you want to learn the difference between the different options.
 
 .. tab-set::
 
@@ -177,6 +181,21 @@ you can install in different ways:
          .. code-block::
 
             hatch run app:new
+
+.. dropdown:: Install Options Capability Table
+   :name: install-options-capability-table
+
+   ================================ ====================== ==================== ============== =======
+   Capability                       Quick Start (Portable) Quick Start (``uv``) Python Package GitHub
+   ================================ ====================== ==================== ============== =======
+   Run Exploration Tool Application **Yes**                **Yes**              **Yes**        **Yes**
+   Run |example_scripts|            No                     No                   **Yes**        **Yes**
+   Add your |own_plugin|            No                     **Yes**              **Yes**        **Yes**
+   Modify ET's source code          No                     No                   No             **Yes**
+   ================================ ====================== ==================== ============== =======
+
+   .. |example_scripts| replace:: :doc:`example scripts </exploration_tool/example_scripts/index>`
+   .. |own_plugin| replace:: :doc:`own plugin </exploration_tool/adding_your_own_plugin>`
 
 ****************
 Additional Setup
