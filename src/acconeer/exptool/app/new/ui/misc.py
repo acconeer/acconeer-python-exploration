@@ -12,8 +12,19 @@ from typing import Any, ClassVar, Iterator, Optional
 
 import pyperclip
 
-from PySide6 import QtGui
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QMessageBox, QPushButton, QWidget
+from PySide6.QtWidgets import (
+    QDialog,
+    QDialogButtonBox,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QSizePolicy,
+    QStyle,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
 from acconeer.exptool.app.new._exceptions import HandledException
 
@@ -39,7 +50,7 @@ def get_installed_packages() -> Optional[list[str]]:
         return None
 
 
-class ExceptionWidget(QMessageBox):
+class ExceptionWidget(QDialog):
     MAX_NUM_EXCEPTION_POPUPS: ClassVar[int] = 20
     num_exception_popups: ClassVar[int] = 0
 
@@ -55,21 +66,33 @@ class ExceptionWidget(QMessageBox):
 
         self._traceback_str = traceback_str
 
-        self.setIcon(QMessageBox.Icon.Warning)
-        self.setStandardButtons(QMessageBox.StandardButton.Ok)
-
         self.setWindowTitle(title)
-        self.setText(str(exc))
+        self.setSizeGripEnabled(True)
+
+        outer = QVBoxLayout(self)
+
+        top_row = QHBoxLayout()
+        icon_label = QLabel()
+        icon = self.style().standardIcon(QStyle.StandardPixmap.SP_MessageBoxWarning)
+        icon_label.setPixmap(icon.pixmap(48, 48))
+        icon_label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        top_row.addWidget(icon_label)
+
+        text_col = QVBoxLayout()
+        main_label = QLabel(str(exc))
+        main_label.setWordWrap(True)
+        text_col.addWidget(main_label)
 
         try:
             raise exc
         except HandledException:
             pass
         except Exception:
-            self.setInformativeText("<b>Unhandled error - please file a bug</b>")
+            info_label = QLabel("<b>Unhandled error - please file a bug</b>")
+            text_col.addWidget(info_label)
 
-        # Monospaced detailed text.
-        self.setStyleSheet("QTextEdit { font-family: monospace; font-size: 9pt; }")
+        top_row.addLayout(text_col)
+        outer.addLayout(top_row)
 
         detailed_text = (
             "Checklist before reporting a bug\n"
@@ -82,7 +105,6 @@ class ExceptionWidget(QMessageBox):
             + "      rows on the format '<package name>==<version>'\n"
             + "\n\n"
         )
-
         detailed_text += f"Python version\n==============\n{sys.version}\n\n\n"
 
         installed_packages = get_installed_packages()
@@ -99,13 +121,40 @@ class ExceptionWidget(QMessageBox):
         if traceback_str:
             detailed_text += "Traceback\n" + "=========\n" + traceback_str
 
-        if detailed_text:
-            self.setDetailedText(detailed_text)
-            copy_button = QPushButton(self)
-            copy_button.setText("Copy details")
-            self.addButton(copy_button, QMessageBox.ButtonRole.ActionRole)
-            copy_button.clicked.disconnect()
-            copy_button.clicked.connect(self._on_copy_clicked)
+        self._detail_edit = QTextEdit()
+        self._detail_edit.setReadOnly(True)
+        self._detail_edit.setPlainText(detailed_text)
+        self._detail_edit.setFontFamily("monospace")
+        self._detail_edit.setMinimumHeight(220)
+        self._detail_edit.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self._detail_edit.hide()
+        outer.addWidget(self._detail_edit)
+
+        button_row = QHBoxLayout()
+        self._toggle_button = QPushButton("Show Details...")
+        self._toggle_button.clicked.connect(self._toggle_details)
+        button_row.addWidget(self._toggle_button)
+
+        copy_button = QPushButton("Copy details")
+        copy_button.clicked.connect(self._on_copy_clicked)
+        button_row.addWidget(copy_button)
+
+        button_row.addStretch()
+
+        ok_buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok)
+        ok_buttons.accepted.connect(self.accept)
+        button_row.addWidget(ok_buttons)
+
+        outer.addLayout(button_row)
+
+    def _toggle_details(self) -> None:
+        visible = not self._detail_edit.isVisible()
+        self._detail_edit.setVisible(visible)
+        self._toggle_button.setText("Hide Details..." if visible else "Show Details...")
+        if visible:
+            self.resize(700, 600)
+        else:
+            self.adjustSize()
 
     def _should_show_error_popup(self) -> bool:
         if type(self).num_exception_popups < type(self).MAX_NUM_EXCEPTION_POPUPS:
@@ -139,17 +188,8 @@ class ExceptionWidget(QMessageBox):
             _LOG.debug("Exception raised in MainThread:", exc_info=True)
             cls(parent=None, exc=e, traceback_str=traceback.format_exc()).exec()
 
-    def resizeEvent(self, event: QtGui.QResizeEvent) -> None:
-        super().resizeEvent(event)
-        self.setMinimumWidth(600)
-
     def _on_copy_clicked(self) -> None:
-        detailed_text = self.detailedText()
-        if detailed_text:
-            pyperclip.copy(detailed_text)
-
-    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
-        self.close()
+        pyperclip.copy(self._detail_edit.toPlainText())
 
 
 class VerticalSeparator(QWidget):
