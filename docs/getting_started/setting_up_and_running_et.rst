@@ -36,7 +36,36 @@ you can install in different ways:
       #. Double-click the ``run_app`` script to start the Exploration Tool Application
 
 
-   .. tab-item:: :fab:`python;fa-xl` Python Package (PyPi)
+      It's also possible to install & run Exploration Tool with ``uv``
+      (terminal-based package manager, read more `here <https://docs.astral.sh/uv/>`_):
+
+      .. code-block::
+         :caption: Command to install ``uv`` in Windows (using ``cmd`` or PowerShell)
+
+         winget install --id=astral-sh.uv  -e
+
+      .. code-block::
+         :caption: Running Exploration Tool Application with ``uvx`` (part of ``uv``)
+
+         uvx acconeer-exptool[app]
+
+   .. tab-item:: :fab:`ubuntu;fa-xl` Quick Start
+
+      If you are familiar with the Python echo system, you might have heard of ``uv``.
+      Regardless, you are (at a maximum) 2 terminal command away from running the
+      Exploration Tool Application:
+
+      .. code-block:: bash
+         :caption: Linux command to install ``uv``
+
+         $ curl -LsSf https://astral.sh/uv/install.sh | sh
+
+      .. code-block::
+         :caption: Running Exploration Tool Application with ``uvx`` (part of ``uv``)
+
+         uvx acconeer-exptool[app]
+
+   .. tab-item:: :fab:`python;fa-xl` Python Package
 
       If you have a PC with Windows or Ubuntu, want to use Python,
       want to run the Exploration Tool Application,
@@ -97,7 +126,7 @@ you can install in different ways:
          Running the command ``python -m acconeer.exptool.app.new``
          will start the new Exploration Tool directly
 
-   .. tab-item:: :fab:`github;fa-xl` Source Installation
+   .. tab-item:: :fab:`github;fa-xl` GitHub
 
       If you have a PC with Windows or Ubuntu and want a more flexible install than what's offered
       in the **Python Package** install, Exploration Tool is open source on `GitHub <et_github_>`_.
