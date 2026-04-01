@@ -21,7 +21,9 @@ Running this version is strongly recommended, as we continuously fix bugs and ad
   <img alt="The application in action" src="https://raw.githubusercontent.com/acconeer/acconeer-python-exploration/8f633e02abac99ffec6fefec4339d13bc5c18388/docs/_static/gui.png" width=85%>
 </p>
 
-## Quickstart for Windows
+## Quickstart
+
+### Windows Portable distribution, File-based installation
 
 There is a portable version of the Acconeer Exploration Tool for Windows:
 
@@ -30,6 +32,31 @@ There is a portable version of the Acconeer Exploration Tool for Windows:
 * Double click the `run_app.bat`
 
 For an in-depth evaluation, we recommend a full installation as described below.
+
+### Terminal-based installation
+
+To simplify Python installation and dependency management, we recommend using uv.
+It provides a fast, reliable, and unified way to manage Python environments and execute packages without the overhead of manual configuration.
+
+For detailed setup instructions and advanced features, refer to the [official uv documentation](https://docs.astral.sh/uv/).
+
+**Install uv in Windows**
+
+```
+> winget install --id=astral-sh.uv  -e
+```
+
+**Install uv in Linux**
+
+```bash
+> curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+**Run Exploration Tool using uvx**
+
+```
+> uvx acconeer-exptool[app]
+```
 
 ## Documentation
 
