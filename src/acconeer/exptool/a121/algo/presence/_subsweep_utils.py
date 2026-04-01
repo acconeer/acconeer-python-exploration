@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2024
+# Copyright (c) Acconeer AB, 2024-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -117,17 +117,18 @@ def _get_profile_subsweeps(
         while curr_point < cut_point:
             curr_point += step * APPROX_BASE_STEP_LENGTH_M
             n_points_in_subsweep += 1
-        curr_point_ind = int(round(curr_point / APPROX_BASE_STEP_LENGTH_M))
-        subsweeps_configs.append(
-            a121.SubsweepConfig(
-                profile=profile,
-                start_point=int(round(curr_start / APPROX_BASE_STEP_LENGTH_M)),
-                step_length=step,
-                num_points=n_points_in_subsweep,
-                hwaas=_get_hwaas(signal_quality, curr_point, profile),
-                prf=select_prf(curr_point_ind, profile),
+        if n_points_in_subsweep > 0:
+            curr_point_ind = int(round(curr_point / APPROX_BASE_STEP_LENGTH_M))
+            subsweeps_configs.append(
+                a121.SubsweepConfig(
+                    profile=profile,
+                    start_point=int(round(curr_start / APPROX_BASE_STEP_LENGTH_M)),
+                    step_length=step,
+                    num_points=n_points_in_subsweep,
+                    hwaas=_get_hwaas(signal_quality, curr_point, profile),
+                    prf=select_prf(curr_point_ind, profile),
+                )
             )
-        )
     if add_final_point:
         subsweeps_configs[-1].num_points += 1
     return subsweeps_configs

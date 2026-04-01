@@ -140,16 +140,15 @@ def test_sensor_config_explicit_profile_overrides_leakage_guard():
         (0.0, 0.42),  # P3 ends at 0.45, P4 cut=0.42  → P4 gets 0 points
     ],
 )
-def test_get_subsweep_configs_overshoot_raises(start_m, end_m):
-    """Bug: _get_profile_subsweeps creates SubsweepConfig(num_points=0) when a
-    profile's step overshoots past the next profile's cut_point.
-    SubsweepConfig rejects num_points=0 via attrs.validators.ge(1).
-
-    Fix: add the same guard that _get_hwaas_subsweeps uses at line 166:
-        if n_points_in_subsweep > 0:
+def test_get_subsweep_configs_overshoot_no_crash(start_m, end_m):
+    """Regression: _get_profile_subsweeps previously created SubsweepConfig(num_points=0)
+    when a profile's step overshoot past the next profile's cut_point, which was rejected
+    by attrs.validators.ge(1). Fixed by skipping zero-point subsweeps (same guard as
+    _get_hwaas_subsweeps).
     """
-    with pytest.raises(Exception):
-        get_subsweep_configs(start_m, end_m, 15.0)
+    ss = get_subsweep_configs(start_m, end_m, 15.0)
+    assert len(ss) >= 1
+    assert all(s.num_points >= 1 for s in ss)
 
 
 def test_get_subsweep_configs_start_equals_end():
