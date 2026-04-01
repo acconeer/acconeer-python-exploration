@@ -14,6 +14,7 @@ import serial.tools.list_ports
 import typing_extensions as te
 import usb.core
 from packaging import version
+from serial.tools.list_ports_common import ListPortInfo
 
 from .links.usb_link import get_libusb_backend, get_libusb_bulk_interface
 
@@ -159,6 +160,14 @@ def serial_device_from_port_object(port_object: serial.Serial) -> SerialDevice:
     )
 
 
+def _serial_port_originates_from_usb_device(port_object: ListPortInfo) -> bool:
+    # Test if this port_object is connected to an exploration server device (unflashed = False)
+    for vid, pid, _, unflashed in _USB_IDS:
+        if port_object.vid == vid and port_object.pid == pid and not unflashed:
+            return True
+    return False
+
+
 def get_serial_devices() -> List[SerialDevice]:
     NATIVE_SERIAL_PORT_FILTER = re.compile(r"^/dev/ttyS\d{1,2}$")
     serial_devices = []
@@ -166,6 +175,9 @@ def get_serial_devices() -> List[SerialDevice]:
     port_objects = serial.tools.list_ports.comports()
     for port_object in port_objects:
         if bool(NATIVE_SERIAL_PORT_FILTER.match(port_object.device)):
+            continue
+        if _serial_port_originates_from_usb_device(port_object):
+            # Do not show serial ports from an exploration server USB device
             continue
         serial_devices.append(serial_device_from_port_object(port_object))
 
