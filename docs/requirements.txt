@@ -1,0 +1,11 @@
+acconeer-exptool[algo]
+docutils>=0.17,!=0.18
+myst-parser>=2.0.0
+sphinx==9.1.0
+sphinx-copybutton
+sphinx-design
+sphinxext-rediraffe
+sphinx-notfound-page>=1.0.0
+sphinx-book-theme==1.1.2
+sphinxcontrib-youtube
+sphinxcontrib-spelling
