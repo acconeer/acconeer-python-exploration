@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import argparse
@@ -37,7 +37,8 @@ def update_copyright_year(file_content, copyright_line_nbr, current_year, copyri
     """
 
     if copyright_line_nbr is None:
-        copyright_statement = [copyright_pattern[0] + "\n"] + [copyright_pattern[1] + "\n\n"]
+        copyright_lines = copyright_py(year=current_year)
+        copyright_statement = [copyright_lines[0] + "\n", copyright_lines[1] + "\n\n"]
         file_content = copyright_statement + file_content
     else:
         copyright_line = file_content[copyright_line_nbr]
@@ -134,6 +135,16 @@ def match_copyright_year(line, year_pattern, year):
     return None
 
 
+def copyright_py(year=""):
+    """
+    Copyright for python files
+
+    year - Replaces year in the copyright statement.
+            Should be left empty when used to match against file content.
+    """
+    return [f"# Copyright (c) Acconeer AB, {year}", "# All rights reserved"]
+
+
 def copyright_pattern_py(year=""):
     """
     Copyright pattern for python files
@@ -141,7 +152,7 @@ def copyright_pattern_py(year=""):
     year - Replaces year in the copyright statement.
             Should be left empty when used to match against file content.
     """
-    return [rf"# Copyright \(c\) Acconeer AB, {year}", "# All rights reserved"]
+    return [re.escape(line) for line in copyright_py(year=year)]
 
 
 def copyright_exists_py(file_content):
