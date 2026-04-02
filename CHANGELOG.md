@@ -1,5 +1,11 @@
 # Changelog
 
+## v7.18.1
+
+### Added
+- Warning when radar data is read too slowly compared to the connected server.
+- Support for `uv`/`uvx`. Start ET by running `uvx acconeer-exptool[app]`!
+
 ## v7.18.0
 
 ### Changed
