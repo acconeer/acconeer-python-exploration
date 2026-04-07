@@ -32,7 +32,7 @@ except ImportError:
     exit(1)
 
 
-from ._enums import ConnectionState, PluginGeneration, PluginState
+from ._enums import ConnectionState, PluginGeneration
 from .app_model import AppModel
 from .backend import Backend, GenBackend, MpBackend
 from .plugin_loader import import_and_register_plugin_module, load_plugins
@@ -219,17 +219,33 @@ def _send_startup_tasks(app_model: AppModel, tasks: tuple[str, ...], deadline: f
             QtCore.Qt.ConnectionType.SingleShotConnection,
         )
 
+    def _put_task_and_continue() -> None:
+        _LOG.info(f"Executing {task_to_send!r} ...")
+        app_model.put_task(
+            (task_to_send, {}),
+            on_ok=lambda: _send_startup_tasks(app_model, tuple(rest_of_tasks), deadline),
+            on_error=_on_error,
+        )
+
     retry_str = f"Retrying ... ({seconds_left:.2f}s left)"
 
     if app_model.connection_state is not ConnectionState.CONNECTED:
         _LOG.info(f"Cannot execute {task_to_send!r}: No sensor connected yet. {retry_str}")
         _retry()
+    elif not app_model.plugin_state.is_loaded:
+        _LOG.info(f"Cannot execute {task_to_send!r}: No plugin loaded yet. {retry_str}")
+        _retry()
+
+    # BEGIN Tasks that are allowed while busy (& not busy)
+    elif task_to_send == "stop_session":
+        _put_task_and_continue()
+    # END Tasks that are allowed while busy (& not busy)
+
     elif app_model.plugin_state.is_busy:
         _LOG.info(f"Cannot execute {task_to_send!r}: Plugin is busy. {retry_str}")
         _retry()
-    elif app_model.plugin_state is not PluginState.LOADED_IDLE:
-        _LOG.info(f"Cannot execute {task_to_send!r}: No plugin loaded yet. {retry_str}")
-        _retry()
+
+    # BEGIN Tasks that are allowed only while not busy
     elif task_to_send == "pseudo:quit":
         qapp = QApplication.instance()
         assert qapp is not None
@@ -237,12 +253,8 @@ def _send_startup_tasks(app_model: AppModel, tasks: tuple[str, ...], deadline: f
         qapp.processEvents()
         qapp.exit(app_model.num_errors)
     else:
-        _LOG.info(f"Executing {task_to_send!r} ...")
-        app_model.put_task(
-            (task_to_send, {}),
-            on_ok=lambda: _send_startup_tasks(app_model, tuple(rest_of_tasks), deadline),
-            on_error=_on_error,
-        )
+        _put_task_and_continue()
+    # END Tasks that are allowed only while not busy
 
 
 class _ExptoolArgumentParser(argparse.ArgumentParser):
