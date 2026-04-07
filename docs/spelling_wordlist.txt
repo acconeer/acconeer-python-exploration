@@ -94,6 +94,7 @@ libusb
 loopback
 lowpass
 mA
+Mbps
 merchantability
 microcontroller
 mmWave

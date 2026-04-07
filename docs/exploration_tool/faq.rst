@@ -90,6 +90,18 @@ Python related
 Sensor related
 --------------
 
-#) What does "Experimental" mean?
+#) What does “Experimental” mean?
 
    In our code you might encounter features tagged “experimental”. This means that the feature in question is an early version that has a limited test scope, and the API and/or functionality might change in upcoming releases. The intention is to let users try these features out and we appreciate feedback.
+
+#) Streaming fails with parsing errors on the SparkFun XM125 board
+
+   Exploration Tool defaults to auto-baud at 2 Mbps, which exceeds the
+   practical limits of the SparkFun XM125 board. This typically manifests as
+   corrupted calibration data or parsing errors when starting any streaming
+   function.
+
+   To resolve this, reduce the baud rate via the settings cogwheel located
+   between the port selector and the connect button in the connection panel.
+   Start at 115,200 bps; you can experiment with intermediate values up to
+   2 Mbps to find the highest stable rate for your hardware.
