@@ -6,22 +6,22 @@ from pathlib import Path
 
 import pytest
 
-
-A121_PLUGIN_KEYS = sp.check_output(
-    "python -m acconeer.exptool.app.new --list-plugin-modules --generation a121".split(),
-    text=True,
-).split()
+from acconeer.exptool.app.new import plugin_loader
 
 
-@pytest.mark.parametrize("plugin_key", A121_PLUGIN_KEYS)
-def test_error_popup_a121(plugin_key: str, tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    "plugin_spec",
+    plugin_loader.load_plugins(),
+    ids=lambda ps: f"{ps.generation.value}-{ps.key}",
+)
+def test_error_popup(plugin_spec: plugin_loader.PluginSpec, tmp_path: Path) -> None:
     et_opts = [
         "-v",
         *("--data-dir", str(tmp_path)),
         "--dump-exceptions",
         "--no-port-updater",
-        *("--generation", "a121"),
-        *("--plugin-key", plugin_key),
+        *("--generation", plugin_spec.generation.value),
+        *("--plugin-key", plugin_spec.key),
         "--simulated-autoconnect",
         *("--tasks", "pseudo:quit"),
     ]
