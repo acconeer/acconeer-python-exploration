@@ -12,6 +12,7 @@ import time
 import traceback
 import typing as t
 from importlib.resources import as_file, files
+from pathlib import Path
 
 from acconeer.exptool.app import resources
 from acconeer.exptool.app.install_missing_app_extra import INSTALL_MISSING_APP_EXTRA_INSTRUCTIONS
@@ -35,7 +36,7 @@ from ._enums import ConnectionState, PluginGeneration, PluginState
 from .app_model import AppModel
 from .backend import Backend, GenBackend, MpBackend
 from .plugin_loader import import_and_register_plugin_module, load_plugins
-from .storage import remove_config_dir, remove_temp_dir
+from .storage import DEFAULT_ET_DIR, remove_config_dir, remove_temp_dir, set_et_dir
 from .ui.app_model_viewer import AppModelViewer
 from .ui.main_window import MainWindow
 
@@ -69,6 +70,9 @@ def main() -> None:
         remove_temp_dir()
         print("Cache purged")
         sys.exit(0)
+
+    if args.data_dir_override is not None:
+        set_et_dir(args.data_dir_override)
 
     if sys.platform == "win32" or sys.platform == "cygwin":
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("acconeer.exptool")
@@ -338,6 +342,12 @@ class _ExptoolArgumentParser(argparse.ArgumentParser):
             action="store_false",
             dest="use_port_updater",
             help="Disable port (Serial/USB) discovery, limiting server connections socket (and simulated)",
+        )
+        dbg_group.add_argument(
+            "--data-dir",
+            dest="data_dir_override",
+            type=Path,
+            help=f"Set directory to use for data (data is saved to '{DEFAULT_ET_DIR}' by default)",
         )
 
         verbosity_group = self.add_mutually_exclusive_group(required=False)
