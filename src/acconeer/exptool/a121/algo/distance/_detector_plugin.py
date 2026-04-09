@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -667,30 +667,29 @@ def _detector_config_presenter(config: Any, presentation_type: PresentationType)
         max_step_length = 0 if config.max_step_length is None else config.max_step_length
 
         return f"""
-static void set_config(acc_detector_distance_config_t *config, distance_preset_config_t preset)
+static void set_config(acc_detector_distance_config_t *detector_config, distance_preset_config_t preset)
 {{
-    // This snippet is generated to be compatible with RSS A121 v1.0.0
-    // If there is a version missmatch the snippet might need some modification
+    // This snippet is generated to be compatible with RSS A121 v1.13.0
+    // If there is a version mismatch the snippet might need some modification
 
     (void)preset;
 
-    acc_detector_distance_config_sensor_set(config, SENSOR_ID);
+    acc_detector_distance_config_start_set(detector_config, {config.start_m:.3f}f);
+    acc_detector_distance_config_end_set(detector_config, {config.end_m:.3f}f);
+    acc_detector_distance_config_max_step_length_set(detector_config, {max_step_length}U);
 
-    acc_detector_distance_config_start_set(config, {config.start_m:.3f}f);
-    acc_detector_distance_config_end_set(config, {config.end_m:.3f}f);
-    acc_detector_distance_config_max_step_length_set(config, {max_step_length}U);
+    acc_detector_distance_config_signal_quality_set(detector_config, {float(config.signal_quality):.3f}f);
+    acc_detector_distance_config_max_profile_set(detector_config, ACC_CONFIG_{config.max_profile.name});
+    acc_detector_distance_config_peak_sorting_set(detector_config, ACC_DETECTOR_DISTANCE_PEAK_SORTING_{config.peaksorting_method.name});
+    acc_detector_distance_config_reflector_shape_set(detector_config, ACC_DETECTOR_DISTANCE_REFLECTOR_SHAPE_{config.reflector_shape.name});
 
-    acc_detector_distance_config_signal_quality_set(config, {float(config.signal_quality):.3f}f);
-    acc_detector_distance_config_max_profile_set(config, ACC_CONFIG_{config.max_profile.name});
-    acc_detector_distance_config_peak_sorting_set(config, ACC_DETECTOR_DISTANCE_PEAK_SORTING_{config.peaksorting_method.name});
-    acc_detector_distance_config_reflector_shape_set(config, ACC_DETECTOR_DISTANCE_REFLECTOR_SHAPE_{config.reflector_shape.name});
+    acc_detector_distance_config_threshold_method_set(detector_config, ACC_DETECTOR_DISTANCE_THRESHOLD_METHOD_{config.threshold_method.name});
+    acc_detector_distance_config_num_frames_recorded_threshold_set(detector_config, {config.num_frames_in_recorded_threshold}U);
+    acc_detector_distance_config_fixed_amplitude_threshold_value_set(detector_config, {config.fixed_threshold_value:.3f}f);
+    acc_detector_distance_config_fixed_strength_threshold_value_set(detector_config, {config.fixed_strength_threshold_value:.3f}f);
+    acc_detector_distance_config_threshold_sensitivity_set(detector_config, {config.threshold_sensitivity:.3f}f);
 
-    acc_detector_distance_config_threshold_method_set(config, ACC_DETECTOR_DISTANCE_THRESHOLD_METHOD_{config.threshold_method.name});
-    acc_detector_distance_config_num_frames_recorded_threshold_set(config, {config.num_frames_in_recorded_threshold}U);
-    acc_detector_distance_config_fixed_threshold_value_set(config, {config.fixed_threshold_value:.3f}f);
-    acc_detector_distance_config_threshold_sensitivity_set(config, {config.threshold_sensitivity:.3f}f);
-
-    acc_detector_distance_config_close_range_leakage_cancellation_set(config, {str(config.close_range_leakage_cancellation).lower()});
+    acc_detector_distance_config_close_range_leakage_cancellation_set(detector_config, {str(config.close_range_leakage_cancellation).lower()});
 }}
 """
 

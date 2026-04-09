@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -11,8 +11,8 @@ from .preview import PresentationType
 
 
 _DISCLAIMER = """
-This snippet is generated to be compatible with RSS A121 v1.0.0
-If there is a version missmatch the snippet might need some modification
+This snippet is generated to be compatible with RSS A121 v1.13.0
+If there is a version mismatch the snippet might need some modification
 """
 
 

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -573,14 +573,14 @@ class ViewPlugin(A121ViewPluginBase):
 def _set_config_presenter(config: Any, presentation_type: PresentationType) -> Optional[str]:
     if isinstance(config, DetectorConfig) and presentation_type is PresentationType.C_SET_CONFIG:
         step_length_call = (
-            "acc_detector_presence_config_auto_step_length_set(config, true)"
+            "acc_detector_presence_config_auto_step_length_set(presence_config, true)"
             if config.step_length is None
-            else f"acc_detector_presence_config_step_length_set(config, {config.step_length}U)"
+            else f"acc_detector_presence_config_step_length_set(presence_config, {config.step_length}U)"
         )
         profile_call = (
-            "acc_detector_presence_config_auto_profile_set(config, true)"
+            "acc_detector_presence_config_auto_profile_set(presence_config, true)"
             if config.profile is None
-            else f"acc_detector_presence_config_profile_set(config, {config.profile}U)"
+            else f"acc_detector_presence_config_profile_set(presence_config, {config.profile}U)"
         )
         intra = config.intra_enable
         inter = config.inter_enable
@@ -588,38 +588,37 @@ def _set_config_presenter(config: Any, presentation_type: PresentationType) -> O
         inter_comment = "// " if not inter else ""
 
         return f"""
-static void set_config(acc_detector_presence_config_t *config, presence_preset_config_t preset)
+static void set_config(acc_detector_presence_config_t *presence_config, presence_preset_config_t preset)
 {{
-    // This snippet is generated to be compatible with RSS A121 v1.0.0
-    // If there is a version missmatch the snippet might need some modification
+    // This snippet is generated to be compatible with RSS A121 v1.13.0
+    // If there is a version mismatch the snippet might need some modification
 
     (void)preset;
 
-    acc_detector_presence_config_sensor_set(config, SENSOR_ID);
+    acc_detector_presence_config_sensor_set(presence_config, SENSOR_ID);
 
-    acc_detector_presence_config_start_set(config, {config.start_m:.3f}f);
-    acc_detector_presence_config_end_set(config, {config.end_m:.3f}f);
+    acc_detector_presence_config_start_set(presence_config, {config.start_m:.3f}f);
+    acc_detector_presence_config_end_set(presence_config, {config.end_m:.3f}f);
     {profile_call};
     {step_length_call};
-    acc_detector_presence_config_sweeps_per_frame_set(config, {config.sweeps_per_frame}U);
-    acc_detector_presence_config_hwaas_set(config, {config.hwaas}U);
+    acc_detector_presence_config_sweeps_per_frame_set(presence_config, {config.sweeps_per_frame}U);
+    acc_detector_presence_config_hwaas_set(presence_config, {config.hwaas}U);
 
-    acc_detector_presence_config_frame_rate_set(config, {config.frame_rate:.3f}f);
-    acc_detector_presence_config_inter_frame_idle_state_set(config, ACC_CONFIG_IDLE_STATE_{config.inter_frame_idle_state.name});
+    acc_detector_presence_config_frame_rate_set(presence_config, {config.frame_rate:.3f}f);
+    acc_detector_presence_config_inter_frame_idle_state_set(presence_config, ACC_CONFIG_IDLE_STATE_{config.inter_frame_idle_state.name});
 
-    acc_detector_presence_config_intra_detection_set(config, {str(config.intra_enable).lower()});
-    {intra_comment}acc_detector_presence_config_intra_detection_threshold_set(config, {config.intra_detection_threshold:.3f}f);
-    {intra_comment}acc_detector_presence_config_intra_frame_time_const_set(config, {config.intra_frame_time_const:.3f}f);
-    {intra_comment}acc_detector_presence_config_intra_output_time_const_set(config, {config.intra_output_time_const:.3f}f);
+    acc_detector_presence_config_intra_detection_set(presence_config, {str(config.intra_enable).lower()});
+    {intra_comment}acc_detector_presence_config_intra_detection_threshold_set(presence_config, {config.intra_detection_threshold:.3f}f);
+    {intra_comment}acc_detector_presence_config_intra_frame_time_const_set(presence_config, {config.intra_frame_time_const:.3f}f);
+    {intra_comment}acc_detector_presence_config_intra_output_time_const_set(presence_config, {config.intra_output_time_const:.3f}f);
 
-
-    acc_detector_presence_config_inter_detection_set(config, {str(config.inter_enable).lower()});
-    {inter_comment}acc_detector_presence_config_inter_detection_threshold_set(config, {config.inter_detection_threshold:.3f}f);
-    {inter_comment}acc_detector_presence_config_inter_frame_fast_cutoff_set(config, {config.inter_frame_fast_cutoff:.3f}f);
-    {inter_comment}acc_detector_presence_config_inter_frame_slow_cutoff_set(config, {config.inter_frame_slow_cutoff:.3f}f);
-    {inter_comment}acc_detector_presence_config_inter_frame_deviation_time_const_set(config, {config.inter_frame_deviation_time_const:.3f}f);
-    {inter_comment}acc_detector_presence_config_inter_output_time_const_set(config, {config.inter_output_time_const:.3f});
-    {inter_comment}acc_detector_presence_config_inter_frame_presence_timeout_set(config, {config.inter_frame_presence_timeout or 0.0:.3f}f);
+    acc_detector_presence_config_inter_detection_set(presence_config, {str(config.inter_enable).lower()});
+    {inter_comment}acc_detector_presence_config_inter_detection_threshold_set(presence_config, {config.inter_detection_threshold:.3f}f);
+    {inter_comment}acc_detector_presence_config_inter_frame_fast_cutoff_set(presence_config, {config.inter_frame_fast_cutoff:.3f}f);
+    {inter_comment}acc_detector_presence_config_inter_frame_slow_cutoff_set(presence_config, {config.inter_frame_slow_cutoff:.3f}f);
+    {inter_comment}acc_detector_presence_config_inter_frame_deviation_time_const_set(presence_config, {config.inter_frame_deviation_time_const:.3f}f);
+    {inter_comment}acc_detector_presence_config_inter_output_time_const_set(presence_config, {config.inter_output_time_const:.3f}f);
+    {inter_comment}acc_detector_presence_config_inter_frame_presence_timeout_set(presence_config, {config.inter_frame_presence_timeout or 0.0:.3f}f);
 
     // This parameter is needed if the sensor is put in HIBERNATE or OFF.
     // For more information, see the Presence Detector User Guide:
@@ -627,7 +626,7 @@ static void set_config(acc_detector_presence_config_t *config, presence_preset_c
     // https://developer.acconeer.com
     // Documents and learning > A121 > SW > A121 Presence Detector User Guide
     //
-    // acc_detector_presence_config_frame_rate_app_driven_set(config, true);
+    // acc_detector_presence_config_frame_rate_app_driven_set(presence_config, true);
 }}
 """
 

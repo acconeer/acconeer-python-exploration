@@ -871,28 +871,31 @@ def _set_config_presenter(instance: Any, presentation_type: PresentationType) ->
         distance_config = config.to_detector_config()
 
         return f"""
-static void set_config(acc_ref_app_tank_level_config_t *config, tank_level_preset_config_t preset)
+static void set_config(acc_ref_app_tank_level_config_t *app_config, tank_level_preset_config_t preset)
 {{
-    // This snippet is generated to be compatible with RSS A121 v1.0.0
-    // If there is a version missmatch the snippet might need some modification
+    // This snippet is generated to be compatible with RSS A121 v1.13.0
+    // If there is a version mismatch the snippet might need some modification
 
     (void)preset;
 
-    config->tank_range_start_m     = {config.start_m:.3f}f;
-    config->tank_range_end_m       = {config.end_m:.3f}f;
-    config->median_filter_length   = {config.median_filter_length}U;
-    config->num_medians_to_average = {config.num_medians_to_average}U;
+    app_config->tank_range_start_m     = {config.start_m:.3f}f;
+    app_config->tank_range_end_m       = {config.end_m:.3f}f;
+    app_config->median_filter_length   = {config.median_filter_length}U;
+    app_config->num_medians_to_average = {config.num_medians_to_average}U;
 
-    acc_detector_distance_config_start_set(config->distance_config, {distance_config.start_m:.3f}f);
-    acc_detector_distance_config_end_set(config->distance_config, {distance_config.end_m:.3f}f);
-    acc_detector_distance_config_max_step_length_set(config->distance_config, {distance_config.max_step_length or 0}U);
-    acc_detector_distance_config_max_profile_set(config->distance_config, ACC_CONFIG_{distance_config.max_profile.name});
-    acc_detector_distance_config_num_frames_recorded_threshold_set(config->distance_config, {distance_config.num_frames_in_recorded_threshold}U);
-    acc_detector_distance_config_peak_sorting_set(config->distance_config, ACC_DETECTOR_DISTANCE_PEAK_SORTING_{distance_config.peaksorting_method.name});
-    acc_detector_distance_config_reflector_shape_set(config->distance_config, ACC_DETECTOR_DISTANCE_REFLECTOR_SHAPE_{distance_config.reflector_shape.name});
-    acc_detector_distance_config_threshold_sensitivity_set(config->distance_config, {distance_config.threshold_sensitivity:.3f}f);
-    acc_detector_distance_config_signal_quality_set(config->distance_config, {distance_config.signal_quality:.3f}f);
-    acc_detector_distance_config_close_range_leakage_cancellation_set(config->distance_config, {str(distance_config.close_range_leakage_cancellation).lower()});
+    acc_detector_distance_config_start_set(app_config->distance_config, {distance_config.start_m:.3f}f);
+    acc_detector_distance_config_end_set(app_config->distance_config, {distance_config.end_m:.3f}f);
+    acc_detector_distance_config_max_step_length_set(app_config->distance_config, {distance_config.max_step_length or 0}U);
+    acc_detector_distance_config_max_profile_set(app_config->distance_config, ACC_CONFIG_{distance_config.max_profile.name});
+    acc_detector_distance_config_num_frames_recorded_threshold_set(app_config->distance_config, {distance_config.num_frames_in_recorded_threshold}U);
+    acc_detector_distance_config_peak_sorting_set(app_config->distance_config, ACC_DETECTOR_DISTANCE_PEAK_SORTING_{distance_config.peaksorting_method.name});
+    acc_detector_distance_config_reflector_shape_set(app_config->distance_config, ACC_DETECTOR_DISTANCE_REFLECTOR_SHAPE_{distance_config.reflector_shape.name});
+    acc_detector_distance_config_threshold_method_set(app_config->distance_config, ACC_DETECTOR_DISTANCE_THRESHOLD_METHOD_{distance_config.threshold_method.name});
+    acc_detector_distance_config_fixed_amplitude_threshold_value_set(app_config->distance_config, {distance_config.fixed_threshold_value:.3f}f);
+    acc_detector_distance_config_fixed_strength_threshold_value_set(app_config->distance_config, {distance_config.fixed_strength_threshold_value:.3f}f);
+    acc_detector_distance_config_threshold_sensitivity_set(app_config->distance_config, {distance_config.threshold_sensitivity:.3f}f);
+    acc_detector_distance_config_signal_quality_set(app_config->distance_config, {distance_config.signal_quality:.3f}f);
+    acc_detector_distance_config_close_range_leakage_cancellation_set(app_config->distance_config, {str(distance_config.close_range_leakage_cancellation).lower()});
 }}
 """
 
