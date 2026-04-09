@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -21,9 +21,6 @@ from acconeer.exptool.a121.algo.distance import (
 from acconeer.exptool.a121.algo.distance._utils import (
     get_calibrate_noise_session_config,
     get_calibrate_offset_sensor_config,
-)
-from acconeer.exptool.a121.algo.presence import (
-    Detector as PresenceDetector,
 )
 from acconeer.exptool.a121.algo.presence import (
     DetectorConfig as PresenceConfig,
@@ -84,7 +81,7 @@ def session_heap_memory(config: SessionConfig) -> int:
 
 
 def presence_external_heap_memory(config: PresenceConfig) -> int:
-    sensor_cfg = PresenceDetector._get_sensor_config(config)
+    sensor_cfg = config.to_sensor_config()
 
     session_ext_heap = session_external_heap_memory(SessionConfig(sensor_cfg))
     num_points = sum([subsweep.num_points for subsweep in sensor_cfg.subsweeps])
@@ -94,7 +91,7 @@ def presence_external_heap_memory(config: PresenceConfig) -> int:
 
 
 def presence_rss_heap_memory(config: PresenceConfig) -> int:
-    sensor_cfg = PresenceDetector._get_sensor_config(config)
+    sensor_cfg = config.to_sensor_config()
 
     PREC_FILTER_PARAMS = 7
 

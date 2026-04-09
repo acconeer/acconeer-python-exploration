@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2025
+# Copyright (c) Acconeer AB, 2025-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -335,7 +335,7 @@ class ExApp(Controller[ExAppConfig, ExAppResult]):
         start_m, end_m = self.container_size.presence_range
         self.presence_config = self.get_presence_config(self.cargo_presence_config, start_m, end_m)
 
-        sensor_config = PresenceDetector._get_sensor_config(self.presence_config)
+        sensor_config = self.presence_config.to_sensor_config()
         session_config = a121.SessionConfig(
             {self.sensor_id: sensor_config},
             extended=False,

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -14,7 +14,6 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo.presence import Detector
 from acconeer.exptool.a121.algo.smart_presence._ref_app import (
     PresenceWakeUpConfig,
     PresenceZoneConfig,
@@ -49,7 +48,7 @@ def main():
     ref_app = RefApp(client=client, sensor_id=1, ref_app_config=ref_app_config)
     ref_app.start()
 
-    nominal_sensor_config = Detector._get_sensor_config(ref_app.nominal_detector_config)
+    nominal_sensor_config = ref_app.nominal_detector_config.to_sensor_config()
     distances = np.linspace(
         ref_app_config.nominal_config.start_m,
         ref_app_config.nominal_config.end_m,

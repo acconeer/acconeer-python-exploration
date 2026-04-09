@@ -540,7 +540,7 @@ class ViewPlugin(A121ViewPluginBase):
             assert not_handled == []
 
             if len(results) == 0:
-                sensor_config = Detector._get_sensor_config(state.config)
+                sensor_config = state.config.to_sensor_config()
 
                 self.sensor_config_status.set_data(sensor_config)
 

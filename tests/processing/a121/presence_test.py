@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import typing as t
@@ -56,7 +56,7 @@ def presence_default(record: a121.H5Record) -> ProcessorWrapper:
     return ProcessorWrapper(
         presence.Processor(
             sensor_config=record.session_config.sensor_config,
-            processor_config=presence.Detector._get_processor_config(get_medium_range_config()),
+            processor_config=get_medium_range_config().to_processor_config(),
             metadata=utils.unextend(record.extended_metadata),
         )
     )
@@ -66,7 +66,7 @@ def presence_short_range(record: a121.H5Record) -> ProcessorWrapper:
     return ProcessorWrapper(
         presence.Processor(
             sensor_config=record.session_config.sensor_config,
-            processor_config=presence.Detector._get_processor_config(get_short_range_config()),
+            processor_config=get_short_range_config().to_processor_config(),
             metadata=utils.unextend(record.extended_metadata),
         )
     )
@@ -76,7 +76,7 @@ def presence_long_range(record: a121.H5Record) -> ProcessorWrapper:
     return ProcessorWrapper(
         presence.Processor(
             sensor_config=record.session_config.sensor_config,
-            processor_config=presence.Detector._get_processor_config(get_long_range_config()),
+            processor_config=get_long_range_config().to_processor_config(),
             metadata=utils.unextend(record.extended_metadata),
         )
     )
@@ -86,14 +86,14 @@ def presence_low_power(record: a121.H5Record) -> ProcessorWrapper:
     return ProcessorWrapper(
         presence.Processor(
             sensor_config=record.session_config.sensor_config,
-            processor_config=presence.Detector._get_processor_config(get_low_power_config()),
+            processor_config=get_low_power_config().to_processor_config(),
             metadata=utils.unextend(record.extended_metadata),
         )
     )
 
 
 def presence_medium_range_no_timeout(record: a121.H5Record) -> ProcessorWrapper:
-    processor_config = presence.Detector._get_processor_config(get_medium_range_config())
+    processor_config = get_medium_range_config().to_processor_config()
     processor_config.inter_frame_presence_timeout = 0
     return ProcessorWrapper(
         presence.Processor(

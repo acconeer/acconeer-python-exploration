@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -134,6 +134,59 @@ class DetectorConfig(AlgoConfigBase):
             msg = f"step_length must be a divisor or multiple of {SPARSE_IQ_PPC}"
             raise ValueError(msg)
 
+    def to_sensor_config(self) -> a121.SensorConfig:
+        if self.automatic_subsweeps:
+            subsweep_config = get_subsweep_configs(self.start_m, self.end_m, self.signal_quality)
+            sensor_config = a121.SensorConfig(
+                subsweeps=subsweep_config,
+                sweeps_per_frame=self.sweeps_per_frame,
+                frame_rate=self.frame_rate,
+                inter_frame_idle_state=self.inter_frame_idle_state,
+            )
+        else:
+            if self.profile is not None:
+                profile = self.profile
+            else:
+                profile = get_max_profile_without_direct_leakage(self.start_m)
+            if self.step_length is not None:
+                step_length = self.step_length
+            else:
+                step_length = get_max_step_length(profile)
+
+            start_point = int(np.floor(self.start_m / APPROX_BASE_STEP_LENGTH_M))
+            num_point = int(
+                np.ceil((self.end_m - self.start_m) / (step_length * APPROX_BASE_STEP_LENGTH_M))
+                + 1
+            )
+            end_point = start_point + (num_point - 1) * step_length
+            sensor_config = a121.SensorConfig(
+                profile=profile,
+                start_point=start_point,
+                num_points=num_point,
+                step_length=step_length,
+                prf=select_prf(end_point, profile),
+                hwaas=self.hwaas,
+                sweeps_per_frame=self.sweeps_per_frame,
+                frame_rate=self.frame_rate,
+                inter_frame_idle_state=self.inter_frame_idle_state,
+            )
+        return sensor_config
+
+    def to_processor_config(self) -> ProcessorConfig:
+        return ProcessorConfig(
+            intra_enable=self.intra_enable,
+            intra_detection_threshold=self.intra_detection_threshold,
+            intra_frame_time_const=self.intra_frame_time_const,
+            intra_output_time_const=self.intra_output_time_const,
+            inter_enable=self.inter_enable,
+            inter_detection_threshold=self.inter_detection_threshold,
+            inter_frame_fast_cutoff=self.inter_frame_fast_cutoff,
+            inter_frame_slow_cutoff=self.inter_frame_slow_cutoff,
+            inter_frame_deviation_time_const=self.inter_frame_deviation_time_const,
+            inter_output_time_const=self.inter_output_time_const,
+            inter_frame_presence_timeout=self.inter_frame_presence_timeout,
+        )
+
     def _collect_validation_results(self) -> list[a121.ValidationResult]:
         validation_results: list[a121.ValidationResult] = []
         bad_sensor_config = False
@@ -170,7 +223,7 @@ class DetectorConfig(AlgoConfigBase):
             # Return to avoid calling get_sensor_config with bad config.
             return validation_results
 
-        for res in Detector._get_sensor_config(self)._collect_validation_results():
+        for res in self.to_sensor_config()._collect_validation_results():
             res.source = self
 
             if res.aspect == "num_points":
@@ -274,7 +327,7 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
             msg = "Already started"
             raise RuntimeError(msg)
 
-        sensor_config = self._get_sensor_config(self.config)
+        sensor_config = self.config.to_sensor_config()
         self.session_config = a121.SessionConfig(
             {self.sensor_id: sensor_config},
             extended=False,
@@ -299,7 +352,7 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
         metadata = self.client.setup_session(self.session_config)
         assert isinstance(metadata, a121.Metadata)
 
-        processor_config = self._get_processor_config(self.config)
+        processor_config = self.config.to_processor_config()
 
         start_m = sensor_config.subsweeps[0].start_point * APPROX_BASE_STEP_LENGTH_M
         end_m = (
@@ -345,65 +398,6 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
         self.client.start_session()
 
         self.started = True
-
-    @classmethod
-    def _get_sensor_config(cls, config: DetectorConfig) -> a121.SensorConfig:
-        if config.automatic_subsweeps:
-            subsweep_config = get_subsweep_configs(
-                config.start_m, config.end_m, config.signal_quality
-            )
-            sensor_config = a121.SensorConfig(
-                subsweeps=subsweep_config,
-                sweeps_per_frame=config.sweeps_per_frame,
-                frame_rate=config.frame_rate,
-                inter_frame_idle_state=config.inter_frame_idle_state,
-            )
-        else:
-            if config.profile is not None:
-                profile = config.profile
-            else:
-                profile = get_max_profile_without_direct_leakage(config.start_m)
-            if config.step_length is not None:
-                step_length = config.step_length
-            else:
-                step_length = get_max_step_length(profile)
-
-            start_point = int(np.floor(config.start_m / APPROX_BASE_STEP_LENGTH_M))
-            num_point = int(
-                np.ceil(
-                    (config.end_m - config.start_m) / (step_length * APPROX_BASE_STEP_LENGTH_M)
-                )
-                + 1
-            )
-            end_point = start_point + (num_point - 1) * step_length
-            sensor_config = a121.SensorConfig(
-                profile=profile,
-                start_point=start_point,
-                num_points=num_point,
-                step_length=step_length,
-                prf=select_prf(end_point, profile),
-                hwaas=config.hwaas,
-                sweeps_per_frame=config.sweeps_per_frame,
-                frame_rate=config.frame_rate,
-                inter_frame_idle_state=config.inter_frame_idle_state,
-            )
-        return sensor_config
-
-    @classmethod
-    def _get_processor_config(cls, config: DetectorConfig) -> ProcessorConfig:
-        return ProcessorConfig(
-            intra_enable=config.intra_enable,
-            intra_detection_threshold=config.intra_detection_threshold,
-            intra_frame_time_const=config.intra_frame_time_const,
-            intra_output_time_const=config.intra_output_time_const,
-            inter_enable=config.inter_enable,
-            inter_detection_threshold=config.inter_detection_threshold,
-            inter_frame_fast_cutoff=config.inter_frame_fast_cutoff,
-            inter_frame_slow_cutoff=config.inter_frame_slow_cutoff,
-            inter_frame_deviation_time_const=config.inter_frame_deviation_time_const,
-            inter_output_time_const=config.inter_output_time_const,
-            inter_frame_presence_timeout=config.inter_frame_presence_timeout,
-        )
 
     def get_next(self) -> DetectorResult:
         if not self.started:

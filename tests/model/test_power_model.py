@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ import pytest
 import yaml
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo import distance, presence
+from acconeer.exptool.a121.algo import distance
 from acconeer.exptool.a121.algo.presence import _configs as presence_configs
 from acconeer.exptool.a121.model import power
 
@@ -259,7 +259,7 @@ def test_lower_idle_state_limits(
         (
             "Presence, Medium range (12Hz)",
             a121.SessionConfig(
-                presence.Detector._get_sensor_config(presence_configs.get_medium_range_config()),
+                presence_configs.get_medium_range_config().to_sensor_config(),
             ),
             power.Sensor.IdleState.HIBERNATE,
             power.algo.Presence(),
@@ -267,7 +267,7 @@ def test_lower_idle_state_limits(
         (
             "Presence, Short range (10Hz)",
             a121.SessionConfig(
-                presence.Detector._get_sensor_config(presence_configs.get_short_range_config()),
+                presence_configs.get_short_range_config().to_sensor_config(),
             ),
             power.Sensor.IdleState.HIBERNATE,
             power.algo.Presence(),
@@ -275,7 +275,7 @@ def test_lower_idle_state_limits(
         (
             "Presence, Low Power Wakeup (1Hz)",
             a121.SessionConfig(
-                presence.Detector._get_sensor_config(presence_configs.get_low_power_config()),
+                presence_configs.get_low_power_config().to_sensor_config(),
             ),
             power.Sensor.IdleState.HIBERNATE,
             power.algo.Presence(),

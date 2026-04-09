@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -219,7 +219,7 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
 
         self.nominal_detector_config = self.config.nominal_config
 
-        sensor_config = Detector._get_sensor_config(self.nominal_detector_config)
+        sensor_config = self.nominal_detector_config.to_sensor_config()
         session_config = a121.SessionConfig(
             {self.sensor_id: sensor_config},
             extended=False,
@@ -255,7 +255,7 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
 
             self.wake_up_detector_config = self.config.wake_up_config
 
-            sensor_config = Detector._get_sensor_config(self.wake_up_detector_config)
+            sensor_config = self.wake_up_detector_config.to_sensor_config()
             session_config = a121.SessionConfig(
                 {self.sensor_id: sensor_config},
                 extended=False,

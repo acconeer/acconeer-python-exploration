@@ -26,7 +26,6 @@ from acconeer.exptool.a121.algo._plugins import (
 )
 from acconeer.exptool.a121.algo.distance._detector import ConfigMismatchError
 from acconeer.exptool.a121.algo.distance._translation import detector_config_to_session_config
-from acconeer.exptool.a121.algo.presence._detector import Detector as PresenceDetector
 from acconeer.exptool.app.new import (
     AppModel,
     AttrsConfigEditor,
@@ -846,11 +845,9 @@ class ViewPlugin(A121ViewPluginBase):
 
                 start_m, end_m = state.config.container_size.presence_range
                 self.subsweep_status_cargo_presence.set_data(
-                    PresenceDetector._get_sensor_config(
-                        ExApp.get_presence_config(
-                            state.config.cargo_presence_config, start_m, end_m
-                        )
-                    )
+                    ExApp.get_presence_config(
+                        state.config.cargo_presence_config, start_m, end_m
+                    ).to_sensor_config()
                 )
 
             results = state.config._collect_validation_results()

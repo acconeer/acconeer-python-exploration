@@ -13,7 +13,7 @@ from acconeer.exptool.a121.algo._utils import (
     get_max_profile_without_direct_leakage,
     get_max_step_length,
 )
-from acconeer.exptool.a121.algo.presence._detector import Detector, DetectorConfig
+from acconeer.exptool.a121.algo.presence._detector import DetectorConfig
 from acconeer.exptool.a121.algo.presence._subsweep_utils import MIN_DIST_M, get_subsweep_configs
 
 
@@ -58,7 +58,7 @@ def test_collect_validation_results_has_errors(config, expected_aspects):
 def test_sensor_config_profile_auto_select(start_m, expected_profile):
     """Profile is auto-selected based on 2*FWHM <= start_m."""
     cfg = DetectorConfig(start_m=start_m, end_m=start_m + 0.5)
-    sc = Detector._get_sensor_config(cfg)
+    sc = cfg.to_sensor_config()
     assert sc.profile == expected_profile
 
 
@@ -77,7 +77,7 @@ def test_sensor_config_profile_auto_select(start_m, expected_profile):
 def test_sensor_config_step_length_auto_select(profile, expected_step_length):
     """Step length is auto-selected based on profile FWHM."""
     cfg = DetectorConfig(profile=profile, start_m=0.3, end_m=2.5)
-    sc = Detector._get_sensor_config(cfg)
+    sc = cfg.to_sensor_config()
     assert sc.step_length == expected_step_length
 
 
@@ -85,14 +85,14 @@ def test_sensor_config_step_length_auto_select(profile, expected_step_length):
 def test_sensor_config_explicit_step_length(step_length):
     """An explicit step_length overrides the auto-selected value."""
     cfg = DetectorConfig(step_length=step_length, start_m=0.3, end_m=2.5)
-    sc = Detector._get_sensor_config(cfg)
+    sc = cfg.to_sensor_config()
     assert sc.step_length == step_length
 
 
 def test_sensor_config_single_point():
     """start_m == end_m must produce exactly one measurement point."""
     cfg = DetectorConfig(start_m=0.5, end_m=0.5)
-    sc = Detector._get_sensor_config(cfg)
+    sc = cfg.to_sensor_config()
     # num_point = ceil((end - start) / (step * base)) + 1 = ceil(0) + 1 = 1
     assert sc.num_points == 1
 
@@ -100,7 +100,7 @@ def test_sensor_config_single_point():
 def test_sensor_config_start_at_zero():
     """start_m=0.0 must map to start_point=0."""
     cfg = DetectorConfig(start_m=0.0, end_m=1.0)
-    sc = Detector._get_sensor_config(cfg)
+    sc = cfg.to_sensor_config()
     assert sc.start_point == 0
 
 
@@ -116,7 +116,7 @@ def test_sensor_config_start_at_zero():
 def test_sensor_config_parameter_propagation(field, value, attr):
     """Scalar config fields must be forwarded to the resulting SensorConfig."""
     cfg = DetectorConfig(start_m=0.3, end_m=2.5, **{field: value})
-    sc = Detector._get_sensor_config(cfg)
+    sc = cfg.to_sensor_config()
     assert getattr(sc, attr) == value
 
 
@@ -125,7 +125,7 @@ def test_sensor_config_explicit_profile_overrides_leakage_guard():
     the profile's direct-leakage minimum distance."""
     # PROFILE_5 min dist is ~0.64 m; start_m=0.1 m is well below that
     cfg = DetectorConfig(profile=a121.Profile.PROFILE_5, start_m=0.1, end_m=0.5)
-    sc = Detector._get_sensor_config(cfg)
+    sc = cfg.to_sensor_config()
     assert sc.profile == a121.Profile.PROFILE_5
 
 
@@ -198,21 +198,19 @@ def test_get_subsweep_configs_below_profile5_breakpoint_no_p5():
         (3.0, 24.0, 960),  # → 24.60 m
     ],
 )
-def test_get_sensor_config_prf_selection_crash(start_m, end_m, step_length):
+def test_to_sensor_config_prf_selection_crash(start_m, end_m, step_length):
     """Bug: a large step_length causes end_point to overshoot the max measurable
     distance of PRF_5_2_MHz (~24.3 m), leaving select_prf with no viable PRF.
     All three inputs are individually valid per _collect_validation_results
     (start_m < end_m <= MAX_END_M=24, step_length is a multiple of 24), yet
-    _get_sensor_config raises IndexError.
+    to_sensor_config raises IndexError.
 
-    Fix: guard in _collect_validation_results (or _get_sensor_config) that
+    Fix: guard in _collect_validation_results (or to_sensor_config) that
     checks end_point * APPROX_BASE_STEP_LENGTH_M < PRF_5_2_MHz.mmd before
     calling select_prf.
     """
     with pytest.raises(IndexError):
-        Detector._get_sensor_config(
-            DetectorConfig(start_m=start_m, end_m=end_m, step_length=step_length)
-        )
+        DetectorConfig(start_m=start_m, end_m=end_m, step_length=step_length).to_sensor_config()
 
 
 @hyp_st.composite
@@ -232,7 +230,7 @@ def detector_config_strategy(draw: hyp_st.DrawFn) -> DetectorConfig:
 
     # Pre-filter: skip inputs where the calculated end_point would overshoot the
     # max measurable distance of PRF_5_2_MHz, causing select_prf to crash with
-    # IndexError (see test_get_sensor_config_prf_selection_crash).
+    # IndexError (see test_to_sensor_config_prf_selection_crash).
     hyp.assume(end_point * APPROX_BASE_STEP_LENGTH_M < float(a121.PRF.PRF_5_2_MHz.mmd))
 
     try:
@@ -265,5 +263,5 @@ def test_valid_detector_configs_translate_to_valid_sensor_configs(
     config: DetectorConfig,
 ) -> None:
     """Any valid DetectorConfig must translate to a SensorConfig with no validation errors."""
-    sensor_config = Detector._get_sensor_config(config)
+    sensor_config = config.to_sensor_config()
     assert sensor_config._collect_validation_results() == []

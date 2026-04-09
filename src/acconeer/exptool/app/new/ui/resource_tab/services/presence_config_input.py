@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from PySide6.QtWidgets import QVBoxLayout
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121.algo.presence import _configs as presence_configs
-from acconeer.exptool.a121.algo.presence._detector import Detector, DetectorConfig
+from acconeer.exptool.a121.algo.presence._detector import DetectorConfig
 from acconeer.exptool.a121.algo.presence._pidget_mapping import get_pidget_mapping
 from acconeer.exptool.a121.model import power
 from acconeer.exptool.app.new.ui.components import AttrsConfigEditor, GroupBox, pidgets
@@ -29,7 +29,7 @@ class PresenceConfigEvent:
 
     @property
     def translated_session_config(self) -> a121.SessionConfig:
-        return a121.SessionConfig(Detector._get_sensor_config(self.config))
+        return a121.SessionConfig(self.config.to_sensor_config())
 
 
 class PresenceConfigInput(ScrollAreaDecorator):

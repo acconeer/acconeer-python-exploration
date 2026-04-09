@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -45,7 +45,7 @@ def main():
     pg_updater = PGUpdater(
         detector_config,
         processor_config,
-        presence_detector._get_sensor_config(detector_config),
+        detector_config.to_sensor_config(),
         presence_detector.estimated_frame_rate,
         smart_presence_processor.zone_limits,
     )

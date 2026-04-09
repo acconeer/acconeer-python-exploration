@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -25,7 +25,6 @@ from acconeer.exptool.a121.algo._plugins import (
     A121BackendPluginBase,
     A121ViewPluginBase,
 )
-from acconeer.exptool.a121.algo.presence._detector import Detector
 from acconeer.exptool.a121.algo.presence._detector_plugin import ViewPlugin as PresenceViewPlugin
 from acconeer.exptool.app.new import (
     AppModel,
@@ -181,9 +180,7 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
 
         self._ref_app_instance.start(recorder)
 
-        nominal_sensor_config = Detector._get_sensor_config(
-            self._ref_app_instance.nominal_detector_config
-        )
+        nominal_sensor_config = self._ref_app_instance.nominal_detector_config.to_sensor_config()
         distances = np.linspace(
             self.shared_state.config.nominal_config.start_m,
             self.shared_state.config.nominal_config.end_m,
@@ -780,11 +777,11 @@ class ViewPlugin(A121ViewPluginBase):
 
             if len(results) == 0:
                 self.subsweep_status_nominal.set_data(
-                    Detector._get_sensor_config(state.config.nominal_config)
+                    state.config.nominal_config.to_sensor_config()
                 )
                 if state.config.wake_up_config is not None:
                     self.subsweep_status_wake_up.set_data(
-                        Detector._get_sensor_config(state.config.wake_up_config)
+                        state.config.wake_up_config.to_sensor_config()
                     )
 
     def on_app_model_update(self, app_model: AppModel) -> None:
