@@ -134,6 +134,26 @@ class DetectorConfig(AlgoConfigBase):
             msg = f"step_length must be a divisor or multiple of {SPARSE_IQ_PPC}"
             raise ValueError(msg)
 
+    def _compute_manual_subsweep_layout(self) -> tuple[Profile, int, int, int, int]:
+        """Resolve profile/step_length and compute the point layout for a manual subsweep.
+
+        Returns (profile, step_length, start_point, num_points, end_point).
+        """
+        profile = (
+            self.profile
+            if self.profile is not None
+            else get_max_profile_without_direct_leakage(self.start_m)
+        )
+        step_length = (
+            self.step_length if self.step_length is not None else get_max_step_length(profile)
+        )
+        start_point = int(np.floor(self.start_m / APPROX_BASE_STEP_LENGTH_M))
+        num_points = int(
+            np.ceil((self.end_m - self.start_m) / (step_length * APPROX_BASE_STEP_LENGTH_M)) + 1
+        )
+        end_point = start_point + (num_points - 1) * step_length
+        return profile, step_length, start_point, num_points, end_point
+
     def to_sensor_config(self) -> a121.SensorConfig:
         if self.automatic_subsweeps:
             subsweep_config = get_subsweep_configs(self.start_m, self.end_m, self.signal_quality)
@@ -144,25 +164,13 @@ class DetectorConfig(AlgoConfigBase):
                 inter_frame_idle_state=self.inter_frame_idle_state,
             )
         else:
-            if self.profile is not None:
-                profile = self.profile
-            else:
-                profile = get_max_profile_without_direct_leakage(self.start_m)
-            if self.step_length is not None:
-                step_length = self.step_length
-            else:
-                step_length = get_max_step_length(profile)
-
-            start_point = int(np.floor(self.start_m / APPROX_BASE_STEP_LENGTH_M))
-            num_point = int(
-                np.ceil((self.end_m - self.start_m) / (step_length * APPROX_BASE_STEP_LENGTH_M))
-                + 1
+            profile, step_length, start_point, num_points, end_point = (
+                self._compute_manual_subsweep_layout()
             )
-            end_point = start_point + (num_point - 1) * step_length
             sensor_config = a121.SensorConfig(
                 profile=profile,
                 start_point=start_point,
-                num_points=num_point,
+                num_points=num_points,
                 step_length=step_length,
                 prf=select_prf(end_point, profile),
                 hwaas=self.hwaas,
@@ -218,6 +226,19 @@ class DetectorConfig(AlgoConfigBase):
                 )
             )
             bad_sensor_config = True
+
+        if not bad_sensor_config and not self.automatic_subsweeps:
+            _, _, _, _, end_point = self._compute_manual_subsweep_layout()
+            if end_point * APPROX_BASE_STEP_LENGTH_M >= a121.PRF.PRF_5_2_MHz.mmd:
+                validation_results.append(
+                    a121.ValidationError(
+                        self,
+                        "end_m",
+                        "Effective measurement range exceeds maximum measurable distance "
+                        f"({a121.PRF.PRF_5_2_MHz.mmd} m). Try decreasing the end point or using a smaller step length.",
+                    )
+                )
+                bad_sensor_config = True
 
         if bad_sensor_config:
             # Return to avoid calling get_sensor_config with bad config.

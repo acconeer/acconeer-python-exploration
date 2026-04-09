@@ -192,25 +192,17 @@ def test_get_subsweep_configs_below_profile5_breakpoint_no_p5():
 @pytest.mark.parametrize(
     "start_m, end_m, step_length",
     [
-        #   start   end   step  → computed end_point dist
         (22.0, 24.0, 960),  # → 24.40 m
         (20.0, 24.0, 960),  # → 24.80 m
         (3.0, 24.0, 960),  # → 24.60 m
     ],
 )
-def test_to_sensor_config_prf_selection_crash(start_m, end_m, step_length):
-    """Bug: a large step_length causes end_point to overshoot the max measurable
-    distance of PRF_5_2_MHz (~24.3 m), leaving select_prf with no viable PRF.
-    All three inputs are individually valid per _collect_validation_results
-    (start_m < end_m <= MAX_END_M=24, step_length is a multiple of 24), yet
-    to_sensor_config raises IndexError.
-
-    Fix: guard in _collect_validation_results (or to_sensor_config) that
-    checks end_point * APPROX_BASE_STEP_LENGTH_M < PRF_5_2_MHz.mmd before
-    calling select_prf.
-    """
-    with pytest.raises(IndexError):
-        DetectorConfig(start_m=start_m, end_m=end_m, step_length=step_length).to_sensor_config()
+def test_prf_overshoot_reports_end_m_validation_error(start_m, end_m, step_length):
+    config = DetectorConfig(start_m=start_m, end_m=end_m, step_length=step_length)
+    errors = [
+        r for r in config._collect_validation_results() if isinstance(r, a121.ValidationError)
+    ]
+    assert any(e.aspect == "end_m" for e in errors)
 
 
 @hyp_st.composite
@@ -230,7 +222,7 @@ def detector_config_strategy(draw: hyp_st.DrawFn) -> DetectorConfig:
 
     # Pre-filter: skip inputs where the calculated end_point would overshoot the
     # max measurable distance of PRF_5_2_MHz, causing select_prf to crash with
-    # IndexError (see test_to_sensor_config_prf_selection_crash).
+    # end_m ValidationError (see test_prf_overshoot_reports_end_m_validation_error).
     hyp.assume(end_point * APPROX_BASE_STEP_LENGTH_M < float(a121.PRF.PRF_5_2_MHz.mmd))
 
     try:
