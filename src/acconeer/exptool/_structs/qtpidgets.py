@@ -49,8 +49,8 @@ def rst_to_html(s):
 
     from docutils.core import publish_parts
 
-    s = re.sub(r":ref:`([\s\S]+?)\s*<([\s\S]+)>`", r"\1", s, re.MULTILINE)
-    parts = publish_parts(s, writer_name="html")
+    s = re.sub(r":ref:`([\s\S]+?)\s*<([\s\S]+)>`", r"\1", s, flags=re.MULTILINE)
+    parts = publish_parts(s, writer="html")
     return parts["body"]
 
 
