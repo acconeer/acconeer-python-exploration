@@ -40,6 +40,9 @@ suppress_warnings = [
 
 pygments_style = None
 
+rst_epilog = """
+.. _design_services: https://developer.acconeer.com/home/design-services/
+"""
 
 ########################## Extensions' configuration ###########################
 

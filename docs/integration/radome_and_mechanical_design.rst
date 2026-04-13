@@ -30,6 +30,8 @@ From this expression, we can see that the materials with a higher :term:`dielect
 Radomes
 =======
 
+.. _integration-a121-radome-thickness:
+
 Radome thickness
 ----------------
 
@@ -54,7 +56,7 @@ The optimum radome thickness occurs when the :term:`dielectric<Dielectric>` is p
 
     :term:`Transmitted<Transmission>` and :term:`reflected<Reflection>` signals from a half-wavelength radome. Secondary :term:`reflections<Reflection>` have been omitted for simplicity.
 
-As an example, if the material is polycarbonate with relative :term:`permittivity<Permittivity>` :math:`\varepsilon_r=2.75`, the optimal radome thickness becomes:
+As an example, if the material is polycarbonate (PC) with relative :term:`permittivity<Permittivity>` :math:`\varepsilon_r=2.75`, the optimal radome thickness becomes:
 
 .. math::
     :label: eq_exthicknesscalc

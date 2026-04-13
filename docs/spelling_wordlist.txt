@@ -109,6 +109,7 @@ Nyquist
 observables
 Oja
 Orfanidis
+overmoded
 parametrization
 PCA
 periodogram
@@ -143,6 +144,8 @@ scm
 SDK
 selectable
 setuptools
+sidelobe
+sidelobes
 sinusoid
 sinusoidal
 Softwares
