@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import contextlib
+import importlib.metadata
 import logging
 import sys
 import traceback
@@ -20,16 +21,21 @@ from acconeer.exptool.app.new._exceptions import HandledException
 _LOG = logging.getLogger(__name__)
 
 
-def get_installed_packages_via_pip() -> Optional[list[str]]:
-    """Tries to extract information about installed packages"""
+def get_installed_packages() -> Optional[list[str]]:
+    """Return installed packages in 'name==version' format."""
     try:
-        try:
-            from pip._internal.operations.freeze import freeze
-        except ImportError:
-            from pip.operations.freeze import freeze  # type: ignore
+        packages = []
+        for dist in importlib.metadata.distributions():
+            name = dist.metadata.get("Name")
+            version = dist.version
 
-        return list(freeze())
+            if name:  # safety check
+                packages.append(f"{name}=={version}")
+
+        return packages
+
     except Exception:
+        _LOG.exception("Failed to get installed packages")
         return None
 
 
@@ -79,7 +85,7 @@ class ExceptionWidget(QMessageBox):
 
         detailed_text += f"Python version\n==============\n{sys.version}\n\n\n"
 
-        installed_packages = get_installed_packages_via_pip()
+        installed_packages = get_installed_packages()
         detailed_text += "Installed Packages\n" + "==================\n"
         if installed_packages is None:
             detailed_text += (
