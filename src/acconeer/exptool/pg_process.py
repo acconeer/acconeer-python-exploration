@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import multiprocessing as mp
@@ -50,14 +50,14 @@ class PGProcess:
     def close(self):
         if self._process.exitcode is None:
             self._exit_event.set()
-            self._process.join(1)
+            self._process.join(1)  # give pg_process_program 1s for graceful exit
 
         if self._process.exitcode is None:
-            self._process.terminate()
-            self._process.join(1)
+            self._process.terminate()  # time's up for graceful exit - terminate pg_process_program
 
-        if self._process.exitcode is None:
-            raise RuntimeError
+        # No self._process.join() is needed here due to:
+        # - mp.Process.terminate() is unconditional on Windows.
+        # - On Linux, the processes will be cleaned up since it's a daemon process
 
 
 def pg_process_program(q, exit_event, updater, max_freq, setup_style, allow_subsampling):
