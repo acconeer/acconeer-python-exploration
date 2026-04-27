@@ -23,7 +23,7 @@ try:
     import qdarktheme
 
     from PySide6 import QtCore, QtGui
-    from PySide6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication, QMessageBox
 
     import pyqtgraph as pg
 except ImportError:
@@ -165,6 +165,26 @@ def main() -> None:
                 )
 
             model.load_plugin(found_plugin)
+
+    py_ver = sys.version_info[:2]
+    if args.portable and py_ver < (3, 12):
+        # Note: Only users with old 3.9 portable package will see this message
+        msg = "\n".join(
+            [
+                "This ET distribution is discontinued.",
+                "<br><br>",
+                "Download the new QUICK INSTALL package from",
+                "<a href='https://developer.acconeer.com/home/exploration-tool/'>developer.acconeer.com</a>",
+                "<br><br>",
+                "Feel free to continue using this distribution of ET, but note that it is incompatible with future versions of ET",
+            ]
+        )
+        qmb = QMessageBox()
+        qmb.setWindowTitle("Discontinuation notice")
+        qmb.setTextFormat(QtCore.Qt.TextFormat.RichText)
+        qmb.setText(msg)
+        qmb.setIcon(QMessageBox.Icon.Information)
+        qmb.exec()
 
     model.broadcast()
 
