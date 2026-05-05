@@ -10,7 +10,8 @@ There are several parts that need to be considered when integrating the A111 or 
 
    electrical_integration
    electromagnetic_pcb_design_guidelines
-   lens_design 
+   lens_design
    ebg_integration
    radome_and_mechanical_design
+   horn_antennas
    sw_integration
