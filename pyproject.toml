@@ -165,7 +165,16 @@ spelling = "default-sphinx-build -b spelling"
 rediraffe-write = "default-sphinx-build -b rediraffewritediff"
 rediraffe-check = "default-sphinx-build -b rediraffecheckdiff"
 lint = "python -m doc8 --extension .rst docs"
-build = ["clean", "lint", "html", "spelling", "rediraffe-check"]
+build = ["clean", "lint", "globlint", "html", "spelling", "rediraffe-check"]
+
+# We've found that .. toctree:: with :glob: can be a foot gun in some scenarios. Let's not use it!
+globlint = """
+! grep -R -C3 ':glob:' ./docs/ \
+        --exclude=$(basename ./docs/generate_example_script_pages.py) \
+        --exclude-dir=$(basename ./docs/exploration_tool/example_scripts) \
+    || (echo 'Using ":glob:" is not allowed. Specify each child document explicitly'; false)
+"""
+
 fullbuild = ["build", "linkcheck"]
 
 [tool.hatch.envs.docs.overrides]
@@ -173,6 +182,7 @@ platform.windows.scripts = [
     # Remove directory recursively (/s) & without prompt (/s).
     # The "|| echo ..." is both friendly and supresses a non-zero exit code if "docs/_build" was missing
     'clean=rmdir /s /q "docs\_build" || echo Could not find "docs\_build" and that is OK!',
+    'globlint=echo Skipping "globlint" on Windows: CI will take care of it!',
 ]
 
 [tool.hatch.envs.hatch-static-analysis]

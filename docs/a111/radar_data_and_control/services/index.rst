@@ -24,7 +24,6 @@ The Acconeer A111 sensor can be used in different modes depending on use case. T
 
 .. toctree::
    :maxdepth: 1
-   :glob:
 
    pb
    envelope

@@ -7,6 +7,7 @@ This section provides insight into some more in-depth topics.
 
 .. toctree::
    :maxdepth: 1
-   :glob:
 
-   *
+   control
+   csm
+   loopback

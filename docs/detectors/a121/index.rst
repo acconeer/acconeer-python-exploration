@@ -13,6 +13,7 @@ Detectors
 
 .. toctree::
    :maxdepth: 1
-   :glob:
 
-   *
+   distance_detector
+   presence_detector
+   speed_detector

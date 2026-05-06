@@ -11,6 +11,12 @@ Examples
 
 .. toctree::
    :maxdepth: 1
-   :glob:
 
-   *
+   bilateration
+   cargo
+   hand_motion_detection
+   obstacle_detection
+   phase_tracking
+   surface_velocity
+   vibration
+   waste_level
