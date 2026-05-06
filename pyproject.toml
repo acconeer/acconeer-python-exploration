@@ -175,7 +175,7 @@ globlint = """
     || (echo 'Using ":glob:" is not allowed. Specify each child document explicitly'; false)
 """
 
-fullbuild = ["build", "linkcheck"]
+nightlybuild = ["build", "linkcheck"]
 
 [tool.hatch.envs.docs.overrides]
 platform.windows.scripts = [

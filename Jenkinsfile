@@ -145,7 +145,7 @@ try {
                         sh 'python3 -V'
                         hatchWrap 'build'
                         if (buildScope == BuildScope.NIGHTLY) {
-                            hatchWrap 'run docs:fullbuild'
+                            hatchWrap 'run docs:nightlybuild'
                         }
                         else
                         {
