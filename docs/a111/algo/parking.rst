@@ -101,7 +101,7 @@ leakage and without objects. Let
 
 .. math:: A_{\textrm{leak}} = \max\left(
               \min(x(d_{\textrm{leak sample}}), d_{\textrm{max leak}}) - d_{\textrm{BG}},
-	      0\right).
+              0\right).
 
 A leakage subtracted envelope :math:`y(d)` is calculated from the envelope data
 according to

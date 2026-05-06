@@ -156,6 +156,7 @@ default-sphinx-build = "python -m sphinx --fail-on-warning --jobs auto {args} do
 
 autobuild = [
     "clean",
+    "lint",
     "python -m sphinx_autobuild -b html docs docs/_build --watch src",
 ]
 html = "default-sphinx-build -b html"
@@ -163,7 +164,8 @@ linkcheck = "default-sphinx-build -b linkcheck"
 spelling = "default-sphinx-build -b spelling"
 rediraffe-write = "default-sphinx-build -b rediraffewritediff"
 rediraffe-check = "default-sphinx-build -b rediraffecheckdiff"
-build = ["clean", "html", "spelling", "rediraffe-check"]
+lint = "python -m doc8 --extension .rst docs"
+build = ["clean", "lint", "html", "spelling", "rediraffe-check"]
 fullbuild = ["build", "linkcheck"]
 
 [tool.hatch.envs.docs.overrides]
@@ -388,3 +390,8 @@ include = [
 
 [tool.check_copyright]
 docs_conf_file = "docs/conf.py"
+
+[tool.doc8]
+ignore = ["D001"] # D001 = Line Too Long
+ignore-path = ["docs/_build", "docs/exploration_tool/changelog.rst"]
+extensions = [".rst"]

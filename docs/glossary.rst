@@ -52,7 +52,7 @@ Glossary
 
          \text{SNR} &= \text{RLG} \sigma \gamma \frac{1}{d^{4}},
 
-	 \text{SNR}_{dB} &= 10 \log_{10} \left( \text{RLG} \sigma \gamma \frac{1}{d^{4}}, \right)
+         \text{SNR}_{dB} &= 10 \log_{10} \left( \text{RLG} \sigma \gamma \frac{1}{d^{4}}, \right)
 
       where
 
@@ -64,11 +64,11 @@ Glossary
       The signal-to-noise ration can also be expressed with the Radar Equation:
 
       .. math::
-	 :label: eq_snr_glossary_full
+         :label: eq_snr_glossary_full
 
-	 \text{SNR} &= \frac{P_{\verb|TX|} G_{\verb|TX|} G_{\verb|RX|} \lambda^2 \sigma \gamma}{(4 \pi)^3 d^4 k T_s B},
+         \text{SNR} &= \frac{P_{\verb|TX|} G_{\verb|TX|} G_{\verb|RX|} \lambda^2 \sigma \gamma}{(4 \pi)^3 d^4 k T_s B},
 
-	 \text{SNR}_{dB} &= 10 \log_{10} \left( \frac{P_{\verb|TX|} G_{\verb|TX|} G_{\verb|RX|} \lambda^2 \sigma \gamma}{(4 \pi)^3 d^4 k T_s B} \right),
+         \text{SNR}_{dB} &= 10 \log_{10} \left( \frac{P_{\verb|TX|} G_{\verb|TX|} G_{\verb|RX|} \lambda^2 \sigma \gamma}{(4 \pi)^3 d^4 k T_s B} \right),
 
       where
 
@@ -166,7 +166,7 @@ Glossary
 
    EBG
       Electromagnetic band-gap structures
-      
+
    FR-4
       Flame Retardant 4, is a standardized grade of glass-reinforced epoxy laminate material. It serves as the primary substrate for printed circuit boards (PCBs) due to its excellent strength-to-weight ratio, near-zero water absorption, and reliable electrical insulation properties across varying environmental conditions.
 
@@ -180,9 +180,9 @@ Glossary
          :label: eq_nearfieldistance
 
          R_{nearfield} < \frac{2A^{2}}{\lambda_{0}}
-      
+
       where :math:`A` is the largest dimension of either the sensor or the radar target, and :math:`\lambda_{0}` is the wavelength in free-space. In this region, the electromagnetic fields are not yet planar, and the waves from different parts of the aperture have not converged.
-      
+
 
    RF material
-      RF-material refers to specialized substrates—such as PTFE-based laminates or high-frequency ceramics—engineered specifically for high-speed and high-frequency applications. 
+      RF-material refers to specialized substrates—such as PTFE-based laminates or high-frequency ceramics—engineered specifically for high-speed and high-frequency applications.

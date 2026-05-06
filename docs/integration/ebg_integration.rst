@@ -2,7 +2,7 @@
 Electromagnetic band-gap (:term:`EBG`) structures guidelines
 ============================================================
 
-The radar :term:`far-field` performances can be degraded by side lobes, which represent unintentional sensitivity to directions outside the main beam. In fact, a reflection from a side lobe direction can produce a stronger response than from a weaker target in the main lobe direction. 
+The radar :term:`far-field` performances can be degraded by side lobes, which represent unintentional sensitivity to directions outside the main beam. In fact, a reflection from a side lobe direction can produce a stronger response than from a weaker target in the main lobe direction.
 Applications where this typically happens are level sensing in tanks, silos and cargo container measurements where sidewall corners close to the radar with low path loss can produce strong response in comparison to the target object.
 
 At millimeter-wave frequencies, side lobes are often caused by surface currents and surface waves in the PCB.

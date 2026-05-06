@@ -20,9 +20,9 @@ Some examples are meant to be edited directly and does not support *command line
 The majority of the examples can be run against our modules via a common set of command line arguments:
 
 .. tip::
-	If an example supports command line arguments, you can see them by running::
+   If an example supports command line arguments, you can see them by running::
 
-		python <some_example.py> --help
+        python <some_example.py> --help
 
 
 A121 Examples' Command Line Arguments
