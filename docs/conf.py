@@ -80,7 +80,12 @@ linkcheck_ignore = [
 
 # rediraffe
 rediraffe_redirects = "redirects.txt"
-rediraffe_branch = "origin/master"
+# "rediraffe_branch" is assumed to be used in a `git diff` command.
+# Current commit (HEAD) compared against the merge base of HEAD & origin/master, i.e.:
+# - If HEAD is ahead of origin/master, the merge base is origin/master
+# - If HEAD is on another "branch" than origin/master,
+#   this will be the most recent common commit (diverging point)
+rediraffe_branch = "origin/master...HEAD"
 rediraffe_auto_redirect_perc = 95
 
 # sphinx tabs
