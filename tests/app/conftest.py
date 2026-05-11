@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -15,9 +15,21 @@ from acconeer.exptool.a121.algo.sparse_iq._plugin import SPARSE_IQ_PLUGIN
 from acconeer.exptool.app.new._enums import PluginGeneration
 from acconeer.exptool.app.new.app_model import PluginSpec
 from acconeer.exptool.app.new.backend import Backend, ClosedTask, Message, Task
+from acconeer.exptool.app.new.storage import set_et_dir
 
 
 ALWAYS_RETURNS_NONE: t.Callable[[t.Any], None] = {}.get
+
+
+@pytest.fixture(autouse=True)
+def autouse_temporary_data_dir(tmp_path: Path) -> None:
+    # acconeer.exptool.app.new.storage manages global state that decides
+    # where app cache & temporary files are stored.
+    #   ET (more specifically the AppModel) will remove any temporary
+    # files on exit, which is a race condition if many instances of the
+    # ET are running in parallel AND use the same data dir.
+    #   So let's use different data dirs.
+    set_et_dir(tmp_path)
 
 
 class Tasks:
