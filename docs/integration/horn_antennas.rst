@@ -36,4 +36,6 @@ A radome or plastic cover can be placed after the horn antenna. The radome thick
 Custom designs
 --------------
 
-Customized horn antennas and waveguides can also be constructed where the size and shape is optimized to satisfy product requirements. Acconeer provides a design service for this, see `Acconeer design services <design_services>`_ for details.
+Customized horn antennas and waveguides can also be constructed where the size and shape is optimized to satisfy product requirements. Acconeer provides a design service for this, see `Acconeer design services <design_services_>`_ for details.
+
+.. _design_services: https://developer.acconeer.com/home/design-services/
