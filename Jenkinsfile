@@ -272,7 +272,7 @@ try {
                             echo "a121_inter_sweep_idle_state_current_limits_matches=${a121_inter_sweep_idle_state_current_limits_matches}"
                             echo "a121_memory_usage_yaml_matches=${a121_memory_usage_yaml_matches}"
 
-                            hatchWrap """test ${versionSelection} --parallel tests/ src/ \
+                            hatchWrap """test ${versionSelection} --parallel --cover tests/ src/ \
                                 --a121-exploration-server-paths ${a121_es_binaries.join(' ')} \
                                 --a111-exploration-server-paths ${a111_es_binaries.join(' ')} \
                                 --sensor-current-limits-path ${a121_sensor_current_limits_matches[0]} \

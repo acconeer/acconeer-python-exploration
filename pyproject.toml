@@ -378,11 +378,8 @@ markers = [
 ]
 
 [tool.coverage.report]
-# Non-existing files that PySide6 says exists
-omit = [
-    "shibokensupport/*",
-    "signature_bootstrap.py",
-]
+include = [ "src/*", "user_tools/*", "examples/*" ]
+skip_covered = true
 
 [tool.check_line_length]
 line_length = 80
