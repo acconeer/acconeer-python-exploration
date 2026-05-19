@@ -87,6 +87,17 @@ Python related
 
    Then you can try installing that version (``pip install acconeer-exptool==<the ET version that created the h5-file>``) and replaying the file.
 
+#) Exploration Tool fail to connect to the SparkFun XM125 board on macOS**
+
+The SparkFun board does not work reliably with the USB-to-UART driver included in macOS.
+To make it work, download and install the driver from `WCH <https://www.wch-ic.com/downloads/CH34XSER_MAC_ZIP.html>`_ and reboot.
+A new ``/dev/cu.*`` device will appear after installation — use that one when connecting in the Exploration Tool,
+and remember to set the serial baud rate to 115200 (see question 3).
+
+Please note that macOS is not officially supported by the Exploration Tool.
+For supported operation and better performance, we recommend using the `XE125 <https://www.acconeer.com/products/>`_
+evaluation board on Windows 11 or Ubuntu 24.04.
+
 Sensor related
 --------------
 

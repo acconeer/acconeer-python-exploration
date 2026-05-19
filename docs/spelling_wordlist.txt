@@ -94,6 +94,7 @@ libusb
 loopback
 lowpass
 mA
+macOS
 Mbps
 merchantability
 microcontroller
@@ -172,6 +173,7 @@ trueness
 tx
 txt
 uA
+UART
 udev
 un
 unclearness
