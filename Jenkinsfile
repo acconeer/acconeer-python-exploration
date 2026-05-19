@@ -283,6 +283,9 @@ try {
                                 --test-devsite
                             """ // ^ Here connection tests against the devsite is run in sanity scope.
                             //       We might want to reduce the frequency in for tests in the future?
+
+                            hatchWrap "run test:coverage html --directory=htmlcov/"
+                            archiveArtifacts artifacts: 'htmlcov/', allowEmptyArchive: false
                         }
                     }
                 }
