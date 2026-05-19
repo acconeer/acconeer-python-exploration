@@ -31,6 +31,6 @@ def test_error_popup(plugin_spec: plugin_loader.PluginSpec, tmp_path: Path) -> N
             "sh",
             "-x",
             "-c",
-            f"timeout 20 coverage run --parallel-mode -m acconeer.exptool.app.new {' '.join(et_opts)}",
+            f"timeout 20 coverage run --parallel-mode --concurrency=multiprocessing -m acconeer.exptool.app.new {' '.join(et_opts)}",
         ]
     )
