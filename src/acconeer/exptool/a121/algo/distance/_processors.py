@@ -28,6 +28,7 @@ from acconeer.exptool.a121.algo import (
 )
 
 from . import _thresholds as thresholds
+from ._views import RangeSweepConfig
 
 
 DEFAULT_SC_BG_NUM_STD_DEV = 6.0
@@ -237,25 +238,25 @@ class Processor(ProcessorBase[ProcessorResult]):
             self.range_subsweep_indexes = [self.CLOSE_RANGE_DIST_IDX]
         elif processor_config.measurement_type == MeasurementType.FAR_RANGE:
             self.range_subsweep_indexes = subsweep_indexes
-        self.range_subsweep_configs = self._get_subsweep_configs(
-            sensor_config, self.range_subsweep_indexes
-        )
-        self._validate_range_configs(self.range_subsweep_configs)
-
         self.sensor_config = sensor_config
         self.metadata = metadata
         self.processor_config = processor_config
         self.context = context
 
         self.processor_config.validate(self.sensor_config)
-        self.profile = self._get_profile(self.range_subsweep_configs)
-        self.step_length = self._get_step_length(self.range_subsweep_configs)
+        self.range_sweep_config = RangeSweepConfig.from_sensor_config(
+            self.sensor_config, self.range_subsweep_indexes
+        )
+        self.range_subsweep_configs = self.range_sweep_config.subsweep_configs
+        self.profile = self.range_sweep_config.profile
+        self.step_length = self.range_sweep_config.step_length
         self.approx_step_length_m = self.step_length * APPROX_BASE_STEP_LENGTH_M
-        self.start_point = self._get_start_point(self.range_subsweep_configs)
-        self.num_points = self._get_num_points(self.range_subsweep_configs)
-        self.distance_points = self.start_point + np.arange(self.num_points) * self.step_length
-        self.start_points = [c.start_point for c in self.range_subsweep_configs]
-        self.hwaas_per_subsweep = [c.hwaas for c in self.range_subsweep_configs]
+        self.start_point = self.range_sweep_config.start_point
+        self.num_points = self.range_sweep_config.num_points
+        self.distance_points = self.range_sweep_config.distance_points
+        self.start_points = self.range_sweep_config.start_points
+        self.hwaas_per_subsweep = self.range_sweep_config.hwaas_per_subsweep
+        self.subsweep_slices = self.range_sweep_config.subsweep_slices
 
         # Matched filter
         self.distance_filter = DistanceFilter(self.profile, self.start_point, self.step_length)
@@ -264,23 +265,14 @@ class Processor(ProcessorBase[ProcessorResult]):
         # Valid points after filtering
         self.start_point_cropped = self.start_point + self.filt_margin * self.step_length
         self.num_points_cropped = self.num_points - 2 * self.filt_margin
+        self.subsweep_slices_cropped = self.subsweep_slices.cropped(edge_margin=self.filt_margin)
 
-        self.subsweep_bpts = self._get_subsweep_breakpoints(
-            self.range_subsweep_configs, self.filt_margin
-        )
-        self.subsweep_slices_cropped = [
-            slice(
-                self.subsweep_bpts[idx] - self.filt_margin,
-                self.subsweep_bpts[idx + 1] - self.filt_margin,
-                1,
-            )
-            for idx in range(len(self.subsweep_bpts) - 1)
-        ]
-
+        # Distances in meter
         self.base_step_length_m = self.metadata.base_step_length_m
+        self.step_length_m = self.step_length * self.base_step_length_m
         self.distances_m = (
-            self.start_point_cropped + np.arange(self.num_points_cropped) * self.step_length
-        ) * self.base_step_length_m
+            self.base_step_length_m * self.distance_points[self.filt_margin : -self.filt_margin]
+        )
 
         self.processor_mode = processor_config.processor_mode
         self.threshold_method = processor_config.threshold_method
@@ -298,82 +290,6 @@ class Processor(ProcessorBase[ProcessorResult]):
             raise RuntimeError
 
     @classmethod
-    def _get_subsweep_configs(
-        cls, sensor_config: a121.SensorConfig, subsweep_indexes: list[int]
-    ) -> list[a121.SubsweepConfig]:
-        return [sensor_config.subsweeps[i] for i in subsweep_indexes]
-
-    @classmethod
-    def _get_profile(cls, subsweep_configs: list[a121.SubsweepConfig]) -> a121.Profile:
-        profiles = {c.profile for c in subsweep_configs}
-
-        if len(profiles) > 1:
-            raise ValueError
-
-        (profile,) = profiles
-        return profile
-
-    @classmethod
-    def _get_step_length(cls, subsweep_configs: list[a121.SubsweepConfig]) -> int:
-        step_lengths = {c.step_length for c in subsweep_configs}
-        if len(step_lengths) > 1:
-            raise ValueError
-        (step_length,) = step_lengths
-        return step_length
-
-    @classmethod
-    def _get_start_point(cls, subsweep_configs: list[a121.SubsweepConfig]) -> int:
-        return subsweep_configs[0].start_point
-
-    @classmethod
-    def _get_num_points(cls, subsweep_configs: list[a121.SubsweepConfig]) -> int:
-        return sum(c.num_points for c in subsweep_configs)
-
-    @classmethod
-    def _get_subsweep_breakpoints(
-        cls, subsweep_configs: list[a121.SubsweepConfig], filt_margin: int
-    ) -> list[int]:
-        """Calculate the subsweep breakpoints of the full sweep (including filter margins).
-
-        The breakpoints are calculated as the cumulative sum of the number of points in each
-        subsweep. Then, the breakpoints are formed by adding filt_margin to the front
-        of the list and subtracted from the last element in the list.
-        """
-
-        num_points_in_subsweeps = [
-            subsweep_config.num_points for subsweep_config in subsweep_configs
-        ]
-        bpts = [
-            sum(num_points_in_subsweeps[: idx + 1]) for idx in range(len(num_points_in_subsweeps))
-        ]
-        bpts.insert(0, filt_margin)
-        bpts[-1] -= filt_margin
-        return bpts
-
-    @classmethod
-    def _validate_range_configs(cls, subsweep_configs: list[a121.SubsweepConfig]) -> None:
-        cls._validate_range(subsweep_configs)
-
-        for c in subsweep_configs:
-            if not c.phase_enhancement:
-                raise ValueError
-
-    @classmethod
-    def _validate_range(cls, subsweep_configs: list[a121.SubsweepConfig]) -> None:
-        step_length = cls._get_step_length(subsweep_configs)
-
-        next_expected_start_point = None
-
-        for c in subsweep_configs:
-            if (
-                next_expected_start_point is not None
-                and c.start_point != next_expected_start_point
-            ):
-                raise ValueError
-
-            next_expected_start_point = c.start_point + c.num_points * step_length
-
-    @classmethod
     def _validate_close_config(
         cls, sensor_config: a121.SensorConfig, subsweep_indexes: list[int]
     ) -> None:
@@ -382,11 +298,9 @@ class Processor(ProcessorBase[ProcessorResult]):
         if subsweep_indexes != [cls.CLOSE_RANGE_LOOPBACK_IDX, cls.CLOSE_RANGE_DIST_IDX]:
             raise ValueError(ERROR_MSG)
 
-        subsweep_configs = cls._get_subsweep_configs(sensor_config, subsweep_indexes)
-
         if (
-            not subsweep_configs[cls.CLOSE_RANGE_LOOPBACK_IDX].enable_loopback
-            and subsweep_configs[cls.CLOSE_RANGE_DIST_IDX].enable_loopback
+            not sensor_config.subsweeps[cls.CLOSE_RANGE_LOOPBACK_IDX].enable_loopback
+            and sensor_config.subsweeps[cls.CLOSE_RANGE_DIST_IDX].enable_loopback
         ):
             raise ValueError(ERROR_MSG)
 
@@ -564,13 +478,9 @@ class Processor(ProcessorBase[ProcessorResult]):
 
             assert self.context.bg_noise_std is not None
             recorded_threshold_noise_std = []
-            for idx, tx_off_noise_std in enumerate(self.context.bg_noise_std):
-                # Subtract filt_margin from breakpoint to transform from full to cropped sweep
-                subsweep_slice = slice(
-                    self.subsweep_bpts[idx] - self.filt_margin,
-                    self.subsweep_bpts[idx + 1] - self.filt_margin,
-                    1,
-                )
+            for subsweep_slice, tx_off_noise_std in zip(
+                self.subsweep_slices_cropped, self.context.bg_noise_std
+            ):
                 # Clamp negative values to zero as the variable is in square root below.
                 sigma_square_diff = np.clip(
                     sc_bg_sweep_std[subsweep_slice] ** 2 - tx_off_noise_std**2,
