@@ -64,7 +64,7 @@ def update_processor_mode(
     return updated_specs
 
 
-def filter_close_range_spec(specs: list[ProcessorSpec]) -> list[ProcessorSpec]:
+def get_close_range_spec(specs: list[ProcessorSpec]) -> ProcessorSpec:
     NUM_CLOSE_RANGE_SPECS = 1
     close_range_specs = []
     for spec in specs:
@@ -74,4 +74,4 @@ def filter_close_range_spec(specs: list[ProcessorSpec]) -> list[ProcessorSpec]:
         msg = "Incorrect subsweep config for close range measurement"
         raise ValueError(msg)
 
-    return close_range_specs
+    return close_range_specs[0]

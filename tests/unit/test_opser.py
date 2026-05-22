@@ -243,8 +243,6 @@ DISTANCE_PROCESSOR_RESULT = distance.ProcessorResult(
     near_edge_status=choice([False, True]),
     recorded_threshold_mean_sweep=_array(np.float64),
     recorded_threshold_noise_std=_list(np.float64),
-    direct_leakage=_array(np.complex128),
-    phase_jitter_comp_reference=_array(np.float64),
     extra_result=distance_processors.ProcessorExtraResult(),
 )
 
@@ -706,7 +704,7 @@ class SessionConfig:
         return ""
 
     @classmethod
-    def from_json(cls, json_str: str) -> "SessionConfig":
+    def from_json(cls, json_str: str) -> SessionConfig:
         return cls()
 
 

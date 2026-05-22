@@ -44,7 +44,6 @@ class MeasurementType(AlgoParamEnum):
 
 class ProcessorMode(AlgoParamEnum):
     DISTANCE_ESTIMATION = enum.auto()
-    LEAKAGE_CALIBRATION = enum.auto()
     RECORDED_THRESHOLD_CALIBRATION = enum.auto()
 
 
@@ -134,12 +133,6 @@ class ProcessorResult:
     recorded_threshold_noise_std: Optional[list[np.float64]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    direct_leakage: Optional[npt.NDArray[np.complex128]] = attrs.field(
-        default=None, eq=attrs_optional_ndarray_isclose
-    )
-    phase_jitter_comp_reference: Optional[npt.NDArray[np.float64]] = attrs.field(
-        default=None, eq=attrs_optional_ndarray_isclose
-    )
     extra_result: ProcessorExtraResult = attrs.field(factory=ProcessorExtraResult)
 
 
@@ -221,10 +214,9 @@ class Processor(ProcessorBase[ProcessorResult]):
         if subsweep_indexes is None:
             subsweep_indexes = list(range(sensor_config.num_subsweeps))
 
-        if (
-            processor_config.measurement_type is MeasurementType.CLOSE_RANGE
-            and processor_config.processor_mode is not ProcessorMode.LEAKAGE_CALIBRATION
-        ) and (context.direct_leakage is None or context.phase_jitter_comp_ref is None):
+        if (processor_config.measurement_type is MeasurementType.CLOSE_RANGE) and (
+            context.direct_leakage is None or context.phase_jitter_comp_ref is None
+        ):
             msg = "Sufficient processor context not provided"
             raise ValueError(msg)
 
@@ -282,8 +274,6 @@ class Processor(ProcessorBase[ProcessorResult]):
 
         if self.processor_mode == ProcessorMode.DISTANCE_ESTIMATION:
             self._init_process_distance_estimation()
-        elif self.processor_mode == ProcessorMode.LEAKAGE_CALIBRATION:
-            pass
         elif self.processor_mode == ProcessorMode.RECORDED_THRESHOLD_CALIBRATION:
             self._init_recorded_threshold_calibration()
         else:
@@ -315,16 +305,10 @@ class Processor(ProcessorBase[ProcessorResult]):
             ):
                 lb_angle += self.PHASE_JITTER_RESTART_STD * self.num_stds_in_threshold
 
-            if self.processor_mode != ProcessorMode.LEAKAGE_CALIBRATION:
-                frame = self._apply_phase_jitter_compensation(self.context, frame, lb_angle)
+            frame = self._apply_phase_jitter_compensation(self.context, frame, lb_angle)
 
         if self.processor_mode == ProcessorMode.DISTANCE_ESTIMATION:
             return self._process_distance_estimation(frame, result.temperature)
-        elif self.processor_mode == ProcessorMode.LEAKAGE_CALIBRATION:
-            return ProcessorResult(
-                phase_jitter_comp_reference=lb_angle,
-                direct_leakage=frame,
-            )
         elif self.processor_mode == ProcessorMode.RECORDED_THRESHOLD_CALIBRATION:
             return self._process_recorded_threshold_calibration(frame)
 

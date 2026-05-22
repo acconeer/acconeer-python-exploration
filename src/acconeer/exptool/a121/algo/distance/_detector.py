@@ -653,15 +653,11 @@ class Detector(Controller[DetectorConfig, dict[int, DetectorResult]]):
 
                 if self.context.close_range_calibration is not None:
                     direct_leakage = self.context.close_range_calibration.direct_leakage(
-                        sensor_id,
-                        self.processor_specs,
-                        self.session_config,
+                        sensor_id, self.processor_specs
                     )
                     phase_jitter_comp_ref = (
                         self.context.close_range_calibration.phase_jitter_comp_reference(
-                            sensor_id,
-                            self.processor_specs,
-                            self.session_config,
+                            sensor_id, self.processor_specs
                         )
                     )
                 else:

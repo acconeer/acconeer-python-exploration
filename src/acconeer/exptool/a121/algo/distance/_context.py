@@ -22,11 +22,11 @@ from acconeer.exptool.a121.algo import (
 )
 
 from ._aggregator import Aggregator, AggregatorConfig, ProcessorSpec
-from ._processors import ProcessorContext, ProcessorMode, calculate_bg_noise_std
+from ._processors import Processor, ProcessorContext, ProcessorMode, calculate_bg_noise_std
 from ._utils import (
-    filter_close_range_spec,
     get_calibrate_noise_session_config,
     get_calibrate_offset_sensor_config,
+    get_close_range_spec,
     update_processor_mode,
 )
 
@@ -162,46 +162,31 @@ class CloseRangeCalibration:
         self,
         sensor_id: int,
         processor_specs: list[ProcessorSpec],
-        session_config: a121.SessionConfig,
     ) -> tuple[npt.NDArray[np.complex128], npt.NDArray[np.float64]]:
-        close_range_spec = filter_close_range_spec(processor_specs)
-        spec = update_processor_mode(close_range_spec, ProcessorMode.LEAKAGE_CALIBRATION)
+        close_range_spec = get_close_range_spec(processor_specs)
+        extended_result = self.results
+        result = extended_result[close_range_spec.group_index][sensor_id]
+        direct_leakage = result.subframes[Processor.CLOSE_RANGE_DIST_IDX]
+        phase_jitter_comp_reference = np.angle(
+            result.subframes[Processor.CLOSE_RANGE_LOOPBACK_IDX]
+        ).astype(float)
 
-        aggregator = Aggregator(
-            session_config=session_config,
-            extended_metadata=self.extended_metadata,
-            config=AggregatorConfig(),
-            specs=spec,
-            sensor_id=sensor_id,
-        )
-
-        aggregator_result = aggregator.process(extended_result=self.results)
-        (processor_result,) = aggregator_result.processor_results
-        assert processor_result.direct_leakage is not None
-        assert processor_result.phase_jitter_comp_reference is not None
-
-        return (processor_result.direct_leakage, processor_result.phase_jitter_comp_reference)
+        return (direct_leakage, phase_jitter_comp_reference)
 
     def direct_leakage(
         self,
         sensor_id: int,
         processor_specs: list[ProcessorSpec],
-        session_config: a121.SessionConfig,
     ) -> npt.NDArray[np.complex128]:
-        direct_leakage, _ = self._close_range_calibration(
-            sensor_id, processor_specs, session_config
-        )
+        direct_leakage, _ = self._close_range_calibration(sensor_id, processor_specs)
         return direct_leakage
 
     def phase_jitter_comp_reference(
         self,
         sensor_id: int,
         processor_specs: list[ProcessorSpec],
-        session_config: a121.SessionConfig,
     ) -> npt.NDArray[np.float64]:
-        _, phase_jitter_comp_reference = self._close_range_calibration(
-            sensor_id, processor_specs, session_config
-        )
+        _, phase_jitter_comp_reference = self._close_range_calibration(sensor_id, processor_specs)
         return phase_jitter_comp_reference
 
 
@@ -253,17 +238,11 @@ class RecordedThresholdCalibration:
                 recorded_threshold_mean_sweep=None,
                 recorded_threshold_noise_std=None,
                 bg_noise_std=bg_noise_std,
-                direct_leakage=close_range_calibration.direct_leakage(
-                    sensor_id,
-                    processor_specs,
-                    session_config,
-                )
+                direct_leakage=close_range_calibration.direct_leakage(sensor_id, processor_specs)
                 if close_range_calibration is not None
                 else None,
                 phase_jitter_comp_ref=close_range_calibration.phase_jitter_comp_reference(
-                    sensor_id,
-                    processor_specs,
-                    session_config,
+                    sensor_id, processor_specs
                 )
                 if close_range_calibration is not None
                 else None,
