@@ -85,18 +85,15 @@ class Aggregator:
         for spec, processor in zip(self.specs, self.processors):
             processor_result = processor.process(extended_result[spec.group_index][self.sensor_id])
             processors_result.append(processor_result)
-            if processor_result.estimated_distances is not None:
-                strengths = np.concatenate(
-                    (strengths, np.array(processor_result.estimated_strengths))
+            strengths = np.concatenate((strengths, np.array(processor_result.estimated_strengths)))
+            dists = np.concatenate((dists, np.array(processor_result.estimated_distances)))
+            profile_fwhms = np.concatenate(
+                (
+                    profile_fwhms,
+                    np.ones_like(np.array(processor_result.estimated_distances))
+                    * ENVELOPE_FWHM_M[processor.profile],
                 )
-                dists = np.concatenate((dists, np.array(processor_result.estimated_distances)))
-                profile_fwhms = np.concatenate(
-                    (
-                        profile_fwhms,
-                        np.ones_like(np.array(processor_result.estimated_distances))
-                        * ENVELOPE_FWHM_M[processor.profile],
-                    )
-                )
+            )
         # Remove first element as the FWHM of the subsweep with greater profile is used when
         # determining the distance for merging two peaks.
         if profile_fwhms.shape[0] != 0:

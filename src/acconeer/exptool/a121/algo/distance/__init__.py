@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from ._aggregator import (
@@ -22,7 +22,6 @@ from ._processors import (
     Processor,
     ProcessorConfig,
     ProcessorContext,
-    ProcessorMode,
     ProcessorResult,
     ReflectorShape,
     ThresholdMethod,

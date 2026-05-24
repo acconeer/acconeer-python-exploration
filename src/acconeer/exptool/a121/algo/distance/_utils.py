@@ -5,12 +5,10 @@ from __future__ import annotations
 
 import copy
 
-import attrs
-
 from acconeer.exptool import a121
 
 from ._aggregator import ProcessorSpec
-from ._processors import MeasurementType, ProcessorMode
+from ._processors import MeasurementType
 
 
 def get_calibrate_offset_sensor_config() -> a121.SensorConfig:
@@ -54,16 +52,6 @@ def get_calibrate_noise_session_config(
     return noise_session_config
 
 
-def update_processor_mode(
-    processor_specs: list[ProcessorSpec], processor_mode: ProcessorMode
-) -> list[ProcessorSpec]:
-    updated_specs = []
-    for spec in processor_specs:
-        new_processor_config = attrs.evolve(spec.processor_config, processor_mode=processor_mode)
-        updated_specs.append(attrs.evolve(spec, processor_config=new_processor_config))
-    return updated_specs
-
-
 def get_close_range_spec(specs: list[ProcessorSpec]) -> ProcessorSpec:
     NUM_CLOSE_RANGE_SPECS = 1
     close_range_specs = []
@@ -71,7 +59,7 @@ def get_close_range_spec(specs: list[ProcessorSpec]) -> ProcessorSpec:
         if spec.processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
             close_range_specs.append(spec)
     if len(close_range_specs) != NUM_CLOSE_RANGE_SPECS:
-        msg = "Incorrect subsweep config for close range measurement"
+        msg = "Incorrect session config for close-range measurement"
         raise ValueError(msg)
 
     return close_range_specs[0]

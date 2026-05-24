@@ -31,7 +31,6 @@ from . import _thresholds as thresholds
 from ._views import RangeSweepConfig
 
 
-DEFAULT_SC_BG_NUM_STD_DEV = 6.0
 DEFAULT_FIXED_AMPLITUDE_THRESHOLD_VALUE = 100.0
 DEFAULT_FIXED_STRENGTH_THRESHOLD_VALUE = 0.0
 DEFAULT_THRESHOLD_SENSITIVITY = 0.5
@@ -40,11 +39,6 @@ DEFAULT_THRESHOLD_SENSITIVITY = 0.5
 class MeasurementType(AlgoParamEnum):
     CLOSE_RANGE = enum.auto()
     FAR_RANGE = enum.auto()
-
-
-class ProcessorMode(AlgoParamEnum):
-    DISTANCE_ESTIMATION = enum.auto()
-    RECORDED_THRESHOLD_CALIBRATION = enum.auto()
 
 
 class ThresholdMethod(AlgoParamEnum):
@@ -62,9 +56,6 @@ class ThresholdMethod(AlgoParamEnum):
 
 @attrs.mutable(kw_only=True)
 class ProcessorConfig(AlgoProcessorConfigBase):
-    processor_mode: ProcessorMode = attrs.field(
-        default=ProcessorMode.DISTANCE_ESTIMATION, converter=ProcessorMode
-    )
     threshold_method: ThresholdMethod = attrs.field(
         default=ThresholdMethod.CFAR, converter=ThresholdMethod
     )
@@ -124,15 +115,9 @@ class ProcessorExtraResult:
 
 @attrs.frozen(kw_only=True)
 class ProcessorResult:
-    estimated_distances: Optional[list[float]] = attrs.field(default=None)
-    estimated_strengths: Optional[list[float]] = attrs.field(default=None)
-    near_edge_status: Optional[bool] = attrs.field(default=None)
-    recorded_threshold_mean_sweep: Optional[npt.NDArray[np.float64]] = attrs.field(
-        default=None, eq=attrs_optional_ndarray_isclose
-    )
-    recorded_threshold_noise_std: Optional[list[np.float64]] = attrs.field(
-        default=None, eq=attrs_optional_ndarray_isclose
-    )
+    estimated_distances: list[float] = attrs.field()
+    estimated_strengths: list[float] = attrs.field()
+    near_edge_status: bool = attrs.field()
     extra_result: ProcessorExtraResult = attrs.field(factory=ProcessorExtraResult)
 
 
@@ -266,18 +251,12 @@ class Processor(ProcessorBase[ProcessorResult]):
             self.base_step_length_m * self.distance_points[self.filt_margin : -self.filt_margin]
         )
 
-        self.processor_mode = processor_config.processor_mode
         self.threshold_method = processor_config.threshold_method
         self.num_stds_in_threshold = thresholds.sensitivity_to_standard_deviations(
             self.processor_config.threshold_sensitivity
         )
 
-        if self.processor_mode == ProcessorMode.DISTANCE_ESTIMATION:
-            self._init_process_distance_estimation()
-        elif self.processor_mode == ProcessorMode.RECORDED_THRESHOLD_CALIBRATION:
-            self._init_recorded_threshold_calibration()
-        else:
-            raise RuntimeError
+        self._init_process_distance_estimation()
 
     @classmethod
     def _validate_close_config(
@@ -299,20 +278,9 @@ class Processor(ProcessorBase[ProcessorResult]):
         frame = np.concatenate(range_subframes, axis=1)
         if self.processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
             lb_angle = np.angle(result.subframes[self.CLOSE_RANGE_LOOPBACK_IDX]).astype(float)
-            if (
-                self.processor_config.processor_mode
-                == ProcessorMode.RECORDED_THRESHOLD_CALIBRATION
-            ):
-                lb_angle += self.PHASE_JITTER_RESTART_STD * self.num_stds_in_threshold
-
             frame = self._apply_phase_jitter_compensation(self.context, frame, lb_angle)
 
-        if self.processor_mode == ProcessorMode.DISTANCE_ESTIMATION:
-            return self._process_distance_estimation(frame, result.temperature)
-        elif self.processor_mode == ProcessorMode.RECORDED_THRESHOLD_CALIBRATION:
-            return self._process_recorded_threshold_calibration(frame)
-
-        raise RuntimeError
+        return self._process_distance_estimation(frame, result.temperature)
 
     @staticmethod
     def _apply_phase_jitter_compensation(
@@ -434,56 +402,6 @@ class Processor(ProcessorBase[ProcessorResult]):
             estimated_strengths=estimated_strengths,
             near_edge_status=near_edge_status,
             extra_result=extra_result,
-        )
-
-    def _init_recorded_threshold_calibration(self) -> None:
-        self.bg_sc_mean = np.zeros(self.num_points_cropped)
-        self.bg_sc_sum_squared_bg_sweeps = np.zeros(self.num_points_cropped)
-        self.sc_bg_num_sweeps = 1.0
-
-    def _process_recorded_threshold_calibration(
-        self, frame: npt.NDArray[np.complex128]
-    ) -> ProcessorResult:
-        min_num_sweeps_in_valid_threshold = 2
-
-        abs_sweep = self.distance_filter.compute_envelope(frame)
-        self.bg_sc_mean += abs_sweep
-        self.bg_sc_sum_squared_bg_sweeps += np.square(abs_sweep)
-        mean_sweep = self.bg_sc_mean / self.sc_bg_num_sweeps
-        mean_square = self.bg_sc_sum_squared_bg_sweeps / self.sc_bg_num_sweeps
-        square_mean = np.square(mean_sweep)
-
-        if min_num_sweeps_in_valid_threshold <= self.sc_bg_num_sweeps:
-            sc_bg_sweep_std = np.sqrt(
-                np.abs(mean_square - square_mean)
-                * self.sc_bg_num_sweeps
-                / (self.sc_bg_num_sweeps - 1)
-            )
-
-            assert self.context.bg_noise_std is not None
-            recorded_threshold_noise_std = []
-            for subsweep_slice, tx_off_noise_std in zip(
-                self.subsweep_slices_cropped, self.context.bg_noise_std
-            ):
-                # Clamp negative values to zero as the variable is in square root below.
-                sigma_square_diff = np.clip(
-                    sc_bg_sweep_std[subsweep_slice] ** 2 - tx_off_noise_std**2,
-                    a_min=0,
-                    a_max=None,
-                )
-                recorded_threshold_noise_std.append(
-                    np.mean(np.sqrt(sigma_square_diff) / mean_sweep[subsweep_slice])
-                )
-        else:
-            recorded_threshold_noise_std = None
-
-        self.sc_bg_num_sweeps += 1
-
-        extra_result = ProcessorExtraResult(abs_sweep=abs_sweep)
-        return ProcessorResult(
-            extra_result=extra_result,
-            recorded_threshold_mean_sweep=mean_sweep,
-            recorded_threshold_noise_std=recorded_threshold_noise_std,
         )
 
     @staticmethod

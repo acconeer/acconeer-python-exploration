@@ -21,14 +21,21 @@ from acconeer.exptool.a121.algo import (
     calculate_loopback_peak_location,
 )
 
-from ._aggregator import Aggregator, AggregatorConfig, ProcessorSpec
-from ._processors import Processor, ProcessorContext, ProcessorMode, calculate_bg_noise_std
+from ._aggregator import ProcessorSpec
+from ._processors import (
+    DistanceFilter,
+    MeasurementType,
+    Processor,
+    ProcessorContext,
+    calculate_bg_noise_std,
+)
+from ._thresholds import sensitivity_to_standard_deviations
 from ._utils import (
     get_calibrate_noise_session_config,
     get_calibrate_offset_sensor_config,
     get_close_range_spec,
-    update_processor_mode,
 )
+from ._views import RangeSweepConfig
 
 
 @attrs.mutable(kw_only=True)
@@ -194,6 +201,11 @@ class CloseRangeCalibration:
 class RecordedThresholdCalibration:
     """Calibrates the parameters used when forming the recorded threshold."""
 
+    MIN_NUM_FRAMES_IN_VALID_THRESHOLD = 2
+
+    # Standard deviation of angle in direct leakage over multiple sensor restarts.
+    PHASE_JITTER_RESTART_STD = 0.05
+
     extended_metadata: list[dict[int, a121.Metadata]]
     results: list[list[dict[int, a121.Result]]]
 
@@ -204,6 +216,13 @@ class RecordedThresholdCalibration:
         session_config: a121.SessionConfig,
         num_frames_in_recorded_threshold: int,
     ) -> te.Self:
+        if num_frames_in_recorded_threshold < cls.MIN_NUM_FRAMES_IN_VALID_THRESHOLD:
+            msg = (
+                f"A minimum number of {cls.MIN_NUM_FRAMES_IN_VALID_THRESHOLD} frames is required "
+                f"for the recorded threshold calibration, got {num_frames_in_recorded_threshold}."
+            )
+            raise ValueError(msg)
+
         extended_metadata = client.setup_session(session_config)
         assert isinstance(extended_metadata, list)
 
@@ -218,39 +237,45 @@ class RecordedThresholdCalibration:
 
         return cls(extended_metadata=extended_metadata, results=recorded_threshold_result)
 
-    @staticmethod
-    def _add_context_to_processor_spec(
-        noise_calibration: NoiseCalibration,
-        close_range_calibration: Optional[CloseRangeCalibration],
+    def _get_frame_for_spec(
+        self,
+        close_range_calibration: CloseRangeCalibration,
+        extended_result: list[dict[int, a121.Result]],
         sensor_id: int,
         processor_specs: list[ProcessorSpec],
-        session_config: a121.SessionConfig,
-    ) -> list[ProcessorSpec]:
-        """
-        Create and add processor context to processor specification.
-        """
-
-        bg_noise_stds = noise_calibration.bg_noise_std(sensor_id, processor_specs, session_config)
-        updated_specs: list[ProcessorSpec] = []
-
-        for idx, (spec, bg_noise_std) in enumerate(zip(processor_specs, bg_noise_stds)):
-            processor_context = ProcessorContext(
-                recorded_threshold_mean_sweep=None,
-                recorded_threshold_noise_std=None,
-                bg_noise_std=bg_noise_std,
-                direct_leakage=close_range_calibration.direct_leakage(sensor_id, processor_specs)
-                if close_range_calibration is not None
-                else None,
-                phase_jitter_comp_ref=close_range_calibration.phase_jitter_comp_reference(
-                    sensor_id, processor_specs
-                )
-                if close_range_calibration is not None
-                else None,
-                reference_temperature=None,
-                loopback_peak_location_m=None,
+    ) -> npt.NDArray[np.complex128]:
+        close_range_spec = get_close_range_spec(processor_specs)
+        if close_range_spec.processor_config.measurement_type != MeasurementType.CLOSE_RANGE:
+            msg = (
+                "Recorded threshold calibration is only implemented for close-range measurements."
             )
-            updated_specs.append(attrs.evolve(spec, processor_context=processor_context))
-        return updated_specs
+            raise ValueError(msg)
+
+        if close_range_calibration is None:
+            msg = "Calibration data must be provided for close-range recorded threshold."
+            raise ValueError(msg)
+
+        result = extended_result[close_range_spec.group_index][sensor_id]
+
+        num_stds_in_threshold = sensitivity_to_standard_deviations(
+            close_range_spec.processor_config.threshold_sensitivity
+        )
+        lb_frame = result.subframes[Processor.CLOSE_RANGE_LOOPBACK_IDX]
+        lb_angle = np.angle(lb_frame).astype(float)
+        lb_angle += self.PHASE_JITTER_RESTART_STD * num_stds_in_threshold
+
+        context = ProcessorContext(
+            direct_leakage=close_range_calibration.direct_leakage(sensor_id, processor_specs),
+            phase_jitter_comp_ref=close_range_calibration.phase_jitter_comp_reference(
+                sensor_id, processor_specs
+            ),
+        )
+
+        return Processor._apply_phase_jitter_compensation(
+            context=context,
+            frame=result.subframes[Processor.CLOSE_RANGE_DIST_IDX],
+            lb_angle=lb_angle,
+        )
 
     def _recorded_threshold_calibration(
         self,
@@ -258,49 +283,76 @@ class RecordedThresholdCalibration:
         processor_specs: list[ProcessorSpec],
         session_config: a121.SessionConfig,
         noise_calibration: NoiseCalibration,
-        close_range_calibration: Optional[CloseRangeCalibration],
+        close_range_calibration: CloseRangeCalibration,
     ) -> tuple[
-        list[npt.NDArray[np.float64]],
-        list[list[np.float64]],
+        list[Optional[npt.NDArray[np.float64]]],
+        list[Optional[list[np.float64]]],
         int,
     ]:
-        specs_updated = update_processor_mode(
-            processor_specs, ProcessorMode.RECORDED_THRESHOLD_CALIBRATION
-        )
-
-        specs = self._add_context_to_processor_spec(
-            noise_calibration,
-            close_range_calibration,
-            sensor_id,
-            specs_updated,
-            session_config,
-        )
-
-        aggregator = Aggregator(
-            session_config=session_config,
-            extended_metadata=self.extended_metadata,
-            config=AggregatorConfig(),
-            specs=specs,
-            sensor_id=sensor_id,
-        )
-
-        for extended_result in self.results:
-            aggregator_result = aggregator.process(extended_result=extended_result)
-
         recorded_thresholds_mean_sweep = []
         recorded_thresholds_noise_std = []
-        for processor_result in aggregator_result.processor_results:
-            # Since we know what mode the processor is running in
-            assert processor_result.recorded_threshold_mean_sweep is not None
-            assert processor_result.recorded_threshold_noise_std is not None
 
-            recorded_thresholds_mean_sweep.append(processor_result.recorded_threshold_mean_sweep)
-            recorded_thresholds_noise_std.append(processor_result.recorded_threshold_noise_std)
+        bg_noise_std_per_spec = noise_calibration.bg_noise_std(
+            sensor_id, processor_specs, session_config
+        )
+        for spec, bg_noise_std in zip(processor_specs, bg_noise_std_per_spec):
+            # Recorded threshold calibration is only implemented for close-range measurements
+            if spec.processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
+                range_sweep_config = RangeSweepConfig.from_sensor_config(
+                    sensor_config=session_config.groups[spec.group_index][sensor_id],
+                    subsweep_indexes=[Processor.CLOSE_RANGE_DIST_IDX],
+                )
+                profile = range_sweep_config.profile
+                start_point = range_sweep_config.start_point
+                step_length = range_sweep_config.step_length
+                distance_filter = DistanceFilter(profile, start_point, step_length)
+
+                frames = [
+                    self._get_frame_for_spec(
+                        close_range_calibration,
+                        extended_result,
+                        sensor_id,
+                        processor_specs,
+                    )
+                    for extended_result in self.results
+                ]
+                abs_sweeps = np.stack(
+                    [distance_filter.compute_envelope(frame) for frame in frames]
+                )
+                rec_sweeps_mean = abs_sweeps.mean(axis=0)
+
+                bessel_factor = len(abs_sweeps) / (len(abs_sweeps) - 1)
+                mean_square = np.square(abs_sweeps).mean(axis=0)
+                square_mean = np.square(abs_sweeps.mean(axis=0))
+                bg_sc_sweep_std = np.sqrt(bessel_factor * np.abs(mean_square - square_mean))
+
+                assert bg_noise_std is not None
+                rec_noise_std = []
+                subsweep_slices_cropped = range_sweep_config.subsweep_slices.cropped(
+                    edge_margin=distance_filter.margin
+                )
+                for subsweep_slice, tx_off_noise_std in zip(subsweep_slices_cropped, bg_noise_std):
+                    # Clamp negative values to zero as the variable is in square root below
+                    sigma_square_diff = np.clip(
+                        bg_sc_sweep_std[subsweep_slice] ** 2 - tx_off_noise_std**2,
+                        a_min=0,
+                        a_max=None,
+                    )
+                    rec_noise_std.append(
+                        np.mean(np.sqrt(sigma_square_diff) / rec_sweeps_mean[subsweep_slice])
+                    )
+
+            else:
+                rec_sweeps_mean = None
+                rec_noise_std = None
+
+            recorded_thresholds_mean_sweep.append(rec_sweeps_mean)
+            recorded_thresholds_noise_std.append(rec_noise_std)
 
         return (
             recorded_thresholds_mean_sweep,
             recorded_thresholds_noise_std,
-            extended_result[0][sensor_id].temperature,
+            self.results[-1][0][sensor_id].temperature,
         )
 
     def recorded_thresholds_mean_sweep(
@@ -309,8 +361,8 @@ class RecordedThresholdCalibration:
         processor_specs: list[ProcessorSpec],
         session_config: a121.SessionConfig,
         noise_calibration: NoiseCalibration,
-        close_range_calibration: Optional[CloseRangeCalibration],
-    ) -> list[npt.NDArray[np.float64]]:
+        close_range_calibration: CloseRangeCalibration,
+    ) -> list[Optional[npt.NDArray[np.float64]]]:
         mean_sweep, _, _ = self._recorded_threshold_calibration(
             sensor_id,
             processor_specs,
@@ -326,8 +378,8 @@ class RecordedThresholdCalibration:
         processor_specs: list[ProcessorSpec],
         session_config: a121.SessionConfig,
         noise_calibration: NoiseCalibration,
-        close_range_calibration: Optional[CloseRangeCalibration],
-    ) -> list[list[np.float64]]:
+        close_range_calibration: CloseRangeCalibration,
+    ) -> list[Optional[list[np.float64]]]:
         _, noise_std, _ = self._recorded_threshold_calibration(
             sensor_id,
             processor_specs,
@@ -343,7 +395,7 @@ class RecordedThresholdCalibration:
         processor_specs: list[ProcessorSpec],
         session_config: a121.SessionConfig,
         noise_calibration: NoiseCalibration,
-        close_range_calibration: Optional[CloseRangeCalibration],
+        close_range_calibration: CloseRangeCalibration,
     ) -> int:
         _, _, ref_temp = self._recorded_threshold_calibration(
             sensor_id,
@@ -756,7 +808,6 @@ class _SingleSensorContext_v0(AlgoBase):
     reference_temperature: Optional[int] = attrs.field(default=None)
     sensor_calibration: Optional[a121.SensorCalibration] = attrs.field(default=None)
     extra_context: _SingleSensorExtraContext_v0 = attrs.field(factory=_SingleSensorExtraContext_v0)
-    # TODO: Make recorded_thresholds Optional[list[Optional[npt.NDArray[np.float64]]]]
 
     def to_h5(self, group: h5py.Group) -> None:
         for k, v in attrs.asdict(self, recurse=False).items():

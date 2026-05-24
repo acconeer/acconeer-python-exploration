@@ -356,10 +356,6 @@ class Detector(Controller[DetectorConfig, dict[int, DetectorResult]]):
             self.context.close_range_calibration = CloseRangeCalibration.create(
                 self.client, self.session_config
             )
-
-        if self._has_close_range_measurement(self.config) or self._has_recorded_threshold_mode(
-            self.config, self.sensor_ids
-        ):
             self.context.recorded_threshold_calibration = RecordedThresholdCalibration.create(
                 self.client, self.session_config, self.config.num_frames_in_recorded_threshold
             )
@@ -451,18 +447,6 @@ class Detector(Controller[DetectorConfig, dict[int, DetectorResult]]):
         )
         return MeasurementType.CLOSE_RANGE in [
             spec.processor_config.measurement_type for spec in specs
-        ]
-
-    @classmethod
-    def _has_recorded_threshold_mode(cls, config: DetectorConfig, sensor_ids: list[int]) -> bool:
-        processor_specs = detector_config_to_processor_specs(
-            config=config,
-            sensor_ids=sensor_ids,
-            # num_far_subsweeps hardcoded as it does not impact the threshold method.
-            num_far_subsweeps=4,
-        )
-        return ThresholdMethod.RECORDED in [
-            spec.processor_config.threshold_method for spec in processor_specs
         ]
 
     def start(
@@ -618,13 +602,15 @@ class Detector(Controller[DetectorConfig, dict[int, DetectorResult]]):
             updated_specs: list[ProcessorSpec] = []
 
             if self.context.recorded_threshold_calibration is not None:
+                close_range_calibration = self.context.close_range_calibration
+                assert close_range_calibration is not None
                 recorded_thresholds_mean_sweep = (
                     self.context.recorded_threshold_calibration.recorded_thresholds_mean_sweep(
                         sensor_id,
                         self.processor_specs,
                         self.session_config,
                         self.context.noise_calibration,
-                        self.context.close_range_calibration,
+                        close_range_calibration,
                     )
                 )
                 recorded_thresholds_noise_std = (
@@ -633,7 +619,7 @@ class Detector(Controller[DetectorConfig, dict[int, DetectorResult]]):
                         self.processor_specs,
                         self.session_config,
                         self.context.noise_calibration,
-                        self.context.close_range_calibration,
+                        close_range_calibration,
                     )
                 )
             else:
@@ -641,17 +627,21 @@ class Detector(Controller[DetectorConfig, dict[int, DetectorResult]]):
                 recorded_thresholds_noise_std = None
 
             for idx, (spec, bg_noise_std) in enumerate(zip(self.processor_specs, bg_noise_stds)):
-                if (
-                    recorded_thresholds_mean_sweep is not None
-                    and recorded_thresholds_noise_std is not None
-                ):
-                    recorded_threshold_mean_sweep = recorded_thresholds_mean_sweep[idx]
-                    recorded_threshold_noise_std = recorded_thresholds_noise_std[idx]
-                else:
-                    recorded_threshold_mean_sweep = None
-                    recorded_threshold_noise_std = None
+                loopback_peak_location_m = None
+                recorded_threshold_mean_sweep = None
+                recorded_threshold_noise_std = None
+                direct_leakage = None
+                phase_jitter_comp_ref = None
+                reference_temperature = None
 
-                if self.context.close_range_calibration is not None:
+                if self.context.offset_calibration is not None:
+                    loopback_peak_location_m = (
+                        self.context.offset_calibration.loopback_peak_location_m(sensor_id)
+                    )
+
+                if spec.processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
+                    assert self.context.close_range_calibration is not None
+
                     direct_leakage = self.context.close_range_calibration.direct_leakage(
                         sensor_id, self.processor_specs
                     )
@@ -660,29 +650,25 @@ class Detector(Controller[DetectorConfig, dict[int, DetectorResult]]):
                             sensor_id, self.processor_specs
                         )
                     )
-                else:
-                    direct_leakage = None
-                    phase_jitter_comp_ref = None
 
-                if self.context.offset_calibration is not None:
-                    loopback_peak_location_m = (
-                        self.context.offset_calibration.loopback_peak_location_m(sensor_id)
-                    )
-                else:
-                    loopback_peak_location_m = None
+                    # Recorded threshold calibration is only implemented for CLOSE_RANGE measurements
+                    if (
+                        recorded_thresholds_mean_sweep is not None
+                        and recorded_thresholds_noise_std is not None
+                    ):
+                        recorded_threshold_mean_sweep = recorded_thresholds_mean_sweep[idx]
+                        recorded_threshold_noise_std = recorded_thresholds_noise_std[idx]
 
-                if self.context.recorded_threshold_calibration is not None:
-                    reference_temperature = (
-                        self.context.recorded_threshold_calibration.reference_temperature(
-                            sensor_id,
-                            self.processor_specs,
-                            self.session_config,
-                            self.context.noise_calibration,
-                            self.context.close_range_calibration,
+                    if self.context.recorded_threshold_calibration is not None:
+                        reference_temperature = (
+                            self.context.recorded_threshold_calibration.reference_temperature(
+                                sensor_id,
+                                self.processor_specs,
+                                self.session_config,
+                                self.context.noise_calibration,
+                                self.context.close_range_calibration,
+                            )
                         )
-                    )
-                else:
-                    reference_temperature = None
 
                 processor_context = ProcessorContext(
                     recorded_threshold_mean_sweep=recorded_threshold_mean_sweep,

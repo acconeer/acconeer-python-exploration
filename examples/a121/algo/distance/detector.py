@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ import pyqtgraph as pg
 
 import acconeer.exptool as et
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo.distance import Detector, DetectorConfig, ThresholdMethod
+from acconeer.exptool.a121.algo.distance import Detector, DetectorConfig
 
 
 SENSOR_ID = 1
@@ -28,7 +28,6 @@ def main():
         end_m=2.0,
         max_profile=a121.Profile.PROFILE_3,
         max_step_length=12,
-        threshold_method=ThresholdMethod.RECORDED,
     )
     detector = Detector(client=client, sensor_ids=[SENSOR_ID], detector_config=detector_config)
 

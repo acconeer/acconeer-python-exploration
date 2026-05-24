@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -15,7 +15,6 @@ from acconeer.exptool.a121.algo.distance import (
     Processor,
     ProcessorConfig,
     ProcessorContext,
-    ProcessorMode,
     ThresholdMethod,
     calculate_bg_noise_std,
 )
@@ -64,7 +63,6 @@ def main():
         bg_noise_std=stds,
     )
     distance_config = ProcessorConfig(
-        processor_mode=ProcessorMode.DISTANCE_ESTIMATION,
         threshold_method=ThresholdMethod.CFAR,
         threshold_sensitivity=0.8,
     )
@@ -118,7 +116,7 @@ class PGUpdater:
             brush = et.utils.pg_brush_cycler(i)
             symbol_kw = dict(symbol="o", symbolSize=1, symbolBrush=brush, symbolPen="k")
             feat_kw = dict(pen=pen, **symbol_kw)
-            self.curves[legend] = self.sweep_plot.plot(**feat_kw, name=legends[i])
+            self.curves[legend] = self.sweep_plot.plot(**feat_kw, name=legend)
 
         self.smooth_max = et.utils.SmoothMax()
 

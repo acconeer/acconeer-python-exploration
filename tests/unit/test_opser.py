@@ -241,8 +241,6 @@ DISTANCE_PROCESSOR_RESULT = distance.ProcessorResult(
     estimated_distances=_list(float),
     estimated_strengths=_list(float),
     near_edge_status=choice([False, True]),
-    recorded_threshold_mean_sweep=_array(np.float64),
-    recorded_threshold_noise_std=_list(np.float64),
     extra_result=distance_processors.ProcessorExtraResult(),
 )
 
@@ -272,7 +270,11 @@ DISTANCE = [
         loopback_peak_location_m=5.0,
     ),
     DISTANCE_PROCESSOR_RESULT,
-    distance.ProcessorResult(),
+    distance.ProcessorResult(
+        estimated_distances=[],
+        estimated_strengths=[],
+        near_edge_status=False,
+    ),
 ]
 
 
