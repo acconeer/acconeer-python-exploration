@@ -11,7 +11,7 @@ import pytest
 import acconeer.exptool.testing
 
 
-PYTEST_XDIST_MAX_NUM_PROCESSES = 8
+PYTEST_XDIST_MAX_NUM_PROCESSES = 4
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 
