@@ -18,6 +18,8 @@ from ._detector import (
     _DetectorConfig_v0,
 )
 from ._processors import (
+    CloseRangeProcessor,
+    FarRangeProcessor,
     MeasurementType,
     Processor,
     ProcessorConfig,

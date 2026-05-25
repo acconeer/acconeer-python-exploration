@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import enum
+from abc import abstractmethod
 from typing import Optional
 
 import attrs
@@ -17,7 +18,7 @@ from acconeer.exptool.a121.algo import (
     APPROX_BASE_STEP_LENGTH_M,
     AlgoParamEnum,
     AlgoProcessorConfigBase,
-    ProcessorBase,
+    GenericProcessorBase,
     ReflectorShape,
     _convert_multiple_amplitudes_to_strengths,
     find_peaks,
@@ -165,8 +166,8 @@ class DistanceFilter:
         raise ValueError(msg)
 
 
-class Processor(ProcessorBase[ProcessorResult]):
-    """Distance processor
+class DistanceProcessorBase(GenericProcessorBase[a121.Result, ProcessorResult]):
+    """Distance processor base class. Contains logic common for both close-range and far-range processing.
 
     For all used subsweeps, the ``profile`` and ``step_length`` must be the same.
 
@@ -178,53 +179,28 @@ class Processor(ProcessorBase[ProcessorResult]):
     :param context: Context
     """
 
-    # Standard deviation of angle in direct leakage over multiple sensor restarts.
-    PHASE_JITTER_RESTART_STD = 0.05
-
-    CLOSE_RANGE_LOOPBACK_IDX = 0
-    CLOSE_RANGE_DIST_IDX = 1
-
     def __init__(
         self,
         *,
         sensor_config: a121.SensorConfig,
         metadata: a121.Metadata,
         processor_config: ProcessorConfig,
-        subsweep_indexes: Optional[list[int]] = None,
-        context: Optional[ProcessorContext] = None,
+        subsweep_indexes: list[int],
+        context: ProcessorContext,
     ) -> None:
-        if context is None:
-            context = ProcessorContext()
-
-        if subsweep_indexes is None:
-            subsweep_indexes = list(range(sensor_config.num_subsweeps))
-
-        if (processor_config.measurement_type is MeasurementType.CLOSE_RANGE) and (
-            context.direct_leakage is None or context.phase_jitter_comp_ref is None
-        ):
-            msg = "Sufficient processor context not provided"
-            raise ValueError(msg)
-
-        # range_subsweep_indexes holds the subsweep indexes corresponding to range measurements.
-        # - Far range - all subsweeps are range measurements.
-        # - Close range - The first subsweep is used for phase jitter compensation and the while
-        #   the second is a range measurement. The location of each is indicated by
-        #   CLOSE_RANGE_LOOPBACK_IDX and CLOSE_RANGE_DIST_IDX.
-        if processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
-            self._validate_close_config(sensor_config, subsweep_indexes)
-            self.range_subsweep_indexes = [self.CLOSE_RANGE_DIST_IDX]
-        elif processor_config.measurement_type == MeasurementType.FAR_RANGE:
-            self.range_subsweep_indexes = subsweep_indexes
         self.sensor_config = sensor_config
         self.metadata = metadata
         self.processor_config = processor_config
+        self.range_subsweep_indexes = subsweep_indexes
         self.context = context
 
         self.processor_config.validate(self.sensor_config)
+
+        # Range sweep parameters
         self.range_sweep_config = RangeSweepConfig.from_sensor_config(
             self.sensor_config, self.range_subsweep_indexes
         )
-        self.range_subsweep_configs = self.range_sweep_config.subsweep_configs
+        self.subsweep_configs = self.range_sweep_config.subsweep_configs
         self.profile = self.range_sweep_config.profile
         self.step_length = self.range_sweep_config.step_length
         self.approx_step_length_m = self.step_length * APPROX_BASE_STEP_LENGTH_M
@@ -251,56 +227,14 @@ class Processor(ProcessorBase[ProcessorResult]):
             self.base_step_length_m * self.distance_points[self.filt_margin : -self.filt_margin]
         )
 
-        self.threshold_method = processor_config.threshold_method
-        self.num_stds_in_threshold = thresholds.sensitivity_to_standard_deviations(
-            self.processor_config.threshold_sensitivity
+        # Distance offset calculation
+        self.offset_m = get_distance_offset(
+            self.context.loopback_peak_location_m, self.profile, self.context.reference_temperature
         )
 
-        self._init_process_distance_estimation()
-
-    @classmethod
-    def _validate_close_config(
-        cls, sensor_config: a121.SensorConfig, subsweep_indexes: list[int]
-    ) -> None:
-        ERROR_MSG = "Incorrect subsweep config for close range measurement"
-
-        if subsweep_indexes != [cls.CLOSE_RANGE_LOOPBACK_IDX, cls.CLOSE_RANGE_DIST_IDX]:
-            raise ValueError(ERROR_MSG)
-
-        if (
-            not sensor_config.subsweeps[cls.CLOSE_RANGE_LOOPBACK_IDX].enable_loopback
-            and sensor_config.subsweeps[cls.CLOSE_RANGE_DIST_IDX].enable_loopback
-        ):
-            raise ValueError(ERROR_MSG)
-
-    def process(self, result: a121.Result) -> ProcessorResult:
-        range_subframes = [result.subframes[i] for i in self.range_subsweep_indexes]
-        frame = np.concatenate(range_subframes, axis=1)
-        if self.processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
-            lb_angle = np.angle(result.subframes[self.CLOSE_RANGE_LOOPBACK_IDX]).astype(float)
-            frame = self._apply_phase_jitter_compensation(self.context, frame, lb_angle)
-
-        return self._process_distance_estimation(frame, result.temperature)
-
-    @staticmethod
-    def _apply_phase_jitter_compensation(
-        context: ProcessorContext,
-        frame: npt.NDArray[np.complex128],
-        lb_angle: npt.NDArray[np.float64],
-    ) -> npt.NDArray[np.complex128]:
-        if context.direct_leakage is None or context.phase_jitter_comp_ref is None:
-            msg = "Sufficient context not provided"
-            raise ValueError(msg)
-
-        adjusted_leakage = context.direct_leakage * np.exp(
-            -1j * (context.phase_jitter_comp_ref - lb_angle)
-        )
-
-        return frame - adjusted_leakage  # type: ignore[no-any-return]
-
-    def _init_process_distance_estimation(self) -> None:
+        # Threshold initialization
         self.threshold: thresholds.Threshold
-
+        self.threshold_method = processor_config.threshold_method
         if self.threshold_method == ThresholdMethod.RECORDED:
             if (
                 self.context.recorded_threshold_mean_sweep is None
@@ -351,16 +285,15 @@ class Processor(ProcessorBase[ProcessorResult]):
                 step_length=self.step_length,
                 subsweep_slices_cropped=self.subsweep_slices_cropped,
             )
+        else:
+            msg = f"Invalid threshold method {self.threshold_method}. Valid options: {[tm for tm in ThresholdMethod]}."
+            raise ValueError(msg)
 
-        self.offset_m = get_distance_offset(
-            self.context.loopback_peak_location_m, self.profile, self.context.reference_temperature
-        )
-
-    def _process_distance_estimation(
-        self, frame: npt.NDArray[np.complex128], temperature: int
-    ) -> ProcessorResult:
-        abs_sweep = self.distance_filter.compute_envelope(frame)
-        threshold_values = self.threshold.compute(abs_sweep, temperature)
+    def process(self, result: a121.Result) -> ProcessorResult:
+        frame = self._prepare_frame_for_distance_estimation(result)
+        sweep = frame.mean(axis=0)
+        abs_sweep = self.distance_filter.compute_envelope(sweep)
+        threshold_values = self.threshold.compute(abs_sweep, result.temperature)
         found_peaks_idx = find_peaks(abs_sweep, threshold_values)
         estimated_distances, estimated_amplitudes = interpolate_peaks(
             abs_sweep,
@@ -388,7 +321,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         estimated_strengths = _convert_multiple_amplitudes_to_strengths(
             estimated_amplitudes,
             estimated_distances,
-            self.range_subsweep_configs,
+            self.subsweep_configs,
             self.context.bg_noise_std,  # type: ignore[arg-type]
             self.processor_config.reflector_shape,
         )
@@ -403,6 +336,12 @@ class Processor(ProcessorBase[ProcessorResult]):
             near_edge_status=near_edge_status,
             extra_result=extra_result,
         )
+
+    @abstractmethod
+    def _prepare_frame_for_distance_estimation(
+        self, result: a121.Result
+    ) -> npt.NDArray[np.complex128]:
+        raise NotImplementedError
 
     @staticmethod
     def _detect_close_object(
@@ -423,6 +362,145 @@ class Processor(ProcessorBase[ProcessorResult]):
             np.sum(abs_sweep[0:3]) >= np.sum(abs_sweep[3:6])
             and abs_sweep[0] >= threshold_values[0]
         )
+
+
+class FarRangeProcessor(DistanceProcessorBase):
+    """Distance processor for far-range measurements."""
+
+    def _prepare_frame_for_distance_estimation(
+        self, result: a121.Result
+    ) -> npt.NDArray[np.complex128]:
+        range_subframes = [result.subframes[i] for i in self.range_subsweep_indexes]
+        return np.concatenate(range_subframes, axis=1)
+
+
+class CloseRangeProcessor(DistanceProcessorBase):
+    """Distance processor for close-range measurements."""
+
+    CLOSE_RANGE_GROUP_INDEX = 0  # Close-range measurement is always performed in group 0
+    LOOPBACK_SUBSWEEP_INDEX = 0  # Used for phase jitter compensation
+    DISTANCE_SUBSWEEP_INDEX = 1  # Range measurement, used for distance estimation
+
+    # Standard deviation of angle in direct leakage over multiple sensor restarts.
+    PHASE_JITTER_RESTART_STD = 0.05
+
+    @staticmethod
+    def apply_phase_jitter_compensation(
+        frame: npt.NDArray[np.complex128],
+        lb_angle: npt.NDArray[np.float64],
+        direct_leakage: npt.NDArray[np.complex128],
+        phase_jitter_comp_ref: npt.NDArray[np.float64],
+    ) -> npt.NDArray[np.complex128]:
+        """Apply phase jitter compensation (requires results of close-range calibration)."""
+        adjusted_leakage: npt.NDArray[np.complex128] = direct_leakage * np.exp(
+            -1j * (phase_jitter_comp_ref - lb_angle)
+        )
+        return frame - adjusted_leakage
+
+    @classmethod
+    def validate_sensor_config(cls, sensor_config: a121.SensorConfig) -> None:
+        if (
+            not sensor_config.subsweeps[cls.LOOPBACK_SUBSWEEP_INDEX].enable_loopback
+            or sensor_config.subsweeps[cls.DISTANCE_SUBSWEEP_INDEX].enable_loopback
+        ):
+            msg = (
+                "Invalid configuration for close-range measurement. Loopback must be enabled "
+                "for loopback subsweep and disabled for range subsweep."
+            )
+            raise ValueError(msg)
+
+    def __init__(
+        self,
+        *,
+        sensor_config: a121.SensorConfig,
+        metadata: a121.Metadata,
+        processor_config: ProcessorConfig,
+        context: ProcessorContext,
+    ) -> None:
+        self.validate_sensor_config(sensor_config)
+
+        if context.direct_leakage is None or context.phase_jitter_comp_ref is None:
+            msg = "Sufficient processor context not provided"
+            raise ValueError(msg)
+
+        super().__init__(
+            sensor_config=sensor_config,
+            metadata=metadata,
+            processor_config=processor_config,
+            subsweep_indexes=[self.DISTANCE_SUBSWEEP_INDEX],
+            context=context,
+        )
+
+    def _prepare_frame_for_distance_estimation(
+        self, result: a121.Result
+    ) -> npt.NDArray[np.complex128]:
+        lb_angle = np.angle(result.subframes[self.LOOPBACK_SUBSWEEP_INDEX]).astype(float)
+        frame = result.subframes[self.DISTANCE_SUBSWEEP_INDEX]
+        return self._apply_phase_jitter_compensation(frame, lb_angle)
+
+    def _apply_phase_jitter_compensation(
+        self,
+        frame: npt.NDArray[np.complex128],
+        lb_angle: npt.NDArray[np.float64],
+    ) -> npt.NDArray[np.complex128]:
+        assert self.context.direct_leakage is not None
+        assert self.context.phase_jitter_comp_ref is not None
+        return self.apply_phase_jitter_compensation(
+            frame, lb_angle, self.context.direct_leakage, self.context.phase_jitter_comp_ref
+        )
+
+
+def Processor(
+    *,
+    sensor_config: a121.SensorConfig,
+    metadata: a121.Metadata,
+    processor_config: ProcessorConfig,
+    subsweep_indexes: list[int] | None = None,
+    context: ProcessorContext | None = None,
+) -> DistanceProcessorBase:
+    """Factory for distance processors.
+
+    For all used subsweeps, the ``profile`` and ``step_length`` must be the same.
+
+    :param sensor_config: Sensor configuration
+    :param metadata: Metadata yielded by the sensor config
+    :param processor_config: Processor configuration
+    :param subsweep_indexes:
+        The subsweep indexes to be processed. If ``None``, all subsweeps will be used.
+        For close-range measurements, this parameter is ignored and a fixed scheme is used.
+    :param context: Context
+    """
+    if context is None:
+        context = ProcessorContext()
+
+    # Determine whether to instantiate CloseRangeProcessor or FarRangeProcessor
+    if processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
+        return CloseRangeProcessor(
+            sensor_config=sensor_config,
+            metadata=metadata,
+            processor_config=processor_config,
+            context=context,
+        )
+
+    elif processor_config.measurement_type == MeasurementType.FAR_RANGE:
+        if subsweep_indexes is None:
+            # Use all subsweeps
+            subsweep_indexes = list(range(sensor_config.num_subsweeps))
+
+        return FarRangeProcessor(
+            sensor_config=sensor_config,
+            metadata=metadata,
+            processor_config=processor_config,
+            subsweep_indexes=subsweep_indexes,
+            context=context,
+        )
+
+    else:
+        msg = (
+            f"Invalid measurement type {processor_config.measurement_type}."
+            f"Valid options: {[mt.name for mt in MeasurementType]}."
+        )
+        raise ValueError(msg)
 
 
 def calculate_bg_noise_std(

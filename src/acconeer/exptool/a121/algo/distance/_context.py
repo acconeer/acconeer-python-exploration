@@ -23,17 +23,15 @@ from acconeer.exptool.a121.algo import (
 
 from ._aggregator import ProcessorSpec
 from ._processors import (
+    CloseRangeProcessor,
     DistanceFilter,
     MeasurementType,
-    Processor,
-    ProcessorContext,
     calculate_bg_noise_std,
 )
 from ._thresholds import sensitivity_to_standard_deviations
 from ._utils import (
     get_calibrate_noise_session_config,
     get_calibrate_offset_sensor_config,
-    get_close_range_spec,
 )
 from ._views import RangeSweepConfig
 
@@ -166,34 +164,23 @@ class CloseRangeCalibration:
         )
 
     def _close_range_calibration(
-        self,
-        sensor_id: int,
-        processor_specs: list[ProcessorSpec],
+        self, sensor_id: int
     ) -> tuple[npt.NDArray[np.complex128], npt.NDArray[np.float64]]:
-        close_range_spec = get_close_range_spec(processor_specs)
         extended_result = self.results
-        result = extended_result[close_range_spec.group_index][sensor_id]
-        direct_leakage = result.subframes[Processor.CLOSE_RANGE_DIST_IDX]
+        result = extended_result[CloseRangeProcessor.CLOSE_RANGE_GROUP_INDEX][sensor_id]
+        direct_leakage = result.subframes[CloseRangeProcessor.DISTANCE_SUBSWEEP_INDEX]
         phase_jitter_comp_reference = np.angle(
-            result.subframes[Processor.CLOSE_RANGE_LOOPBACK_IDX]
+            result.subframes[CloseRangeProcessor.LOOPBACK_SUBSWEEP_INDEX]
         ).astype(float)
 
         return (direct_leakage, phase_jitter_comp_reference)
 
-    def direct_leakage(
-        self,
-        sensor_id: int,
-        processor_specs: list[ProcessorSpec],
-    ) -> npt.NDArray[np.complex128]:
-        direct_leakage, _ = self._close_range_calibration(sensor_id, processor_specs)
+    def direct_leakage(self, sensor_id: int) -> npt.NDArray[np.complex128]:
+        direct_leakage, _ = self._close_range_calibration(sensor_id)
         return direct_leakage
 
-    def phase_jitter_comp_reference(
-        self,
-        sensor_id: int,
-        processor_specs: list[ProcessorSpec],
-    ) -> npt.NDArray[np.float64]:
-        _, phase_jitter_comp_reference = self._close_range_calibration(sensor_id, processor_specs)
+    def phase_jitter_comp_reference(self, sensor_id: int) -> npt.NDArray[np.float64]:
+        _, phase_jitter_comp_reference = self._close_range_calibration(sensor_id)
         return phase_jitter_comp_reference
 
 
@@ -237,44 +224,29 @@ class RecordedThresholdCalibration:
 
         return cls(extended_metadata=extended_metadata, results=recorded_threshold_result)
 
-    def _get_frame_for_spec(
+    def _get_close_range_frame(
         self,
-        close_range_calibration: CloseRangeCalibration,
         extended_result: list[dict[int, a121.Result]],
         sensor_id: int,
-        processor_specs: list[ProcessorSpec],
+        threshold_sensitivity: float,
+        close_range_calibration: CloseRangeCalibration,
     ) -> npt.NDArray[np.complex128]:
-        close_range_spec = get_close_range_spec(processor_specs)
-        if close_range_spec.processor_config.measurement_type != MeasurementType.CLOSE_RANGE:
-            msg = (
-                "Recorded threshold calibration is only implemented for close-range measurements."
-            )
-            raise ValueError(msg)
-
         if close_range_calibration is None:
             msg = "Calibration data must be provided for close-range recorded threshold."
             raise ValueError(msg)
 
-        result = extended_result[close_range_spec.group_index][sensor_id]
+        result = extended_result[CloseRangeProcessor.CLOSE_RANGE_GROUP_INDEX][sensor_id]
 
-        num_stds_in_threshold = sensitivity_to_standard_deviations(
-            close_range_spec.processor_config.threshold_sensitivity
-        )
-        lb_frame = result.subframes[Processor.CLOSE_RANGE_LOOPBACK_IDX]
+        num_stds_in_threshold = sensitivity_to_standard_deviations(threshold_sensitivity)
+        lb_frame = result.subframes[CloseRangeProcessor.LOOPBACK_SUBSWEEP_INDEX]
         lb_angle = np.angle(lb_frame).astype(float)
         lb_angle += self.PHASE_JITTER_RESTART_STD * num_stds_in_threshold
 
-        context = ProcessorContext(
-            direct_leakage=close_range_calibration.direct_leakage(sensor_id, processor_specs),
-            phase_jitter_comp_ref=close_range_calibration.phase_jitter_comp_reference(
-                sensor_id, processor_specs
-            ),
-        )
-
-        return Processor._apply_phase_jitter_compensation(
-            context=context,
-            frame=result.subframes[Processor.CLOSE_RANGE_DIST_IDX],
+        return CloseRangeProcessor.apply_phase_jitter_compensation(
+            frame=result.subframes[CloseRangeProcessor.DISTANCE_SUBSWEEP_INDEX],
             lb_angle=lb_angle,
+            direct_leakage=close_range_calibration.direct_leakage(sensor_id),
+            phase_jitter_comp_ref=close_range_calibration.phase_jitter_comp_reference(sensor_id),
         )
 
     def _recorded_threshold_calibration(
@@ -300,7 +272,7 @@ class RecordedThresholdCalibration:
             if spec.processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
                 range_sweep_config = RangeSweepConfig.from_sensor_config(
                     sensor_config=session_config.groups[spec.group_index][sensor_id],
-                    subsweep_indexes=[Processor.CLOSE_RANGE_DIST_IDX],
+                    subsweep_indexes=[CloseRangeProcessor.DISTANCE_SUBSWEEP_INDEX],
                 )
                 profile = range_sweep_config.profile
                 start_point = range_sweep_config.start_point
@@ -308,11 +280,11 @@ class RecordedThresholdCalibration:
                 distance_filter = DistanceFilter(profile, start_point, step_length)
 
                 frames = [
-                    self._get_frame_for_spec(
-                        close_range_calibration,
-                        extended_result,
-                        sensor_id,
-                        processor_specs,
+                    self._get_close_range_frame(
+                        extended_result=extended_result,
+                        sensor_id=sensor_id,
+                        threshold_sensitivity=spec.processor_config.threshold_sensitivity,
+                        close_range_calibration=close_range_calibration,
                     )
                     for extended_result in self.results
                 ]

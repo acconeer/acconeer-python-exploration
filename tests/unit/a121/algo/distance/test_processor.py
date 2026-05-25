@@ -16,13 +16,13 @@ from acconeer.exptool.a121.algo import (
 
 def test_apply_phase_jitter_compensation() -> None:
     frame = np.array([0 + 0, 1 + 1j, 2 + 2j, 3 + 3j])
-    context = distance.ProcessorContext(
-        direct_leakage=frame, phase_jitter_comp_ref=np.array([0.0])
-    )
     lb_angle = np.array([np.pi / 2])
 
-    actual_adjuster_frame = distance.Processor._apply_phase_jitter_compensation(
-        context=context, frame=frame, lb_angle=lb_angle
+    actual_adjuster_frame = distance.CloseRangeProcessor.apply_phase_jitter_compensation(
+        frame=frame,
+        lb_angle=lb_angle,
+        direct_leakage=frame,
+        phase_jitter_comp_ref=np.array([0.0]),
     )
     assert actual_adjuster_frame[0] == 0.0 + 0.0j
     assert actual_adjuster_frame[1] == 2.0 + 0.0j

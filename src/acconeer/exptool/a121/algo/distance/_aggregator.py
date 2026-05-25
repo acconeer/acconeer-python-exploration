@@ -12,6 +12,7 @@ import numpy.typing as npt
 from acconeer.exptool import a121
 from acconeer.exptool.a121.algo import ENVELOPE_FWHM_M, PeakSortingMethod
 from acconeer.exptool.a121.algo.distance._processors import (
+    DistanceProcessorBase,
     Processor,
     ProcessorConfig,
     ProcessorContext,
@@ -61,7 +62,7 @@ class Aggregator:
         self.specs = specs
         self.sensor_id = sensor_id
 
-        self.processors: list[Processor] = []
+        self.processors: list[DistanceProcessorBase] = []
 
         for spec in specs:
             metadata = extended_metadata[spec.group_index][self.sensor_id]

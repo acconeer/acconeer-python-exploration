@@ -642,13 +642,9 @@ class Detector(Controller[DetectorConfig, dict[int, DetectorResult]]):
                 if spec.processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
                     assert self.context.close_range_calibration is not None
 
-                    direct_leakage = self.context.close_range_calibration.direct_leakage(
-                        sensor_id, self.processor_specs
-                    )
+                    direct_leakage = self.context.close_range_calibration.direct_leakage(sensor_id)
                     phase_jitter_comp_ref = (
-                        self.context.close_range_calibration.phase_jitter_comp_reference(
-                            sensor_id, self.processor_specs
-                        )
+                        self.context.close_range_calibration.phase_jitter_comp_reference(sensor_id)
                     )
 
                     # Recorded threshold calibration is only implemented for CLOSE_RANGE measurements

@@ -7,9 +7,6 @@ import copy
 
 from acconeer.exptool import a121
 
-from ._aggregator import ProcessorSpec
-from ._processors import MeasurementType
-
 
 def get_calibrate_offset_sensor_config() -> a121.SensorConfig:
     return a121.SensorConfig(
@@ -50,16 +47,3 @@ def get_calibrate_noise_session_config(
                 subsweep.num_points = num_points
 
     return noise_session_config
-
-
-def get_close_range_spec(specs: list[ProcessorSpec]) -> ProcessorSpec:
-    NUM_CLOSE_RANGE_SPECS = 1
-    close_range_specs = []
-    for spec in specs:
-        if spec.processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
-            close_range_specs.append(spec)
-    if len(close_range_specs) != NUM_CLOSE_RANGE_SPECS:
-        msg = "Incorrect session config for close-range measurement"
-        raise ValueError(msg)
-
-    return close_range_specs[0]
