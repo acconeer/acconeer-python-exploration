@@ -167,8 +167,7 @@ linkcheck = "default-sphinx-build -b linkcheck"
 spelling = "default-sphinx-build -b spelling"
 rediraffe-write = "default-sphinx-build -b rediraffewritediff"
 rediraffe-check = "default-sphinx-build -b rediraffecheckdiff"
-lint = "python -m doc8 --extension .rst docs"
-build = ["clean", "lint", "globlint", "html", "spelling", "rediraffe-check"]
+build = ["clean", "lint", "html", "spelling", "rediraffe-check"]
 
 # We've found that .. toctree:: with :glob: can be a foot gun in some scenarios. Let's not use it!
 globlint = """
@@ -179,6 +178,10 @@ globlint = """
         --exclude-dir=$(basename ./docs/_build) \
     || (echo 'Using ":glob:" is not allowed. Specify each child document explicitly'; false)
 """
+lint = [
+    "python -m doc8 --extension .rst docs",
+    "globlint"
+]
 
 nightlybuild = ["build", "linkcheck"]
 
