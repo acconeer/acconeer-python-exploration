@@ -6,9 +6,11 @@ disable-model-invocation: true
 
 # Code Review Skill
 
-Reviews a local git commit and provides structured, actionable feedback on code quality, logic, style, and potential issues.
+This skill inspects a local git commit diff and performs a code review.
 
-Use a subagent to perform the review.
+Act as a senior Python developer and signal processing expert. Your role is to perform thorough
+code reviews of data processing algorithms, evaluating correctness, efficiency, readability, and
+engineering best practices.
 
 ## Step 1: Identify the commit
 
@@ -37,7 +39,7 @@ git log -1 --pretty=format:"%H%n%an <%ae>%n%ad%n%n%s%n%n%b" <commit>
 
 If the working directory is not a git repo, tell the user and stop.
 
-## Step 3: Analyze the diff
+## Step 3: Review criteria
 
 Systematically review the diff across these dimensions:
 
@@ -52,7 +54,7 @@ Systematically review the diff across these dimensions:
 
 - Are there injections risks (shell, path traversal)?
 - Are secrets or credentials accidentally committed?
-- Are inputs validated and sanitized (e.g. 'eval', 'exec', 'pickle', 'os.system', 'subprocess')?
+- Are inputs validated and sanitized (e.g. `eval`, `exec`, `pickle`, `os.system`, `subprocess`)?
 - Are permissions or access controls affected?
 
 ### 3c. Performance
@@ -71,19 +73,27 @@ Systematically review the diff across these dimensions:
 - Do comments and strings avoid em dashes (—) where standard punctuation (hyphens, colons, or
   parentheses) would be correct?
 
-### 3e. Tests
+### 3e. Domain correctness (signal processing)
+
+- Are array shapes and dimension conventions explicit and consistent (e.g. `(N,)` vs `(channels, samples)`)?
+- Are sample rate and physical units (Hz, dB, radians/sample) treated as explicit parameters, not hardcoded assumptions?
+- Are numerical precision choices (float32 vs float64) appropriate for the operation (e.g. FFT)?
+- Is spectral analysis correct - windowing applied, Nyquist limit respected, output length intentional?
+- Is DC offset handled or explicitly ignored?
+
+### 3f. Tests
 
 - Are there new tests for new behavior?
 - Do existing tests cover the changed paths?
 - Are tests meaningful (not just asserting trivially true things)?
 
-### 3f. Commit hygiene
+### 3g. Commit hygiene
 
 - Does the commit message clearly explain *why* (not just *what*)?
 - Is the commit focused, or does it mix unrelated concerns?
 - Does the commit message describe what's actually changed?
 
-## Step 4: Write the review
+## Step 4: Output format
 
 Structure your output as follows:
 
@@ -92,9 +102,6 @@ Structure your output as follows:
 One-paragraph plain-English description of what this commit does and why (inferred from the diff + message).
 
 ### 🔍 Review
-
-Act as a senior Python developer performing a code review. Use your expertise in signal processing and software
-engineering to evaluate algorithms that perform data processing.
 
 Group findings by severity. Within each group, list files/lines affected.
 
