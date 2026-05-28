@@ -171,13 +171,16 @@ build = ["clean", "lint", "html", "spelling", "rediraffe-check"]
 
 # We've found that .. toctree:: with :glob: can be a foot gun in some scenarios. Let's not use it!
 globlint = """
-! grep -R -C3 ':glob:' ./docs/ \
+if grep -R -C3 ':glob:' ./docs/ \
         --include=*.rst \
         --exclude=$(basename ./docs/generate_example_script_pages.py) \
         --exclude-dir=$(basename ./docs/exploration_tool/example_scripts) \
-        --exclude-dir=$(basename ./docs/_build) \
-    || (echo 'Using ":glob:" is not allowed. Specify each child document explicitly'; false)
+        --exclude-dir=$(basename ./docs/_build); then \
+    echo 'Using ":glob:" is not allowed. Specify each child document explicitly'
+    false
+fi
 """
+
 lint = [
     "python -m doc8 --extension .rst docs",
     "globlint"
