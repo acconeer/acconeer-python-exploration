@@ -16,6 +16,20 @@ PYTEST_XDIST_MAX_NUM_PROCESSES = 4
 sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 
 
+# When the user passes --plot-show / --plot-show-on-fail, switch matplotlib to
+# a windowed backend before any test module imports pyplot. The hatch test env
+# sets QT_QPA_PLATFORM=offscreen so headless CI can use a Qt backend without a
+# display; left alone, that makes plt.show() block forever on a window the user
+# can never interact with.
+_PLOT_FLAGS = ("--plot-show", "--plot-show-on-fail")
+if any(arg in sys.argv for arg in _PLOT_FLAGS):
+    if os.environ.get("QT_QPA_PLATFORM") == "offscreen":
+        os.environ.pop("QT_QPA_PLATFORM")
+    import matplotlib
+
+    matplotlib.use("QtAgg", force=True)
+
+
 def pytest_xdist_auto_num_workers(config: t.Any) -> int:
     # This hook is called for both pytest-xdists's "-n auto" and "-n logical" [1].
     #   Hatch's documentation indicates that only "-n logical" is used [2], but lets
@@ -100,6 +114,13 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip_devsite_marker)
 
 
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    outcome = yield
+    result = outcome.get_result()
+    setattr(item, f"rep_{result.when}", result)
+
+
 @pytest.fixture(scope="session")
 def should_update_outputs(request):
     return request.config.getoption("--update-outputs") is True
@@ -108,3 +129,59 @@ def should_update_outputs(request):
 @pytest.fixture(scope="session")
 def is_running_in_ci() -> bool:
     return acconeer.exptool.testing.is_running_in_ci()
+
+
+def _plot_show_enabled(request: pytest.FixtureRequest) -> bool:
+    return bool(
+        request.config.getoption("--plot-show") or request.config.getoption("--plot-show-on-fail")
+    )
+
+
+@pytest.fixture
+def plot_show_enabled(request) -> bool:
+    """True when --plot-show or --plot-show-on-fail was passed.
+
+    Tests guard their plotting block on this so the matplotlib import only
+    happens when the user asked for plots:
+
+        def test_foo(plot_figures, plot_show_enabled):
+            ...  # main test logic
+            if plot_show_enabled:
+                import matplotlib.pyplot as plt
+                fig, ax = plt.subplots()
+                ...
+                plot_figures.append(fig)
+    """
+    return _plot_show_enabled(request)
+
+
+@pytest.fixture
+def plot_figures(request):
+    """Collect figures built by a test and show/close them based on CLI flags.
+
+    Figures are shown when --plot-show is passed, or when the test fails (in
+    setup or call) and --plot-show-on-fail is passed. Otherwise figures are
+    closed at teardown. The fixture itself never imports matplotlib — that is
+    the test body's responsibility, guarded by ``plot_show_enabled``.
+    """
+    figures: list = []
+    yield figures
+
+    if not _plot_show_enabled(request):
+        return
+
+    import matplotlib.pyplot as plt
+
+    show_always = request.config.getoption("--plot-show")
+    show_on_fail = request.config.getoption("--plot-show-on-fail")
+
+    def _failed(when: str) -> bool:
+        rep = getattr(request.node, f"rep_{when}", None)
+        return rep is not None and rep.failed
+
+    failed = _failed("setup") or _failed("call")
+
+    if show_always or (show_on_fail and failed):
+        plt.show()
+    else:
+        plt.close("all")
