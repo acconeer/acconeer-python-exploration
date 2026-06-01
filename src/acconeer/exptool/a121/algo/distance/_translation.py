@@ -21,6 +21,7 @@ from acconeer.exptool.a121.algo import (
 from ._aggregator import ProcessorSpec
 from ._processors import MeasurementType, ProcessorConfig, ThresholdMethod
 from ._thresholds import CfarThreshold
+from ._views import SubsweepReference
 
 
 if t.TYPE_CHECKING:
@@ -228,7 +229,6 @@ def _max_profile_margins(
 
 def detector_config_to_processor_specs(
     config: DetectorConfig,
-    sensor_ids: list[int],
     num_far_subsweeps: int,
 ) -> list[ProcessorSpec]:
     if num_far_subsweeps > 4 or num_far_subsweeps < 0:
@@ -251,11 +251,7 @@ def detector_config_to_processor_specs(
     range_types = _get_range_types(config)
     processor_specs = []
     if range_types & RangeTypes.CLOSE_RANGE:
-        cr_proc_spec = ProcessorSpec(
-            processor_config=close_range_processor_config,
-            group_index=0,
-            subsweep_indexes=[0, 1],
-        )
+        cr_proc_spec = ProcessorSpec(processor_config=close_range_processor_config)
         processor_specs.append(cr_proc_spec)
 
     # Iterator of available subsweep indexes. Will be consumed
@@ -268,10 +264,14 @@ def detector_config_to_processor_specs(
             # If "Transition": Use a single subsweep
             transition_subsweep_idx = next(far_subsweep_idx_iter)
 
+            transition_subsweep_ref = SubsweepReference(
+                group_index=far_group_idx,
+                subsweep_index=transition_subsweep_idx,
+            )
+
             transition_proc_spec = ProcessorSpec(
                 processor_config=far_range_processor_config,
-                group_index=far_group_idx,
-                subsweep_indexes=[transition_subsweep_idx],
+                subsweep_references=[transition_subsweep_ref],
             )
 
             processor_specs.append(transition_proc_spec)
@@ -279,10 +279,14 @@ def detector_config_to_processor_specs(
             # If "Max Profile": Use the rest of the available subsweeps
             max_profile_subsweep_idxs = list(far_subsweep_idx_iter)
 
+            max_profile_subsweep_refs = [
+                SubsweepReference(group_index=far_group_idx, subsweep_index=idx)
+                for idx in max_profile_subsweep_idxs
+            ]
+
             max_profile_proc_spec = ProcessorSpec(
                 processor_config=far_range_processor_config,
-                group_index=far_group_idx,
-                subsweep_indexes=max_profile_subsweep_idxs,
+                subsweep_references=max_profile_subsweep_refs,
             )
 
             processor_specs.append(max_profile_proc_spec)

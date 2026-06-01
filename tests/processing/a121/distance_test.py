@@ -76,9 +76,10 @@ class DetectorWrapper:
 def distance_processor(record: a121.H5Record) -> ProcessorWrapper:
     sensor_config = record.session_config.sensor_config
     sensor_config.phase_enhancement = True
+    session_config = a121.SessionConfig(sensor_config)
     return ProcessorWrapper(
         distance.Processor(
-            sensor_config=sensor_config,
+            session_config=session_config,
             processor_config=distance.ProcessorConfig(),
             metadata=utils.unextend(record.extended_metadata),
         )

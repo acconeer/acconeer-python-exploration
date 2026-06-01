@@ -41,6 +41,7 @@ def main():
         ],
         sweeps_per_frame=1,
     )
+    session_config = a121.SessionConfig(sensor_config)
 
     # Calibrate noise.
     noise_sensor_config = copy.deepcopy(sensor_config)
@@ -67,7 +68,7 @@ def main():
         threshold_sensitivity=0.8,
     )
     distance_processor = Processor(
-        sensor_config=sensor_config,
+        session_config=session_config,
         metadata=metadata,
         processor_config=distance_config,
         context=distance_context,

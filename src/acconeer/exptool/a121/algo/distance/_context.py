@@ -119,15 +119,36 @@ class NoiseCalibration:
     ) -> list[list[float]]:
         bg_noise_one_sensor = []
         for spec in processor_specs:
-            result = self.results[spec.group_index][sensor_id]
-            sensor_config = session_config.groups[spec.group_index][sensor_id]
-            subsweep_configs = sensor_config.subsweeps
             bg_noise_std_in_subsweep = []
-            for idx in spec.subsweep_indexes:
-                if not subsweep_configs[idx].enable_loopback:
-                    subframe = result.subframes[idx]
-                    subsweep_std = calculate_bg_noise_std(subframe, subsweep_configs[idx])
+
+            if spec.processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
+                grp = CloseRangeProcessor.CLOSE_RANGE_GROUP_INDEX
+                idx = CloseRangeProcessor.DISTANCE_SUBSWEEP_INDEX
+                subsweep_config = session_config.groups[grp][sensor_id].subsweeps[idx]
+                if subsweep_config.enable_loopback:
+                    msg = f"Subsweep ({grp}, {idx}) is not a valid range sweep (loopback enabled)."
+                    raise RuntimeError(msg)
+                subframe = self.results[grp][sensor_id].subframes[idx]
+                subsweep_std = calculate_bg_noise_std(subframe, subsweep_config)
+                bg_noise_std_in_subsweep.append(subsweep_std)
+
+            elif spec.processor_config.measurement_type == MeasurementType.FAR_RANGE:
+                if spec.subsweep_references is None:
+                    msg = "Far-range ProcessorSpec must have subsweep_references set."
+                    raise ValueError(msg)
+                for grp, idx in spec.subsweep_references:
+                    subsweep_config = session_config.groups[grp][sensor_id].subsweeps[idx]
+                    if subsweep_config.enable_loopback:
+                        msg = f"Subsweep ({grp}, {idx}) is not a valid range sweep (loopback enabled)."
+                        raise RuntimeError(msg)
+                    subframe = self.results[grp][sensor_id].subframes[idx]
+                    subsweep_std = calculate_bg_noise_std(subframe, subsweep_config)
                     bg_noise_std_in_subsweep.append(subsweep_std)
+
+            else:
+                msg = f"Unsupported measurement type {spec.processor_config.measurement_type} when calculating noise standard deviation."
+                raise ValueError(msg)
+
             bg_noise_one_sensor.append(bg_noise_std_in_subsweep)
 
         return bg_noise_one_sensor
@@ -270,8 +291,11 @@ class RecordedThresholdCalibration:
         for spec, bg_noise_std in zip(processor_specs, bg_noise_std_per_spec):
             # Recorded threshold calibration is only implemented for close-range measurements
             if spec.processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
+                close_range_group = session_config.groups[
+                    CloseRangeProcessor.CLOSE_RANGE_GROUP_INDEX
+                ]
                 range_sweep_config = RangeSweepConfig.from_sensor_config(
-                    sensor_config=session_config.groups[spec.group_index][sensor_id],
+                    sensor_config=close_range_group[sensor_id],
                     subsweep_indexes=[CloseRangeProcessor.DISTANCE_SUBSWEEP_INDEX],
                 )
                 profile = range_sweep_config.profile

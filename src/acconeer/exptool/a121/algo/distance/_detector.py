@@ -443,7 +443,7 @@ class Detector(Controller[DetectorConfig, dict[int, DetectorResult]]):
         session_config = detector_config_to_session_config(config, sensor_ids=[1])
         num_far_subsweeps = get_num_far_subsweeps(session_config, config)
         specs = detector_config_to_processor_specs(
-            config=config, sensor_ids=[1], num_far_subsweeps=num_far_subsweeps
+            config=config, num_far_subsweeps=num_far_subsweeps
         )
         return MeasurementType.CLOSE_RANGE in [
             spec.processor_config.measurement_type for spec in specs
@@ -547,9 +547,7 @@ class Detector(Controller[DetectorConfig, dict[int, DetectorResult]]):
         configuration."""
         self.session_config = detector_config_to_session_config(config, self.sensor_ids)
         num_far_subsweeps = get_num_far_subsweeps(self.session_config, config)
-        self.processor_specs = detector_config_to_processor_specs(
-            config, self.sensor_ids, num_far_subsweeps
-        )
+        self.processor_specs = detector_config_to_processor_specs(config, num_far_subsweeps)
 
     def stop(self) -> Any:
         """Stops the measurement session."""

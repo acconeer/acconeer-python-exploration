@@ -19,12 +19,13 @@ from acconeer.exptool.a121.algo.distance._processors import (
     ProcessorResult,
 )
 
+from ._views import SensorResultsView, SubsweepReference
+
 
 @attrs.frozen(kw_only=True)
 class ProcessorSpec:
     processor_config: ProcessorConfig = attrs.field()
-    group_index: int = attrs.field()
-    subsweep_indexes: list[int] = attrs.field()
+    subsweep_references: Optional[list[SubsweepReference]] = attrs.field(default=None)
     processor_context: Optional[ProcessorContext] = attrs.field(default=None)
 
 
@@ -65,14 +66,13 @@ class Aggregator:
         self.processors: list[DistanceProcessorBase] = []
 
         for spec in specs:
-            metadata = extended_metadata[spec.group_index][self.sensor_id]
-            sensor_config = session_config.groups[spec.group_index][self.sensor_id]
+            metadata = extended_metadata[0][self.sensor_id]
 
             processor = Processor(
-                sensor_config=sensor_config,
+                session_config=session_config,
                 metadata=metadata,
                 processor_config=spec.processor_config,
-                subsweep_indexes=spec.subsweep_indexes,
+                subsweep_references=spec.subsweep_references,
                 context=spec.processor_context,
             )
             self.processors.append(processor)
@@ -83,8 +83,11 @@ class Aggregator:
         strengths: npt.NDArray[np.float64] = np.array([])
         profile_fwhms: npt.NDArray[np.float64] = np.array([])
 
-        for spec, processor in zip(self.specs, self.processors):
-            processor_result = processor.process(extended_result[spec.group_index][self.sensor_id])
+        for processor in self.processors:
+            sensor_result = SensorResultsView.from_extended_result(
+                extended_result=extended_result, sensor_id=self.sensor_id
+            )
+            processor_result = processor.process(sensor_result)
             processors_result.append(processor_result)
             strengths = np.concatenate((strengths, np.array(processor_result.estimated_strengths)))
             dists = np.concatenate((dists, np.array(processor_result.estimated_distances)))

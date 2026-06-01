@@ -5,7 +5,8 @@ from __future__ import annotations
 
 import enum
 from abc import abstractmethod
-from typing import Optional
+from collections.abc import Sequence
+from typing import Optional, Union
 
 import attrs
 import numpy as np
@@ -29,7 +30,7 @@ from acconeer.exptool.a121.algo import (
 )
 
 from . import _thresholds as thresholds
-from ._views import RangeSweepConfig
+from ._views import RangeSweepConfig, SensorResultsView, SubsweepReference
 
 
 DEFAULT_FIXED_AMPLITUDE_THRESHOLD_VALUE = 100.0
@@ -166,39 +167,41 @@ class DistanceFilter:
         raise ValueError(msg)
 
 
-class DistanceProcessorBase(GenericProcessorBase[a121.Result, ProcessorResult]):
+class DistanceProcessorBase(
+    GenericProcessorBase[Union[a121.Result, SensorResultsView], ProcessorResult]  # type: ignore[type-var]
+):
     """Distance processor base class. Contains logic common for both close-range and far-range processing.
 
     For all used subsweeps, the ``profile`` and ``step_length`` must be the same.
 
-    :param sensor_config: Sensor configuration
+    :param session_config: Session configuration
     :param metadata: Metadata yielded by the sensor config
     :param processor_config: Processor configuration
-    :param subsweep_indexes:
-        The subsweep indexes to be processed. If ``None``, all subsweeps will be used.
+    :param subsweep_references:
+        References to the subsweeps to be processed. If ``None``, all subsweeps will be used.
     :param context: Context
     """
 
     def __init__(
         self,
         *,
-        sensor_config: a121.SensorConfig,
+        session_config: a121.SessionConfig,
         metadata: a121.Metadata,
         processor_config: ProcessorConfig,
-        subsweep_indexes: list[int],
+        subsweep_references: Sequence[SubsweepReference],
         context: ProcessorContext,
     ) -> None:
-        self.sensor_config = sensor_config
+        self.session_config = session_config
         self.metadata = metadata
         self.processor_config = processor_config
-        self.range_subsweep_indexes = subsweep_indexes
+        self.subsweep_references = subsweep_references
         self.context = context
 
-        self.processor_config.validate(self.sensor_config)
+        self.processor_config.validate(self.session_config)
 
         # Range sweep parameters
-        self.range_sweep_config = RangeSweepConfig.from_sensor_config(
-            self.sensor_config, self.range_subsweep_indexes
+        self.range_sweep_config = RangeSweepConfig.from_session_config(
+            self.session_config, self.subsweep_references
         )
         self.subsweep_configs = self.range_sweep_config.subsweep_configs
         self.profile = self.range_sweep_config.profile
@@ -289,11 +292,16 @@ class DistanceProcessorBase(GenericProcessorBase[a121.Result, ProcessorResult]):
             msg = f"Invalid threshold method {self.threshold_method}. Valid options: {[tm for tm in ThresholdMethod]}."
             raise ValueError(msg)
 
-    def process(self, result: a121.Result) -> ProcessorResult:
-        frame = self._prepare_frame_for_distance_estimation(result)
+    def process(self, sensor_result: a121.Result | SensorResultsView) -> ProcessorResult:
+        sensor_results_view = (
+            sensor_result
+            if isinstance(sensor_result, SensorResultsView)
+            else SensorResultsView.from_result(sensor_result)
+        )
+        frame = self._prepare_frame_for_distance_estimation(sensor_results_view)
         sweep = frame.mean(axis=0)
         abs_sweep = self.distance_filter.compute_envelope(sweep)
-        threshold_values = self.threshold.compute(abs_sweep, result.temperature)
+        threshold_values = self.threshold.compute(abs_sweep, sensor_results_view.temperature)
         found_peaks_idx = find_peaks(abs_sweep, threshold_values)
         estimated_distances, estimated_amplitudes = interpolate_peaks(
             abs_sweep,
@@ -339,7 +347,7 @@ class DistanceProcessorBase(GenericProcessorBase[a121.Result, ProcessorResult]):
 
     @abstractmethod
     def _prepare_frame_for_distance_estimation(
-        self, result: a121.Result
+        self, sensor_results_view: SensorResultsView
     ) -> npt.NDArray[np.complex128]:
         raise NotImplementedError
 
@@ -368,9 +376,9 @@ class FarRangeProcessor(DistanceProcessorBase):
     """Distance processor for far-range measurements."""
 
     def _prepare_frame_for_distance_estimation(
-        self, result: a121.Result
+        self, sensor_results_view: SensorResultsView
     ) -> npt.NDArray[np.complex128]:
-        range_subframes = [result.subframes[i] for i in self.range_subsweep_indexes]
+        range_subframes = [sensor_results_view[ss_ref] for ss_ref in self.subsweep_references]
         return np.concatenate(range_subframes, axis=1)
 
 
@@ -398,44 +406,52 @@ class CloseRangeProcessor(DistanceProcessorBase):
         return frame - adjusted_leakage
 
     @classmethod
-    def validate_sensor_config(cls, sensor_config: a121.SensorConfig) -> None:
-        if (
-            not sensor_config.subsweeps[cls.LOOPBACK_SUBSWEEP_INDEX].enable_loopback
-            or sensor_config.subsweeps[cls.DISTANCE_SUBSWEEP_INDEX].enable_loopback
-        ):
-            msg = (
-                "Invalid configuration for close-range measurement. Loopback must be enabled "
-                "for loopback subsweep and disabled for range subsweep."
-            )
-            raise ValueError(msg)
+    def validate_session_config(cls, session_config: a121.SessionConfig) -> None:
+        for sensor_id, sensor_config in session_config.groups[cls.CLOSE_RANGE_GROUP_INDEX].items():
+            if (
+                not sensor_config.subsweeps[cls.LOOPBACK_SUBSWEEP_INDEX].enable_loopback
+                or sensor_config.subsweeps[cls.DISTANCE_SUBSWEEP_INDEX].enable_loopback
+            ):
+                msg = (
+                    f"Invalid configuration for close-range measurement for sensor {sensor_id}. "
+                    "Loopback must be enabled for loopback subsweep and disabled for range subsweep."
+                )
+                raise ValueError(msg)
 
     def __init__(
         self,
         *,
-        sensor_config: a121.SensorConfig,
+        session_config: a121.SessionConfig,
         metadata: a121.Metadata,
         processor_config: ProcessorConfig,
         context: ProcessorContext,
     ) -> None:
-        self.validate_sensor_config(sensor_config)
+        self.validate_session_config(session_config)
 
         if context.direct_leakage is None or context.phase_jitter_comp_ref is None:
             msg = "Sufficient processor context not provided"
             raise ValueError(msg)
 
+        self.loopback_subsweep_reference = SubsweepReference(
+            group_index=self.CLOSE_RANGE_GROUP_INDEX, subsweep_index=self.LOOPBACK_SUBSWEEP_INDEX
+        )
+        self.distance_subsweep_reference = SubsweepReference(
+            group_index=self.CLOSE_RANGE_GROUP_INDEX, subsweep_index=self.DISTANCE_SUBSWEEP_INDEX
+        )
+
         super().__init__(
-            sensor_config=sensor_config,
+            session_config=session_config,
             metadata=metadata,
             processor_config=processor_config,
-            subsweep_indexes=[self.DISTANCE_SUBSWEEP_INDEX],
+            subsweep_references=[self.distance_subsweep_reference],
             context=context,
         )
 
     def _prepare_frame_for_distance_estimation(
-        self, result: a121.Result
+        self, sensor_results_view: SensorResultsView
     ) -> npt.NDArray[np.complex128]:
-        lb_angle = np.angle(result.subframes[self.LOOPBACK_SUBSWEEP_INDEX]).astype(float)
-        frame = result.subframes[self.DISTANCE_SUBSWEEP_INDEX]
+        lb_angle = np.angle(sensor_results_view[self.loopback_subsweep_reference]).astype(float)
+        frame = sensor_results_view[self.distance_subsweep_reference]
         return self._apply_phase_jitter_compensation(frame, lb_angle)
 
     def _apply_phase_jitter_compensation(
@@ -452,22 +468,24 @@ class CloseRangeProcessor(DistanceProcessorBase):
 
 def Processor(
     *,
-    sensor_config: a121.SensorConfig,
+    session_config: a121.SessionConfig,
     metadata: a121.Metadata,
     processor_config: ProcessorConfig,
-    subsweep_indexes: list[int] | None = None,
-    context: ProcessorContext | None = None,
+    subsweep_references: Optional[list[SubsweepReference]] = None,
+    context: Optional[ProcessorContext] = None,
 ) -> DistanceProcessorBase:
     """Factory for distance processors.
 
     For all used subsweeps, the ``profile`` and ``step_length`` must be the same.
 
-    :param sensor_config: Sensor configuration
-    :param metadata: Metadata yielded by the sensor config
+    :param session_config: Session configuration
+    :param metadata: Metadata yielded by the session config
     :param processor_config: Processor configuration
-    :param subsweep_indexes:
-        The subsweep indexes to be processed. If ``None``, all subsweeps will be used.
-        For close-range measurements, this parameter is ignored and a fixed scheme is used.
+    :param subsweep_references:
+        The subsweeps to be processed. For far-range measurements, this parameter must be provided
+        if session_config contains multiple sensor configurations or groups. Otherwise, all
+        subsweeps in the sole sensor_config will be used. For close-range measurements, this
+        parameter must not be provided and a fixed scheme is used.
     :param context: Context
     """
     if context is None:
@@ -475,23 +493,36 @@ def Processor(
 
     # Determine whether to instantiate CloseRangeProcessor or FarRangeProcessor
     if processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
+        if subsweep_references is not None:
+            msg = "subsweep_references should not be provided for close-range measurement as they are fixed."
+            raise ValueError(msg)
+
         return CloseRangeProcessor(
-            sensor_config=sensor_config,
+            session_config=session_config,
             metadata=metadata,
             processor_config=processor_config,
             context=context,
         )
 
     elif processor_config.measurement_type == MeasurementType.FAR_RANGE:
-        if subsweep_indexes is None:
-            # Use all subsweeps
-            subsweep_indexes = list(range(sensor_config.num_subsweeps))
+        if subsweep_references is None:
+            # Use all subsweeps if session_config contains only a single sensor configuration,
+            # otherwise require explicit subsweep references to avoid ambiguity.
+            if len(session_config.groups) == 1 and len(session_config.groups[0]) == 1:
+                sensor_config = next(iter(session_config.groups[0].values()))
+                subsweep_references = [
+                    SubsweepReference(group_index=0, subsweep_index=i)
+                    for i in range(len(sensor_config.subsweeps))
+                ]
+            else:
+                msg = "subsweep_references must be provided for far-range measurement if session_config contains multiple sensor configurations or groups."
+                raise ValueError(msg)
 
         return FarRangeProcessor(
-            sensor_config=sensor_config,
+            session_config=session_config,
             metadata=metadata,
             processor_config=processor_config,
-            subsweep_indexes=subsweep_indexes,
+            subsweep_references=subsweep_references,
             context=context,
         )
 

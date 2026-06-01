@@ -113,7 +113,7 @@ def presence_heap_memory(config: PresenceConfig) -> int:
 def distance_external_heap_memory(config: DistanceConfig) -> int:
     offset_sensor_config = get_calibrate_offset_sensor_config()
     session_config = distance.detector_config_to_session_config(config, [1])
-    processor_specs = distance.detector_config_to_processor_specs(config, [1], 4)
+    processor_specs = distance.detector_config_to_processor_specs(config, 4)
     noise_session_config = get_calibrate_noise_session_config(session_config, [1])
 
     offset_ext_heap = session_external_heap_memory(SessionConfig(offset_sensor_config))
@@ -136,13 +136,18 @@ def distance_external_heap_memory(config: DistanceConfig) -> int:
     for proc_spec in processor_specs:
         proc_work_buffer = 0
         proc_calib_buffer = 0
-        sensor_cfg = sensor_cfgs[proc_spec.group_index]
 
         if proc_spec.processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
-            subsweep_cfgs = [sensor_cfg.subsweeps[1]]
+            sensor_cfg = sensor_cfgs[0]  # CLOSE_RANGE_GROUP_INDEX = 0
+            subsweep_cfgs = [sensor_cfg.subsweeps[1]]  # DISTANCE_SUBSWEEP_INDEX = 1
             det_calib_buffer += SIZE_OF_FLOAT
         else:
-            subsweep_cfgs = [sensor_cfg.subsweeps[i] for i in proc_spec.subsweep_indexes]
+            assert proc_spec.subsweep_references is not None
+            sensor_cfg = sensor_cfgs[proc_spec.subsweep_references[0].group_index]
+            subsweep_cfgs = [
+                sensor_cfg.subsweeps[ss_ref.subsweep_index]
+                for ss_ref in proc_spec.subsweep_references
+            ]
             det_calib_buffer += len(subsweep_cfgs) * SIZE_OF_FLOAT
 
         num_points = sum(sub_cfg.num_points for sub_cfg in subsweep_cfgs)
@@ -180,7 +185,7 @@ def distance_external_heap_memory(config: DistanceConfig) -> int:
 def distance_rss_heap_memory(config: DistanceConfig) -> int:
     offset_sensor_config = get_calibrate_offset_sensor_config()
     session_config = distance.detector_config_to_session_config(config, [1])
-    processor_specs = distance.detector_config_to_processor_specs(config, [1], 4)
+    processor_specs = distance.detector_config_to_processor_specs(config, 4)
     noise_session_config = get_calibrate_noise_session_config(session_config, [1])
 
     offset_rss_heap = _session_config_rss_heap_memory(SessionConfig(offset_sensor_config))
