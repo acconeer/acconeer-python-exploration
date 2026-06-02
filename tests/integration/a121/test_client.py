@@ -32,6 +32,10 @@ def h5_recorder(tmp_h5_file_path):
         yield recorder
 
 
+_LOW_UPDATE_RATE = 10  # Hz
+_SESSION_CONFIG_W_LOW_UPDATE_RATE = a121.SessionConfig(update_rate=_LOW_UPDATE_RATE)
+
+
 class CanAttachAndDetachRecorder:
     """Mixin test cases for Client's Recorder handling in all happy paths"""
 
@@ -136,7 +140,7 @@ class TestASetupClient(CanAttachAndDetachRecorder):
     @pytest.fixture
     def client(self, client_kwargs):
         with a121.Client.open(**client_kwargs) as c:
-            c.setup_session(a121.SessionConfig())
+            c.setup_session(_SESSION_CONFIG_W_LOW_UPDATE_RATE)
             yield c
 
     def test_reports_correct_statuses(self, client):
@@ -181,7 +185,8 @@ class TestASetupClient(CanAttachAndDetachRecorder):
                 [
                     {2: a121.SensorConfig()},
                     {3: a121.SensorConfig()},
-                ]
+                ],
+                update_rate=_LOW_UPDATE_RATE,
             )
         )
 
@@ -230,7 +235,8 @@ class TestASetupClient(CanAttachAndDetachRecorder):
                     {2: a121.SensorConfig()},
                     {3: a121.SensorConfig()},
                     {4: a121.SensorConfig()},
-                ]
+                ],
+                update_rate=_LOW_UPDATE_RATE,
             ),
             {
                 1: calibration,
@@ -263,7 +269,8 @@ class TestASetupClient(CanAttachAndDetachRecorder):
                     {2: a121.SensorConfig()},
                     {3: a121.SensorConfig()},
                     {4: a121.SensorConfig()},
-                ]
+                ],
+                update_rate=_LOW_UPDATE_RATE,
             ),
             {
                 2: calibration,
@@ -299,14 +306,14 @@ class TestAStartedClient(CannotPlayAroundWithRecorder):
     @pytest.fixture
     def client(self, client_kwargs):
         with a121.Client.open(**client_kwargs) as c:
-            c.setup_session(a121.SessionConfig())
+            c.setup_session(_SESSION_CONFIG_W_LOW_UPDATE_RATE)
             c.start_session()
             yield c
 
     @pytest.fixture
     def client_with_recorder(self, client_kwargs, tmp_h5_file_path):
         with a121.Client.open(**client_kwargs) as c:
-            c.setup_session(a121.SessionConfig())
+            c.setup_session(_SESSION_CONFIG_W_LOW_UPDATE_RATE)
             _ = a121.H5Recorder(tmp_h5_file_path, c)
             c.start_session()
             yield c
@@ -361,7 +368,7 @@ class TestAStoppedClient(TestASetupClient):
     @pytest.fixture
     def client(self, client_kwargs):
         with a121.Client.open(**client_kwargs) as c:
-            c.setup_session(a121.SessionConfig())
+            c.setup_session(_SESSION_CONFIG_W_LOW_UPDATE_RATE)
             c.start_session()
             c.stop_session()
             yield c
@@ -375,10 +382,10 @@ class TestAStoppedAndSetupClient(TestASetupClient):
     @pytest.fixture
     def client(self, client_kwargs):
         with a121.Client.open(**client_kwargs) as c:
-            c.setup_session(a121.SessionConfig())
+            c.setup_session(_SESSION_CONFIG_W_LOW_UPDATE_RATE)
             c.start_session()
             c.stop_session()
-            c.setup_session(a121.SessionConfig())
+            c.setup_session(_SESSION_CONFIG_W_LOW_UPDATE_RATE)
             yield c
 
 
@@ -390,10 +397,10 @@ class TestAStoppedAndSetupAndStartedClient(TestAStartedClient):
     @pytest.fixture
     def client(self, client_kwargs):
         with a121.Client.open(**client_kwargs) as c:
-            c.setup_session(a121.SessionConfig())
+            c.setup_session(_SESSION_CONFIG_W_LOW_UPDATE_RATE)
             c.start_session()
             c.stop_session()
-            c.setup_session(a121.SessionConfig())
+            c.setup_session(_SESSION_CONFIG_W_LOW_UPDATE_RATE)
             c.start_session()
             yield c
 
@@ -404,7 +411,7 @@ class TestADisconnectedClient(TestAClosedClient):
     @pytest.fixture
     def client(self, client_kwargs):
         c = a121.Client.open(**client_kwargs)
-        c.setup_session(a121.SessionConfig())
+        c.setup_session(_SESSION_CONFIG_W_LOW_UPDATE_RATE)
         c.start_session()
         c.stop_session()
         c.close()
