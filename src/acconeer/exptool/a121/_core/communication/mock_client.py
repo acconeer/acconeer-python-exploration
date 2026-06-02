@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -197,8 +197,13 @@ class MockClient(Client, register=True):
                 sweep_offset += subsweep.num_points
         return frame
 
-    def _sensor_config_to_result(self, sensor_id: int, sensor_config: SensorConfig) -> Result:
-        metadata = self._sensor_config_to_metadata(sensor_config, update_rate=None)
+    def _sensor_config_to_result(
+        self,
+        sensor_id: int,
+        sensor_config: SensorConfig,
+        update_rate: Optional[float],
+    ) -> Result:
+        metadata = self._sensor_config_to_metadata(sensor_config, update_rate=update_rate)
         return Result(
             data_saturated=False,
             frame_delayed=False,
@@ -214,7 +219,9 @@ class MockClient(Client, register=True):
         for group in config.groups:
             result_dict = {}
             for sensor_id, sensor_config in group.items():
-                result_dict[sensor_id] = self._sensor_config_to_result(sensor_id, sensor_config)
+                result_dict[sensor_id] = self._sensor_config_to_result(
+                    sensor_id, sensor_config, config.update_rate
+                )
             result_list.append(result_dict)
         return result_list
 
