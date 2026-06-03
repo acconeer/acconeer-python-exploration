@@ -33,7 +33,7 @@ echo
 echo INFO:
 echo INFO: Update done.
 echo INFO:
-echo INFO: Ready to run 'run_app.bat' or 'cmd_with_path.bat'.
+echo INFO: Ready to run 'run_app.bat' or 'cmd_in_venv.bat'.
 echo INFO:
 
 pause
