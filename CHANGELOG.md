@@ -1,5 +1,14 @@
 # Changelog
 
+## v7.18.2
+
+    This will be the last version of Exploration Tool
+    that supports Python 3.9, 3.10 & 3.11.
+
+### Added
+
+- Full-screen support. QOL feature for demo.
+
 ## v7.18.1
 
 ### Added
