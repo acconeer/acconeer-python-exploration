@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import typing as t
+from collections.abc import Iterator
 from enum import Flag, auto
 
 import numpy as np
@@ -36,6 +37,7 @@ _MIN_LEAKAGE_FREE_DIST_M = {
 }
 _MIN_NUM_POINTS_IN_ENVELOPE_FWHM_SPAN = 4.0
 _VALID_STEP_LENGTHS = [1, 2, 3, 4, 6, 8, 12, 24]
+_NUM_FAR_RANGE_GROUPS = 1
 _NUM_SUBSWEEPS_IN_SENSOR_CONFIG = 4
 _HWAAS_MIN_DISTANCE = 1.0
 _MAX_HWAAS = 511
@@ -227,11 +229,20 @@ def _max_profile_margins(
     return (left_margin, right_margin)
 
 
+def _iter_subsweeps(start_group: int, total: int) -> Iterator[SubsweepReference]:
+    for n in range(total):
+        yield SubsweepReference(
+            group_index=start_group + n // _NUM_SUBSWEEPS_IN_SENSOR_CONFIG,
+            subsweep_index=n % _NUM_SUBSWEEPS_IN_SENSOR_CONFIG,
+        )
+
+
 def detector_config_to_processor_specs(
     config: DetectorConfig,
     num_far_subsweeps: int,
 ) -> list[ProcessorSpec]:
-    if num_far_subsweeps > 4 or num_far_subsweeps < 0:
+    max_num_far_subsweeps = _NUM_FAR_RANGE_GROUPS * _NUM_SUBSWEEPS_IN_SENSOR_CONFIG
+    if num_far_subsweeps > max_num_far_subsweeps or num_far_subsweeps < 0:
         raise ValueError
 
     far_range_processor_config = ProcessorConfig(
@@ -254,20 +265,15 @@ def detector_config_to_processor_specs(
         cr_proc_spec = ProcessorSpec(processor_config=close_range_processor_config)
         processor_specs.append(cr_proc_spec)
 
-    # Iterator of available subsweep indexes. Will be consumed
+    # Iterator of available subsweep references. Will be consumed
     # in the for-loop below.
-    far_subsweep_idx_iter = iter(range(num_far_subsweeps))
     far_group_idx = 1 if RangeTypes.CLOSE_RANGE in range_types else 0
+    far_subsweep_ref_iter = _iter_subsweeps(far_group_idx, num_far_subsweeps)
 
     for range_type in range_types & RangeTypes.FAR_RANGE:
         if range_type & RangeTypes.ANY_TRANSITION:
             # If "Transition": Use a single subsweep
-            transition_subsweep_idx = next(far_subsweep_idx_iter)
-
-            transition_subsweep_ref = SubsweepReference(
-                group_index=far_group_idx,
-                subsweep_index=transition_subsweep_idx,
-            )
+            transition_subsweep_ref = next(far_subsweep_ref_iter)
 
             transition_proc_spec = ProcessorSpec(
                 processor_config=far_range_processor_config,
@@ -277,12 +283,7 @@ def detector_config_to_processor_specs(
             processor_specs.append(transition_proc_spec)
         elif range_type & RangeTypes.MAX_PROFILE:
             # If "Max Profile": Use the rest of the available subsweeps
-            max_profile_subsweep_idxs = list(far_subsweep_idx_iter)
-
-            max_profile_subsweep_refs = [
-                SubsweepReference(group_index=far_group_idx, subsweep_index=idx)
-                for idx in max_profile_subsweep_idxs
-            ]
+            max_profile_subsweep_refs = list(far_subsweep_ref_iter)
 
             max_profile_proc_spec = ProcessorSpec(
                 processor_config=far_range_processor_config,
@@ -479,7 +480,7 @@ def detector_config_to_session_config(
         else:
             cfar_margin = 0
 
-        num_max_profile_subsweeps = _NUM_SUBSWEEPS_IN_SENSOR_CONFIG - len(
+        num_max_profile_subsweeps = _NUM_FAR_RANGE_GROUPS * _NUM_SUBSWEEPS_IN_SENSOR_CONFIG - len(
             range_types & RangeTypes.ANY_TRANSITION
         )
 
@@ -531,8 +532,13 @@ def detector_config_to_session_config(
             )
 
     if len(far_subsweeps) > 0:
-        sensor_config = a121.SensorConfig(subsweeps=far_subsweeps, sweeps_per_frame=1)
-        groups.append({sensor_id: sensor_config for sensor_id in sensor_ids})
+        grouped_subsweeps = [
+            far_subsweeps[i : i + _NUM_SUBSWEEPS_IN_SENSOR_CONFIG]
+            for i in range(0, len(far_subsweeps), _NUM_SUBSWEEPS_IN_SENSOR_CONFIG)
+        ]
+        for subsweep_group in grouped_subsweeps:
+            sensor_config = a121.SensorConfig(subsweeps=subsweep_group, sweeps_per_frame=1)
+            groups.append({sensor_id: sensor_config for sensor_id in sensor_ids})
 
     return a121.SessionConfig(groups, extended=True, update_rate=config.update_rate)
 
@@ -542,13 +548,11 @@ def get_num_far_subsweeps(
     config: DetectorConfig,
 ) -> int:
     range_types = _get_range_types(config)
-    if RangeTypes.CLOSE_RANGE & range_types and len(session_config.groups) == 1:
-        # no far group
-        return 0
-
-    far_sensor_group = session_config.groups[-1]
-    # same config for each sensor. Grab first sensor id.
-    num_far_subsweeps = far_sensor_group[next(iter(far_sensor_group.keys()))].num_subsweeps
+    start_group = 1 if (RangeTypes.CLOSE_RANGE & range_types) else 0
+    num_far_subsweeps = 0
+    for group in session_config.groups[start_group:]:
+        sensor_config = next(iter(group.values()))  # Same config for each sensor. Grab first one.
+        num_far_subsweeps += sensor_config.num_subsweeps
     return num_far_subsweeps
 
 
