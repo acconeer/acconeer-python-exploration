@@ -149,7 +149,7 @@ class ExampleAppResult:
     lp_displacements: Optional[npt.NDArray[np.float64]] = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    """Array of estimated displacement (μm) per frequency."""
+    """Array of estimated displacement (µm) per frequency."""
 
     lp_displacements_freqs: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
     """Array of frequencies where displacement is estimated (Hz)."""
@@ -157,7 +157,7 @@ class ExampleAppResult:
     peak_displacements: npt.NDArray[np.float64] = attrs.field(
         factory=lambda: np.empty(0), eq=attrs_ndarray_isclose
     )
-    """Array of detected displacements above threshold (μm)."""
+    """Array of detected displacements above threshold (µm)."""
 
     peak_frequencies: npt.NDArray[np.float64] = attrs.field(
         factory=lambda: np.empty(0), eq=attrs_ndarray_isclose

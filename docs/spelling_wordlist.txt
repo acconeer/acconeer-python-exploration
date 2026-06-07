@@ -67,6 +67,7 @@ EVK
 exe
 exptool
 Fabry
+far-field
 flickery
 fluctuative
 FoM
@@ -98,6 +99,8 @@ mA
 macOS
 Mbps
 merchantability
+metasurface
+metasurfaces
 microcontroller
 mmWave
 multipath
@@ -199,5 +202,9 @@ winusb
 wirelessly
 Zadig
 zipimporter
-μm
+µm
+µA
+µV
 Yuka
+V
+δ

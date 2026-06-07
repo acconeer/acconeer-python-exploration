@@ -244,7 +244,7 @@ In general, multiple design aspects must be considered when choosing a lens type
 
 Manufacturing lenses by injection molding may pose limitations on the lens maximum thickness. For the refracting type lenses, thin lenses are obtained by choosing a high F/D ratio and higher :term:`permittivity<Permittivity>` materials. On the other hand, higher F/D ratios occupy more space as well as increased spillover energy which in turn leads to larger side lobes. For the plano-convex and convex-planar lenses, it is therefore recommended to keep 0.3 < F/D < 0.6. Lens design with F/D outside this range is certainly possible, but with additional loss in directivity and increased side lobes. When large diameter lenses are required, FZP type lenses should be considered as it's thickness only depends on the :term:`permittivity<Permittivity>` and are thus generally thinner than :term:`refracting<Refraction>` type lenses.
 
-For maximum gain and low side-lobe levels, it is important to also follow the PCB ground plane guidelines in :ref:`integration-a121-EM_PCB_groundplane_size`.
+For maximum gain and low side-lobe levels, it is important to also follow the PCB guidelines in :ref:`a121_pcb_guidelines`.
 
 Focal distance tuning
 ---------------------

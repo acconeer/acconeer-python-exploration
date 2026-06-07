@@ -1,3 +1,5 @@
+.. _a121_ebg_guidelines:
+
 ============================================================
 Electromagnetic bandgap structures for side lobe suppression
 ============================================================
@@ -76,7 +78,7 @@ When laying out a PCB, the preferred way is to place all external components suc
 
 - Layer 2 must be a solid ground plane without routing where the EBGs are applied.
 - The EBGs have been optimized for 0.20 - 0.25 mm via diameters. This also allows placing signal vias close to the footprint pads.
-- Minimize the amount of routing on the sensor layer, at least within the clearance region. This can be done by routing the signals to the sensor with vias placed as close as possible to the sensor pads. The ground plane area inside the footprint has lower impact on the radiated performance and therefore some vias and short traces are preferably placed there.
+- Minimize the amount of routing on the sensor layer, at least within the clearance region in :numref:`fig_a121_pcb_front_side_components_3D`. This can be done by routing the signals to the sensor with vias placed as close as possible to the sensor pads, see :numref:`fig_a121_pcb_back_side_components`. The ground plane area inside the footprint has lower impact on the radiated performance and therefore some vias and short traces are preferably placed there.
 - Whenever the assembly process allows, remove thermal reliefs on all sensor pads.
 - Minimize copper clearance for traces, vias, and pads on the sensor layer to maximize the ground plane area close to the sensor.
 - Add stitching vias with <0.6 mm spacing at the PCB outer edge to suppress potential edge radiation.
