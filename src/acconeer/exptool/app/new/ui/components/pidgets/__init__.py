@@ -25,6 +25,8 @@ from .pidgets import (
     OptionalEnumPidgetFactory,
     OptionalFloatPidget,
     OptionalFloatPidgetFactory,
+    OptionalFloatRangeSliderPidget,
+    OptionalFloatRangeSliderPidgetFactory,
     OptionalIntPidget,
     OptionalIntPidgetFactory,
     OptionalPidget,

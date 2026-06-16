@@ -838,6 +838,143 @@ class OptionalFloatPidget(OptionalPidget):
 
 
 @attrs.frozen(kw_only=True, slots=False)
+class OptionalFloatRangeSliderPidgetFactory(OptionalPidgetFactory, FloatRangeSliderPidgetFactory):
+    init_set_value: Optional[Tuple[float, float]] = None
+
+    def create(self, parent: QWidget) -> OptionalFloatRangeSliderPidget:  # type: ignore[override]
+        return OptionalFloatRangeSliderPidget(self, parent)
+
+
+class OptionalFloatRangeSliderPidget(OptionalPidget):
+    def __init__(self, factory: OptionalFloatRangeSliderPidgetFactory, parent: QWidget) -> None:
+        super().__init__(factory, parent)
+
+        self._none_checkbox.stateChanged.connect(self.__on_checkbox_changed)
+
+        self.__spin_box_l = _PidgetDoubleSpinBox(
+            self,
+            limits=factory.limits,
+            suffix=factory.suffix,
+            decimals=factory.decimals,
+        )
+        self.__spin_box_r = _PidgetDoubleSpinBox(
+            self,
+            limits=factory.limits,
+            suffix=factory.suffix,
+            decimals=factory.decimals,
+        )
+        self.__spin_box_l.valueChanged.connect(self.__on_spin_box_l_changed)
+        self.__spin_box_l.setFixedWidth(int(round(WIDGET_WIDTH * 2 / 3)))
+        self.__spin_box_r.valueChanged.connect(self.__on_spin_box_r_changed)
+        self.__spin_box_r.setFixedWidth(int(round(WIDGET_WIDTH * 2 / 3)))
+
+        slider_widget = QWidget(parent=self)
+        slider_widget_layout = QHBoxLayout(slider_widget)
+        slider_widget_layout.setContentsMargins(11, 6, 11, 0)
+        slider_widget.setLayout(slider_widget_layout)
+
+        lower_limit, upper_limit = factory.limits
+        if factory.show_limit_values:
+            slider_widget_layout.addWidget(QLabel(str(lower_limit), slider_widget))
+
+        self._slider = _PidgetRangeSlider(
+            slider_widget,
+            limits=factory.limits,
+            decimals=factory.decimals,
+            log_scale=factory.log_scale,
+        )
+        self._slider.wrapped_value_changed.connect(self.__on_slider_changed)
+        slider_widget_layout.addWidget(self._slider)
+
+        if factory.show_limit_values:
+            slider_widget_layout.addWidget(QLabel(str(upper_limit), slider_widget))
+
+        self._slider_widget = slider_widget
+        self.setting = False
+
+        init_val = factory.init_set_value if factory.init_set_value is not None else factory.limits
+        with QtCore.QSignalBlocker(self):
+            self.__sync_to_value(init_val)
+
+        self.__set_enabled(False)
+
+        self.set_standard_layout(
+            factory,
+            first_row_elements=[
+                "name_label",
+                "extra_widget",
+                "optional_checkbox",
+                self.__spin_box_l,
+                self.__spin_box_r,
+            ],
+            full_row_widgets=[slider_widget],
+        )
+
+    def __set_enabled(self, enabled: bool) -> None:
+        self.__spin_box_l.setEnabled(enabled)
+        self.__spin_box_r.setEnabled(enabled)
+        self._slider_widget.setEnabled(enabled)
+
+    def __sync_to_value(self, value: Tuple[float, float]) -> None:
+        self.setting = True
+        self.__spin_box_l.setValue(value[0])
+        self.__spin_box_r.setValue(value[1])
+        self._slider.wrapped_set_value(value)
+        self.setting = False
+
+    def __on_checkbox_changed(self) -> None:
+        checked = self._none_checkbox.isChecked()
+        with QtCore.QSignalBlocker(self):
+            self.__set_enabled(checked)
+        value = self._slider.wrapped_get_value() if checked else None
+        self.sig_update.emit(value)
+
+    def __on_spin_box_l_changed(self, new_l_value: float) -> None:
+        if self.setting:
+            return
+        with QtCore.QSignalBlocker(self):
+            r_value = self._slider.wrapped_get_value()[1]
+            self.__sync_to_value((new_l_value, r_value))
+        self.sig_update.emit(self._slider.wrapped_get_value())
+
+    def __on_spin_box_r_changed(self, new_r_value: float) -> None:
+        if self.setting:
+            return
+        with QtCore.QSignalBlocker(self):
+            l_value = self._slider.wrapped_get_value()[0]
+            self.__sync_to_value((l_value, new_r_value))
+        self.sig_update.emit(self._slider.wrapped_get_value())
+
+    def __on_slider_changed(self, value: Tuple[float, float]) -> None:
+        if not self.setting:
+            with QtCore.QSignalBlocker(self):
+                self.__sync_to_value(value)
+            self.sig_update.emit(self._slider.wrapped_get_value())
+
+    def set_data(self, value: Any) -> None:
+        super().set_data(value)
+        with QtCore.QSignalBlocker(self):
+            if value is not None:
+                self.__sync_to_value(value)
+                self.__set_enabled(True)
+            else:
+                self.__set_enabled(False)
+
+    def get_data(self) -> Optional[Tuple[float, float]]:
+        if not self._none_checkbox.isChecked():
+            return None
+        return self._slider.wrapped_get_value()
+
+    def set_unset_value(self, value: Tuple[float, float]) -> None:
+        """Show ``value``, disabled, while unset: the value that unset stands for,
+        which checking the box then starts from. Ignored while set."""
+        if self._none_checkbox.isChecked():
+            return
+        with QtCore.QSignalBlocker(self):
+            self.__sync_to_value(value)
+
+
+@attrs.frozen(kw_only=True, slots=False)
 class CheckboxPidgetFactory(PidgetFactory):
     name_label_text: str = attrs.field()
 
@@ -981,12 +1118,17 @@ class SensorIdPidget(ComboboxPidget[int]):
 class EnumPidgetFactory(ComboboxPidgetFactory[EnumT]):
     enum_type: Type[EnumT] = attrs.field()
     label_mapping: dict[EnumT, str] = attrs.field()
+    tooltip_mapping: Optional[dict[EnumT, str]] = attrs.field(default=None)
 
     items: list[tuple[str, EnumT]] = attrs.field(init=False)
 
     def __attrs_post_init__(self) -> None:
         if self.label_mapping.keys() != set(self.enum_type):
             msg = "label_mapping does not match enum_type"
+            raise ValueError(msg)
+
+        if self.tooltip_mapping is not None and self.tooltip_mapping.keys() != set(self.enum_type):
+            msg = "tooltip_mapping does not match enum_type"
             raise ValueError(msg)
 
         items = [(v, k) for k, v in self.label_mapping.items()]
@@ -1005,6 +1147,13 @@ class EnumPidgetFactory(ComboboxPidgetFactory[EnumT]):
 class EnumPidget(ComboboxPidget[EnumT]):
     def __init__(self, factory: EnumPidgetFactory[EnumT], parent: QWidget) -> None:
         super().__init__(factory, parent)
+
+        if factory.tooltip_mapping is not None:
+            for index in range(self._combobox.count()):
+                item_data = self._combobox.itemData(index)
+                tooltip = factory.tooltip_mapping.get(item_data)
+                if tooltip is not None:
+                    self._combobox.setItemData(index, tooltip, QtCore.Qt.ItemDataRole.ToolTipRole)
 
 
 @attrs.frozen(kw_only=True, slots=False)
