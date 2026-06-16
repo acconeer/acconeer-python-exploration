@@ -7,7 +7,7 @@ import typing as t
 from enum import IntEnum, auto
 
 from PySide6.QtCore import QSize, Qt, Signal
-from PySide6.QtGui import QIcon
+from PySide6.QtGui import QIcon, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QButtonGroup,
     QMainWindow,
@@ -204,13 +204,16 @@ class MainWindow(QMainWindow):
 
         self.resize(1280, 720)
 
-        paged_layout = _PagedLayout(app_model)
+        self._paged_layout = _PagedLayout(app_model)
 
-        self.setCentralWidget(paged_layout)
+        self.setCentralWidget(self._paged_layout)
 
         self.setStatusBar(StatusBar(app_model, self))
         self.setWindowTitle("Acconeer Exploration Tool")
         self.moveEvent = lambda _: self.saveGeometry()  # type: ignore[method-assign,assignment]
+
+        escape_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Escape), self)
+        escape_shortcut.activated.connect(self._exit_fullscreen)
 
         app_model.sig_error.connect(
             lambda exception, traceback_str: ExceptionWidget(
@@ -220,6 +223,10 @@ class MainWindow(QMainWindow):
                 title=f"Error #{app_model.num_errors}",
             ).open()
         )
+
+    def _exit_fullscreen(self) -> None:
+        if self.isFullScreen():
+            self._paged_layout._stream_main_widget.working_area.exit_fullscreen()
 
     def closeEvent(self, *args: t.Any, **kwargs: t.Any) -> None:
         self.sig_closing.emit()

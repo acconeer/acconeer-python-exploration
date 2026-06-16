@@ -4,6 +4,8 @@
 
 ### Added
 
+- Fullscreen support. QOL feature for demo.
+
 ### Changed
 
 ### Fixed

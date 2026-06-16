@@ -1,13 +1,21 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QSplitter, QVBoxLayout, QWidget
+from PySide6.QtCore import QSize, Qt
+from PySide6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QSplitter,
+    QVBoxLayout,
+    QWidget,
+)
 
 from acconeer.exptool.app.new.app_model import AppModel
-from acconeer.exptool.app.new.ui.icons import BUTTON_ICON_COLOR
+from acconeer.exptool.app.new.ui.icons import BUTTON_ICON_COLOR, FULLSCREEN, FULLSCREEN_EXIT
 from acconeer.exptool.app.new.ui.misc import VerticalSeparator
 from acconeer.exptool.app.new.ui.utils import LayoutWrapper
 
@@ -29,9 +37,9 @@ class StreamingMainWidget(QWidget):
         layout.addWidget(top_bar)
         layout.setStretchFactor(top_bar, 0)
 
-        working_area = WorkingArea(app_model, self)
-        layout.addWidget(working_area)
-        layout.setStretchFactor(working_area, 1)
+        self.working_area = WorkingArea(app_model, self)
+        layout.addWidget(self.working_area)
+        layout.setStretchFactor(self.working_area, 1)
 
         self.setLayout(layout)
 
@@ -71,35 +79,67 @@ class WorkingArea(QSplitter):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
+        self._is_fullscreen = False
+
         layout = QHBoxLayout(self)
 
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        left_area = PluginSelectionArea(app_model, self)
-        left_area.setMinimumWidth(250)
-        left_area.setMaximumWidth(350)
-        layout.addWidget(left_area)
-        layout.setStretchFactor(left_area, 0)
+        self._left_area = PluginSelectionArea(app_model, self)
+        self._left_area.setMinimumWidth(250)
+        self._left_area.setMaximumWidth(350)
+        layout.addWidget(self._left_area)
+        layout.setStretchFactor(self._left_area, 0)
 
         plugin_layout = QVBoxLayout()
 
-        plugin_label = PluginTitleLabel(app_model, self)
-        plugin_layout.addWidget(plugin_label)
-        plugin_layout.setStretchFactor(plugin_label, 0)
+        self._fullscreen_btn = QPushButton()
+        self._fullscreen_btn.setIcon(FULLSCREEN())
+        self._fullscreen_btn.setFixedSize(30, 30)
+        self._fullscreen_btn.setIconSize(QSize(20, 20))
+        self._fullscreen_btn.setFlat(True)
+        self._fullscreen_btn.setToolTip("Toggle fullscreen")
+        self._fullscreen_btn.clicked.connect(self._toggle_fullscreen)
 
-        plot_plugin_area = PluginPlotArea(app_model, self)
-        plugin_layout.addWidget(plot_plugin_area)
-        plugin_layout.setStretchFactor(plot_plugin_area, 1)
+        left_spacer = QWidget()
+        left_spacer.setFixedSize(30, 30)
+
+        plugin_label = PluginTitleLabel(app_model, self)
+
+        title_row = QHBoxLayout()
+        title_row.setContentsMargins(0, 0, 0, 0)
+        title_row.addWidget(left_spacer)
+        title_row.addWidget(plugin_label, stretch=1)
+        title_row.addWidget(self._fullscreen_btn)
+        plugin_layout.addLayout(title_row)
+
+        self._plot_plugin_area = PluginPlotArea(app_model, self)
+        plugin_layout.addWidget(self._plot_plugin_area)
+        plugin_layout.setStretchFactor(self._plot_plugin_area, 1)
 
         plot_layout_wrapper = LayoutWrapper(plugin_layout)
         layout.addWidget(plot_layout_wrapper)
         layout.setStretchFactor(plot_layout_wrapper, 1)
 
-        right_area = PluginControlArea(app_model, self)
-        right_area.setMinimumWidth(400)
-        right_area.setMaximumWidth(450)
-        layout.addWidget(right_area)
-        layout.setStretchFactor(right_area, 0)
+        self._right_area = PluginControlArea(app_model, self)
+        self._right_area.setMinimumWidth(400)
+        self._right_area.setMaximumWidth(450)
+        layout.addWidget(self._right_area)
+        layout.setStretchFactor(self._right_area, 0)
 
         self.setLayout(layout)
+
+    def _toggle_fullscreen(self) -> None:
+        self._is_fullscreen = not self._is_fullscreen
+        self._left_area.setVisible(not self._is_fullscreen)
+        self._right_area.setVisible(not self._is_fullscreen)
+        self._fullscreen_btn.setIcon(FULLSCREEN_EXIT() if self._is_fullscreen else FULLSCREEN())
+        if self._is_fullscreen:
+            self.window().showFullScreen()
+        else:
+            self.window().showNormal()
+
+    def exit_fullscreen(self) -> None:
+        if self._is_fullscreen:
+            self._toggle_fullscreen()

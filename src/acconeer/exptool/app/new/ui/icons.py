@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from functools import partial
@@ -53,4 +53,6 @@ UNLINK          = partial(qta.icon, "fa5s.unlink",               color=BUTTON_IC
 WARNING         = partial(qta.icon, "ph.warning-fill",           color=WARNING_YELLOW)
 EYE_OPEN        = partial(qta.icon, "fa5s.eye",                  color=BUTTON_ICON_COLOR)
 EYE_CLOSED      = partial(qta.icon, "fa5s.eye-slash",            color=BUTTON_ICON_COLOR)
+FULLSCREEN      = partial(qta.icon, "fa5s.expand",               color=BUTTON_ICON_COLOR)
+FULLSCREEN_EXIT = partial(qta.icon, "fa5s.compress",             color=BUTTON_ICON_COLOR)
 # fmt: on
