@@ -636,6 +636,27 @@ def test_is_class() -> None:
     assert not opser.core.is_class(t.List)
 
 
+def test_is_ndarray() -> None:
+    assert opser.core.is_ndarray(np.ndarray)
+    assert opser.core.is_ndarray(npt.NDArray)
+    assert opser.core.is_ndarray(npt.NDArray[t.Any])
+    assert opser.core.is_ndarray(npt.NDArray[np.float64])
+    assert not opser.core.is_ndarray(t.List[int])
+    assert not opser.core.is_ndarray(int)
+
+
+@attrs.define
+class ArrayParent:
+    array: npt.NDArray[np.float64]
+
+
+def test_can_round_trip_ndarray_field(tmp_h5_file: h5py.File) -> None:
+    original = ArrayParent(_array(np.float64))
+    opser.serialize(original, tmp_h5_file)
+    loaded = opser.deserialize(tmp_h5_file, ArrayParent)
+    assert np.array_equal(loaded.array, original.array)
+
+
 def test_is_generic() -> None:
     assert not opser.core.is_generic(Simple)
     assert not opser.core.is_generic(Parent)

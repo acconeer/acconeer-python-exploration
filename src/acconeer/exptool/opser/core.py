@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -12,6 +12,8 @@ import typing as t
 import attrs
 import exceptiongroup as eg
 import h5py
+import numpy as np
+import numpy.typing as npt
 import typing_extensions as te
 
 from . import core
@@ -289,10 +291,14 @@ def unwrap_generic(__type: TypeLike) -> t.Sequence[TypeLike]:
 
 
 def is_ndarray(__type: TypeLike) -> bool:
-    # Extra check for numpy arrays (annotated with 'numpy.typing.NDArray').
-    #   In versions <3.9/3.10, numpy has their own GenericAlias that does not play
-    # well with the introspection functions from 'typing'.
-    return getattr(__type, "__name__", None) == "ndarray"
+    # True for 'numpy.ndarray' and any 'numpy.typing.NDArray[...]' annotation.
+    #   The representation of 'NDArray' differs across numpy versions (a plain
+    # GenericAlias up to 2.4, a PEP 695 type alias from 2.5), so match the numpy
+    # objects by identity instead of by a fragile '__name__' string.
+    if __type is np.ndarray or __type is npt.NDArray:
+        return True
+    origin = te.get_origin(__type)
+    return origin is np.ndarray or origin is npt.NDArray
 
 
 def get_class_type_hints(__type: type) -> dict[str, TypeLike]:
