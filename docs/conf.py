@@ -139,6 +139,7 @@ html_theme_options = {
             "type": "fontawesome",
         },
     ],
+    "analytics": {"google_analytics_id": "G-HRERX3GCYB"},
 }
 
 html_last_updated_fmt = "%Y-%m-%d"
