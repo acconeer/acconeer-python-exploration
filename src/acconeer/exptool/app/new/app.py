@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import ctypes
+import faulthandler
 import functools
 import logging
 import os
@@ -71,6 +72,11 @@ def main() -> None:
     args = parser.parse_args()
     config_logging(args)
     avoid_fork(preload=["acconeer.exptool.app.new.backend"])
+
+    # Dump a C + Python stack trace on native crashes (segfaults) that bypass
+    # Python's excepthook and exit silently. Writes via async-signal-safe fd
+    # writes, so it survives a crash that would discard buffered stderr/logging.
+    faulthandler.enable()
 
     if args.tasks:
         any_autoconnect = (
