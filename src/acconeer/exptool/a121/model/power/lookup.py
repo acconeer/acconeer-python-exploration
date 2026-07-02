@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -45,7 +45,8 @@ class Sensor:
     normal_overheads: t.Mapping[FixedOverhead, float]
     high_speed_mode_overheads: t.Mapping[FixedOverhead, float]
     pre_measure_setup_duration: float
-    read_duration: float
+    read_setup_duration: float
+    read_seconds_per_point: float
 
     sample_durations: t.Mapping[a121.Profile, t.Mapping[a121.PRF, float]]
     point_overheads: t.Mapping[a121.Profile, t.Mapping[a121.PRF, float]]
@@ -103,7 +104,8 @@ class Sensor:
                 cls.FixedOverhead.FRAME: 36 * _us,
             },
             pre_measure_setup_duration=600 * _us,
-            read_duration=0.2 * _ms,
+            read_setup_duration=49 * _us,
+            read_seconds_per_point=1.25 * _us,
             sample_durations={
                 a121.Profile.PROFILE_1: {
                     a121.PRF.PRF_19_5_MHz: 1.487 * _us,

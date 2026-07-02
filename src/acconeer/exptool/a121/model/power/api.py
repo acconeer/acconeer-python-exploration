@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 """
 API for generating power regions (for more info see ./domain.py).
@@ -231,12 +231,13 @@ def frame_active(
         description="Setup",
     )
 
+    frame_data_length = sum(ssc.num_points for ssc in config.subsweeps) * config.sweeps_per_frame
     read = domain.SimpleRegion(
         (
             (module.currents[Module.PowerState.IO] + module.currents[Module.PowerState.AWAKE]) / 2
             + sensor.inter_frame_currents[config.inter_frame_idle_state]
         ),
-        sensor.read_duration,
+        sensor.read_setup_duration + sensor.read_seconds_per_point * frame_data_length,
         tag=domain.EnergyRegion.Tag.COMMUNICATION,
         description="Read",
     )

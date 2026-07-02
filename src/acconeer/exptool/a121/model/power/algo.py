@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -117,7 +117,8 @@ class Presence(Algorithm):
 
 
 class Distance(Algorithm):
-    _PROCESSING_SECONDS_PER_POINT = 12e-6
+    _PROCESSING_SECONDS_PER_POINT = 18.05e-6
+    _PROCESSING_SECONDS_PER_POINT_LEAKAGE = 1.95e-6
 
     @classmethod
     def processing_region(
@@ -126,17 +127,21 @@ class Distance(Algorithm):
         sensor: Sensor,
         module: Module,
     ) -> domain.SimpleRegion:
-        static_duration = 2.5e-3
+        spf = sensor_config.sweeps_per_frame
+        leakage_premium = cls._PROCESSING_SECONDS_PER_POINT_LEAKAGE if spf > 1 else 0.0
 
         num_points = sum(ssc.num_points for ssc in sensor_config.subsweeps)
+        num_measured_points = num_points * spf
+        duration = num_measured_points * (cls._PROCESSING_SECONDS_PER_POINT + leakage_premium)
+
         return domain.SimpleRegion(
             (
                 module.currents[Module.PowerState.PROCESSING]
                 + sensor.inter_frame_currents[sensor_config.inter_frame_idle_state]
             ),
-            duration=static_duration + num_points * cls._PROCESSING_SECONDS_PER_POINT,
+            duration=duration,
             tag=domain.EnergyRegion.Tag.PROCESSING,
-            description=f"Distance processing ({num_points} points)",
+            description=f"Distance processing ({num_measured_points} points)",
         )
 
     @staticmethod
@@ -291,8 +296,8 @@ def off_exit(
     """
 
     return domain.SimpleRegion(
-        10.51 * _mA,
-        4 * _ms,
+        12.5 * _mA,
+        5 * _ms,
         tag=domain.EnergyRegion.Tag.COMMUNICATION,
         description="Wake up from off",
     )
