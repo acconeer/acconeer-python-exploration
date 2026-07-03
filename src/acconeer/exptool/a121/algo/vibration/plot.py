@@ -346,10 +346,10 @@ class VibrationPlot:
                     accelerations=self._accelerations(peak_frequencies, peak_displacements),
                     color_ids=[et.utils.pg_brush_cycler(i) for i in range(len(peak_frequencies))],
                 )
-
-                self._update_peak_plots()
             else:
-                self.fft_curve[2].setData([], [])
+                self.peak_data = PeakData()
+
+            self._update_peak_plots()
 
     def _on_peak_list_display_type_changed(self, index: int) -> None:
         data = self.peak_list_display_combo.currentData()
