@@ -25,6 +25,9 @@ uvx --python=3.12 --exclude-newer="%update_timestamp%" acconeer-exptool[app] --p
 
 IF ERRORLEVEL 1 (
     echo ERROR: uvx or ET returned an error, see above
+    echo ERROR:
+    echo ERROR: If this error persists, try removing the file 'update_timestamp.txt'
+    echo ERROR: and run this script, 'run_app.bat', again.
     pause
     exit 1
 )
