@@ -2,7 +2,15 @@
 
 IF NOT EXIST "update_timestamp.txt" (
     echo ERROR: File 'update_timestamp.txt' does not exist.
-    echo ERROR: Run 'update.bat'.
+    echo INFO: #######################################################
+    echo INFO: #                                                     #
+    echo INFO: #  In order to proceed:                               #
+    echo INFO: #                                                     #
+    echo INFO: #      1. run the script 'update.bat'                 #
+    echo INFO: #      2. run this script, 'run_app.bat', again       #
+    echo INFO: #                                                     #
+    echo INFO: #                                                     #
+    echo INFO: #######################################################
     pause
     exit 1
 )
