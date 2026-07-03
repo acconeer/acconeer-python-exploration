@@ -19,7 +19,7 @@ SET /P update_timestamp=<update_timestamp.txt
 
 @echo on
 
-uvx --python=3.12 --exclude-newer=%update_timestamp% acconeer-exptool[app] --portable
+uvx --python=3.12 --exclude-newer="%update_timestamp%" acconeer-exptool[app] --portable
 
 @echo off
 
