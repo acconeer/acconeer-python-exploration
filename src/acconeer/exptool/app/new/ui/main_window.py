@@ -7,7 +7,7 @@ import typing as t
 from enum import IntEnum, auto
 
 from PySide6.QtCore import QSize, Qt, Signal
-from PySide6.QtGui import QIcon, QKeySequence, QShortcut
+from PySide6.QtGui import QDesktopServices, QIcon, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QButtonGroup,
     QMainWindow,
@@ -23,12 +23,15 @@ from acconeer.exptool.app.new.app_model import AppModel
 
 from .flash_tab import FlashWizard
 from .help_tab import HelpMainWidget
-from .icons import FLASH, GAUGE, HELP, RECORD
+from .icons import EXTERNAL_DOCS, FLASH, GAUGE, HELP, RECORD
 from .misc import ExceptionWidget
 from .resource_tab import ResourceMainWidget
 from .status_bar import StatusBar
 from .stream_tab import StreamingMainWidget
 from .utils import LayoutWrapper, TopAlignDecorator
+
+
+ACCONEER_DOCS_URL = "https://docs.acconeer.com"
 
 
 class _IconButton(QToolButton):
@@ -84,6 +87,7 @@ class _PagedLayout(QSplitter):
         STREAM = auto()
         FLASH = auto()
         RESOURCE_CALCULATOR = auto()
+        DOCS = auto()
         HELP = auto()
 
     def __init__(
@@ -146,6 +150,16 @@ class _PagedLayout(QSplitter):
             lambda: self.setCurrentWidget(self._resource_main_widget)
         )
 
+        docs_index_button = _IconButton(
+            EXTERNAL_DOCS(),
+            "Docs",
+            is_checkable=False,
+            is_active=False,
+            tooltip="Go to docs.acconeer.com",
+        )
+        self._index_button_group.addButton(docs_index_button, id=self._ButtonId.DOCS)
+        self._index_button_layout.addWidget(docs_index_button)
+
         help_index_button = _IconButton(
             HELP(),
             "Help",
@@ -175,6 +189,8 @@ class _PagedLayout(QSplitter):
             FlashWizard(self.app_model).exec()
         elif index_button_id == self._ButtonId.RESOURCE_CALCULATOR:
             self.setCurrentWidget(self._resource_main_widget)
+        elif index_button_id == self._ButtonId.DOCS:
+            QDesktopServices.openUrl(ACCONEER_DOCS_URL)
         elif index_button_id == self._ButtonId.HELP:
             self.setCurrentWidget(self._help_main_widget)
         else:
