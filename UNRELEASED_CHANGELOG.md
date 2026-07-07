@@ -11,6 +11,9 @@
   for security information and vulnerability reporting.
 
 ### Changed
+- A121 Distance: `ThresholdMethod.RECORDED` and `RecordedThresholdCalibration`
+  are removed. Close range measurements internally still use a recorded
+  threshold, calibrated automatically.
 
 ### Fixed
 

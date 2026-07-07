@@ -35,7 +35,6 @@ from ._context import (
     DetectorContext,
     NoiseCalibration,
     OffsetCalibration,
-    RecordedThresholdCalibration,
     detector_context_timeline,
 )
 from ._processors import (
@@ -46,6 +45,7 @@ from ._processors import (
     ProcessorContext,
     ProcessorResult,
     ThresholdMethod,
+    coerce_removed_recorded_threshold_method_json,
 )
 from ._translation import (
     detector_config_to_processor_specs,
@@ -160,7 +160,11 @@ class DetectorConfig(AlgoConfigBase):
     """Sensitivity of threshold.
 
     High sensitivity equals low detection threshold, low sensitivity equals high detection
-    threshold."""
+    threshold.
+
+    Applies to the CFAR threshold (if selected) and, independently, to close range's recorded
+    threshold whenever close range is active.
+    """
 
     update_rate: Optional[float] = attrs.field(default=50.0)
     """Sets the detector update rate."""
@@ -354,10 +358,9 @@ class Detector(Controller[DetectorConfig, dict[int, DetectorResult]]):
 
         if self._has_close_range_measurement(self.config):
             self.context.close_range_calibration = CloseRangeCalibration.create(
-                self.client, self.session_config
-            )
-            self.context.recorded_threshold_calibration = RecordedThresholdCalibration.create(
-                self.client, self.session_config, self.config.num_frames_in_recorded_threshold
+                self.client,
+                self.session_config,
+                self.config.num_frames_in_recorded_threshold,
             )
 
         self.context.session_config_used_during_calibration = self.session_config
@@ -412,9 +415,17 @@ class Detector(Controller[DetectorConfig, dict[int, DetectorResult]]):
 
         # Offset calibration is always performed as a part of the detector calibration process.
         # Use this as indication whether detector calibration has been performed.
-        calibration_missing = np.any(
-            [context.offset_calibration is None for sensor_id in context.sensor_ids]
+        calibration_missing = bool(
+            np.any([context.offset_calibration is None for sensor_id in context.sensor_ids])
         )
+        # A close-range config needs a recorded threshold; a context without one (e.g. loaded
+        # from a pre-recorded_threshold_results record, see detector_context_timeline) can't
+        # actually run close-range detection even though it otherwise looks calibrated.
+        if cls._has_close_range_measurement(config):
+            calibration_missing = calibration_missing or (
+                context.close_range_calibration is None
+                or len(context.close_range_calibration.recorded_threshold_results) == 0
+            )
         config_mismatch = context.session_config_used_during_calibration != session_config
 
         if calibration_missing:
@@ -428,14 +439,6 @@ class Detector(Controller[DetectorConfig, dict[int, DetectorResult]]):
             detector_state=detector_state,
             ready_to_start=(detector_state == DetailedStatus.OK),
         )
-
-    @staticmethod
-    def _close_range_calibrated(context: DetectorContext) -> bool:
-        return context.close_range_calibration is not None
-
-    @staticmethod
-    def _recorded_threshold_calibrated(context: DetectorContext) -> bool:
-        return context.recorded_threshold_calibration is not None
 
     @classmethod
     def _has_close_range_measurement(cls, config: DetectorConfig) -> bool:
@@ -599,32 +602,7 @@ class Detector(Controller[DetectorConfig, dict[int, DetectorResult]]):
             )
             updated_specs: list[ProcessorSpec] = []
 
-            if self.context.recorded_threshold_calibration is not None:
-                close_range_calibration = self.context.close_range_calibration
-                assert close_range_calibration is not None
-                recorded_thresholds_mean_sweep = (
-                    self.context.recorded_threshold_calibration.recorded_thresholds_mean_sweep(
-                        sensor_id,
-                        self.processor_specs,
-                        self.session_config,
-                        self.context.noise_calibration,
-                        close_range_calibration,
-                    )
-                )
-                recorded_thresholds_noise_std = (
-                    self.context.recorded_threshold_calibration.recorded_thresholds_noise_std(
-                        sensor_id,
-                        self.processor_specs,
-                        self.session_config,
-                        self.context.noise_calibration,
-                        close_range_calibration,
-                    )
-                )
-            else:
-                recorded_thresholds_mean_sweep = None
-                recorded_thresholds_noise_std = None
-
-            for idx, (spec, bg_noise_std) in enumerate(zip(self.processor_specs, bg_noise_stds)):
+            for spec, bg_noise_std in zip(self.processor_specs, bg_noise_stds):
                 loopback_peak_location_m = None
                 recorded_threshold_mean_sweep = None
                 recorded_threshold_noise_std = None
@@ -638,30 +616,21 @@ class Detector(Controller[DetectorConfig, dict[int, DetectorResult]]):
                     )
 
                 if spec.processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
-                    assert self.context.close_range_calibration is not None
+                    close_range_calibration = self.context.close_range_calibration
+                    assert close_range_calibration is not None
 
-                    direct_leakage = self.context.close_range_calibration.direct_leakage(sensor_id)
-                    phase_jitter_comp_ref = (
-                        self.context.close_range_calibration.phase_jitter_comp_reference(sensor_id)
+                    direct_leakage = close_range_calibration.direct_leakage(sensor_id)
+                    phase_jitter_comp_ref = close_range_calibration.phase_jitter_comp_reference(
+                        sensor_id
                     )
 
-                    # Recorded threshold calibration is only implemented for CLOSE_RANGE measurements
-                    if (
-                        recorded_thresholds_mean_sweep is not None
-                        and recorded_thresholds_noise_std is not None
-                    ):
-                        recorded_threshold_mean_sweep = recorded_thresholds_mean_sweep[idx]
-                        recorded_threshold_noise_std = recorded_thresholds_noise_std[idx]
-
-                    if self.context.recorded_threshold_calibration is not None:
-                        reference_temperature = (
-                            self.context.recorded_threshold_calibration.reference_temperature(
-                                sensor_id,
-                                self.processor_specs,
-                                self.session_config,
-                                self.context.noise_calibration,
-                                self.context.close_range_calibration,
-                            )
+                    if len(close_range_calibration.recorded_threshold_results) > 0:
+                        (
+                            recorded_threshold_mean_sweep,
+                            recorded_threshold_noise_std,
+                            reference_temperature,
+                        ) = close_range_calibration.compute_recorded_threshold(
+                            sensor_id, spec, bg_noise_std, self.session_config
                         )
 
                 processor_context = ProcessorContext(
@@ -760,10 +729,18 @@ def always_raise_an_error_when_migrating_v0(_: _DetectorConfig_v0) -> DetectorCo
     raise BadMigrationPathError(msg)
 
 
+def _load_detector_config_v0_from_json(json_str: str) -> _DetectorConfig_v0:
+    return _DetectorConfig_v0.from_json(coerce_removed_recorded_threshold_method_json(json_str))
+
+
+def _load_detector_config_from_json(json_str: str) -> DetectorConfig:
+    return DetectorConfig.from_json(coerce_removed_recorded_threshold_method_json(json_str))
+
+
 detector_config_timeline = (
     tm.start(_DetectorConfig_v0)
-    .load(str, _DetectorConfig_v0.from_json, fail=[TypeError])
+    .load(str, _load_detector_config_v0_from_json, fail=[TypeError])
     .nop()
     .epoch(DetectorConfig, always_raise_an_error_when_migrating_v0, fail=[BadMigrationPathError])
-    .load(str, DetectorConfig.from_json, fail=[TypeError])
+    .load(str, _load_detector_config_from_json, fail=[TypeError])
 )

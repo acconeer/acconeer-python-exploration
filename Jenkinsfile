@@ -31,9 +31,9 @@ def integrationTestA111RssVersionsForBuildScope = [
 // [commit: '<build storage folder>'].
 @Field
 def modelTestA121RssVersionForBuildScope = [
-    (BuildScope.SANITY)  : [tag: 'a121-v1.13.0'],
-    (BuildScope.HOURLY)  : [tag: 'a121-v1.13.0'],
-    (BuildScope.NIGHTLY) : [tag: 'a121-v1.13.0'],
+    (BuildScope.SANITY)  : [commit: 'interim/sw-main/master/2026/2026-09-10/a2-v1.0.0-rc2-411-g200e964a26'],
+    (BuildScope.HOURLY)  : [commit: 'interim/sw-main/master/2026/2026-09-10/a2-v1.0.0-rc2-411-g200e964a26'],
+    (BuildScope.NIGHTLY) : [commit: 'interim/sw-main/master/2026/2026-09-10/a2-v1.0.0-rc2-411-g200e964a26'],
 ]
 
 boolean messageOnFailure = true

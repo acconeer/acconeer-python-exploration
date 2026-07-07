@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import enum
+import json
+import warnings
 from abc import abstractmethod
 from collections.abc import Sequence
 from typing import Optional, Union
@@ -47,13 +49,33 @@ class ThresholdMethod(AlgoParamEnum):
     """Threshold methods.
     ``CFAR`` Constant False Alarm Rate.
     ``FIXED`` Fixed amplitude threshold.
-    ``FIXED_STRENGTH`` Fixed strength threshold.
-    ``RECORDED`` Recorded threshold."""
+    ``FIXED_STRENGTH`` Fixed strength threshold."""
 
     CFAR = enum.auto()
     FIXED = enum.auto()
     FIXED_STRENGTH = enum.auto()
-    RECORDED = enum.auto()
+
+
+def coerce_removed_recorded_threshold_method_json(json_str: str) -> str:
+    """RECORDED was a GUI-selectable ThresholdMethod until it was replaced by automatic
+    recorded-threshold calibration for close range (now unconditional, see
+    distance_detector.rst). Reconstructing the enum from a saved DetectorConfig/RefAppConfig
+    (or preset) from before that change raises ValueError: 'RECORDED' is not a valid ThresholdMethod,
+    which isn't a migration-timeline failure type, so it escapes straight past MigrationErrorGroup
+    handling instead of being reported cleanly. Coerce it to CFAR (with a warning) before that conversion
+    ever happens, in every timeline .load(str, ...) step that parses a raw JSON string.
+    """
+    d = json.loads(json_str)
+    if d.get("threshold_method") == "RECORDED":
+        warnings.warn(
+            "Loaded a saved config using the removed ThresholdMethod.RECORDED - using CFAR "
+            "instead. Recorded-threshold calibration for close range is now automatic and no "
+            "longer a selectable threshold_method.",
+            stacklevel=2,
+        )
+        d["threshold_method"] = "CFAR"
+        json_str = json.dumps(d)
+    return json_str
 
 
 @attrs.mutable(kw_only=True)
@@ -236,61 +258,7 @@ class DistanceProcessorBase(
         )
 
         # Threshold initialization
-        self.threshold: thresholds.Threshold
-        self.threshold_method = processor_config.threshold_method
-        if self.threshold_method == ThresholdMethod.RECORDED:
-            if (
-                self.context.recorded_threshold_mean_sweep is None
-                or self.context.recorded_threshold_noise_std is None
-                or self.context.bg_noise_std is None
-                or self.context.reference_temperature is None
-            ):
-                msg = "Missing recorded threshold inputs in context"
-                raise ValueError(msg)
-
-            self.threshold = thresholds.RecordedThreshold(
-                recorded_mean_sweep=self.context.recorded_threshold_mean_sweep,
-                rec_noise_std_per_subsweep=self.context.recorded_threshold_noise_std,
-                bg_noise_std_per_subsweep=self.context.bg_noise_std,
-                reference_temperature=self.context.reference_temperature,
-                sensitivity=self.processor_config.threshold_sensitivity,
-                profile=self.profile,
-                subsweep_slices_cropped=self.subsweep_slices_cropped,
-            )
-
-        elif self.threshold_method == ThresholdMethod.FIXED:
-            self.threshold = thresholds.FixedThreshold(
-                fixed_value=self.processor_config.fixed_threshold_value,
-            )
-
-        elif self.threshold_method == ThresholdMethod.FIXED_STRENGTH:
-            if self.context.bg_noise_std is None:
-                msg = "Missing bg_noise_std in context"
-                raise ValueError(msg)
-
-            self.threshold = thresholds.FixedStrengthThreshold(
-                fixed_strength=self.processor_config.fixed_strength_threshold_value,
-                bg_noise_std_per_subsweep=self.context.bg_noise_std,
-                reflector_shape=self.processor_config.reflector_shape,
-                profile=self.profile,
-                step_length=self.step_length,
-                distance_points=self.distance_points[self.filt_margin : -self.filt_margin],
-                start_points=self.start_points,
-                hwaas_per_subsweep=self.hwaas_per_subsweep,
-            )
-
-        elif self.threshold_method == ThresholdMethod.CFAR:
-            self.threshold = thresholds.CfarThreshold(
-                sensitivity=self.processor_config.threshold_sensitivity,
-                bg_noise_std_per_subsweep=self.context.bg_noise_std,
-                profile=self.profile,
-                start_point=self.start_point,
-                step_length=self.step_length,
-                subsweep_slices_cropped=self.subsweep_slices_cropped,
-            )
-        else:
-            msg = f"Invalid threshold method {self.threshold_method}. Valid options: {[tm for tm in ThresholdMethod]}."
-            raise ValueError(msg)
+        self.threshold = self._create_threshold()
 
     def process(self, sensor_result: a121.Result | SensorResultsView) -> ProcessorResult:
         sensor_results_view = (
@@ -346,6 +314,10 @@ class DistanceProcessorBase(
         )
 
     @abstractmethod
+    def _create_threshold(self) -> thresholds.Threshold:
+        raise NotImplementedError
+
+    @abstractmethod
     def _prepare_frame_for_distance_estimation(
         self, sensor_results_view: SensorResultsView
     ) -> npt.NDArray[np.complex128]:
@@ -375,6 +347,39 @@ class DistanceProcessorBase(
 class FarRangeProcessor(DistanceProcessorBase):
     """Distance processor for far-range measurements."""
 
+    def _create_threshold(self) -> thresholds.Threshold:
+        threshold_method = self.processor_config.threshold_method
+        if threshold_method == ThresholdMethod.FIXED:
+            return thresholds.FixedThreshold(
+                fixed_value=self.processor_config.fixed_threshold_value,
+            )
+        elif threshold_method == ThresholdMethod.FIXED_STRENGTH:
+            if self.context.bg_noise_std is None:
+                msg = "Missing bg_noise_std in context"
+                raise ValueError(msg)
+            return thresholds.FixedStrengthThreshold(
+                fixed_strength=self.processor_config.fixed_strength_threshold_value,
+                bg_noise_std_per_subsweep=self.context.bg_noise_std,
+                reflector_shape=self.processor_config.reflector_shape,
+                profile=self.profile,
+                step_length=self.step_length,
+                distance_points=self.distance_points[self.filt_margin : -self.filt_margin],
+                start_points=self.start_points,
+                hwaas_per_subsweep=self.hwaas_per_subsweep,
+            )
+        elif threshold_method == ThresholdMethod.CFAR:
+            return thresholds.CfarThreshold(
+                sensitivity=self.processor_config.threshold_sensitivity,
+                bg_noise_std_per_subsweep=self.context.bg_noise_std,
+                profile=self.profile,
+                start_point=self.start_point,
+                step_length=self.step_length,
+                subsweep_slices_cropped=self.subsweep_slices_cropped,
+            )
+        else:
+            msg = f"Invalid threshold method {threshold_method}. Valid options: {list(ThresholdMethod)}."
+            raise ValueError(msg)
+
     def _prepare_frame_for_distance_estimation(
         self, sensor_results_view: SensorResultsView
     ) -> npt.NDArray[np.complex128]:
@@ -391,6 +396,25 @@ class CloseRangeProcessor(DistanceProcessorBase):
 
     # Standard deviation of angle in direct leakage over multiple sensor restarts.
     PHASE_JITTER_RESTART_STD = 0.05
+
+    def _create_threshold(self) -> thresholds.Threshold:
+        if (
+            self.context.recorded_threshold_mean_sweep is None
+            or self.context.recorded_threshold_noise_std is None
+            or self.context.bg_noise_std is None
+            or self.context.reference_temperature is None
+        ):
+            msg = "Missing recorded threshold inputs in context"
+            raise ValueError(msg)
+        return thresholds.RecordedThreshold(
+            recorded_mean_sweep=self.context.recorded_threshold_mean_sweep,
+            rec_noise_std_per_subsweep=self.context.recorded_threshold_noise_std,
+            bg_noise_std_per_subsweep=self.context.bg_noise_std,
+            reference_temperature=self.context.reference_temperature,
+            sensitivity=self.processor_config.threshold_sensitivity,
+            profile=self.profile,
+            subsweep_slices_cropped=self.subsweep_slices_cropped,
+        )
 
     @staticmethod
     def apply_phase_jitter_compensation(

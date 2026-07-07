@@ -16,7 +16,6 @@ from acconeer.exptool.a121.algo.distance import (
 )
 from acconeer.exptool.a121.algo.distance import (
     MeasurementType,
-    ThresholdMethod,
 )
 from acconeer.exptool.a121.algo.distance._translation import (
     _legacy_detector_config_to_session_config,
@@ -171,11 +170,9 @@ def distance_external_heap_memory(config: DistanceConfig) -> int:
         proc_work_buffer += ((num_points_cropped + (32 - 1)) // 32) * SIZE_OF_FLOAT
         proc_work_buffer += aligned_half_num_points_cropped * 2
 
-        if proc_spec.processor_config.threshold_method == ThresholdMethod.RECORDED:
+        if proc_spec.processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
             proc_calib_buffer += num_points_cropped * SIZE_OF_FLOAT * 3
             proc_calib_buffer += len(subsweep_cfgs) * SIZE_OF_FLOAT
-
-        if proc_spec.processor_config.measurement_type == MeasurementType.CLOSE_RANGE:
             proc_calib_buffer += sensor_cfg.sweeps_per_frame * num_points * SIZE_OF_FLOAT
             proc_calib_buffer += sensor_cfg.sweeps_per_frame * SIZE_OF_FLOAT
 

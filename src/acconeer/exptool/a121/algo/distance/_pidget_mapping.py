@@ -7,12 +7,27 @@ from acconeer.exptool import a121
 from acconeer.exptool._core.docstrings import get_attribute_docstring
 from acconeer.exptool.app.new.ui.components import PidgetFactoryMapping, pidgets
 from acconeer.exptool.app.new.ui.components.pidgets.hooks import (
+    PidgetMapping,
     disable_if,
     enable_if,
     parameter_is,
 )
 
 from ._detector import DetectorConfig, PeakSortingMethod, ReflectorShape, ThresholdMethod
+
+
+def _threshold_sensitivity_irrelevant(mapping: PidgetMapping) -> bool:
+    """threshold_sensitivity governs the CFAR threshold, and - regardless of threshold_method -
+    the recorded threshold close range measurements always use automatically (see
+    distance_detector.rst). So it's only irrelevant when neither applies: threshold_method is
+    FIXED/FIXED_STRENGTH *and* close range is disabled.
+    """
+    method_is_fixed = mapping["threshold_method"].get_data() in (
+        ThresholdMethod.FIXED,
+        ThresholdMethod.FIXED_STRENGTH,
+    )
+    close_range_active = mapping["close_range_leakage_cancellation"].get_data() is True
+    return method_is_fixed and not close_range_active
 
 
 def get_pidget_mapping() -> PidgetFactoryMapping:
@@ -80,7 +95,6 @@ def get_pidget_mapping() -> PidgetFactoryMapping:
                 ThresholdMethod.CFAR: "CFAR",
                 ThresholdMethod.FIXED: "Fixed amplitude",
                 ThresholdMethod.FIXED_STRENGTH: "Fixed strength",
-                ThresholdMethod.RECORDED: "Recorded",
             },
         ),
         "fixed_threshold_value": pidgets.FloatPidgetFactory(
@@ -112,10 +126,7 @@ def get_pidget_mapping() -> PidgetFactoryMapping:
             decimals=2,
             limits=(0, 1),
             show_limit_values=False,
-            hooks=disable_if(
-                parameter_is("threshold_method", ThresholdMethod.FIXED),
-                parameter_is("threshold_method", ThresholdMethod.FIXED_STRENGTH),
-            ),
+            hooks=disable_if(_threshold_sensitivity_irrelevant),
         ),
         "signal_quality": pidgets.FloatSliderPidgetFactory(
             name_label_text="Signal quality:",

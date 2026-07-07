@@ -303,7 +303,6 @@ def detector_config_to_processor_specs(
         reflector_shape=config.reflector_shape,
     )
     close_range_processor_config = ProcessorConfig(
-        threshold_method=ThresholdMethod.RECORDED,
         measurement_type=MeasurementType.CLOSE_RANGE,
         threshold_sensitivity=config.threshold_sensitivity,
         reflector_shape=config.reflector_shape,

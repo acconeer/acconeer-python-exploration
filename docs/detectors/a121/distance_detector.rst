@@ -73,7 +73,7 @@ Thresholds
 To determine if any objects are present, the sweep is compared to a threshold.
 A peak is defined as a middle point that has greater amplitude than its two neighboring points.
 For an object to be detected, it has to yield a peak where all three points are above the threshold.
-Three different thresholds can be employed, each suitable for different use-cases.
+Three different threshold methods can be selected, each suitable for different use-cases.
 
 Fixed amplitude threshold
     The simplest approach to setting the threshold is choosing a fixed threshold over the full range.
@@ -84,12 +84,6 @@ Fixed strength threshold
     The purpose is to produce a threshold that is able to detect an object of a with a specific reflectiveness, independent of the distance to the object.
     The strength value is set through the parameter :attr:`~acconeer.exptool.a121.algo.distance.DetectorConfig.fixed_strength_threshold_value`.
     The fixed strength threshold does not have any temperature compensation built in.
-Recorded threshold
-    In situations where stationary objects are present, the background signal is not flat.
-    To isolate objects of interest, the threshold is based on measurements of the static environment.
-    The first step is to collect multiple sweeps, from which the mean sweep and standard deviation is calculated.
-    Secondly, the threshold is formed by adding a number of standard deviations (the number is determined by the parameter :attr:`~acconeer.exptool.a121.algo.distance.DetectorConfig.threshold_sensitivity`) to the mean sweep.
-    The recorded threshold has a built in temperature compensation, based on the internal temperature sensor.
 Constant False Alarm Rate (CFAR) threshold (default)
     A final method to construct a threshold for a certain distance is to use the signal from neighboring distances of the same sweep.
     This requires that the object gives rise to a single strong peak, such as a fluid surface and not, for example, the level in a large waste container.
@@ -98,6 +92,12 @@ Constant False Alarm Rate (CFAR) threshold (default)
     As the CFAR threshold is formed based on each momentary sweep, any temperature effects on the signal are implicitly accounted for by the algorithm.
     When measuring close to the sensor, the direct leakage will strongly affect the CFAR threshold, and therefore the CFAR threshold is one-sided close to the sensor.
     This means that the threshold only includes neighbors further away from the sensor.
+
+For close-range measurements, these threshold methods are not suitable due to the presence of direct leakage.
+Hence, close-range measurements always use a recorded threshold instead that is based on measurements of the static environment.
+The first step is to collect multiple sweeps, from which the mean sweep and standard deviation is calculated.
+Secondly, the threshold is formed by adding a number of standard deviations (the number is determined by the parameter :attr:`~acconeer.exptool.a121.algo.distance.DetectorConfig.threshold_sensitivity`) to the mean sweep.
+The recorded threshold has a built in temperature compensation, based on the internal temperature sensor.
 
 Reflector Shape
 ---------------
@@ -182,6 +182,7 @@ Close range measurement calibration
   Direct leakage is the static component of the measured signal, visible for the first couple of centimeters, resulting from reflections from components close to the sensor such as lens and PCB, as well as the energy propagating directly from Tx to Rx.
   One way to get around this is to characterize the leakage component and then subtract it from each measurement to isolate the signal component.
   This is exactly what the close range calibration does.
+  In addition, the close range calibration also collects a recorded threshold, which is used to detect objects in the close range region.
   While performing the calibration, it is important that the sensor is installed in its intended geometry and that there is no object in front of the sensor as this would interfere with the direct leakage.
 
   The calibration is only performed if the logic is enabled through the parameter :attr:`~acconeer.exptool.a121.algo.distance.DetectorConfig.close_range_leakage_cancellation` and the :attr:`~acconeer.exptool.a121.algo.distance.DetectorConfig.start_m`
@@ -189,10 +190,6 @@ Close range measurement calibration
   The reason for CFAR requiring a greater distance is to initialize the threshold with data, free from direct leakage.
 
   The close range measurement calibration is only valid in the range of +-15 °C from where it was calibrated.
-
-Recorded threshold
-  The recorded threshold is also recorded as a part of the detector calibration.
-  Note, this calibration is only performed if the detector is configured to used recorded threshold or if close range measurement is active, where recorded threshold is used.
 
 Detector Calibration Update
 ---------------------------
@@ -296,7 +293,7 @@ The following points provide insight into the configuration process.
 
   Note, regardless of the selected peak sorting method, all detected distances are returned by the application.
 
-- There are four threshold methods available. Which one to use is use case dependent. More information can be found under the section :ref:`sec_threshold`.
+- There are three threshold methods available. Which one to use is use case dependent. More information can be found under the section :ref:`sec_threshold`.
 
   * :attr:`~acconeer.exptool.a121.algo.distance.ThresholdMethod.CFAR` - Suitable when the use case involve clear peaks such as a level measurement application.
     The method is robust over temperatures and does not required any consideration to the surroundings when calibrating.
@@ -309,19 +306,13 @@ The following points provide insight into the configuration process.
 
     Note, for a given object, the amplitude reduce with distance as less energy is reflected back to the sensor, resulting in missed detections.
 
-  * :attr:`~acconeer.exptool.a121.algo.distance.ThresholdMethod.RECORDED` - This threshold records the background clutter and is thereafter applied to the sweep as a threshold.
-    The threshold is suitable when the environment consists of a several reflecting objects that should not be detected (clutter).
+  Note, close range measurements always use a recorded threshold instead, automatically, regardless of the threshold method selected above. See :ref:`sec_threshold` for details.
 
-    The threshold has a built in temperature compensation, based internal temperature sensor, adjusting the threshold to keep a constant false positive rate.
-
-    Note, the threshold is only valid as long as the background is static. A change in the clutter can result in undesired objects being detected.
-
-- Generally, the :attr:`~acconeer.exptool.a121.algo.distance.ThresholdMethod.CFAR` or :attr:`~acconeer.exptool.a121.algo.distance.ThresholdMethod.RECORDED`
-  are preferred when the ambient temperature is expected to change.
+- Generally, the :attr:`~acconeer.exptool.a121.algo.distance.ThresholdMethod.CFAR` threshold is preferred when the ambient temperature is expected to change.
   The :attr:`~acconeer.exptool.a121.algo.distance.ThresholdMethod.FIXED_STRENGTH`
   and :attr:`~acconeer.exptool.a121.algo.distance.ThresholdMethod.FIXED` are fixed and has no temperature compensations built in.
 
-- :attr:`~acconeer.exptool.a121.algo.distance.DetectorConfig.threshold_sensitivity` controls the false positive rate for the CFAR and recorded threshold.
+- :attr:`~acconeer.exptool.a121.algo.distance.DetectorConfig.threshold_sensitivity` controls the false positive rate for the CFAR threshold, and for the recorded threshold used automatically in close range measurements.
   The parameters should be tuned for each use case to achieve the desirable performance.
 
 - :attr:`~acconeer.exptool.a121.algo.distance.DetectorConfig.signal_quality` should be set so that desirable detection rate is achieved.

@@ -30,6 +30,7 @@ from acconeer.exptool.a121.algo.distance import (
     DetectorResult,
     ThresholdMethod,
     _DetectorConfig_v0,
+    coerce_removed_recorded_threshold_method_json,
 )
 from acconeer.exptool.a121.algo.distance._detector import detector_context_timeline
 
@@ -140,7 +141,11 @@ class RefAppConfig(AlgoConfigBase):
     """Sensitivity of threshold.
 
     High sensitivity equals low detection threshold, low sensitivity equals high detection
-    threshold."""
+    threshold.
+
+    Applies to the CFAR threshold (if selected) and, independently, to close range's recorded
+    threshold whenever close range is active.
+    """
 
     update_rate: Optional[float] = attrs.field(default=50.0)
     """Sets the detector update rate."""
@@ -166,14 +171,6 @@ class RefAppConfig(AlgoConfigBase):
     def _collect_validation_results(self) -> list[a121.ValidationResult]:
         validation_results: list[a121.ValidationResult] = []
 
-        if self.threshold_method == ThresholdMethod.RECORDED and self.level_tracking_active:
-            validation_results.append(
-                a121.ValidationError(
-                    self,
-                    "threshold_method",
-                    "Cannot use recorded threshold when level tracking is activated.",
-                )
-            )
         if self.close_range_leakage_cancellation and self.level_tracking_active:
             validation_results.append(
                 a121.ValidationError(
@@ -607,13 +604,25 @@ def always_raise_an_error_when_migrating_v0(_: _DetectorConfig_v0) -> _RefAppCon
     raise BadMigrationPathError(msg)
 
 
+def _load_ref_app_config_v0_from_json(json_str: str) -> _RefAppConfig_v0:
+    return _RefAppConfig_v0.from_json(coerce_removed_recorded_threshold_method_json(json_str))
+
+
+def _load_ref_app_config_v1_from_json(json_str: str) -> _RefAppConfig_v1:
+    return _RefAppConfig_v1.from_json(coerce_removed_recorded_threshold_method_json(json_str))
+
+
+def _load_ref_app_config_from_json(json_str: str) -> RefAppConfig:
+    return RefAppConfig.from_json(coerce_removed_recorded_threshold_method_json(json_str))
+
+
 ref_app_config_timeline = (
     tm.start(_RefAppConfig_v0)
-    .load(str, _RefAppConfig_v0.from_json, fail=[TypeError])
+    .load(str, _load_ref_app_config_v0_from_json, fail=[TypeError])
     .nop()
     .epoch(_RefAppConfig_v1, always_raise_an_error_when_migrating_v0, fail=[BadMigrationPathError])
-    .load(str, _RefAppConfig_v1.from_json, fail=[TypeError])
+    .load(str, _load_ref_app_config_v1_from_json, fail=[TypeError])
     .nop()
     .epoch(RefAppConfig, _RefAppConfig_v1.migrate, fail=[])
-    .load(str, RefAppConfig.from_json, fail=[TypeError])
+    .load(str, _load_ref_app_config_from_json, fail=[TypeError])
 )

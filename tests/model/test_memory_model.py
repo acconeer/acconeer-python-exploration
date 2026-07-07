@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -127,7 +127,7 @@ def test_presence_memory_model(config, test_case, xm125_memory_usage):
             DistanceConfig(
                 start_m=0.05,
                 end_m=0.2,
-                threshold_method=ThresholdMethod.RECORDED,
+                close_range_leakage_cancellation=True,
             ),
             "close_range",
         ),

@@ -27,7 +27,7 @@ Configuration
 Calibration
     The distance detector calibration process performs noise level estimation and offset compensation.
     The close range measurement calibration is also performed in case the close range measurement is active, which depends on the starting distance.
-    In addition, the recorded threshold is also computed if the detector is configured to use the recorded threshold or if the close range measurement is active.
+    In addition, the recorded threshold is also computed if the close range measurement is active, as close range measurements always require a recorded threshold.
 
     Before starting level measurements, the detector needs to be calibrated.
     For close range measurements, no object must be present in the close range when the calibration is started.

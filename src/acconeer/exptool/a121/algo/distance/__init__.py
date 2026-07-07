@@ -28,5 +28,6 @@ from ._processors import (
     ReflectorShape,
     ThresholdMethod,
     calculate_bg_noise_std,
+    coerce_removed_recorded_threshold_method_json,
 )
 from ._translation import detector_config_to_processor_specs, detector_config_to_session_config
