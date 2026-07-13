@@ -48,12 +48,17 @@ def getCronTriggers(String branchName) {
     return pipelineTriggers(triggers)
 }
 
-def hatchWrap(String command) {
+def hatchWrap(String command, String stdoutFile = null) {
     // Ensure the presence of '_version.py'
     // (See https://github.com/ofek/hatch-vcs?tab=readme-ov-file#write-version-to-file)
     sh 'hatch build --hooks-only'
-    // Run a hatch command
-    sh "hatch ${command}"
+    // Run a hatch command, optionally redirecting stdout to a file
+    // (stderr is left attached to the console so errors are shown live).
+    if (stdoutFile) {
+        sh "hatch ${command} > ${stdoutFile}"
+    } else {
+        sh "hatch ${command}"
+    }
 }
 
 BuildScope getBuildScope() {
@@ -144,13 +149,18 @@ try {
                     buildDocker(path: 'docker').inside(dockerArgs) {
                         sh 'python3 -V'
                         hatchWrap 'build'
+                        // Redirect the docs build stdout to a file and only print it
+                        // on success. On failure the build throws before the `cat`,
+                        // leaving just the errors (on stderr) visible in the log.
+                        String docsStdout = 'docs_build_stdout.log'
                         if (buildScope == BuildScope.NIGHTLY) {
-                            hatchWrap 'run docs:nightlybuild'
+                            hatchWrap('run docs:nightlybuild', docsStdout)
                         }
                         else
                         {
-                            hatchWrap 'run docs:build'
+                            hatchWrap('run docs:build', docsStdout)
                         }
+                        sh "cat ${docsStdout}"
                     }
                     archiveArtifacts artifacts: 'dist/*', allowEmptyArchive: true
                     stash includes: 'dist/**', name: 'dist'
