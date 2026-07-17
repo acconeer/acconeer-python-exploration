@@ -4,20 +4,18 @@
 Waveguides and horn antennas
 ============================
 
-A waveguide is a hollow metal pipe where wave propagation is restricted in accordance with certain field configurations or so-called modes. A horn antenna essentially consists of a waveguide with an aperture opening designed to transition guided modes into free space propagation, see :numref:`fig_horn_antenna_and_PCB_2D`. Horn antennas are highly efficient radiators with good sidelobe suppression and therefore suitable for demanding radar use cases such as tank level and industrial level sensing.
+A waveguide is a hollow metal pipe where wave propagation is restricted in accordance with certain field configurations or so-called modes. A horn antenna essentially consists of a waveguide with an aperture opening designed to transition guided modes into free space propagation, see :numref:`fig_horn_antenna_and_PCB_3D`. Horn antennas are highly efficient radiators with good sidelobe suppression and therefore suitable for demanding radar use cases such as tank level and industrial level sensing.
 
 The A121 sensor can couple to a waveguide and horn antenna, thus enabling high directivity and good sidelobe suppression. The dimensions of the waveguide determine which modes are excited as well as the sensor input impedance and Tx to Rx coupling. In the following we will only consider conical horns although rectangular or other shapes can also be constructed.
 
-.. _fig_horn_antenna_and_PCB_2D:
-.. figure:: /_static/handbook/a121/horn_antenna/A121_horn_antenna_and_pcb_2D.png
+.. _fig_horn_antenna_and_PCB_3D:
+.. figure:: /_static/hw_images/A121_conical_horn_3D.png
     :align: center
     :width: 50%
 
-    Example conical horn antenna with mode filter.
+    Example conical horn antenna (half-section shown) with mode filter.
 
-To fit a circular waveguide around the sensor, the waveguide must have a minimum diameter including some mechanical clearance. This inherently results in an overmoded waveguide, i.e. more than one propagating mode is excited. To optimize an overmoded horn for high efficiency and well-controlled far-fields, a mode filter can be introduced as shown in :numref:`fig_horn_antenna_and_PCB_2D`. The dimensions of the mode filter are co-optimized with the horn flare angle and shape.
-
-The far-field patterns of two example horn antenna designs of lengths 25 and 40 mm are shown in :numref:`L25_horn_antenna_farfields`.
+To fit a circular waveguide around the sensor, the waveguide must have a minimum diameter including some mechanical clearance. This inherently results in an overmoded waveguide, i.e. more than one propagating mode is excited. The far-field patterns of two example horn antenna designs of lengths 25 and 40 mm are shown in :numref:`L25_horn_antenna_farfields`.
 
 - L25 horn: 15 dB Tx+Rx gain
 - L40 horn: 20 dB Tx+Rx gain

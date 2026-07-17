@@ -11,7 +11,7 @@ The sidelobe level can be significantly improved with the use of horn antennas o
 .. _fig_A121_with_ebgs_lens_and_casing:
 .. figure:: /_static/hw_images/A121_ebg_pcb_lens_and_casing_3D.png
     :align: center
-    :width: 100%
+    :width: 75%
 
     A1 radar sensor with EBGs, dielectric lens and casing.
 
@@ -84,7 +84,7 @@ When laying out a PCB, the preferred way is to place all external components suc
 - Add stitching vias with <0.6 mm spacing at the PCB outer edge to suppress potential edge radiation.
 - Contact Acconeer support to obtain more information on EBG implementations.
 
-The exact location and dimensions of the EBG cells are important for optimal performance. When using through-hole vias, signals can be routed between the EBG vias, see :numref:`fig_XS121_ebg_routing_example`. The E-plane only variant allows more routing area with a small loss in SLL performance. Occasionally, some EBG vias may need to be slightly shifted or removed to fit other signals and components. When this is needed, it is strongly recommended to do this on EBGs farthest away from the sensor as the innermost elements are most important.
+The exact location and dimensions of the EBG cells are important for optimal performance. When using through-hole vias, signals can be routed between the EBG vias on layer 3 and below, see :numref:`fig_XS121_ebg_routing_example`. The E-plane only variant allows more routing area with a small loss in SLL performance. Occasionally, some EBG vias may need to be slightly shifted or removed to fit other signals and components. When this is needed, it is strongly recommended to do this on EBGs farthest away from the sensor as the innermost elements are most important.
 
 .. _fig_XS121_ebg_routing_example:
 .. figure:: /_static/hw_images/XS121_ebg_routing.svg
@@ -96,5 +96,7 @@ The exact location and dimensions of the EBG cells are important for optimal per
 More information
 ================
 
-EBGs can be implemented using both low-cost FR-4 as well as RF PCBs. To implement EBG structures into your design, please contact the Acconeer customer support for layout recommendations: https://support.acconeer.com.
+EBGs can be implemented using both low-cost FR-4 as well as RF PCBs. To implement EBG structures into your design, please contact the `Acconeer customer support <customer_support_>`_ for layout recommendations.
+
+.. _customer_support: https://support.acconeer.com
 
