@@ -6,8 +6,11 @@ import argparse
 import ctypes
 import functools
 import logging
+import os
 import re
+import signal
 import sys
+import threading
 import time
 import traceback
 import typing as t
@@ -33,6 +36,7 @@ except ImportError:
 
 
 from ._enums import ConnectionState, PluginGeneration
+from ._sigint import _InterruptCounter
 from .app_model import AppModel
 from .backend import Backend, GenBackend, MpBackend
 from .plugin_loader import import_and_register_plugin_module, load_plugins
@@ -49,6 +53,10 @@ _LOG = logging.getLogger(__name__)
 # discovery, not just in-event-loop retries.
 _STARTUP_TASKS_TIMEOUT_S = 20.0
 _STARTUP_TASKS_GIVE_UP_EXIT_CODE = 2
+
+_QUIT_PRESS_COUNT = 3
+_QUIT_WINDOW_S = 5.0
+_QUIT_MIN_GAP_S = 0.3
 
 
 def main() -> None:
@@ -201,7 +209,47 @@ def main() -> None:
     model.broadcast()
 
     sys.excepthook = model.excepthook
-    sys.exit(app.exec())
+
+    # Allow quitting by pressing Ctrl+C in the launching terminal, repeated
+    # _QUIT_PRESS_COUNT times within _QUIT_WINDOW_S seconds. _QUIT_MIN_GAP_S
+    # keeps a single held-down press (which auto-repeats) from being counted
+    # as several. app.quit() exits the event loop, triggering the aboutToQuit
+    # teardown wired above (model.stop / backend.stop). A watchdog
+    # force-exits if that teardown hangs.
+    shutdown_complete = threading.Event()
+    interrupts = _InterruptCounter(window_s=_QUIT_WINDOW_S, min_gap_s=_QUIT_MIN_GAP_S)
+
+    def _sigint_handler(*_: t.Any) -> None:
+        presses = min(interrupts.press(now=time.monotonic()), _QUIT_PRESS_COUNT)
+        progress = f"({presses}/{_QUIT_PRESS_COUNT})"
+
+        # Flushed explicitly: this feedback is the whole point of the press count,
+        # and stdout is block buffered whenever the app's output is piped.
+        if presses < _QUIT_PRESS_COUNT:
+            print(f"\nCtrl+C received {progress}", flush=True)
+            return
+
+        print(f"\nCtrl+C received {progress}, shutting down...", flush=True)
+
+        def _watchdog() -> None:
+            if not shutdown_complete.wait(2.0):
+                print("forcing exit...", flush=True)
+                os._exit(1)
+
+        threading.Thread(target=_watchdog, daemon=True).start()
+        app.quit()
+
+    signal.signal(signal.SIGINT, _sigint_handler)
+
+    # A no-op timer periodically returns control to the Python interpreter so the
+    # SIGINT handler can run while the Qt event loop is active.
+    sigint_timer = QtCore.QTimer()
+    sigint_timer.timeout.connect(lambda: None)
+    sigint_timer.start(200)
+
+    exit_code = app.exec()
+    shutdown_complete.set()
+    sys.exit(exit_code)
 
 
 def _send_startup_tasks(app_model: AppModel, tasks: tuple[str, ...], deadline: float) -> None:

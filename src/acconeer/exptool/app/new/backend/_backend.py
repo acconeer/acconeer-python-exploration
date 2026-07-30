@@ -6,6 +6,7 @@ from __future__ import annotations
 import logging
 import multiprocessing as mp
 import queue
+import signal
 import time
 import traceback
 import uuid
@@ -147,6 +148,12 @@ def process_program(
     send_queue: mp.Queue[FromBackendQueueItem],
     stop_event: mp_EventType,
 ) -> None:
+    # A terminal Ctrl+C sends SIGINT to this whole process group, not just
+    # the parent. Shutdown is driven by the parent through 'stop_event' and
+    # the "stop" message (see MpBackend.stop), so the default handler must
+    # not run here.
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+
     # Continuously consumes from the generator,
     # making the 'yield' not have any effect
     for _ in process_generator(

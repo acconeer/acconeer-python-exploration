@@ -2,6 +2,9 @@
 # All rights reserved
 from __future__ import annotations
 
+import multiprocessing
+import os
+import signal
 import typing as t
 
 import dirty_equals as de
@@ -251,3 +254,24 @@ class TestConnectedLoadedBackend(ConnectedBackend, LoadedBackend):
         assert_messages(b, received=[tasks.SUCCESSFULLY_CLOSED_TASK])
         yield b
         b.stop()
+
+
+class TestMpBackendSigint:
+    """A terminal Ctrl+C delivers SIGINT to the whole foreground process
+    group, so it reaches MpBackend's child process too. The child must
+    ignore it and rely on .stop() instead, or it dies on its own,
+    independently of app.py's own Ctrl+C handling (see c01a98788).
+    """
+
+    def test_child_process_ignores_sigint_and_still_stops_via_stop(self) -> None:
+        children_before = set(multiprocessing.active_children())
+        b = MpBackend()
+        b.start()
+        (child,) = set(multiprocessing.active_children()) - children_before
+
+        try:
+            os.kill(child.pid, signal.SIGINT)
+            child.join(timeout=1)
+            assert child.exitcode is None
+        finally:
+            b.stop()
