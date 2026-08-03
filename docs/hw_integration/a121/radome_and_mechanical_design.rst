@@ -4,145 +4,140 @@
 Radome and mechanical design
 ============================
 
-A radome is the product housing or plastic cover in front of the radar that protects it from mechanical impact and weather, see :numref:`fig_transmissionreflection`. When designed correctly, the radome is effectively transparent to the radar signal and thus not impacting the radiated performance.
+This chapter covers the EM design considerations for radomes used with A121, including thickness and placement optimization. A radome is the product enclosure or plastic cover in front of the radar that protects it from mechanical impact and weather, see :numref:`fig_a121_spherical_enclosure`. When designed correctly, the radome is effectively transparent to the radar signal, as discussed below. Note that in applications where a dielectric lens is used, no additional radome is needed.
+
+.. _fig_a121_spherical_enclosure:
+.. figure:: /_static/hw_images/A121_pcb_and_spherical_radome.png
+    :align: center
+    :width: 75%
+
+    Example enclosure with curved or spherical radome.
 
 Transmission and reflection
 ===========================
 
-When an electromagnetic (EM) wave hits the interface between two :term:`dielectrics<Dielectric>`, such as plastic and air, :term:`reflection<Reflection>` and :term:`refraction<Refraction>` occur at the boundary. Inside the :term:`dielectric<Dielectric>`, the propagation speed and wavelength change depending on the material’s :term:`permittivity<Permittivity>`. If the wavelength in free space is :math:`\lambda_{0}`, 5 mm at 60 GHz, the wavelength inside the material is :math:`\lambda=\frac{\lambda_{0}}{\sqrt{\varepsilon_r}}`, where :math:`\varepsilon_r` is the relative :term:`dielectric constant<Permittivity>` of the material.
+When an electromagnetic (EM) wave hits the interface between two :term:`dielectrics<Dielectric>`, such as plastic and air, :term:`reflection<Reflection>` and :term:`refraction<Refraction>` occur at the boundary. Inside the dielectric, the propagation speed and wavelength change depending on the material’s :term:`permittivity<Permittivity>`. If the wavelength in free space is :math:`\lambda_{0}` (5 mm at 60 GHz), the wavelength inside the material is :math:`\lambda=\frac{\lambda_{0}}{\sqrt{\varepsilon_r}}`, where :math:`\varepsilon_r` is the relative permittivity or :term:`dielectric constant<Permittivity>` of the material.
 
 In the case of :term:`linearly polarized<Linear polarization>` propagation at :term:`normal incidence<Normal incidence>`, the Fresnel equations relate the ratio between the incident and transmitted fields:
 
 .. math::
-    :label: eq_transmissionreflection
+    :label: eq_transmission_reflection
 
     r=\frac{Z_{2} - Z_{1}}{Z_{2} + Z_{1}}, \quad t=\frac{2Z_{2}}{Z_{2}+Z_{1}},
 
-where :math:`Z_{1}` and :math:`Z_{2}` are the corresponding wave impedances. The :term:`transmission<Transmission>` and :term:`reflection<Reflection>` factors are also related by :math:`t = 1 + r`. In most cases, we have non-magnetic materials so that :math:`Z = \sqrt{\frac{\mu_{r}}{\varepsilon_r}} = \frac{1}{\sqrt{\varepsilon_r}}`. An important special case is :term:`normal incidence<Normal incidence>` between air and a :term:`dielectric<Dielectric>`. The reflection coefficient then simplifies to
+where :math:`Z_{1}` and :math:`Z_{2}` are the corresponding wave impedances. Most often we have non-magnetic materials :math:`(\mu_{r}=1)` so that :math:`Z = \sqrt{\frac{\mu_{r}}{\varepsilon_r}} = \frac{1}{\sqrt{\varepsilon_r}}`. An important special case is normal incidence between air and a dielectric. The reflection coefficient then simplifies to
 
 .. math::
-    :label: eq_airdielectricreflection
+    :label: eq_air_dielectric_reflection
 
     r=\frac{1 - \sqrt{\varepsilon_r}}{1 + \sqrt{\varepsilon_r}}
 
-From this expression, we can see that the materials with a higher :term:`dielectric constant<Permittivity>` produce stronger reflections of the incidence signal. Conductors, such as metal, have a very high :term:`dielectric constant<Permittivity>` (:math:`\varepsilon_r \rightarrow \infty`) and thus produce a strong :term:`reflection<Reflection>`. Most polymers have a :term:`dielectric constant<Permittivity>` in the range 2–4, and therefore give a weaker :term:`reflection<Reflection>`.
+From this expression, we can see that materials with a higher dielectric constant produce stronger reflections. Conductors, such as metal, have very high dielectric constants (:math:`\varepsilon_r \rightarrow \infty`) and thus produce a strong reflection. Most polymers have a dielectric constant in the range 2–4, and therefore give a weaker reflection.
 
-Radomes
-=======
+Radome design
+=============
+
+Without a lens or horn antenna, the A121 behaves as a hemispherical source with a wide field of view (FoV). To preserve the radiation pattern, a curved or spherical radome with a fixed thickness is ideal as every ray hits the radome at normal incidence over all angles (:numref:`fig_a121_spherical_enclosure`). However, planar radomes (:numref:`fig_a121_planar_enclosure`) are commonly preferred from a product design standpoint, and when properly designed, these radomes have negligible impact on the radiation pattern. We will in the following discuss how to optimize these radomes.
+
+.. _fig_a121_planar_enclosure:
+.. figure:: /_static/hw_images/A121_pcb_and_planar_radome.png
+    :align: center
+    :width: 75%
+
+    Example enclosure with planar radome.
 
 .. _integration-a121-radome-thickness:
 
 Radome thickness
 ----------------
 
-Let :math:`d_1` be the distance to the radome, :math:`d_2` the thickness, :math:`r_1` and :math:`r_2` the reflection coefficients, and :math:`t_1` and :math:`t_2` the corresponding transmission coefficients according to :numref:`fig_transmissionreflection`. As an incident wave hits the first interface, a :term:`reflection<Reflection>` :math:`r_1`, and a :term:`transmission<Transmission>` :math:`t_1` occur. Note that :math:`r_1 < 1`, so the reflected wave is out of phase with the incident wave. At the second interface, another :term:`reflection<Reflection>` :math:`r_2` and :term:`transmission<Transmission>` :math:`t_2` take place. With air on both sides of the :term:`dielectric<Dielectric>`, note from :eq:`eq_transmissionreflection` that :math:`r_1 = -r_2`. The total reflection coefficient :math:`\Gamma_1` then becomes [#f1]_:
+To minimize reflection losses and unwanted interference, the radome thickness needs to be chosen properly. Let :math:`d_1` be the distance to the radome, :math:`d_2` the radome thickness, :math:`r_1` and :math:`r_2` the reflection coefficients, and :math:`t_1` and :math:`t_2` the corresponding transmission coefficients according to :numref:`fig_transmission_reflection`. As an incident wave hits the first interface, a reflection :math:`r_1` and a transmission :math:`t_1` occur. At the second interface, another reflection :math:`r_2` and transmission :math:`t_2` take place. With air on both sides of the dielectric, it follows from :eq:`eq_transmission_reflection` that :math:`r_1 = -r_2`. The total reflection coefficient :math:`\Gamma_1` then becomes [1]_:
 
 .. math::
-    :label: eq_reflectioncoeff
+    :label: eq_reflection_coeff
 
     \Gamma_{1}=\frac{r_{1} \left(1 - e^{-2jkd_{2}}\right)}{1 - r_{1}^{2} e^{-2jkd_{2}}}
 
-where :math:`k = 2\pi/\lambda` is the wave number in the material. Two notable special cases follow:
-
-- For :math:`d_{2} = m\frac{\lambda}{2}, \; m = 1,2,...` we have :math:`e^{-2jk d_{2}}=1` and :math:`\Gamma_{1} = 0`.
-- For :math:`d_{2} = m\frac{\lambda}{4}, \; m = 1,3,5,...` we have :math:`e^{-2jk d_{2}}=-1` and :math:`\Gamma_{1} = \frac{2r_{1}}{1+r_{1}^{2}}`.
-
-The optimum radome thickness occurs when the :term:`dielectric<Dielectric>` is perfectly :term:`reflectionless<Reflection>`, i.e. when the thickness is a multiple of half a wavelength. This can also be understood from the fact that the round trip of the wave inside the radome introduces a 360° phase shift, thereby cancelling the reflected wave :math:`r_{1}`.
-
-.. _fig_transmissionreflection:
-.. figure:: /_static/handbook/a121/in-depth_topics/integration/radome_transmission_and_reflection.svg
-    :align: center
-    :width: 95%
-
-    :term:`Transmitted<Transmission>` and :term:`reflected<Reflection>` signals from a half-wavelength radome. Secondary :term:`reflections<Reflection>` have been omitted for simplicity.
-
-As an example, if the material is polycarbonate (PC) with relative :term:`permittivity<Permittivity>` :math:`\varepsilon_r=2.75`, the optimal radome thickness becomes:
+where :math:`k = 2\pi/\lambda` is the wave number in the material. Two notable special cases follow. First, for the half-wavelength condition:
 
 .. math::
-    :label: eq_exthicknesscalc
+    :label: eq_half_wavelength_condition
+
+    d_{2} = m\frac{\lambda}{2}, \quad m = 1,2,...
+
+we have :math:`e^{-2jkd_{2}}=1`, and the reflection coefficient vanishes or :math:`\Gamma_{1} = 0`.
+
+Second, for the quarter-wavelength condition:
+
+.. math::
+    :label: eq_quarter_wavelength_condition
+
+    d_{2} = m\frac{\lambda}{4}, \quad m = 1,3,5,...
+
+we have :math:`e^{-2jkd_{2}}=-1`, and the reflection coefficient reaches its maximum or :math:`\Gamma_{1} = \frac{2r_{1}}{1+r_{1}^{2}}`.
+
+.. _fig_transmission_reflection:
+.. figure:: /_static/hw_images/radome_transmission_and_reflection.svg
+    :align: center
+    :width: 60%
+
+    Transmitted and reflected signals from a half-wavelength radome. Some secondary reflections have been omitted for simplicity.
+
+Thus the dielectric is perfectly :term:`reflectionless<Reflection>` when the thickness is a multiple of half a wavelength (:eq:`eq_half_wavelength_condition`). This can also be understood from the fact that the round trip of the wave inside the radome introduces a 360° phase shift, thereby cancelling the reflected wave :math:`r_{1}`.
+
+Example radome
+--------------
+
+The far-field patterns for a few example radomes using polycarbonate (PC) are shown in :numref:`fig_a121_planar_and_spherical_radomes`. For PC, :math:`\varepsilon_r=2.8` at 60 GHz and the optimal radome thickness becomes (:eq:`eq_half_wavelength_condition`):
+
+.. math::
 
     d_{2}=m\frac{\lambda}{2} = m\frac{\lambda_{0}}{2\sqrt{\varepsilon_r}}
-    = m\frac{5}{2\sqrt{2.75}} \approx m \times 1.51 \:\mathrm{mm}, m = 1,2,...
+    = m\frac{5}{2\sqrt{2.8}} \approx m \times 1.5 \:\mathrm{mm}, m = 1,2,...
 
-If the :term:`dielectric<Dielectric>` thickness is an odd multiple of :math:`\frac{\lambda}{4}`, maximum :term:`reflection<Reflection>` occurs. The relative :term:`dielectric constant<Permittivity>` of some more materials can be found in :numref:`tab_common_material`.
+The above corresponds to the orange curve in :numref:`fig_a121_planar_and_spherical_radomes`. As the radome thickness is close to optimal, little or no gain loss is observed. Some small pattern distortion occurs as the A121 spherical wavefront refracts and reflects in a planar radome. With a spherical radome (red curve), the far-field pattern closely follows that in free space (blue curve). Spherical radomes should be considered when low sidelobe level is of importance.
+
+If the dielectric thickness is an odd multiple of :math:`\lambda/4`, maximum reflection occurs (:eq:`eq_quarter_wavelength_condition`). This is also shown in :numref:`fig_a121_planar_and_spherical_radomes` (green curve) where the planar radome thickness is :math:`3\lambda/4` =2.25 mm. This results in significant pattern interference and gain loss. The importance of properly choosing the radome thickness has thus been demonstrated.
+
+.. _fig_a121_planar_and_spherical_radomes:
+.. figure:: /_static/hw_images/A121_gain_vs_radomes.svg
+    :align: center
+    :width: 100%
+
+    Simulated far-fields with half-wavelength (:math:`\lambda/2` =1.5 mm) and quarter-wavelength (:math:`3\lambda/4` =2.25 mm) planar and spherical radomes.
 
 Radome distance
 ---------------
 
-In addition to radome thickness, the distance between the sensor and the radome also affects performance. Depending on the radome thickness and distance, the initial :term:`reflection<Reflection>` from the radome will cause multiple :term:`reflections<Reflection>` between the sensor, PCB, and radome. This leads to a standing-wave pattern where the amplitude varies as a function of radome distance. The amplitude variation will be minimal if the reflected wave from the radome is in phase with the transmitted wave. The optimum radome distance is
+When using (half-wavelength) planar radomes, some back reflection occurs for angles away from boresight. These reflections cause standing waves between the sensor, the PCB and the radome which result in main beam ripple. This can be minimized by tuning the distance between the radome and the sensor.
 
-.. math::
-    :label: eq_radomedistance
+:numref:`fig_planar_radome_distance` shows the simulated far-field pattern for a half-wavelength planar radome with :math:`\varepsilon_r=2.8` for different radome distances. When the radome distance is 3.0 - 3.5 mm (with respect to PCB ground plane), minimum pattern ripple is observed. This corresponds to a distance of :math:`\sim\lambda_{0}/2` between the sensor and radome.
 
-    d_{1}=m\frac{\lambda_{0}}{2}, \quad m = 1,2,3,...
-
-Figure :numref:`fig_radomethicknessvdistance` shows the measured amplitude variations of the reflected wave from a radar target when the distance between the sensor and the radome is varied for different radome thicknesses. The radome has a :term:`dielectric constant<Permittivity>` of :math:`\varepsilon_r=2.6`, so the optimum thickness is :math:`d_{2} = 1.55 \approx 1.6 \:\mathrm{mm}`, which shows the minimum amplitude variation. When the radome thickness is a multiple of :math:`\frac{\lambda}{4} = \frac{3.1}{4} \approx 0.7 \:\mathrm{mm}`, the maximum amplitude variation is observed as a function of distance.
-
-.. _fig_radomethicknessvdistance:
-.. figure:: /_static/handbook/a121/in-depth_topics/integration/radome_thickness_vs_distance_A121.png
+.. _fig_planar_radome_distance:
+.. figure:: /_static/hw_images/A121_gain_vs_planar_radome_distance.svg
     :align: center
-    :width: 95%
+    :width: 100%
 
-    Amplitude vs. radome thickness and distance. Amplitude variation is shown for a single direction (Tx or Rx). For combined Tx+Rx, the values are doubled.
+    Simulated far-fields of half-wavelength (1.5 mm) planar radome for different distances. All distances with respect to PCB ground plane.
 
+If absolute distance measurements are required, an additional offset should be applied to compensate for the propagation delay introduced by the radome. This offset can be determined through reference measurements or by calculating the propagation delay in the dielectric.
 
-If absolute distance measurements are required for a particular use case, an additional offset should be applied. This offset compensates for the propagation delay introduced by the radome. It can be determined through reference measurements, and also allows the reference plane to be positioned at the desired location within the product. For multi-layer radome optimization, see [#f1]_.
+For more advanced radomes such as multilayer radome design and custom radome shapes, please contact the `Acconeer customer support <customer_support_>`_ for design assistance.
 
+.. _customer_support: https://support.acconeer.com
 
-Dielectric constant of common materials
-=======================================
+Summary
+-------
 
-The :term:`dielectric constant<Permittivity>` of some common polymers at 60 GHz is presented in :numref:`tab_common_material`.
+- To avoid reflection losses and pattern interference, the radome thickness should be a multiple of :math:`\lambda/2`.
+- Both curved and planar radomes can be used. When sidelobe level is of importance, curved radomes are recommended (e.g. R=20-50 mm).
+- For half-wavelength planar radomes, the distance between the sensor and the radome should be a multiple of :math:`\lambda_{0}/2`. To minimize pattern ripple, radomes placed close to the sensor (2.5 mm) are preferred.
 
-.. _tab_common_material:
-.. table:: Relative :term:`permittivity<Permittivity>` of common materials [#f2]_
-    :align: center
-    :widths: auto
+.. include:: ../common/dk_of_common_materials.rst
 
-    ==================================== =====================================
-    Material                             Re(:math:`\varepsilon`) at 60 GHz
-    ==================================== =====================================
-    Acrylic glass                        2.5
-    Alumina                              9.3
-    Fused Quartz                         3.8
-    MACOR                                5.5
-    PEEK                                 3.12 [#f3]_
-    PMMA                                 2.6  [#f4]_
-    Polycarbonate (PC)                   2.75 [#f4]_ [#f5]_
-    Polyethylene (PE)                    2.3  [#f5]_ [#f6]_ [#f7]_ [#f8]_
-    Polypropylene (PP)                   2.2  [#f5]_ [#f8]_
-    Polystyrene (Rexolite)               2.5
-    PTFE (Teflon)                        2.05 [#f5]_
-    ==================================== =====================================
+References
+----------
 
-
-.. rubric:: Footnotes
-
-.. [#f1]
-   S. J. Orfanidis, *Electromagnetic Waves and Antennas*,
+.. [1]    S. J. Orfanidis, *Electromagnetic Waves and Antennas*,
    New Jersey: Rutgers University, 2016.
 
-.. [#f2]
-   S. R. Artem Boriskin, *Aperture Antennas for Millimeter and Sub-Millimeter Wave Applications*,
-   Springer, 2017.
-
-.. [#f3]
-   N. C. F. T. V. et al., "Complex Dielectric Permittivity of Engineering and 3D-Printing Polymers at Q-Band,"
-   *J. Infrared Milli Terahz Waves*, vol. 39, pp. 1140–1147, 2018.
-
-.. [#f4]
-   B. L. G. et al., "A Comparison of Measurements of the Permittivity and Loss Angle of Polymers in the Frequency Range 10 GHz to 90 GHz,"
-   *2021 15th European Conference on Antennas and Propagation (EuCAP)*, pp. 1–5, 2021.
-
-.. [#f5]
-   Y. O. K. F. M. M. K. S. Yuka Hasegawa, "Complex Permittivity Spectra of Various Insulating Polymers at Ultrawide-Band Frequencies,"
-   *Electrical Engineering in Japan*, vol. 198, no. 3, pp. 11–18, 2017.
-
-.. [#f6]
-   J. W. Lamb, *Miscellaneous Data on Materials for Millimetre and Submillimetre Optics*.
-
-.. [#f7]
-   Salski et al., "Complex Permittivity of Common Dielectrics in 20–110 GHz Frequency Range Measured with a Fabry–Perot Open Resonator."
-
-.. [#f8]
-   Afsar et al., "A New 60 GHz Open-Resonator Technique for Precision Permittivity and Loss-Tangent Measurement."

@@ -89,7 +89,7 @@ The exact location and dimensions of the EBG cells are important for optimal per
 .. _fig_XS121_ebg_routing_example:
 .. figure:: /_static/hw_images/XS121_ebg_routing.svg
     :align: center
-    :width: 75%
+    :width: 50%
 
     Example mushroom type EBG implementation with routing.
 

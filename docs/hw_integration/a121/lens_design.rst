@@ -223,7 +223,7 @@ This is an example of a single zone FZP lens with a focal point F = 10 mm and qu
 
 :eq:`eq_FZP_2` gives us the step thickness of s = 2.02 mm. Total thickness of the lens is then 4*2.02 = 8.1 mm.
 
-For further details regarding FZP lens design, see [#f1]_.
+For further details regarding FZP lens design, see [1]_.
 
 Lens thickness comparison
 -------------------------
@@ -265,20 +265,21 @@ Customized lenses
 
 The lens design equations provided here are based on ray optics and may not be adequate in more challenging applications, especially when the lens diameter is small. With a full wave EM solver, Acconeer can construct optimized lenses for maximizing the gain, minimizing the side lobes or customizing the radiation pattern. The impact of lens housings, nearby mechanics and the PCB can also be simulated. Acconeer provides a design service for this, visit the `Acconeer Developer page <a121_lens_design_>`_ for details.
 
-
 For more information, see:
 
 * :octicon:`download` `A121 Lenses Getting Started Guide <a121_lens_guide_>`_
 
+.. include:: ../common/dk_of_common_materials.rst
 
 .. _a121_hw_integration_guideline: https://developer.acconeer.com/download/Hardware-integration-guideline
 .. _a121_lens_guide: https://developer.acconeer.com/download/Getting-Started-Guide-A121-Lenses
 .. _a121_lens_design: https://developer.acconeer.com/home/design-services/
 
 
-.. rubric:: Footnotes
+References
+----------
 
-.. [#f1]
+.. [1]
    J. C. W. D. N. Black, "Millimeter-Wave Characteristics of
    Phase-Correcting Fresnel Zone Plates," *IEEE Transactions on Microwave
    Theory and Techniques*, vol. 35, no. 12, pp. 1122–1129, 1987.
