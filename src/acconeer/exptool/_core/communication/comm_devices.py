@@ -195,15 +195,20 @@ class _UsbDeviceFinder:
         for dev in devices:
             try:
                 serial_number = dev.serial_number
-            except (ValueError, NotImplementedError):
+            except (ValueError, NotImplementedError, usb.core.USBError):
                 serial_number = None
-            vid = dev.idVendor
-            pid = dev.idProduct
 
-            interface = get_libusb_bulk_interface(dev)
-            usb.util.dispose_resources(dev)
-            if interface is None:
+            try:
+                vid = dev.idVendor
+                pid = dev.idProduct
+
+                if get_libusb_bulk_interface(dev) is None:
+                    continue
+            except usb.core.USBError:
                 continue
+            finally:
+                usb.util.dispose_resources(dev)
+
             yield (vid, pid, serial_number)
 
     def is_accessible(self, vid: int, pid: int) -> bool:
