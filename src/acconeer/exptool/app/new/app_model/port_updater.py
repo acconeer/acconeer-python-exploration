@@ -22,6 +22,7 @@ class PortUpdater(QObject):
         sig_update = Signal(object, object)
         serial_devices: Any = None
         usb_devices: Any = None
+        last_error: str = ""
 
         @Slot()
         def start(self) -> None:
@@ -41,10 +42,11 @@ class PortUpdater(QObject):
                     self.usb_devices = usb_devices
                     self.sig_update.emit(serial_devices, usb_devices)
             except Exception as e:
-                print(f"Exception occured in {self.__class__.__name__}.timerEvent:")
-                print(str(e))
-                print("Stopping periodic call")
-                self.stop()
+                error_str = str(e)
+                if error_str != self.last_error:
+                    print(f"Exception occured in {self.__class__.__name__}.timerEvent:")
+                    print(error_str)
+                    self.last_error = error_str
 
     def __init__(self, parent: QObject) -> None:
         super().__init__(parent)
