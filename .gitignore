@@ -56,3 +56,6 @@ stash/
 
 # Ruff
 .ruff_cache/
+
+# Claude Code
+/CLAUDE.local.md
