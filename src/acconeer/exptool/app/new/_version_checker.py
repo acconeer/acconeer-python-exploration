@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -8,9 +8,14 @@ from typing import Optional, Tuple
 import requests
 
 
+_REQUEST_TIMEOUT_S = 10
+
+
 def check_package_outdated(name: str, current_version: str) -> Tuple[bool, Optional[str]]:
     try:
-        response = requests.get(f"https://pypi.python.org/pypi/{name}/json")
+        response = requests.get(
+            f"https://pypi.python.org/pypi/{name}/json", timeout=_REQUEST_TIMEOUT_S
+        )
         latest_version = response.json()["info"]["version"]
     except Exception:
         latest_version = None
@@ -29,7 +34,8 @@ def get_latest_changelog() -> str:
     try:
         cl = requests.get(
             "https://raw.githubusercontent.com/"
-            "acconeer/acconeer-python-exploration/master/CHANGELOG.md"
+            "acconeer/acconeer-python-exploration/master/CHANGELOG.md",
+            timeout=_REQUEST_TIMEOUT_S,
         )
         return str(cl.content.decode())
     except Exception:

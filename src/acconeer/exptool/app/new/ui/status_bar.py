@@ -1,8 +1,9 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
+import contextlib
 import itertools
 import threading
 from typing import Iterator, Optional
@@ -185,7 +186,9 @@ class VersionButton(QPushButton):
         self.clicked.connect(self._on_click)
         self.sig_payload.connect(self._handle_payload)
 
-        self._version_thread = threading.Thread(target=lambda: self._get_payload(et_version))
+        self._version_thread = threading.Thread(
+            target=lambda: self._get_payload(et_version), daemon=True
+        )
         self._version_thread.start()
 
     def _on_click(self) -> None:
@@ -213,8 +216,12 @@ class VersionButton(QPushButton):
         )
 
     def _get_payload(self, et_version: str) -> None:
-        is_outdated, latest_version = check_package_outdated("acconeer-exptool", et_version)
-        self.sig_payload.emit((get_latest_changelog(), latest_version, is_outdated))
+        # The daemon thread may outlive the widget; a late emit into a
+        # destroyed widget must not surface as an error.
+        with contextlib.suppress(Exception):
+            is_outdated, latest_version = check_package_outdated("acconeer-exptool", et_version)
+            changelog = get_latest_changelog() if is_outdated else ""
+            self.sig_payload.emit((changelog, latest_version, is_outdated))
 
 
 class StatusBar(QStatusBar):
