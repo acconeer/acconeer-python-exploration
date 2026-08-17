@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -32,7 +32,9 @@ class DevLicense:
     def load(self) -> None:
         """Loads the license HTML document"""
         try:
-            self.html = bs4.BeautifulSoup(requests.get(self.license_url).text, "html.parser")
+            self.html = bs4.BeautifulSoup(
+                requests.get(self.license_url, timeout=10).text, "html.parser"
+            )
         except Exception as e:
             log.warn(str(e))
             self.html = None
