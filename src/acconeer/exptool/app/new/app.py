@@ -11,10 +11,8 @@ import sys
 import time
 import traceback
 import typing as t
-from importlib.resources import as_file, files
 from pathlib import Path
 
-from acconeer.exptool.app import resources
 from acconeer.exptool.app.install_missing_app_extra import INSTALL_MISSING_APP_EXTRA_INSTRUCTIONS
 from acconeer.exptool.utils import config_logging
 
@@ -22,10 +20,12 @@ from acconeer.exptool.utils import config_logging
 try:
     import qdarktheme
 
-    from PySide6 import QtCore, QtGui
+    from PySide6 import QtCore
     from PySide6.QtWidgets import QApplication, QMessageBox
 
     import pyqtgraph as pg
+
+    from acconeer.exptool.app.desktop_integration import ensure_wayland_integration
 except ImportError:
     traceback.print_exc(file=sys.stdout)
     print(INSTALL_MISSING_APP_EXTRA_INSTRUCTIONS)
@@ -134,8 +134,7 @@ def main() -> None:
     pg.setConfigOption("leftButtonPan", False)
     pg.setConfigOptions(antialias=True)
 
-    with as_file(files(resources) / "icon.png") as path:
-        app.setWindowIcon(_pixmap_to_icon(QtGui.QPixmap(str(path))))
+    ensure_wayland_integration(app)
 
     mw = MainWindow(model)
     mw.show()
@@ -377,27 +376,3 @@ class _ExptoolArgumentParser(argparse.ArgumentParser):
             "--quiet",
             action="store_true",
         )
-
-
-def _pixmap_to_icon(pixmap: QtGui.QPixmap) -> QtGui.QIcon:
-    size = max(pixmap.size().height(), pixmap.size().width())
-
-    square_pixmap = QtGui.QPixmap(size, size)
-    square_pixmap.fill(QtGui.QRgba64.fromRgba(0, 0, 0, 0))
-
-    painter = QtGui.QPainter(square_pixmap)
-    painter.drawPixmap(
-        (square_pixmap.size().width() - pixmap.size().width()) // 2,
-        (square_pixmap.size().height() - pixmap.size().height()) // 2,
-        pixmap,
-    )
-    painter.end()
-
-    scaled_pixmap = square_pixmap.scaled(
-        256,
-        256,
-        aspectMode=QtCore.Qt.AspectRatioMode.KeepAspectRatio,
-        mode=QtGui.Qt.TransformationMode.SmoothTransformation,
-    )
-
-    return QtGui.QIcon(scaled_pixmap)

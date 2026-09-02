@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -43,6 +43,7 @@ import acconeer.exptool as et
 from acconeer.exptool.a111 import _conf_to_rss_sdk
 from acconeer.exptool.a111.algo import Calibration, ModuleInfo
 from acconeer.exptool.app import resources
+from acconeer.exptool.app.desktop_integration import ensure_wayland_integration
 
 from . import data_processing
 from .elements.helper import (
@@ -2261,6 +2262,7 @@ def main():
             QtCore.Qt.HighDpiScaleFactorRoundingPolicy.PassThrough,
         )
         app = QApplication(sys.argv)
+    ensure_wayland_integration(app)
     ex = GUI(use_last_config=args.use_last_config)
 
     signal.signal(signal.SIGINT, lambda *_: sigint_handler(ex))
