@@ -32,8 +32,8 @@ import attrs
 from packaging.version import Version
 from typing_extensions import Protocol
 
-from PySide6.QtCore import QDeadlineTimer, QObject, QThread, Signal
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtCore import QDeadlineTimer, QEventLoop, QObject, QThread, QTimer, Signal
+from PySide6.QtWidgets import QWidget
 
 from acconeer.exptool import _core as core
 from acconeer.exptool import a121
@@ -345,7 +345,7 @@ class AppModel(QObject):
         self.port_updater_enable(True)
 
     def stop(self) -> None:
-        WAIT_FOR_UNLOAD_TIMEOUT = 1.0
+        WAIT_FOR_UNLOAD_TIMEOUT_MS = 1000
 
         try:
             self._persistent_state.to_config_file()
@@ -356,25 +356,35 @@ class AppModel(QObject):
         if self.connection_state in [ConnectionState.CONNECTING, ConnectionState.CONNECTED]:
             self.disconnect_client()
 
-        wait_start_time = time.monotonic()
-        while (
-            self.plugin_state != PluginState.UNLOADED
-            and self.connection_state != ConnectionState.DISCONNECTED
-        ):  # TODO: Do this better
-            QApplication.processEvents()
+        def is_unloaded_and_disconnected() -> bool:
+            return (
+                self.plugin_state == PluginState.UNLOADED
+                and self.connection_state == ConnectionState.DISCONNECTED
+            )
 
-            if (time.monotonic() - wait_start_time) > WAIT_FOR_UNLOAD_TIMEOUT:
-                log.error("Plugin not unloaded on stop")
-                break
+        if not is_unloaded_and_disconnected():
+            wait_loop = QEventLoop()
+
+            def check_done() -> None:
+                if is_unloaded_and_disconnected():
+                    wait_loop.quit()
+
+            self.sig_notify.connect(check_done)
+            QTimer.singleShot(WAIT_FOR_UNLOAD_TIMEOUT_MS, wait_loop.quit)
+            wait_loop.exec()
+            self.sig_notify.disconnect(check_done)
+
+            if not is_unloaded_and_disconnected():
+                log.error("Plugin not unloaded / backend not disconnected on stop")
 
         remove_temp_dir()
 
         self._listener.requestInterruption()
-        status = self._listener.wait(QDeadlineTimer(500))
-
-        if not status:
-            log.debug("Backend listening thread did not stop when requested, terminating...")
-            self._listener.terminate()
+        if not self._listener.wait(QDeadlineTimer(500)):
+            # Not forcibly terminated: QThread.terminate() can kill the thread mid-operation
+            # (e.g. holding a lock), which is worse than leaving it to be reclaimed on process
+            # exit -- stop() only ever runs from the aboutToQuit handler right before exit.
+            log.error("Backend listening thread did not stop when requested")
 
         self.port_updater_enable(False)
 
