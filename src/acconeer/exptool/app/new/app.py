@@ -82,6 +82,10 @@ def main() -> None:
             QtCore.Qt.HighDpiScaleFactorRoundingPolicy.PassThrough,
         )
 
+    # Silences noisy, harmless focus-tracking mismatches logged by Qt's
+    # Wayland text-input integration (zwp_text_input_v3).
+    QtCore.QLoggingCategory.setFilterRules("qt.qpa.wayland.textinput=false")
+
     # The cast necessitated of a miss in the typing stubs.
     app: QApplication = t.cast(QApplication, QApplication.instance()) or QApplication(sys.argv)
 
