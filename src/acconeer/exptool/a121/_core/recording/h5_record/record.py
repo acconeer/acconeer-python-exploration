@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -66,8 +66,17 @@ class H5SessionRecord(SessionRecord):
 
     @property
     def sensor_id(self) -> int:
-        entry_group = utils.unextend(self._get_entries())
-        return int(entry_group["sensor_id"][()])
+        """Retrieves the sole sensor id used in this session.
+
+        A session may span multiple groups (e.g. multi-group subsweep
+        configurations) while still using a single physical sensor, so this
+        looks across all groups rather than requiring exactly one.
+
+        :raises: ValueError if the session is empty or more than one distinct sensor id is used.
+        """
+        sensor_ids = {sensor_id for _, sensor_id, _ in self._iterate_entries()}
+        (sensor_id,) = sensor_ids
+        return int(sensor_id)
 
     @property
     def calibrations(self) -> dict[int, SensorCalibration]:

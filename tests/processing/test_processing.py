@@ -147,6 +147,16 @@ def input_path(resource_name: str) -> Path:
             "distance_fixed_strength.h5",
         ),
         (
+            distance_test.distance_detector,
+            list[distance_test.ResultSlice],
+            "distance-multi-group.h5",
+        ),
+        (
+            distance_test.distance_detector,
+            list[distance_test.ResultSlice],
+            "distance-multi-group-close-range-enabled.h5",
+        ),
+        (
             smart_presence_test.smart_presence_controller,
             list[smart_presence_test.RefAppResultSlice],
             "smart_presence.h5",

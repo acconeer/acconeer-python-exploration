@@ -42,6 +42,93 @@ def test_limit_step_length() -> None:
     assert actual_step_length_no_user_limit == 12
 
 
+@pytest.mark.parametrize("profile", [a121.Profile.PROFILE_1, a121.Profile.PROFILE_3])
+@pytest.mark.parametrize("step_length", [1, 12])
+@pytest.mark.parametrize("reflector_shape_exponent", [2.0, 4.0])
+def test_hwaas_saturation_m_round_trips_through_calc_hwaas(
+    profile: a121.Profile, step_length: int, reflector_shape_exponent: float
+) -> None:
+    """_calc_hwaas_saturation_m is the analytic inverse of _calc_hwaas - lock them together."""
+    signal_quality = 15.0
+
+    saturation_m = distance._translation._calc_hwaas_saturation_m(
+        profile, step_length, signal_quality, reflector_shape_exponent
+    )
+
+    assert (
+        distance._translation._calc_hwaas(
+            profile, step_length, saturation_m, signal_quality, reflector_shape_exponent
+        )
+        == distance._translation._MAX_HWAAS
+    )
+
+
+def test_max_profile_breakpoints_anchor_to_hwaas_saturation_when_inside_range() -> None:
+    """Saturation point inside range: spacing anchors to it, last breakpoint pulled to end_m."""
+    profile = a121.Profile.PROFILE_3
+    step_length = 12
+    signal_quality = 15.0
+    reflector_shape_exponent = 4.0
+    start_m = 0.0
+    end_m = 10.0
+    num_breakpoints = 5
+
+    saturation_m = distance._translation._calc_hwaas_saturation_m(
+        profile, step_length, signal_quality, reflector_shape_exponent
+    )
+    assert start_m < saturation_m <= end_m  # sanity check: this exercises the anchor branch
+
+    breakpoints = distance._translation._calc_max_profile_breakpoints_m(
+        start_m,
+        end_m,
+        num_breakpoints,
+        profile,
+        step_length,
+        signal_quality,
+        reflector_shape_exponent,
+    )
+
+    # Golden values recorded from the current implementation. Changing
+    # distance._translation._BREAKPOINT_DENSITY_EXPONENT will break this test.
+    expected = [0.0, 2.5177895170097013, 3.9508352337939048, 5.142191386643525, 10.0]
+
+    assert breakpoints == pytest.approx(expected)
+    assert breakpoints[0] == start_m
+    assert breakpoints[-1] == end_m
+
+
+def test_max_profile_breakpoints_fall_back_to_full_range_when_saturation_outside_range() -> None:
+    """Saturation point outside range: spacing falls back to the full [start_m, end_m] span."""
+    profile = a121.Profile.PROFILE_3
+    step_length = 12
+    signal_quality = 15.0
+    reflector_shape_exponent = 4.0
+    start_m = 0.0
+    end_m = 5.0  # shorter than the ~6.2 m saturation distance computed below
+    num_breakpoints = 5
+
+    saturation_m = distance._translation._calc_hwaas_saturation_m(
+        profile, step_length, signal_quality, reflector_shape_exponent
+    )
+    assert not (start_m < saturation_m <= end_m)  # sanity check: this exercises the fallback
+
+    breakpoints = distance._translation._calc_max_profile_breakpoints_m(
+        start_m,
+        end_m,
+        num_breakpoints,
+        profile,
+        step_length,
+        signal_quality,
+        reflector_shape_exponent,
+    )
+
+    # Golden values recorded from the current implementation. Changing
+    # distance._translation._BREAKPOINT_DENSITY_EXPONENT will break this test.
+    expected = [0.0, 2.0306309908905886, 3.1864015682981557, 4.147246273076272, 5.0]
+
+    assert breakpoints == pytest.approx(expected)
+
+
 def test_should_be_able_to_set_start_m_equals_end_m() -> None:
     config = distance.DetectorConfig(start_m=0.8, end_m=0.8)
     client: t.Any = None

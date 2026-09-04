@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 """
@@ -109,10 +109,13 @@ def test_stacked_results_data(
 
 
 def test_sensor_id(ref_record: a121.Record, ref_structure: Iterator[Iterator[int]]) -> None:
+    distinct_sensor_ids = {sensor_id for group in ref_structure for sensor_id in group}
+
     # ref_record is setup to have multiple identical sessions
     for i in range(ref_record.num_sessions):
-        if ref_structure == [{1}]:
-            assert ref_record.session(i).sensor_id == 1
+        if len(distinct_sensor_ids) == 1:
+            (sensor_id,) = distinct_sensor_ids
+            assert ref_record.session(i).sensor_id == sensor_id
         else:
             with pytest.raises(ValueError):
                 _ = ref_record.session(i).sensor_id

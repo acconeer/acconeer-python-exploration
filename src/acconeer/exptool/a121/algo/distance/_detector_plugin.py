@@ -530,15 +530,6 @@ class ViewPlugin(A121ViewPluginBase):
         self.sensor_config_editor_tabs = QTabWidget()
         self.sensor_config_editor_tabs.setStyleSheet("QTabWidget::pane { padding: 5px;}")
         self.sensor_config_editors = []
-        self.range_labels = ["Close range", "Far range"]
-
-        for label in self.range_labels:
-            sensor_config_editor = SensorConfigEditor(
-                json_button_operations=JsonButtonOperations.SAVE
-            )
-            sensor_config_editor.set_read_only(True)
-            self.sensor_config_editors.append(sensor_config_editor)
-            self.sensor_config_editor_tabs.addTab(sensor_config_editor, label)
 
         self.collapsible_widget = CollapsibleWidget(
             "Sensor config info", self.sensor_config_editor_tabs, self.scrolly_widget
@@ -593,17 +584,51 @@ class ViewPlugin(A121ViewPluginBase):
     def _update_sensor_configs_view(self, config: DetectorConfig, sensor_ids: list[int]) -> None:
         with contextlib.suppress(Exception):
             session_config = detector_config_to_session_config(config, sensor_ids)
-            tab_visible = [False, False]
+
+            close_range_config = None
+            far_range_configs = []
+
             for group in session_config.groups:
                 for _, sensor_config in group.items():
-                    index = 0 if sensor_config.subsweeps[0].enable_loopback else 1
-                    tab_visible[index] = True
-                    sensor_config_editor = self.sensor_config_editors[index]
-                    sensor_config_editor.set_data(sensor_config)
+                    if sensor_config.subsweeps[0].enable_loopback:
+                        close_range_config = sensor_config
+                    else:
+                        far_range_configs.append(sensor_config)
+                    break  # All sensor configs in a group are the same
 
-            for i, sensor_config_editor in enumerate(self.sensor_config_editors):
+            num_far_range_groups = len(far_range_configs)
+
+            labeled_configs = (
+                [("Close range", close_range_config)] if close_range_config is not None else []
+            ) + [
+                (
+                    f"Far range {i + 1}/{num_far_range_groups}"
+                    if num_far_range_groups > 1
+                    else "Far range",
+                    sensor_config,
+                )
+                for i, sensor_config in enumerate(far_range_configs)
+            ]
+
+            while len(self.sensor_config_editors) < len(labeled_configs):
+                sensor_config_editor = SensorConfigEditor(
+                    json_button_operations=JsonButtonOperations.SAVE
+                )
+                sensor_config_editor.set_read_only(True)
+                self.sensor_config_editors.append(sensor_config_editor)
+                self.sensor_config_editor_tabs.addTab(sensor_config_editor, "")
+
+            for sensor_config_editor, (label, sensor_config) in zip(
+                self.sensor_config_editors, labeled_configs
+            ):
+                sensor_config_editor.set_data(sensor_config)
                 index = self.sensor_config_editor_tabs.indexOf(sensor_config_editor)
-                self.sensor_config_editor_tabs.setTabVisible(index, tab_visible[i])
+                self.sensor_config_editor_tabs.setTabText(index, label)
+                self.sensor_config_editor_tabs.setTabVisible(index, True)
+
+            for sensor_config_editor in self.sensor_config_editors[len(labeled_configs) :]:
+                index = self.sensor_config_editor_tabs.indexOf(sensor_config_editor)
+                self.sensor_config_editor_tabs.setTabVisible(index, False)
 
             self.collapsible_widget.widget = self.sensor_config_editor_tabs
 

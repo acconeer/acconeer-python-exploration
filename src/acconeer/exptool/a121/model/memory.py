@@ -18,6 +18,10 @@ from acconeer.exptool.a121.algo.distance import (
     MeasurementType,
     ThresholdMethod,
 )
+from acconeer.exptool.a121.algo.distance._translation import (
+    _legacy_detector_config_to_session_config,
+    get_num_far_subsweeps,
+)
 from acconeer.exptool.a121.algo.distance._utils import (
     get_calibrate_noise_session_config,
     get_calibrate_offset_sensor_config,
@@ -112,8 +116,9 @@ def presence_heap_memory(config: PresenceConfig) -> int:
 
 def distance_external_heap_memory(config: DistanceConfig) -> int:
     offset_sensor_config = get_calibrate_offset_sensor_config()
-    session_config = distance.detector_config_to_session_config(config, [1])
-    processor_specs = distance.detector_config_to_processor_specs(config, 4)
+    session_config = _legacy_detector_config_to_session_config(config, [1])
+    num_far_subsweeps = get_num_far_subsweeps(session_config, config)
+    processor_specs = distance.detector_config_to_processor_specs(config, num_far_subsweeps)
     noise_session_config = get_calibrate_noise_session_config(session_config, [1])
 
     offset_ext_heap = session_external_heap_memory(SessionConfig(offset_sensor_config))
@@ -184,8 +189,9 @@ def distance_external_heap_memory(config: DistanceConfig) -> int:
 
 def distance_rss_heap_memory(config: DistanceConfig) -> int:
     offset_sensor_config = get_calibrate_offset_sensor_config()
-    session_config = distance.detector_config_to_session_config(config, [1])
-    processor_specs = distance.detector_config_to_processor_specs(config, 4)
+    session_config = _legacy_detector_config_to_session_config(config, [1])
+    num_far_subsweeps = get_num_far_subsweeps(session_config, config)
+    processor_specs = distance.detector_config_to_processor_specs(config, num_far_subsweeps)
     noise_session_config = get_calibrate_noise_session_config(session_config, [1])
 
     offset_rss_heap = _session_config_rss_heap_memory(SessionConfig(offset_sensor_config))

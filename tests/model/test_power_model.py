@@ -11,6 +11,9 @@ import yaml
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121.algo import distance
+from acconeer.exptool.a121.algo.distance._translation import (
+    _legacy_detector_config_to_session_config,
+)
 from acconeer.exptool.a121.algo.presence import _configs as presence_configs
 from acconeer.exptool.a121.model import power
 
@@ -208,7 +211,7 @@ def test_lower_idle_state_limits(
     [
         (
             "Distance, Default",
-            distance.detector_config_to_session_config(
+            _legacy_detector_config_to_session_config(
                 distance.DetectorConfig(update_rate=1.0, close_range_leakage_cancellation=True),
                 sensor_ids=[1],
             ),
@@ -217,7 +220,7 @@ def test_lower_idle_state_limits(
         ),
         (
             "Distance, Close",
-            distance.detector_config_to_session_config(
+            _legacy_detector_config_to_session_config(
                 distance.DetectorConfig(
                     start_m=0.05,
                     end_m=0.10,
@@ -231,7 +234,7 @@ def test_lower_idle_state_limits(
         ),
         (
             "Distance, Close and far",
-            distance.detector_config_to_session_config(
+            _legacy_detector_config_to_session_config(
                 distance.DetectorConfig(
                     start_m=0.05,
                     end_m=3.0,
@@ -245,7 +248,7 @@ def test_lower_idle_state_limits(
         ),
         (
             "Distance, Far",
-            distance.detector_config_to_session_config(
+            _legacy_detector_config_to_session_config(
                 distance.DetectorConfig(
                     start_m=0.25,
                     end_m=3.0,

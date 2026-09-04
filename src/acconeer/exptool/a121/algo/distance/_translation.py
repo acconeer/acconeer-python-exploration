@@ -37,11 +37,12 @@ _MIN_LEAKAGE_FREE_DIST_M = {
 }
 _MIN_NUM_POINTS_IN_ENVELOPE_FWHM_SPAN = 4.0
 _VALID_STEP_LENGTHS = [1, 2, 3, 4, 6, 8, 12, 24]
-_NUM_FAR_RANGE_GROUPS = 1
+_NUM_FAR_RANGE_GROUPS = 2
 _NUM_SUBSWEEPS_IN_SENSOR_CONFIG = 4
 _HWAAS_MIN_DISTANCE = 1.0
 _MAX_HWAAS = 511
 _MIN_HWAAS = 1
+_BREAKPOINT_DENSITY_EXPONENT = 0.65
 
 
 class RangeTypes(Flag):
@@ -114,6 +115,55 @@ def _calc_hwaas(
         return _MAX_HWAAS
     else:
         return hwaas
+
+
+def _calc_hwaas_saturation_m(
+    profile: a121.Profile,
+    step_length: int,
+    signal_quality: float,
+    reflector_shape_exponent: float,
+) -> float:
+    """The distance at which _calc_hwaas's HWAAS curve reaches _MAX_HWAAS.
+
+    Analytic inverse of _calc_hwaas: solves the same RLG-vs-HWAAS relation for
+    distance_m instead of for hwaas. Keep the two in sync when editing either one.
+    """
+    rlg_per_hwaas = RLG_PER_HWAAS_MAP[profile]
+    processing_gain = calc_processing_gain(profile, step_length)
+    saturation_m = (
+        _MAX_HWAAS / (10 ** ((signal_quality - np.log10(processing_gain) - rlg_per_hwaas) / 10))
+    ) ** (1 / reflector_shape_exponent)
+    return float(saturation_m)
+
+
+def _calc_max_profile_breakpoints_m(
+    start_m: float,
+    end_m: float,
+    num_breakpoints: int,
+    profile: a121.Profile,
+    step_length: int,
+    signal_quality: float,
+    reflector_shape_exponent: float,
+) -> list[float]:
+    """Power-law-spaced breakpoints for max-profile subsweeps.
+
+    Anchors the spacing to _calc_hwaas_saturation_m so subsweeps are denser before
+    hwaas saturates and coarser after, pulling the last breakpoint to end_m. Falls back
+    to spacing across the full range when the saturation point isn't inside it.
+    """
+    u = np.linspace(0, 1, num_breakpoints)
+    hwaas_saturation_point_m = _calc_hwaas_saturation_m(
+        profile, step_length, signal_quality, reflector_shape_exponent
+    )
+    breakpoints_m: list[float]
+    if start_m < hwaas_saturation_point_m <= end_m:
+        breakpoints_m = (
+            start_m + (hwaas_saturation_point_m - start_m) * (u**_BREAKPOINT_DENSITY_EXPONENT)
+        ).tolist()
+        breakpoints_m[-1] = end_m
+    else:
+        breakpoints_m = (start_m + (end_m - start_m) * (u**_BREAKPOINT_DENSITY_EXPONENT)).tolist()
+    return breakpoints_m
 
 
 def _get_range_types(config: DetectorConfig) -> RangeTypes:
@@ -299,6 +349,30 @@ def detector_config_to_session_config(
     config: DetectorConfig,
     sensor_ids: list[int],
 ) -> a121.SessionConfig:
+    return _build_session_config(config, sensor_ids, legacy_single_far_range_group=False)
+
+
+def _legacy_detector_config_to_session_config(
+    config: DetectorConfig,
+    sensor_ids: list[int],
+) -> a121.SessionConfig:
+    """Frozen pre-multi-group session config translation.
+
+    Mirrors the embedded XM125 distance detector, which still lays out far-range
+    subsweeps in a single group with linearly spaced breakpoints. Used only by the
+    memory/power models to predict embedded resource usage - remove this (and switch
+    those models to the regular ``detector_config_to_session_config``) once the C SDK
+    picks up the multi-group/exponential-breakpoint change.
+    """
+    return _build_session_config(config, sensor_ids, legacy_single_far_range_group=True)
+
+
+def _build_session_config(
+    config: DetectorConfig,
+    sensor_ids: list[int],
+    *,
+    legacy_single_far_range_group: bool,
+) -> a121.SessionConfig:
     groups = []
 
     range_types = _get_range_types(config)
@@ -480,15 +554,27 @@ def detector_config_to_session_config(
         else:
             cfar_margin = 0
 
-        num_max_profile_subsweeps = _NUM_FAR_RANGE_GROUPS * _NUM_SUBSWEEPS_IN_SENSOR_CONFIG - len(
+        num_far_range_groups = 1 if legacy_single_far_range_group else _NUM_FAR_RANGE_GROUPS
+        num_max_profile_subsweeps = num_far_range_groups * _NUM_SUBSWEEPS_IN_SENSOR_CONFIG - len(
             range_types & RangeTypes.ANY_TRANSITION
         )
 
-        breakpoints_m = np.linspace(
-            start_m,
-            end_m,
-            num_max_profile_subsweeps + 1,
-        ).tolist()
+        if legacy_single_far_range_group:
+            breakpoints_m = np.linspace(
+                start_m,
+                end_m,
+                num_max_profile_subsweeps + 1,
+            ).tolist()
+        else:
+            breakpoints_m = _calc_max_profile_breakpoints_m(
+                start_m,
+                end_m,
+                num_max_profile_subsweeps + 1,
+                config.max_profile,
+                step_length,
+                config.signal_quality,
+                config.reflector_shape.exponent,
+            )
 
         breakpoints = [_m_to_point(start_m, bp, step_length) for bp in breakpoints_m]
 

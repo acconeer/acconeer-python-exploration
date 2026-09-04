@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -70,6 +70,8 @@ def ref_session_config() -> a121.SessionConfig:
 @pytest.fixture(
     params=[
         [{1}],
+        [{1}, {1}],
+        [{1}, {2}],
         [{2, 3}, {2}],
         [{1, 2}, {3, 4}, {1, 2, 3, 4, 5}],
     ],

@@ -12,7 +12,7 @@ import h5py
 import numpy as np
 
 from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QPushButton, QVBoxLayout
+from PySide6.QtWidgets import QPushButton, QTabWidget, QVBoxLayout
 
 import pyqtgraph as pg
 
@@ -621,6 +621,8 @@ class PlotPlugin(PgPlotPlugin):
 
 
 class ViewPlugin(A121ViewPluginBase):
+    utilization_level_sensor_config_editors: list[SensorConfigEditor]
+
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model=app_model)
         self._log = logging.getLogger(__name__)
@@ -687,15 +689,18 @@ class ViewPlugin(A121ViewPluginBase):
         self.config_editor.sig_update.connect(self._on_config_update)
         scrolly_layout.addWidget(self.config_editor)
 
-        self.subsweep_status_utilization_level = SensorConfigEditor()
-        self.subsweep_status_utilization_level.set_read_only(True)
-        utiilization_level_status_widget = CollapsibleWidget(
+        self.utilization_level_sensor_config_editor_tabs = QTabWidget()
+        self.utilization_level_sensor_config_editor_tabs.setStyleSheet(
+            "QTabWidget::pane { padding: 5px;}"
+        )
+        self.utilization_level_sensor_config_editors = []
+        utilization_level_status_widget = CollapsibleWidget(
             "Utilization level subsweep settings",
-            self.subsweep_status_utilization_level.subsweep_group_box,
+            self.utilization_level_sensor_config_editor_tabs,
             self.scrolly_widget,
         )
 
-        scrolly_layout.addWidget(utiilization_level_status_widget)
+        scrolly_layout.addWidget(utilization_level_status_widget)
 
         self.utilization_level_config_editor = AttrsConfigEditor(
             title="Utilization level config parameters",
@@ -810,12 +815,39 @@ class ViewPlugin(A121ViewPluginBase):
             ),
         }
 
+    def _update_utilization_level_sensor_config_tabs(
+        self, sensor_configs: list[a121.SensorConfig]
+    ) -> None:
+        num_groups = len(sensor_configs)
+        labels = [
+            f"Far range {i + 1}/{num_groups}" if num_groups > 1 else "Far range"
+            for i in range(num_groups)
+        ]
+
+        while len(self.utilization_level_sensor_config_editors) < len(sensor_configs):
+            sensor_config_editor = SensorConfigEditor()
+            sensor_config_editor.set_read_only(True)
+            self.utilization_level_sensor_config_editors.append(sensor_config_editor)
+            self.utilization_level_sensor_config_editor_tabs.addTab(sensor_config_editor, "")
+
+        for sensor_config_editor, label, sensor_config in zip(
+            self.utilization_level_sensor_config_editors, labels, sensor_configs
+        ):
+            sensor_config_editor.set_data(sensor_config)
+            index = self.utilization_level_sensor_config_editor_tabs.indexOf(sensor_config_editor)
+            self.utilization_level_sensor_config_editor_tabs.setTabText(index, label)
+            self.utilization_level_sensor_config_editor_tabs.setTabVisible(index, True)
+
+        for sensor_config_editor in self.utilization_level_sensor_config_editors[num_groups:]:
+            index = self.utilization_level_sensor_config_editor_tabs.indexOf(sensor_config_editor)
+            self.utilization_level_sensor_config_editor_tabs.setTabVisible(index, False)
+
     def on_backend_state_update(self, state: Optional[SharedState]) -> None:
         if state is None:
             self.config_editor.set_data(None)
             self.utilization_level_config_editor.set_data(None)
             self.cargo_presence_config_editor.set_data(None)
-            self.subsweep_status_utilization_level.set_data(None)
+            self._update_utilization_level_sensor_config_tabs([])
             self.subsweep_status_cargo_presence.set_data(None)
         else:
             self.sensor_id_pidget.set_data(state.sensor_id)
@@ -835,9 +867,12 @@ class ViewPlugin(A121ViewPluginBase):
                     ),
                     [state.sensor_id],
                 )
-                groups = distance_session_config.groups
-                sensor_config = groups[0][state.sensor_id]
-                self.subsweep_status_utilization_level.set_data(sensor_config)
+                # Utilization level's config never enables close_range_leakage_cancellation
+                # (see ExApp.get_distance_config), so every group here is far-range. One tab per group.
+                sensor_configs = [
+                    group[state.sensor_id] for group in distance_session_config.groups
+                ]
+                self._update_utilization_level_sensor_config_tabs(sensor_configs)
 
             if state.config.cargo_presence_config is not None:
                 self.cargo_presence_config_editor.set_data(state.config.cargo_presence_config)
