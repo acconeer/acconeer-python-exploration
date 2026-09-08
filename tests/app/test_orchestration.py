@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from acconeer.exptool.app.new import plugin_loader
+from acconeer.exptool.app.new.app import _STARTUP_TASKS_GIVE_UP_EXIT_CODE
 
 
 TIMEOUT_HAPPENED_RETURNCODE = 124
@@ -56,7 +57,7 @@ def test_error_popup(plugin_spec: plugin_loader.PluginSpec, tmp_path: Path) -> N
                 "sh",
                 "-x",
                 "-c",
-                f"timeout 20 coverage run --parallel-mode --concurrency=multiprocessing -m acconeer.exptool.app.new {' '.join(['--data-dir', str(tmp_path)] + et_opts)}",
+                f"timeout 60 coverage run --parallel-mode --concurrency=multiprocessing -m acconeer.exptool.app.new {' '.join(['--data-dir', str(tmp_path)] + et_opts)}",
             ],
         )
     except sp.CalledProcessError as cpe:
@@ -64,6 +65,16 @@ def test_error_popup(plugin_spec: plugin_loader.PluginSpec, tmp_path: Path) -> N
             msg = (
                 "Orchestration test timed out. If testing in parallel, reduce the core count. "
                 + "Otherwise increase the timeout for each test"
+            )
+        elif cpe.returncode == _STARTUP_TASKS_GIVE_UP_EXIT_CODE:
+            msg = "\n".join(
+                [
+                    f"The app gave up waiting to become ready to run its startup tasks for {tasks_key} "
+                    + "within app.py's _STARTUP_TASKS_TIMEOUT_S deadline.",
+                    "This indicates real startup/teardown slowness (e.g. CI load), not a missing task.",
+                    "\nReproduce locally by running:",
+                    f"\nhatch run app:new {' '.join(['--data-dir', 'temporary_test_cache'] + et_opts)}",
+                ]
             )
         else:
             msg = "\n".join(

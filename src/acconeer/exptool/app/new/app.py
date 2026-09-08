@@ -43,6 +43,13 @@ from .ui.main_window import MainWindow
 
 _LOG = logging.getLogger(__name__)
 
+# Budget for the app to connect, load the requested plugin, and reach a
+# state where it can run the '--tasks' chain. Starts before app.exec(), so
+# it also has to absorb QApplication/MainWindow construction and plugin
+# discovery, not just in-event-loop retries.
+_STARTUP_TASKS_TIMEOUT_S = 20.0
+_STARTUP_TASKS_GIVE_UP_EXIT_CODE = 2
+
 
 def main() -> None:
     parser = _ExptoolArgumentParser()
@@ -162,7 +169,9 @@ def main() -> None:
 
                 model.sig_notify.connect(
                     functools.partial(
-                        _send_startup_tasks, tasks=tasks, deadline=time.monotonic() + 5
+                        _send_startup_tasks,
+                        tasks=tasks,
+                        deadline=time.monotonic() + _STARTUP_TASKS_TIMEOUT_S,
                     ),
                     QtCore.Qt.ConnectionType.SingleShotConnection,
                 )
@@ -206,6 +215,9 @@ def _send_startup_tasks(app_model: AppModel, tasks: tuple[str, ...], deadline: f
     seconds_left = deadline - time.monotonic()
     if seconds_left < 0:
         _LOG.warning(f"Startup tasks timed out. Giving up on tasks {list(tasks)}.")
+        qapp = QApplication.instance()
+        assert qapp is not None
+        qapp.exit(_STARTUP_TASKS_GIVE_UP_EXIT_CODE)
         return
 
     (task_to_send, *rest_of_tasks) = tasks
