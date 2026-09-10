@@ -593,8 +593,9 @@ class _DetectorContext_v0(AlgoBase):
                     tick=0,
                     context=a121._core.entities.ResultContext(
                         metadata=a121.Metadata(
-                            frame_data_length=np.sum(num_points) * sensor_config.sweeps_per_frame,
-                            sweep_data_length=np.sum(num_points),
+                            frame_data_length=int(np.sum(num_points))
+                            * sensor_config.sweeps_per_frame,
+                            sweep_data_length=int(np.sum(num_points)),
                             subsweep_data_offset=np.array(subsweep_data_offset),
                             subsweep_data_length=np.array(num_points),
                             calibration_temperature=27,
@@ -649,9 +650,9 @@ class _DetectorContext_v0(AlgoBase):
                         tick=0,
                         context=a121._core.entities.ResultContext(
                             metadata=a121.Metadata(
-                                frame_data_length=np.sum(num_points)
+                                frame_data_length=int(np.sum(num_points))
                                 * sensor_config.sweeps_per_frame,
-                                sweep_data_length=np.sum(num_points),
+                                sweep_data_length=int(np.sum(num_points)),
                                 subsweep_data_offset=np.array(subsweep_data_offset),
                                 subsweep_data_length=np.array(num_points),
                                 calibration_temperature=25,
@@ -716,9 +717,9 @@ class _DetectorContext_v0(AlgoBase):
                             tick=0,
                             context=a121._core.entities.ResultContext(
                                 metadata=a121.Metadata(
-                                    frame_data_length=np.sum(num_points)
+                                    frame_data_length=int(np.sum(num_points))
                                     * sensor_config.sweeps_per_frame,
-                                    sweep_data_length=np.sum(num_points),
+                                    sweep_data_length=int(np.sum(num_points)),
                                     subsweep_data_offset=np.array(subsweep_data_offset),
                                     subsweep_data_length=np.array(num_points),
                                     calibration_temperature=25,

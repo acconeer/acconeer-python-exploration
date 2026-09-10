@@ -565,7 +565,10 @@ class A121RecordTableConverter(TableConverter):
                     ).astype(int)
                     sweeps_numbers.append(sweeps_number.tolist())
         if as_header:
-            sweeps_numbers = [f"sweep {sweep_number}" for sweep_number in sweeps_numbers]
+            sweeps_numbers = [
+                [f"sweep {sweep_number}" for sweep_number in sweep_number_list]
+                for sweep_number_list in sweeps_numbers
+            ]
             depths_headers = [
                 [f"{round(depth, 3)}m" for depth in depths_header]
                 for depths_header in depths_headers

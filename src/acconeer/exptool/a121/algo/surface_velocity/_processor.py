@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -216,7 +216,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         max_positive_side = np.max(psds[: self.middle_idx - self.slow_zone, :], axis=0)
         max_amps = np.maximum(max_negative_side, max_positive_side)
 
-        return np.argmax(max_amps, axis=0)  # type: ignore[no-any-return]
+        return int(np.argmax(max_amps, axis=0))
 
     def get_cfar_threshold(self, psd: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
         window_length = self.cfar_win_length

@@ -371,7 +371,7 @@ class PlotPlugin(PgPlotPlugin):
         assert psd is not None
         assert thresholds is not None
 
-        top_max = max(np.max(psd), np.max(thresholds))
+        top_max = max(float(np.max(psd)), float(np.max(thresholds)))
 
         smooth_max_val = np.log10(self.raw_fft_smooth_max.update(top_max))
         self.raw_fft_plot.setYRange(-2, smooth_max_val)

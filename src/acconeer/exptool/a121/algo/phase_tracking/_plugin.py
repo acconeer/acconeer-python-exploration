@@ -220,7 +220,7 @@ class PlotPlugin(PgPlotPlugin):
         # update sweep plot
         self.sweeps_curve[0].setData(self.distances_m, sweep)
         self.sweeps_curve[1].setData(self.distances_m, threshold)
-        max_val_in_sweep_plot = max(np.max(sweep), np.max(threshold))
+        max_val_in_sweep_plot = max(float(np.max(sweep)), float(np.max(threshold)))
         self.sweep_plot.setYRange(0, self.sweep_smooth_max.update(max_val_in_sweep_plot))
 
         # update argument plot

@@ -26,6 +26,15 @@ class ProcessorConfig(AlgoProcessorConfigBase):
     ) -> list[a121.ValidationResult]:
         validation_results: list[a121.ValidationResult] = []
 
+        if self.threshold is None:
+            validation_results.append(
+                a121.ValidationError(
+                    self,
+                    "threshold",
+                    "Must be set",
+                )
+            )
+
         if config.sensor_config.sweep_rate is None:
             validation_results.append(
                 a121.ValidationError(
@@ -127,6 +136,9 @@ class Processor(ProcessorBase[ProcessorResult]):
         self.lp_abs_sweep = self.lp_abs_sweep * self.LP_COEFF + abs_sweep * (1 - self.LP_COEFF)
 
         self.iq_history = np.roll(self.iq_history, shift=1)
+
+        # Should never happen, checked in validate
+        assert self.threshold is not None
 
         if self.threshold < np.max(self.lp_abs_sweep):
             peak_loc_p = np.argmax(self.lp_abs_sweep)

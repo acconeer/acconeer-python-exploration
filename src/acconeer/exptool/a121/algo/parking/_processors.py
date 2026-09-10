@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -107,8 +107,8 @@ class ObstructionProcessor:
         total_energy = np.sum(noise_adjusted_frame)
         avg_energy = total_energy / len(distances)
         weighted_sum = np.sum(distances * noise_adjusted_frame) / total_energy
-        signature = np.array([weighted_sum, avg_energy])
-        return signature, noise_adjusted_frame
+        signature = np.array([weighted_sum, avg_energy], dtype=np.float64)
+        return signature, noise_adjusted_frame.astype(np.float64)
 
     @staticmethod
     def get_noise_level(frame: npt.NDArray[np.complex128]) -> float:

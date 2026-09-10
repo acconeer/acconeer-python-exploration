@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -121,6 +121,8 @@ class Processor(ProcessorBase[ProcessorResult]):
         speed_estimates = np.zeros(self.num_points)
         real_peaks = np.zeros(self.num_points)
         actual_thresholds = np.zeros(self.num_points)
+
+        assert self.threshold is not None
 
         for i, peak_ind in enumerate(peak_inds):
             median = np.median(psd[:, i])

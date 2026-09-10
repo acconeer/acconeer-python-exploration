@@ -256,6 +256,10 @@ def _fetch_and_flash(args: argparse.Namespace) -> None:
         else:
             print("[OK]")
 
+    # The loop above only exits once get_content() has confirmed cookies
+    # produced a valid, logged-in session.
+    assert cookies is not None
+
     if new_login and _query_yes_no(
         "\nWe use cookies to optimize the service of our applications."
         "\n\nCookie Policy: https://acconeer.com/cookie-policy-eu/"

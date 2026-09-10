@@ -346,8 +346,8 @@ class PlotPlugin(PgPlotPlugin):
         app_state = ref_app_result.app_state
 
         max_ampl = max(
-            np.max(ref_app_result.presence_result.inter),
-            np.max(ref_app_result.presence_result.intra),
+            float(np.max(ref_app_result.presence_result.inter)),
+            float(np.max(ref_app_result.presence_result.intra)),
         )
         lim = self.presence_smoot_max.update(max_ampl)
         self.presence_plot.setYRange(0, lim)

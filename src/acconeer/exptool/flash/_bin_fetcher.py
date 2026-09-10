@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -48,17 +48,17 @@ BIN_FETCH_PROMPT = (
 log = logging.getLogger(__name__)
 
 
-def get_cookies() -> requests.cookies.RequestsCookieJar:
-    if os.path.exists(COOKIE_FILEPATH):
-        with open(COOKIE_FILEPATH, "rb") as handle:
-            cookie_jar = pickle.load(handle)
-        cookie_jar.clear_expired_cookies()
-        cookies = cookie_jar.get_dict()
-        if not cookies:
-            cookie_jar = None
-    else:
-        cookie_jar = None
-    return cookie_jar
+def get_cookies() -> Optional[requests.cookies.RequestsCookieJar]:
+    if not os.path.exists(COOKIE_FILEPATH):
+        return None
+
+    with open(COOKIE_FILEPATH, "rb") as handle:
+        cookie_jar = pickle.load(handle)
+
+    # The pickled file is only ever written by save_cookies() below.
+    assert isinstance(cookie_jar, requests.cookies.RequestsCookieJar)
+    cookie_jar.clear_expired_cookies()
+    return cookie_jar if cookie_jar.get_dict() else None
 
 
 def _make_cookie_dir() -> None:
@@ -114,10 +114,10 @@ def login(email: str, password: str) -> Optional[requests.cookies.RequestsCookie
 
 
 def get_content(
-    cookies: requests.cookies.RequestsCookieJar,
+    cookies: Optional[requests.cookies.RequestsCookieJar],
 ) -> Tuple[bool, requests.Session, requests.Response]:
     with requests.Session() as session:
-        response = session.get(url=REFERER_URL, cookies=cookies.get_dict())
+        response = session.get(url=REFERER_URL, cookies=cookies)
 
         if response.url == REQUEST_URL or response.headers.get("Expires") is None:
             return False, session, response
@@ -155,13 +155,14 @@ def download(
     response = session.get(url=link[0]["href"])
     soup = bs4.BeautifulSoup(response.content, "html.parser")
 
-    zip_url = soup.findAll(
+    zip_url_tags = soup.findAll(
         "a", {"href": lambda l: l and device in l and "exploration_server" in l}
     )
-    if not zip_url:
+    if not zip_url_tags:
         msg = f"No image found for device '{device}'"
         raise Exception(msg)
-    zip_url = zip_url[0]["href"]
+    zip_url = zip_url_tags[0]["href"]
+    assert isinstance(zip_url, str), "Expected a single href, not a multi-valued attribute"
 
     log.debug("File to download: {}".format(zip_url))
 

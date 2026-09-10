@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -169,11 +169,14 @@ class SubsweepProcessor:
         )
 
         # Extra
-        self.r = APPROX_BASE_STEP_LENGTH_M * (
-            sensor_config.start_point
-            + self.filt_margin * sensor_config.step_length
-            + sensor_config.step_length * np.arange(self.num_points - 2 * self.filt_margin)
-        )
+        self.r = (
+            APPROX_BASE_STEP_LENGTH_M
+            * (
+                sensor_config.start_point
+                + self.filt_margin * sensor_config.step_length
+                + sensor_config.step_length * np.arange(self.num_points - 2 * self.filt_margin)
+            )
+        ).astype(np.float64)
 
     def process(
         self, subframe: npt.NDArray[np.complex128], temperature: float

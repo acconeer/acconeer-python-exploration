@@ -228,7 +228,7 @@ class DistanceProcessorBase(
         self.step_length_m = self.step_length * self.base_step_length_m
         self.distances_m = (
             self.base_step_length_m * self.distance_points[self.filt_margin : -self.filt_margin]
-        )
+        ).astype(np.float64)
 
         # Distance offset calculation
         self.offset_m = get_distance_offset(

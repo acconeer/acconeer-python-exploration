@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2025
+# Copyright (c) Acconeer AB, 2025-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -402,7 +402,7 @@ class LoginFormPage(QWizardPage):
         self.setField(WizardField.LOGIN_FEEDBACK_STYLESHEET, FeedbackStyleSheet.ERROR)
         self.login_button.setText(self._LOGIN_BUTTON_DEFAULT_TEXT)
 
-    def handle_login_return(self, cookies: requests.cookies.CookieJar) -> None:
+    def handle_login_return(self, cookies: t.Optional[requests.cookies.RequestsCookieJar]) -> None:
         self.login_button.setEnabled(True)
 
         if cookies is None:
@@ -412,6 +412,10 @@ class LoginFormPage(QWizardPage):
             (login_success, session, _) = get_content(cookies)
 
         if login_success:
+            # login_success is only set above, in the branch that requires
+            # both cookies and session to be non-None.
+            assert cookies is not None
+            assert session is not None
             obf_email = try_get_obfuscated_email_from_cookiejar(cookiejar=cookies)
             if obf_email is None:
                 self.login_button.setText("Logged in")
@@ -447,6 +451,8 @@ class LoginFormPage(QWizardPage):
         if self.field(WizardField.REMEMBER_ME):
             w = self.wizard()
             assert isinstance(w, FlashWizard)
+            # This page only validates once isComplete() has required cookies.
+            assert w.cookies is not None
             save_cookies(w.cookies)
 
         return True
@@ -810,7 +816,7 @@ class FlashWizard(QWizard):
         self.setWindowTitle("Flash Wizard")
 
         self.comm_device: t.Optional[CommDevice] = None
-        self.cookies: t.Optional[requests.cookies.CookieJar] = get_cookies()
+        self.cookies: t.Optional[requests.cookies.RequestsCookieJar] = get_cookies()
         self.session: t.Optional[requests.Session] = None
 
         self.setPage(_Page.MODULE_SELECTION, ModuleSelectionPage())
@@ -828,7 +834,7 @@ class FlashWizard(QWizard):
     def set_comm_device(self, comm_device: CommDevice) -> None:
         self.comm_device = comm_device
 
-    def set_cookies(self, cookies: requests.cookies.CookieJar) -> None:
+    def set_cookies(self, cookies: requests.cookies.RequestsCookieJar) -> None:
         self.cookies = cookies
 
     def set_session(self, session: requests.Session) -> None:
@@ -960,7 +966,7 @@ def get_internet_related_error_message(exception: Exception) -> str:
 
 
 def try_get_obfuscated_email_from_cookiejar(
-    cookiejar: t.Optional[requests.cookies.CookieJar],
+    cookiejar: t.Optional[requests.cookies.RequestsCookieJar],
 ) -> t.Optional[str]:
     # A cookie in the cookiejar k,v pairs look like this (2025-08-19):
     # k = wordpress_logged_in_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

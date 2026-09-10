@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2024
+# Copyright (c) Acconeer AB, 2024-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -362,10 +362,8 @@ class PlotPlugin(PgPlotPlugin):
             self.phase_std_dots_above.hide()
             self.phase_std_dots_detection.hide()
         elif np.any(detection_array):
-            above_idxs = np.argwhere(~detection_array)
-            above_idxs = above_idxs.reshape(above_idxs.shape[0])
-            below_idxs = np.argwhere(detection_array)
-            below_idxs = below_idxs.reshape(below_idxs.shape[0])
+            above_idxs = np.argwhere(~detection_array).reshape(-1)
+            below_idxs = np.argwhere(detection_array).reshape(-1)
             consecutive_true_indices = np.where(
                 np.convolve(detection_array, self.sequence_ones, mode="valid")
                 == self.sequence_ones.shape[0]
