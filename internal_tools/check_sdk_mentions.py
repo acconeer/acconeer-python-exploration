@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 """This is a script that checks whether version-strings in the docs are up to date"""
@@ -6,19 +6,13 @@
 from __future__ import annotations
 
 import re
-import sys
+import tomllib as toml
 from pathlib import Path
 from typing import Dict, List
 
 
 EXPTOOL_ROOT = Path(__file__).resolve().parents[1]
 CONFIG_SECTION = "tool.check_sdk_mentions"
-
-
-if sys.version_info < (3, 11):
-    import tomli as toml
-else:
-    import tomllib as toml
 
 
 def get_single_match_in_file(pattern: str, file: Path) -> str:

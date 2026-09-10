@@ -14,7 +14,7 @@ description = "Acconeer Exploration Tool"
 dynamic = ["version"]
 readme = "README.md"
 license = "BSD-3-Clause-Clear"
-requires-python = ">=3.9"
+requires-python = ">=3.12"
 authors = [
     { name = "Acconeer AB", email = "tools@acconeer.com" },
 ]
@@ -22,9 +22,6 @@ classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
 ]
@@ -102,7 +99,7 @@ features = ["app"]
 dependencies = [
     "mypy==1.14.1",
     "pytest==7.2",
-    "pandas==1.3.5",
+    "pandas==2.1.1",
     "pandas-stubs",
     "PySide6==6.8.3",
     "pyqtgraph==0.13.7",
@@ -111,7 +108,7 @@ dependencies = [
 ]
 
 [[tool.hatch.envs.mypy.matrix]]
-python = ["3.9"]
+python = ["3.12"]
 
 [tool.hatch.envs.mypy.scripts]
 check = "python -m mypy {args}"
@@ -132,7 +129,7 @@ extra-dependencies = [
 QT_QPA_PLATFORM = "offscreen"
 
 [[tool.hatch.envs.hatch-test.matrix]]
-python = ["3.9", "3.10", "3.11", "3.12", "3.13"]
+python = ["3.12", "3.13"]
 
 [tool.hatch.envs.hatch-test.scripts]
 run = "pytest{env:HATCH_TEST_ARGS:} {args}"  # default
@@ -202,7 +199,6 @@ config-path = "none"
 dependencies = [
     "ruff==0.4.8",
     "packaging",
-    'tomli; python_version < "3.11"',
 ]
 
 [tool.hatch.envs.hatch-static-analysis.scripts]
@@ -239,7 +235,7 @@ dependencies = ["PyQt6", "PyQt5", "PySide2"]
 include = ["pyproject.toml", "**/*.py"]
 
 line-length = 99
-target-version = "py39"
+target-version = "py312"
 
 show-fixes = true
 output-format = "concise"

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -81,7 +81,7 @@ class Processor:
         if num_zones < distances.size:
             zone_limits = np.linspace(distances[0], distances[-1], num_zones + 1)
             # Only return upper limits
-            return zone_limits[1:]  # type: ignore[no-any-return]
+            return zone_limits[1:]
 
         else:
             return distances

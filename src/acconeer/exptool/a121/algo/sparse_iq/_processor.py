@@ -67,7 +67,7 @@ class Processor(ExtendedProcessorBase[ProcessorResult]):
     def _get_hanning_widow(sensor_config: a121.SensorConfig) -> npt.NDArray[np.float64]:
         spf = sensor_config.sweeps_per_frame
         window = np.hanning(spf)[:, None]
-        return window / np.sum(window)  # type: ignore[no-any-return]
+        return window / np.sum(window)
 
     def _process_entry(
         self, result_hanning_window: t.Tuple[a121.Result, npt.NDArray[np.float64]]

@@ -84,11 +84,11 @@ For additional resources, head over to the [Acconeer developer page](https://dev
 
 ### Requirements
 
-Python 3.9 or newer. Older versions have limited or no support.
+Python 3.12 or newer. Older versions have limited or no support.
 
 Tested on:
 
-* Python 3 (developed and tested on 3.9, 3.10, 3.11, 3.12 and 3.13)
+* Python 3 (developed and tested on 3.12 and 3.13)
 * Windows 11
 * Ubuntu 24.04
 

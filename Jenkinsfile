@@ -8,9 +8,9 @@ enum BuildScope {
 
 @Field
 def pythonVersionsForBuildScope = [
-    (BuildScope.SANITY)  : ['3.9'],
-    (BuildScope.HOURLY)  : ['3.11', '3.12', '3.13'],
-    (BuildScope.NIGHTLY) : ['3.9', '3.10', '3.11', '3.12', '3.13'],
+    (BuildScope.SANITY)  : ['3.12'],
+    (BuildScope.HOURLY)  : ['3.12', '3.13'],
+    (BuildScope.NIGHTLY) : ['3.12', '3.13'],
 ]
 
 @Field

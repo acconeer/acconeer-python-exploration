@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ def int16_complex_array_to_complex(array: npt.NDArray[t.Any]) -> npt.NDArray[np.
     """
     real = array["real"].astype("float")
     imaginary = array["imag"].astype("float")
-    return real + 1.0j * imaginary  # type: ignore[no-any-return]
+    return real + 1.0j * imaginary
 
 
 def complex_array_to_int16_complex(array: npt.NDArray[np.complex128]) -> npt.NDArray[t.Any]:

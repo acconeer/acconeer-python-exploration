@@ -1,15 +1,10 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import fnmatch
 import subprocess
 import sys
-
-
-if sys.version_info < (3, 11):
-    import tomli as toml
-else:
-    import tomllib as toml
+import tomllib as toml
 
 
 def main():

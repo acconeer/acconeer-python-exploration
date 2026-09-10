@@ -7,14 +7,9 @@ import fnmatch
 import re
 import subprocess
 import sys
+import tomllib as toml
 from enum import Enum, auto
 from pathlib import Path
-
-
-if sys.version_info < (3, 11):
-    import tomli as toml
-else:
-    import tomllib as toml
 
 
 class Status(Enum):

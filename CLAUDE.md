@@ -120,11 +120,13 @@ copy next to the one caller.
 
 ## Conventions
 
-Ruff names its own rules on violation. What it won't tell you: the
-`requires-python` floor in `pyproject.toml` predates `Self` and `ParamSpec`, so
-both come from `typing_extensions` (imported as
-`import typing_extensions as te`), and `attrs` value objects carrying
-`numpy.typing` annotations are the house style.
+Ruff names its own rules on violation. What it won't tell you: `Self`,
+`ParamSpec`, `Protocol` and friends are imported from `typing_extensions`
+(as `import typing_extensions as te`) throughout, even though the
+`requires-python` floor now covers native equivalents for all of them —
+that's existing house style, not a version constraint, and untangling it is
+separate follow-up work. `attrs` value objects carrying `numpy.typing`
+annotations are the house style too.
 
 ## Pointers
 

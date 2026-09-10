@@ -13,3 +13,5 @@
 ### Fixed
 
 ### Removed
+
+- Support for Python 3.9, 3.10 & 3.11
