@@ -14,13 +14,14 @@ from unittest.mock import Mock
 import attrs
 import pytest
 
-from PySide6.QtWidgets import QApplication
-
 import acconeer.exptool.app.new.ui.components as pc
 from acconeer.exptool import a121
 
 
 T = t.TypeVar("T")
+
+
+pytestmark = pytest.mark.usefixtures("qapplication")
 
 
 @attrs.frozen(kw_only=True)
@@ -58,11 +59,6 @@ class StubAttrsClass:
 class StubEnum(enum.Enum):
     A = enum.auto()
     B = enum.auto()
-
-
-@pytest.fixture(autouse=True, scope="module")
-def qapplication() -> QApplication:
-    return QApplication.instance() or QApplication()
 
 
 @pytest.fixture(

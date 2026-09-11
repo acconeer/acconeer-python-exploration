@@ -64,8 +64,13 @@ def fake_devsite(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> FakeDevSite
     return fake
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="session")
 def qapplication() -> QApplication:
+    """Qt allows one application per process, so every Qt module shares this one
+
+    Not autouse: tests/app/test_backend.py forks, and a QApplication and its
+    threads have no business being in the parent when it does.
+    """
     return QApplication.instance() or QApplication()
 
 

@@ -5,14 +5,10 @@ from __future__ import annotations
 
 import pytest
 
-from PySide6.QtWidgets import QApplication
-
 from acconeer.exptool.app.new.ui import status_bar
 
 
-@pytest.fixture(autouse=True, scope="module")
-def qapplication() -> QApplication:
-    return QApplication.instance() or QApplication()
+pytestmark = pytest.mark.usefixtures("qapplication")
 
 
 def test_version_check_thread_is_daemon(monkeypatch: pytest.MonkeyPatch) -> None:
