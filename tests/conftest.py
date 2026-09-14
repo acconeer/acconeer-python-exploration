@@ -110,7 +110,11 @@ def pytest_generate_tests(metafunc):
             metafunc.config.getoption("--a121-exploration-server-paths", []),
             err_msg=err_msg_fmt.format("A121 Exploration Server"),
         )
-        metafunc.parametrize(argnames="a121_exploration_server_path", argvalues=values)
+        # scope="session": the fuzzing exploration server fixtures are
+        # session-scoped and depend on this path.
+        metafunc.parametrize(
+            argnames="a121_exploration_server_path", argvalues=values, scope="session"
+        )
 
     if "sensor_current_limits_path" in metafunc.fixturenames:
         values = _validate_parametrization(

@@ -2,6 +2,7 @@
 # All rights reserved
 
 import subprocess as sp
+import time
 import typing as t
 from pathlib import Path
 
@@ -23,6 +24,36 @@ def worker_id_to_tcp_port(worker_id: str, tcp_port_base: int) -> int:
 def worker_tcp_port(worker_id: str) -> int:
     """Returns a unique tcp port for each pytest-xdist worker to use for its Exploration Server"""
     return worker_id_to_tcp_port(worker_id, tcp_port_base=6110)
+
+
+@pytest.fixture(scope="session")
+def fuzzing_a121_worker_tcp_port(worker_id: int) -> int:
+    """Returns a unique tcp port for each pytest-xdist worker to use for its session-scoped, fuzzing Exploration Server"""
+    return worker_id_to_tcp_port(worker_id, tcp_port_base=16110)
+
+
+@pytest.fixture(scope="session")
+def fuzzing_a121_exploration_server(
+    fuzzing_a121_worker_tcp_port: int, a121_exploration_server_path: Path
+) -> t.Iterator[None]:
+    # NOTE!
+    # This server might be running at the same time as the servers managed by the
+    # "a121_exploration_server" fixture
+
+    args = [a121_exploration_server_path.as_posix(), "--port", str(fuzzing_a121_worker_tcp_port)]
+    env = {"ACC_MOCK_TEST_PATTERN": "1"}
+
+    # Don't capture stdout as it introduces overhead/risks blocking
+    with sp.Popen(args, env=env) as server:
+        # Assume startup takes 0.5 s.
+        # Since this fixture is session-scoped, this sleep will only happen once.
+        time.sleep(0.5)
+
+        if server.poll() is not None:
+            pytest.fail("Server exited prematurely")
+
+        yield
+        server.terminate()
 
 
 def exploration_server_process_fixture(
