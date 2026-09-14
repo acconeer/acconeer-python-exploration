@@ -8,17 +8,21 @@ from pathlib import Path
 import pytest
 
 
-@pytest.fixture(scope="session")
-def worker_tcp_port(worker_id: str) -> int:
-    """Returns a unique tcp port for each pytest-xdist worker to use"""
+def worker_id_to_tcp_port(worker_id: str, tcp_port_base: int) -> int:
     if worker_id == "master":
-        return 6110
+        return tcp_port_base
     elif worker_id.startswith("gw"):  # are on the format "gw\d+"
         offset = int(worker_id[2:])
-        return 6111 + offset
+        return tcp_port_base + (offset + 1)
     else:
         msg = f"Unexpected {worker_id=}"
         raise ValueError(msg)
+
+
+@pytest.fixture(scope="session")
+def worker_tcp_port(worker_id: str) -> int:
+    """Returns a unique tcp port for each pytest-xdist worker to use for its Exploration Server"""
+    return worker_id_to_tcp_port(worker_id, tcp_port_base=6110)
 
 
 def exploration_server_process_fixture(
