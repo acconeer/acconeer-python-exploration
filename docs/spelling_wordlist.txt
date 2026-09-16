@@ -200,6 +200,7 @@ Welch's
 wideband
 winusb
 wirelessly
+xy
 Zadig
 zipimporter
 µm
