@@ -101,6 +101,7 @@ class PidgetFactory(abc.ABC):
 
     def create_name_label(self, parent: QWidget) -> QLabel:
         label = QLabel(self.name_label_text, parent=parent)
+        label.setWordWrap(True)
         if self.name_label_tooltip is not None:
             label.setToolTip(self.name_label_tooltip)
         return label
@@ -994,18 +995,32 @@ class CheckboxPidgetFactory(PidgetFactory):
             raise ValueError(msg)
 
 
+class _CheckboxLabel(QLabel):
+    """A word-wrapping label that toggles its associated checkbox when clicked."""
+
+    def __init__(self, text: str, checkbox: QCheckBox, parent: QWidget) -> None:
+        super().__init__(text, parent=parent)
+        self.setWordWrap(True)
+        self._checkbox = checkbox
+
+    def mouseReleaseEvent(self, event: QtGui.QMouseEvent) -> None:
+        if self._checkbox.isEnabled():
+            self._checkbox.click()
+        super().mouseReleaseEvent(event)
+
+
 class CheckboxPidget(Pidget):
     def __init__(self, factory: CheckboxPidgetFactory, parent: QWidget) -> None:
         super().__init__(factory, parent)
 
         self._checkbox = QCheckBox(self)
-        self._checkbox.setText(factory.name_label_text)
         self._checkbox.clicked.connect(self.__on_checkbox_click)
+        label = _CheckboxLabel(factory.name_label_text, self._checkbox, self)
 
         self.set_standard_layout(
             factory,
-            first_row_elements=[self._checkbox, "extra_widget"],
-            colstretch=(0, 1),
+            first_row_elements=[self._checkbox, label, "extra_widget"],
+            colstretch=(0, 0, 1),
         )
 
     def __on_checkbox_click(self, checked: bool) -> None:

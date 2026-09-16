@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -398,11 +398,12 @@ class PluginControlArea(QWidget):
 
         self.child_widget: QWidget = ControlPlaceholder()
         self.view_plugin: Optional[Any] = None
+        self._child_container: QWidget = ScrollAreaDecorator(self.child_widget)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
-        layout.addWidget(self.child_widget)
+        layout.addWidget(self._child_container)
 
         if isinstance(app_model.plugin, PluginSpecBase):
             self._on_app_model_load_plugin(app_model.plugin)
@@ -417,7 +418,7 @@ class PluginControlArea(QWidget):
             + f"({self.view_plugin.__class__.__name__}) in favour of {plugin_spec}"
         )
         self.view_plugin = None
-        self.child_widget.deleteLater()
+        self._child_container.deleteLater()
 
         if plugin_spec is None:
             self.child_widget = ControlPlaceholder()
@@ -425,7 +426,8 @@ class PluginControlArea(QWidget):
             self.child_widget = plugin_spec.create_view_plugin(
                 app_model=self.app_model,
             )
+        self._child_container = ScrollAreaDecorator(self.child_widget)
 
         layout = self.layout()
         assert layout is not None
-        layout.addWidget(self.child_widget)
+        layout.addWidget(self._child_container)
