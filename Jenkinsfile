@@ -204,7 +204,9 @@ try {
                             [
                                 projectName: 'sw-main',
                                 artifactNames: ['out/internal_stash_binaries_sanitizer_a111.tgz'],
-                            ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a111-vX.Y.Z']
+                                // e.g. (branch): 'master' or (tag): 'a111-vX.Y.Z'
+                                (rssVersion.getKey()): rssVersion.getValue(),
+                            ]
                         )
                         sh "tar -xzf out/internal_stash_binaries_sanitizer_a111.tgz -C ${stashFolder}"
                     }
@@ -221,7 +223,9 @@ try {
                             [
                                 projectName: 'sw-main',
                                 artifactNames: ['out/internal_stash_binaries_sanitizer_a121.tgz'],
-                            ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a121-vX.Y.Z']
+                                // e.g. (branch): 'master' or (tag): 'a121-vX.Y.Z'
+                                (rssVersion.getKey()): rssVersion.getValue(),
+                            ]
                         )
                         sh "tar -xzf out/internal_stash_binaries_sanitizer_a121.tgz -C ${stashFolder}"
                     }
@@ -238,7 +242,9 @@ try {
                             [
                                 projectName: 'sw-main',
                                 artifactNames: ['out/internal_stash_python_libs_a121.tgz', 'out/internal_stash_tests_a121.tgz'],
-                            ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a121-vX.Y.Z']
+                                // e.g. (branch): 'master' or (tag): 'a121-vX.Y.Z'
+                                (rssVersion.getKey()): rssVersion.getValue(),
+                            ]
                         )
                         sh "tar -xzf out/internal_stash_python_libs_a121.tgz -C ${stashFolder}"
                         sh "tar -xzf out/internal_stash_tests_a121.tgz -C ${stashFolder}"
