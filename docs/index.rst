@@ -126,5 +126,25 @@ External links
 
          :fas:`up-right-from-square` Visit the Developer Site
 
+   .. grid-item-card::
+      :class-body: center
+
+      .. rst-class:: sd-text-primary fa-4x
+
+      :fas:`file-shield`
+
+      Looking for security information or want to report a vulnerability?
+
+      +++
+
+      .. button-link:: https://www.acconeer.com/security/
+         :color: primary
+         :expand:
+         :outline:
+         :click-parent:
+         :class: sd-font-weight-bold
+
+         :fas:`up-right-from-square` Visit the Security Page
+
 
 :doc:`disclaimer`
