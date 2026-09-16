@@ -1,6 +1,6 @@
 import groovy.transform.Field
 
-@Library('sw-jenkins-library@5b8b388ad04b20e2c23de08b17885401fa8dbce4') _
+@Library('sw-jenkins-library@c3b0c10edb8a7752b9f74dbcf218eb827770ae44') _
 
 enum BuildScope {
     SANITY, HOURLY, NIGHTLY
