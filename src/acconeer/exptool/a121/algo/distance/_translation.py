@@ -6,6 +6,7 @@ import typing as t
 from collections.abc import Iterator
 from enum import Flag, auto
 
+import attrs
 import numpy as np
 import typing_extensions as te
 
@@ -98,15 +99,21 @@ def _calc_hwaas(
     distance_m: float,
     signal_quality: float,
     reflector_shape_exponent: float,
+    *,
+    legacy_processing_gain: bool = False,
 ) -> int:
     rlg_per_hwaas = RLG_PER_HWAAS_MAP[profile]
 
     processing_gain = calc_processing_gain(profile, step_length)
     subsweep_end_point_m = max(distance_m, _HWAAS_MIN_DISTANCE)
+    # the embedded detector uses a tenth of the gain, see the legacy translation
+    processing_gain_db = (
+        np.log10(processing_gain) if legacy_processing_gain else 10 * np.log10(processing_gain)
+    )
     rlg = (
         signal_quality
         + reflector_shape_exponent * 10 * np.log10(subsweep_end_point_m)
-        - np.log10(processing_gain)
+        - processing_gain_db
     )
     hwaas = int(round(10 ** ((rlg - rlg_per_hwaas) / 10)))
     if hwaas < _MIN_HWAAS:
@@ -131,7 +138,8 @@ def _calc_hwaas_saturation_m(
     rlg_per_hwaas = RLG_PER_HWAAS_MAP[profile]
     processing_gain = calc_processing_gain(profile, step_length)
     saturation_m = (
-        _MAX_HWAAS / (10 ** ((signal_quality - np.log10(processing_gain) - rlg_per_hwaas) / 10))
+        _MAX_HWAAS
+        / (10 ** ((signal_quality - 10 * np.log10(processing_gain) - rlg_per_hwaas) / 10))
     ) ** (1 / reflector_shape_exponent)
     return float(saturation_m)
 
@@ -351,6 +359,22 @@ def detector_config_to_session_config(
     return _build_session_config(config, sensor_ids, legacy_single_far_range_group=False)
 
 
+def carry_over_signal_quality(config: DetectorConfig) -> DetectorConfig:
+    """Raise signal quality so a config keeps the HWAAS it had before the gain fix.
+
+    Older versions used a tenth of the matched filter's processing gain in the
+    HWAAS calculation. Call this once on a configuration carried over from such a
+    version to keep the HWAAS, and the detection performance, of its max profile
+    subsweeps.
+
+    :param config: The configuration to carry over. It is left untouched.
+    :returns: A copy with signal quality raised by 9*log10(processing gain).
+    """
+    step_length = _limit_step_length(config.max_profile, config.max_step_length)
+    offset = 9 * np.log10(calc_processing_gain(config.max_profile, step_length))
+    return attrs.evolve(config, signal_quality=config.signal_quality + float(offset))
+
+
 def _legacy_detector_config_to_session_config(
     config: DetectorConfig,
     sensor_ids: list[int],
@@ -358,10 +382,11 @@ def _legacy_detector_config_to_session_config(
     """Frozen pre-multi-group session config translation.
 
     Mirrors the embedded XM125 distance detector, which still lays out far-range
-    subsweeps in a single group with linearly spaced breakpoints. Used only by the
+    subsweeps in a single group with linearly spaced breakpoints, and uses a
+    tenth of the processing gain in the HWAAS calculation. Used only by the
     memory/power models to predict embedded resource usage - remove this (and switch
     those models to the regular ``detector_config_to_session_config``) once the C SDK
-    picks up the multi-group/exponential-breakpoint change.
+    picks up the multi-group, exponential-breakpoint and processing gain changes.
     """
     return _build_session_config(config, sensor_ids, legacy_single_far_range_group=True)
 
@@ -394,6 +419,7 @@ def _build_session_config(
             end_point * APPROX_BASE_STEP_LENGTH_M,
             config.signal_quality,
             config.reflector_shape.exponent,
+            legacy_processing_gain=legacy_single_far_range_group,
         )
         marginless_start_point = _m_to_point(
             config.start_m,
@@ -473,6 +499,7 @@ def _build_session_config(
             marginless_end_point * APPROX_BASE_STEP_LENGTH_M,
             config.signal_quality,
             config.reflector_shape.exponent,
+            legacy_processing_gain=legacy_single_far_range_group,
         )
 
         far_subsweeps.append(
@@ -519,6 +546,7 @@ def _build_session_config(
             marginless_end_point * APPROX_BASE_STEP_LENGTH_M,
             config.signal_quality,
             config.reflector_shape.exponent,
+            legacy_processing_gain=legacy_single_far_range_group,
         )
 
         far_subsweeps.append(
@@ -600,6 +628,7 @@ def _build_session_config(
                 marginless_end_point * APPROX_BASE_STEP_LENGTH_M,
                 config.signal_quality,
                 config.reflector_shape.exponent,
+                legacy_processing_gain=legacy_single_far_range_group,
             )
 
             far_subsweeps.append(

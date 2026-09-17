@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2025
+# Copyright (c) Acconeer AB, 2025-2026
 # All rights reserved
 
 
@@ -43,7 +43,7 @@ def get_no_lens_config() -> ExAppConfig:
 def get_no_lens_utilization_level_config() -> UtilizationLevelConfig:
     return UtilizationLevelConfig(
         update_rate=5,
-        signal_quality=25,
+        signal_quality=30.8,
         threshold_sensitivity=0.5,
     )
 

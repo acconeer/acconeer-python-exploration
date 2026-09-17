@@ -104,7 +104,7 @@ class UtilizationLevelConfig(AlgoConfigBase):
     update_rate: float = attrs.field(default=5)
     """Sets the detector update rate."""
 
-    signal_quality: float = attrs.field(default=10)
+    signal_quality: float = attrs.field(default=15.8)
     """Signal quality (dB).
 
     High quality equals higher HWAAS and better SNR but increases power consumption."""

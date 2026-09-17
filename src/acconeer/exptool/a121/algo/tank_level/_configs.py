@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from acconeer.exptool import a121
@@ -22,7 +22,7 @@ def get_small_config() -> RefAppConfig:
         fixed_threshold_value=100.0,
         fixed_strength_threshold_value=0.0,
         threshold_sensitivity=0.0,
-        signal_quality=3.0,
+        signal_quality=8.5,
         update_rate=None,
         level_tracking_active=False,
     )
@@ -43,7 +43,7 @@ def get_medium_config() -> RefAppConfig:
         fixed_threshold_value=100.0,
         fixed_strength_threshold_value=3.0,
         threshold_sensitivity=0.0,
-        signal_quality=19.0,
+        signal_quality=24.8,
         update_rate=None,
         level_tracking_active=False,
     )
@@ -64,7 +64,7 @@ def get_large_config() -> RefAppConfig:
         fixed_threshold_value=100.0,
         fixed_strength_threshold_value=5.0,
         threshold_sensitivity=0.0,
-        signal_quality=20.0,
+        signal_quality=25.8,
         update_rate=None,
         level_tracking_active=False,
     )

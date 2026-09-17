@@ -206,13 +206,22 @@ def test_lower_idle_state_limits(
     assert avg_current == pytest.approx(expected_current, abs=absolute_tolerance)
 
 
+# the module current limits were measured with the released detector, which uses
+# a tenth of the processing gain and defaults to 15 dB signal quality
+_RELEASED_SIGNAL_QUALITY = 15.0
+
+
 @pytest.mark.parametrize(
     ("limit_name", "session_config", "lower_idle_state", "algorithm"),
     [
         (
             "Distance, Default",
             _legacy_detector_config_to_session_config(
-                distance.DetectorConfig(update_rate=1.0, close_range_leakage_cancellation=True),
+                distance.DetectorConfig(
+                    update_rate=1.0,
+                    close_range_leakage_cancellation=True,
+                    signal_quality=_RELEASED_SIGNAL_QUALITY,
+                ),
                 sensor_ids=[1],
             ),
             power.Sensor.IdleState.OFF,
@@ -226,6 +235,7 @@ def test_lower_idle_state_limits(
                     end_m=0.10,
                     update_rate=1.0,
                     close_range_leakage_cancellation=False,
+                    signal_quality=_RELEASED_SIGNAL_QUALITY,
                 ),
                 sensor_ids=[1],
             ),
@@ -240,6 +250,7 @@ def test_lower_idle_state_limits(
                     end_m=3.0,
                     update_rate=1.0,
                     close_range_leakage_cancellation=False,
+                    signal_quality=_RELEASED_SIGNAL_QUALITY,
                 ),
                 sensor_ids=[1],
             ),
@@ -253,6 +264,7 @@ def test_lower_idle_state_limits(
                     start_m=0.25,
                     end_m=3.0,
                     update_rate=1.0,
+                    signal_quality=_RELEASED_SIGNAL_QUALITY,
                 ),
                 sensor_ids=[1],
             ),

@@ -90,7 +90,7 @@ def test_max_profile_breakpoints_anchor_to_hwaas_saturation_when_inside_range() 
 
     # Golden values recorded from the current implementation. Changing
     # distance._translation._BREAKPOINT_DENSITY_EXPONENT will break this test.
-    expected = [0.0, 2.5177895170097013, 3.9508352337939048, 5.142191386643525, 10.0]
+    expected = [0.0, 3.453807545273581, 5.419604954434928, 7.053861846054303, 10.0]
 
     assert breakpoints == pytest.approx(expected)
     assert breakpoints[0] == start_m

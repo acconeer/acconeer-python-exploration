@@ -114,7 +114,7 @@ class DetectorConfig(AlgoConfigBase):
     intended geometry with free space in front of the sensor during detector calibration.
     """
 
-    signal_quality: float = attrs.field(default=15.0)
+    signal_quality: float = attrs.field(default=20.8)
     """Signal quality (dB).
 
     High quality equals higher HWAAS and better SNR but increases power consumption."""
