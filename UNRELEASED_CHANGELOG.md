@@ -14,7 +14,10 @@
 - A121 Distance: `ThresholdMethod.RECORDED` and `RecordedThresholdCalibration`
   are removed. Close range measurements internally still use a recorded
   threshold, calibrated automatically.
-
+- Distance detector's `CONFIG_MISMATCH` status now only considers changes to
+  `profile` and `receiver_gain`,
+  since those are the only parameters noise calibration depends on. Changes to
+  other `DetectorConfig` parameters no longer force a recalibration.
 - The A121 Distance Detector now uses the whole processing gain in its
   HWAAS calculation, which lowers HWAAS for a given signal quality.
   Measurements get faster and cheaper at the SNR the setting asks for,

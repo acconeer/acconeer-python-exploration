@@ -197,3 +197,65 @@ def test_valid_detector_configs_translates_to_valid_session_configs(
     )
 
     session_config.validate()
+
+
+def _calibrated_context(config: distance.DetectorConfig, sensor_ids: list[int]) -> t.Any:
+    from acconeer.exptool.a121.algo.distance._context import DetectorContext, OffsetCalibration
+
+    session_config = distance.detector_config_to_session_config(
+        config=config, sensor_ids=sensor_ids
+    )
+    return DetectorContext(
+        offset_calibration=OffsetCalibration(results=[]),
+        sensor_ids=sensor_ids,
+        session_config_used_during_calibration=session_config,
+    )
+
+
+@pytest.mark.parametrize(
+    "changed_field",
+    ["update_rate", "close_range_leakage_cancellation", "threshold_sensitivity"],
+)
+def test_config_mismatch_ignores_parameters_unrelated_to_noise_calibration(
+    changed_field: str,
+) -> None:
+    sensor_ids = [1]
+    original_config = distance.DetectorConfig(start_m=0.25, end_m=1.0)
+    context = _calibrated_context(original_config, sensor_ids)
+
+    changed_values = {
+        "update_rate": 5.0,
+        "close_range_leakage_cancellation": not original_config.close_range_leakage_cancellation,
+        "threshold_sensitivity": 0.9,
+    }
+    changed_config = distance.DetectorConfig(
+        start_m=0.25, end_m=1.0, **{changed_field: changed_values[changed_field]}
+    )
+
+    status = distance.Detector.get_detector_status(changed_config, context, sensor_ids)
+
+    assert status.detector_state == distance.DetailedStatus.OK
+    assert status.ready_to_start
+
+
+@pytest.mark.parametrize(
+    "changed_kwargs",
+    [
+        {"max_profile": a121.Profile.PROFILE_1},
+    ],
+)
+def test_config_mismatch_detects_changes_relevant_to_noise_calibration(
+    changed_kwargs: dict[str, t.Any],
+) -> None:
+    sensor_ids = [1]
+    original_config = distance.DetectorConfig(start_m=0.25, end_m=1.0)
+    context = _calibrated_context(original_config, sensor_ids)
+
+    changed_config = distance.DetectorConfig(
+        **{**{"start_m": 0.25, "end_m": 1.0}, **changed_kwargs}
+    )
+
+    status = distance.Detector.get_detector_status(changed_config, context, sensor_ids)
+
+    assert status.detector_state == distance.DetailedStatus.CONFIG_MISMATCH
+    assert not status.ready_to_start

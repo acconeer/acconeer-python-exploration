@@ -75,6 +75,27 @@ class DetailedStatus(enum.Enum):
 
 PRF_REMOVED_ET_VERSION = Version("v7.13.2")
 
+# Only these subsweep parameters affect noise calibration; changes to any other
+# parameter should not be treated as a config mismatch requiring recalibration.
+_NOISE_CALIBRATION_SUBSWEEP_PARAMS = (
+    "profile",
+    "receiver_gain",
+)
+
+
+def _noise_calibration_signature(
+    session_config: a121.SessionConfig,
+) -> list[dict[int, tuple[tuple[Any, ...], ...]]]:
+    """Extracts the subset of a SessionConfig that noise calibration depends on."""
+
+    return utils.map_over_extended_structure(
+        lambda sensor_config: tuple(
+            tuple(getattr(subsweep, param) for param in _NOISE_CALIBRATION_SUBSWEEP_PARAMS)
+            for subsweep in sensor_config.subsweeps
+        ),
+        session_config.groups,
+    )
+
 
 @attributes_doc
 @attrs.mutable(kw_only=True)
@@ -426,7 +447,11 @@ class Detector(Controller[DetectorConfig, dict[int, DetectorResult]]):
                 context.close_range_calibration is None
                 or len(context.close_range_calibration.recorded_threshold_results) == 0
             )
-        config_mismatch = context.session_config_used_during_calibration != session_config
+        config_mismatch = (
+            context.session_config_used_during_calibration is None
+            or _noise_calibration_signature(context.session_config_used_during_calibration)
+            != _noise_calibration_signature(session_config)
+        )
 
         if calibration_missing:
             detector_state = DetailedStatus.CALIBRATION_MISSING
