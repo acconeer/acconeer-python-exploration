@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2024
+# Copyright (c) Acconeer AB, 2024-2026
 # All rights reserved
 import argparse
 from pathlib import Path
@@ -85,7 +85,7 @@ def main() -> None:
     parser.add_argument(
         "--example-script-output-folder",
         type=Path,
-        default=Path("docs/exploration_tool/example_scripts"),
+        default=Path("docs/exploration_tool/example_scripts/a121"),
         help="A path relative to 'et_root', under which example script docpages should be placed.",
     )
 

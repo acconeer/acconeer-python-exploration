@@ -13,7 +13,7 @@ Creating a plugin shell
 -----------------------
 Create a new Python file.
 
-To get started, copy or closely follow the example in :doc:`my_plugin.py <example_scripts/app/examples-app-new-plugins-my_plugin>`.
+To get started, copy or closely follow the example in :doc:`my_plugin.py <example_scripts/a121/app/examples-app-new-plugins-my_plugin>`.
 
 There are three main parts of a plugin:
 
