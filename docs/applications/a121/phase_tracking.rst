@@ -4,7 +4,7 @@ Phase Tracking
 Phase Tracking is an example of how a single object can be tracked using only the phase information of the Sparse IQ service.
 
 The algorithm calculates the change in phase between consecutive frames and converts it to the corresponding increment in distance, using the known wavelength of the transmitted pulse.
-See :ref:`interpreting_radar_data` for more information on the conversion between phase change and distance.
+See :ref:`rdac-a121-interpreting-radar-data` for more information on the conversion between phase change and distance.
 The change in distance is accumulated over multiple frames, resulting in a highly accurate estimate of the movement, relative the starting points.
 
 The figure below depicts the GUI.

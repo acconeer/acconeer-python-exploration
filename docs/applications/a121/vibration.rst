@@ -9,7 +9,7 @@ returning energy and the phase the relative timing between the transmitted and r
 The phase can be used to detect small displacements.
 The vibration measurement application takes advantage of this, by forming a time series of the
 measured phase at a single distance point, which is then analyzed using an FFT.
-See :ref:`interpreting_radar_data` for more information about the produced data.
+See :ref:`rdac-a121-interpreting-radar-data` for more information about the produced data.
 
 Usage
 -----

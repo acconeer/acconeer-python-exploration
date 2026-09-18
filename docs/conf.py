@@ -1,6 +1,9 @@
 # Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 import os
+from pathlib import Path
+
+from sphinx.application import Sphinx
 
 
 project = "acconeer-python-exploration"
@@ -18,6 +21,8 @@ exclude_patterns = [
     ".DS_Store",
     "README.md",
     "how_to_docs.rst",
+    "hw_integration/common",
+    "radar_data_and_control/common",
 ]
 
 extensions = [
@@ -157,7 +162,41 @@ if os.environ.get("READTHEDOCS", "") == "True":
     if "html_context" not in globals():
         html_context = {}
     html_context["READTHEDOCS"] = True
+
 numfig = True
 numfig_format = {"figure": "Figure %s"}
 math_eqref_format = "Eq. {number}"
 numfig_secnum_depth = 0
+
+
+def _update_sensor_placeholder(
+    app: Sphinx, relative_path: Path, parent_docname: str, content: list[str]
+) -> None:
+    """
+    Update placeholder string with the sensor name derived from the doc path.
+
+    The radar_data_and_control documents contains information that is common
+    to both A121 and A212. Since the common information has references that
+    are expected to be unique for a document, the references will not resolve
+    correctly when broken out to a common source and included into multiple
+    documents.
+
+    By using an include-read hook we can scan the document for a placeholder
+    string in the included content. If found, we'll replace it with a unique
+    identifier based on the including document path, which will make labels
+    unique across the documents.
+    """
+    placeholder_lower = "SENSOR_PLACEHOLDER_LOWER"
+    placeholder_upper = "SENSOR_PLACEHOLDER_UPPER"
+
+    if placeholder_lower not in content[0] and placeholder_upper not in content[0]:
+        return
+    for sensor in ("a121",):
+        if sensor in parent_docname:
+            content[0] = content[0].replace(placeholder_lower, sensor)
+            content[0] = content[0].replace(placeholder_upper, sensor.upper())
+            return
+
+
+def setup(app: Sphinx) -> None:
+    app.connect("include-read", _update_sensor_placeholder)

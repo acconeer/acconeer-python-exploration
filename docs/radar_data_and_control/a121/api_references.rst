@@ -1,3 +1,5 @@
+.. _rdac-a121-api-ref:
+
 API References
 ==============
 
