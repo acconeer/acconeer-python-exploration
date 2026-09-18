@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 # type: ignore
@@ -187,6 +187,26 @@ def test_update_rate_in_session_config_and_frame_rate_in_any_sensor_config_is_di
 
     with pytest.raises(a121.ValidationError):
         config.validate()
+
+
+@pytest.mark.parametrize(
+    "groups",
+    [
+        [{1: a121.SensorConfig(frame_rate=1)}, {2: a121.SensorConfig()}],
+        [{1: a121.SensorConfig(frame_rate=1)}, {2: a121.SensorConfig(frame_rate=2)}],
+    ],
+)
+def test_frame_rate_with_multiple_groups_is_disallowed(groups):
+    config = a121.SessionConfig(groups)
+
+    with pytest.raises(a121.ValidationError):
+        config.validate()
+
+
+def test_frame_rate_with_single_group_multiple_sensors_is_allowed():
+    config = a121.SessionConfig({1: a121.SensorConfig(frame_rate=1), 2: a121.SensorConfig()})
+
+    config.validate()
 
 
 def test_invalid_attribute():

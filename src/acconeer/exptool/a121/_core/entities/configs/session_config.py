@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -159,6 +159,20 @@ class SessionConfig:
         for group in self._groups:
             for _, sensor_config in group.items():
                 validation_results.extend(sensor_config._collect_validation_results())
+
+        if len(self._groups) > 1:
+            for group_id, sensor_id, sensor_config in utils.iterate_extended_structure(
+                self._groups
+            ):
+                if sensor_config.frame_rate is not None:
+                    validation_results.append(
+                        ValidationError(
+                            sensor_config,
+                            "frame_rate",
+                            "A set frame rate is incompatible with using multiple groups "
+                            + f"(sensor {sensor_id} in group {group_id})",
+                        )
+                    )
 
         if self.update_rate is not None:
             for group_id, sensor_id, sensor_config in utils.iterate_extended_structure(
