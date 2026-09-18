@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -103,6 +103,7 @@ class SensorConfig:
     """
 
     MAX_HWAAS = SubsweepConfig.MAX_HWAAS
+    MAX_NUM_SUBSWEEPS = 4
 
     _subsweeps: List[SubsweepConfig]
 
@@ -293,6 +294,7 @@ class SensorConfig:
             + self._validate_sweep_and_frame_rate()
             + self._validate_required_buffer_usage()
             + self._validate_ascending_prf_in_subsweeps()
+            + self._validate_num_subsweeps()
         )
         subsweep_config_validate_results = []
         for subsweep in self.subsweeps:
@@ -424,6 +426,18 @@ class SensorConfig:
                 for subsweep_config in self.subsweeps
             )
         return validation_results
+
+    def _validate_num_subsweeps(self) -> list[ValidationResult]:
+        if self.num_subsweeps <= self.MAX_NUM_SUBSWEEPS:
+            return []
+
+        return [
+            ValidationError(
+                source=self,
+                aspect="subsweeps",
+                message=f"Too many subsweeps: {self.num_subsweeps}/{self.MAX_NUM_SUBSWEEPS}.",
+            )
+        ]
 
     def _validate_ascending_prf_in_subsweeps(self) -> list[ValidationResult]:
         """Validate that PRFs are defined in an ascending fashion with subsweeps.

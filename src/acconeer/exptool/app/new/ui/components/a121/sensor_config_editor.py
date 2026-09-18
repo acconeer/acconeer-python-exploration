@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -300,7 +300,10 @@ class SensorConfigEditor(DataEditor[Optional[a121.SensorConfig]]):
             yield tab_widget
 
     def _add_subsweep_config(self) -> None:
-        if self._sensor_config is None or self._sensor_config.num_subsweeps >= 4:
+        if (
+            self._sensor_config is None
+            or self._sensor_config.num_subsweeps >= a121.SensorConfig.MAX_NUM_SUBSWEEPS
+        ):
             return
 
         config = copy.deepcopy(self._sensor_config)

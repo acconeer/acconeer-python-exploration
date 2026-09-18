@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 # type: ignore
@@ -414,3 +414,16 @@ def test_raises_validation_error_if_higher_indexed_subsweeps_has_higher_prf():
 
     with pytest.raises(a121.ValidationError, match=r"PRF.*It needs to be one of.*PRF"):
         config.validate()
+
+
+def test_raises_validation_error_if_there_are_too_many_subsweeps():
+    config = a121.SensorConfig(num_subsweeps=a121.SensorConfig.MAX_NUM_SUBSWEEPS + 1)
+
+    with pytest.raises(a121.ValidationError, match=r"Too many subsweeps"):
+        config.validate()
+
+
+def test_the_maximum_number_of_subsweeps_validates():
+    config = a121.SensorConfig(num_subsweeps=a121.SensorConfig.MAX_NUM_SUBSWEEPS)
+
+    config.validate()
