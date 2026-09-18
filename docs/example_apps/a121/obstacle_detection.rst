@@ -91,7 +91,7 @@ Processor result
 A121 Improvements Compared to A111
 ----------------------------------
 
-If you are familiar with the :doc:`A111 Obstacle detection</a111/algo/obstacle>`, a list of improvements with the A121 Obstacle detection application is given here:
+If you are familiar with the :doc:`A111 Obstacle detection</other_products/a111/algo/obstacle>`, a list of improvements with the A121 Obstacle detection application is given here:
 
 **1. Multiple sweeps per frame:**
 A high robot speed requires a high sweep rate to determine the object angle. In the A111, each sweep needs to be transferred from the sensor before the next can be measured, which limits the maximum sweep rate. In A121, multiple sweeps can be measured in a frame, before the frame is transferred to the host. This enables higher sweep rates and therefore higher robot speeds.

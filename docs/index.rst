@@ -14,8 +14,7 @@
    exploration_tool/index
    resource_calc
    glossary
-
-   a111/index
+   other_products/index
 
 
 .. figure:: /_static/acconeer_evk.png
