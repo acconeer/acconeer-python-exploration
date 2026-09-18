@@ -27,6 +27,8 @@ def integrationTestA111RssVersionsForBuildScope = [
     (BuildScope.NIGHTLY) : [branch: 'master', tag: 'a111-v2.15.5'],
 ]
 
+// Entries are [branch: ...], [tag: ...] or, for a build that carries no tag,
+// [commit: '<build storage folder>'].
 @Field
 def modelTestA121RssVersionForBuildScope = [
     (BuildScope.SANITY)  : [tag: 'a121-v1.13.0'],
@@ -233,19 +235,31 @@ try {
 
                 stage("Fetch A121 model regression stashes ${modelTestA121RssVersion}") {
                     modelTestA121RssVersion.each { rssVersion ->
+                        def rssVersionType = rssVersion.getKey()
                         def rssVersionName = rssVersion.getValue()
                         def stashFolder = "stash/model_a121/${rssVersionName}"
+                        def artifacts = ['out/internal_stash_python_libs_a121.tgz', 'out/internal_stash_tests_a121.tgz']
 
                         sh "mkdir -p ${stashFolder}"
 
-                        findBuildAndCopyArtifacts(
-                            [
-                                projectName: 'sw-main',
-                                artifactNames: ['out/internal_stash_python_libs_a121.tgz', 'out/internal_stash_tests_a121.tgz'],
-                                // e.g. (branch): 'master' or (tag): 'a121-vX.Y.Z'
-                                (rssVersion.getKey()): rssVersion.getValue(),
-                            ]
-                        )
+                        if (rssVersionType == 'commit') {
+                            // A commit is not a build Jenkins can search for, so its
+                            // artifacts are taken straight from the build storage folder.
+                            retrieveArtifacts(
+                                folder: rssVersionName,
+                                stage: 'compile',
+                                artifacts: artifacts
+                            )
+                        } else {
+                            findBuildAndCopyArtifacts(
+                                [
+                                    projectName: 'sw-main',
+                                    artifactNames: artifacts,
+                                    // e.g. (branch): 'master' or (tag): 'a121-vX.Y.Z'
+                                    (rssVersionType): rssVersionName,
+                                ]
+                            )
+                        }
                         sh "tar -xzf out/internal_stash_python_libs_a121.tgz -C ${stashFolder}"
                         sh "tar -xzf out/internal_stash_tests_a121.tgz -C ${stashFolder}"
                     }
