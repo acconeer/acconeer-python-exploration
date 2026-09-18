@@ -13,11 +13,11 @@ You can also see the offerings that measure distance in different ways:
 
 - :doc:`/detectors/a121/distance_detector`: This :term:`Detector` offers pure distance measurements using the A121 sensor.
 
-- :doc:`/example_apps/a121/phase_tracking`: An A121 Example Application for relative movement displacement.
+- :doc:`/applications/a121/phase_tracking`: An A121 Example Application for relative movement displacement.
 
-- :doc:`/example_apps/a121/bilateration`: Example Application that measures distance and angle to and object using two A121 sensors.
+- :doc:`/applications/a121/bilateration`: Example Application that measures distance and angle to and object using two A121 sensors.
 
-- :doc:`/example_apps/a121/obstacle_detection`: A121 Example Application that measure distance and angle to objects using a single sensor in motion.
+- :doc:`/applications/a121/obstacle_detection`: A121 Example Application that measure distance and angle to objects using a single sensor in motion.
 
 See also our related use cases:
 

@@ -9,4 +9,4 @@ human presence and breathing patterns without the need for aperture.
 Acconeer Offering
 =================
 
-- :doc:`Breathing Reference Application </ref_apps/a121/breathing>`: This Reference Application uses the A121 sensor to measure breathing frequency and chest displacement.
+- :doc:`Breathing Reference Application </applications/a121/breathing>`: This Reference Application uses the A121 sensor to measure breathing frequency and chest displacement.

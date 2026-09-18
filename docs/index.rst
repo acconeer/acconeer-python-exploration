@@ -7,8 +7,7 @@
    figure_of_merits/index
    use_cases/index
    detectors/index
-   ref_apps/index
-   example_apps/index
+   applications/index
    hw_integration/index
    sw_integration/index
    exploration_tool/index

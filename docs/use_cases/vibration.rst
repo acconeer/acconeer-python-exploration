@@ -12,4 +12,4 @@ Acconeer Offering
 
 Acconeer's sensors are engineered to provide the high precision required for vibration measurement applications, using state-of-the-art :term:`PCR` technology to reliably detect even the smallest vibrations. To illustrate this we have created an :term:`Example Application` to showcase the ability of our Pulsed Coherent Radars:
 
-- :doc:`Vibration Example Application</example_apps/a121/vibration>`: This Example Application illustrates how the A121 sensor can be used to estimate the frequency content of a vibrating object, measured at a distance.
+- :doc:`Vibration Example Application</applications/a121/vibration>`: This Example Application illustrates how the A121 sensor can be used to estimate the frequency content of a vibrating object, measured at a distance.

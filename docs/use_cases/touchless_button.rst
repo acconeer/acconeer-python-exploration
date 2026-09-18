@@ -13,5 +13,5 @@ Acconeer Offering
 
 Acconeer's power-efficient radar sensors provide robust performance combined with fast response time. Our compact sensors can be seamlessly integrated into touchless buttons offering precise and reliable performance. To showcase how Acconeer's radar sensors can enhance your touchless solutions we have developed one :term:`Reference Application` and one :term:`Example Application` to address the most common touchless use cases:
 
-- :doc:`Touchless Button Reference Application</ref_apps/a121/touchless_button>`: This Reference Application shows how the A121 sensor can be used as a contact-free button, triggering on motions close to the sensor.
-- :doc:`Hand Motion Example Application</example_apps/a121/hand_motion_detection>`: This Example Application illustrates how the A121 sensor can be used for robust hand motion detection for automatic faucets.
+- :doc:`Touchless Button Reference Application</applications/a121/touchless_button>`: This Reference Application shows how the A121 sensor can be used as a contact-free button, triggering on motions close to the sensor.
+- :doc:`Hand Motion Example Application</applications/a121/hand_motion_detection>`: This Example Application illustrates how the A121 sensor can be used for robust hand motion detection for automatic faucets.

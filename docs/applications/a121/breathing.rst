@@ -46,7 +46,7 @@ Form time series
 Once the segment to be analyzed has been identified, a FIFO buffer is used to store the time series, characterizing the breathing motion at each distance in the segment.
 
 The concept for estimating the breathing motion utilize processing, similar to what is described in the phase tracking example.
-For details, see the :doc:`phase tracking documentation</example_apps/a121/phase_tracking>`.
+For details, see the :doc:`phase tracking documentation</applications/a121/phase_tracking>`.
 
 The sparse IQ data service produce complex data samples where the amplitude corresponds to the amount of measured energy
 and the phase to the relative timing of the transmitted and returning pulse.

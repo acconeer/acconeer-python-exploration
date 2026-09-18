@@ -17,4 +17,4 @@ Acconeer Offering
 
 We have created an :term:`Example Application` to showcase how you can utilize Acconeer's :term:`PCR` technology to accurately measure the surface velocity of a moving fluid:
 
-- :doc:`Surface Velocity Example Application</example_apps/a121/surface_velocity>`: This Example Application uses the A121 sensor to estimate the surface velocity and direction of a moving fluid.
+- :doc:`Surface Velocity Example Application</applications/a121/surface_velocity>`: This Example Application uses the A121 sensor to estimate the surface velocity and direction of a moving fluid.
