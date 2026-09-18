@@ -9,8 +9,8 @@
    detectors/index
    ref_apps/index
    example_apps/index
-   hw_integration/a121/index
-   sw_integration/a121/index
+   hw_integration/index
+   sw_integration/index
    exploration_tool/index
    resource_calc
    glossary

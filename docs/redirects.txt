@@ -259,3 +259,4 @@ radar_data_and_control/a121/in_depth_topics/fom.rst figure_of_merits/a121.rst
 "exploration_tool/example_scripts/vibration/examples-a121-algo-vibration-example_app.rst" "exploration_tool/example_scripts/a121/vibration/examples-a121-algo-vibration-example_app.rst"
 "exploration_tool/example_scripts/vibration/examples-a121-algo-vibration-processor.rst" "exploration_tool/example_scripts/a121/vibration/examples-a121-algo-vibration-processor.rst"
 "exploration_tool/example_scripts/waste_level/examples-a121-algo-waste_level-processor.rst" "exploration_tool/example_scripts/a121/waste_level/examples-a121-algo-waste_level-processor.rst"
+"sw_integration/a121/index.rst" "sw_integration/index.rst"
