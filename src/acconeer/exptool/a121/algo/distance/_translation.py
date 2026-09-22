@@ -99,21 +99,15 @@ def _calc_hwaas(
     distance_m: float,
     signal_quality: float,
     reflector_shape_exponent: float,
-    *,
-    legacy_processing_gain: bool = False,
 ) -> int:
     rlg_per_hwaas = RLG_PER_HWAAS_MAP[profile]
 
     processing_gain = calc_processing_gain(profile, step_length)
     subsweep_end_point_m = max(distance_m, _HWAAS_MIN_DISTANCE)
-    # the embedded detector uses a tenth of the gain, see the legacy translation
-    processing_gain_db = (
-        np.log10(processing_gain) if legacy_processing_gain else 10 * np.log10(processing_gain)
-    )
     rlg = (
         signal_quality
         + reflector_shape_exponent * 10 * np.log10(subsweep_end_point_m)
-        - processing_gain_db
+        - 10 * np.log10(processing_gain)
     )
     hwaas = int(round(10 ** ((rlg - rlg_per_hwaas) / 10)))
     if hwaas < _MIN_HWAAS:
@@ -352,13 +346,6 @@ def detector_config_to_processor_specs(
     return processor_specs
 
 
-def detector_config_to_session_config(
-    config: DetectorConfig,
-    sensor_ids: list[int],
-) -> a121.SessionConfig:
-    return _build_session_config(config, sensor_ids, legacy_single_far_range_group=False)
-
-
 def carry_over_signal_quality(config: DetectorConfig) -> DetectorConfig:
     """Raise signal quality so a config keeps the HWAAS it had before the gain fix.
 
@@ -375,27 +362,9 @@ def carry_over_signal_quality(config: DetectorConfig) -> DetectorConfig:
     return attrs.evolve(config, signal_quality=config.signal_quality + float(offset))
 
 
-def _legacy_detector_config_to_session_config(
+def detector_config_to_session_config(
     config: DetectorConfig,
     sensor_ids: list[int],
-) -> a121.SessionConfig:
-    """Frozen pre-multi-group session config translation.
-
-    Mirrors the embedded XM125 distance detector, which still lays out far-range
-    subsweeps in a single group with linearly spaced breakpoints, and uses a
-    tenth of the processing gain in the HWAAS calculation. Used only by the
-    memory/power models to predict embedded resource usage - remove this (and switch
-    those models to the regular ``detector_config_to_session_config``) once the C SDK
-    picks up the multi-group, exponential-breakpoint and processing gain changes.
-    """
-    return _build_session_config(config, sensor_ids, legacy_single_far_range_group=True)
-
-
-def _build_session_config(
-    config: DetectorConfig,
-    sensor_ids: list[int],
-    *,
-    legacy_single_far_range_group: bool,
 ) -> a121.SessionConfig:
     groups = []
 
@@ -419,7 +388,6 @@ def _build_session_config(
             end_point * APPROX_BASE_STEP_LENGTH_M,
             config.signal_quality,
             config.reflector_shape.exponent,
-            legacy_processing_gain=legacy_single_far_range_group,
         )
         marginless_start_point = _m_to_point(
             config.start_m,
@@ -499,7 +467,6 @@ def _build_session_config(
             marginless_end_point * APPROX_BASE_STEP_LENGTH_M,
             config.signal_quality,
             config.reflector_shape.exponent,
-            legacy_processing_gain=legacy_single_far_range_group,
         )
 
         far_subsweeps.append(
@@ -546,7 +513,6 @@ def _build_session_config(
             marginless_end_point * APPROX_BASE_STEP_LENGTH_M,
             config.signal_quality,
             config.reflector_shape.exponent,
-            legacy_processing_gain=legacy_single_far_range_group,
         )
 
         far_subsweeps.append(
@@ -581,27 +547,19 @@ def _build_session_config(
         else:
             cfar_margin = 0
 
-        num_far_range_groups = 1 if legacy_single_far_range_group else _NUM_FAR_RANGE_GROUPS
-        num_max_profile_subsweeps = num_far_range_groups * _NUM_SUBSWEEPS_IN_SENSOR_CONFIG - len(
+        num_max_profile_subsweeps = _NUM_FAR_RANGE_GROUPS * _NUM_SUBSWEEPS_IN_SENSOR_CONFIG - len(
             range_types & RangeTypes.ANY_TRANSITION
         )
 
-        if legacy_single_far_range_group:
-            breakpoints_m = np.linspace(
-                start_m,
-                end_m,
-                num_max_profile_subsweeps + 1,
-            ).tolist()
-        else:
-            breakpoints_m = _calc_max_profile_breakpoints_m(
-                start_m,
-                end_m,
-                num_max_profile_subsweeps + 1,
-                config.max_profile,
-                step_length,
-                config.signal_quality,
-                config.reflector_shape.exponent,
-            )
+        breakpoints_m = _calc_max_profile_breakpoints_m(
+            start_m,
+            end_m,
+            num_max_profile_subsweeps + 1,
+            config.max_profile,
+            step_length,
+            config.signal_quality,
+            config.reflector_shape.exponent,
+        )
 
         breakpoints = [_m_to_point(start_m, bp, step_length) for bp in breakpoints_m]
 
@@ -628,7 +586,6 @@ def _build_session_config(
                 marginless_end_point * APPROX_BASE_STEP_LENGTH_M,
                 config.signal_quality,
                 config.reflector_shape.exponent,
-                legacy_processing_gain=legacy_single_far_range_group,
             )
 
             far_subsweeps.append(

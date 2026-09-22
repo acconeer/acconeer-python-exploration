@@ -17,10 +17,7 @@ from acconeer.exptool.a121.algo.distance import (
 from acconeer.exptool.a121.algo.distance import (
     MeasurementType,
 )
-from acconeer.exptool.a121.algo.distance._translation import (
-    _legacy_detector_config_to_session_config,
-    get_num_far_subsweeps,
-)
+from acconeer.exptool.a121.algo.distance._translation import get_num_far_subsweeps
 from acconeer.exptool.a121.algo.distance._utils import (
     get_calibrate_noise_session_config,
     get_calibrate_offset_sensor_config,
@@ -43,8 +40,8 @@ SIZE_OF_FLOAT = 4
 
 PRESENCE_HEAP_OVERHEAD = 256
 
-DISTANCE_HEAP_OVERHEAD = 1028
-DISTANCE_HEAP_PER_PROCESSOR = 224
+DISTANCE_HEAP_OVERHEAD = 1132
+DISTANCE_HEAP_PER_PROCESSOR = 240
 
 
 def _sweep_external_heap_memory(config: SensorConfig) -> int:
@@ -115,7 +112,7 @@ def presence_heap_memory(config: PresenceConfig) -> int:
 
 def distance_external_heap_memory(config: DistanceConfig) -> int:
     offset_sensor_config = get_calibrate_offset_sensor_config()
-    session_config = _legacy_detector_config_to_session_config(config, [1])
+    session_config = distance.detector_config_to_session_config(config, [1])
     num_far_subsweeps = get_num_far_subsweeps(session_config, config)
     processor_specs = distance.detector_config_to_processor_specs(config, num_far_subsweeps)
     noise_session_config = get_calibrate_noise_session_config(session_config, [1])
@@ -176,7 +173,8 @@ def distance_external_heap_memory(config: DistanceConfig) -> int:
             proc_calib_buffer += sensor_cfg.sweeps_per_frame * num_points * SIZE_OF_FLOAT
             proc_calib_buffer += sensor_cfg.sweeps_per_frame * SIZE_OF_FLOAT
 
-        aggr_work_buffer += proc_work_buffer
+        # The aggregator reuses one work buffer for every processor.
+        aggr_work_buffer = max(aggr_work_buffer, proc_work_buffer)
         aggr_calib_buffer += proc_calib_buffer
 
     work_buffer = max(noise_work_buffer, aggr_work_buffer)
@@ -184,9 +182,26 @@ def distance_external_heap_memory(config: DistanceConfig) -> int:
     return sensor_buffer + work_buffer + det_calib_buffer + aggr_calib_buffer
 
 
+def _far_frame_rss_heap_memory(session_config: SessionConfig, config: DistanceConfig) -> int:
+    """A far range spanning several groups is concatenated into a frame of its own."""
+    start_group = 1 if DistanceDetector._has_close_range_measurement(config) else 0
+    far_groups = session_config.groups[start_group:]
+
+    if len(far_groups) < 2:
+        return 0
+
+    num_points = sum(
+        subsweep.num_points
+        for group in far_groups
+        for subsweep in next(iter(group.values())).subsweeps
+    )
+
+    return num_points * BYTES_PER_POINT
+
+
 def distance_rss_heap_memory(config: DistanceConfig) -> int:
     offset_sensor_config = get_calibrate_offset_sensor_config()
-    session_config = _legacy_detector_config_to_session_config(config, [1])
+    session_config = distance.detector_config_to_session_config(config, [1])
     num_far_subsweeps = get_num_far_subsweeps(session_config, config)
     processor_specs = distance.detector_config_to_processor_specs(config, num_far_subsweeps)
     noise_session_config = get_calibrate_noise_session_config(session_config, [1])
@@ -207,6 +222,7 @@ def distance_rss_heap_memory(config: DistanceConfig) -> int:
         DISTANCE_HEAP_OVERHEAD
         + processor_heap
         + sensor_heap
+        + _far_frame_rss_heap_memory(session_config, config)
         + offset_rss_heap
         + session_rss_heap
         + noise_rss_heap

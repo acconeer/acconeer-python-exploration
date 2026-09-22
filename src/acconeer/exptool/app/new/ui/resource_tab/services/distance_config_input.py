@@ -10,12 +10,10 @@ import attrs
 from PySide6.QtWidgets import QVBoxLayout
 
 from acconeer.exptool import a121
+from acconeer.exptool.a121.algo import distance
 from acconeer.exptool.a121.algo.distance._configs import get_high_accuracy_detector_config
 from acconeer.exptool.a121.algo.distance._detector import DetectorConfig
 from acconeer.exptool.a121.algo.distance._pidget_mapping import get_pidget_mapping
-from acconeer.exptool.a121.algo.distance._translation import (
-    _legacy_detector_config_to_session_config,
-)
 from acconeer.exptool.a121.model import power
 from acconeer.exptool.app.new.ui.components import AttrsConfigEditor, GroupBox, pidgets
 from acconeer.exptool.app.new.ui.resource_tab.event_system import ChangeIdEvent, EventBroker
@@ -32,9 +30,7 @@ class DistanceConfigEvent:
 
     @property
     def translated_session_config(self) -> a121.SessionConfig:
-        # Match memory.py: pinned to the legacy translation until the embedded
-        # detector actually produces multi-group session configs.
-        return _legacy_detector_config_to_session_config(self.config, sensor_ids=[1])
+        return distance.detector_config_to_session_config(self.config, sensor_ids=[1])
 
 
 class DistanceConfigInput(ScrollAreaDecorator):

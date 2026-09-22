@@ -11,9 +11,6 @@ import yaml
 
 from acconeer.exptool import a121
 from acconeer.exptool.a121.algo import distance
-from acconeer.exptool.a121.algo.distance._translation import (
-    _legacy_detector_config_to_session_config,
-)
 from acconeer.exptool.a121.algo.presence import _configs as presence_configs
 from acconeer.exptool.a121.model import power
 
@@ -206,21 +203,15 @@ def test_lower_idle_state_limits(
     assert avg_current == pytest.approx(expected_current, abs=absolute_tolerance)
 
 
-# the module current limits were measured with the released detector, which uses
-# a tenth of the processing gain and defaults to 15 dB signal quality
-_RELEASED_SIGNAL_QUALITY = 15.0
-
-
 @pytest.mark.parametrize(
     ("limit_name", "session_config", "lower_idle_state", "algorithm"),
     [
         (
             "Distance, Default",
-            _legacy_detector_config_to_session_config(
+            distance.detector_config_to_session_config(
                 distance.DetectorConfig(
                     update_rate=1.0,
                     close_range_leakage_cancellation=True,
-                    signal_quality=_RELEASED_SIGNAL_QUALITY,
                 ),
                 sensor_ids=[1],
             ),
@@ -229,13 +220,12 @@ _RELEASED_SIGNAL_QUALITY = 15.0
         ),
         (
             "Distance, Close",
-            _legacy_detector_config_to_session_config(
+            distance.detector_config_to_session_config(
                 distance.DetectorConfig(
                     start_m=0.05,
                     end_m=0.10,
                     update_rate=1.0,
                     close_range_leakage_cancellation=False,
-                    signal_quality=_RELEASED_SIGNAL_QUALITY,
                 ),
                 sensor_ids=[1],
             ),
@@ -244,13 +234,12 @@ _RELEASED_SIGNAL_QUALITY = 15.0
         ),
         (
             "Distance, Close and far",
-            _legacy_detector_config_to_session_config(
+            distance.detector_config_to_session_config(
                 distance.DetectorConfig(
                     start_m=0.05,
                     end_m=3.0,
                     update_rate=1.0,
                     close_range_leakage_cancellation=False,
-                    signal_quality=_RELEASED_SIGNAL_QUALITY,
                 ),
                 sensor_ids=[1],
             ),
@@ -259,12 +248,11 @@ _RELEASED_SIGNAL_QUALITY = 15.0
         ),
         (
             "Distance, Far",
-            _legacy_detector_config_to_session_config(
+            distance.detector_config_to_session_config(
                 distance.DetectorConfig(
                     start_m=0.25,
                     end_m=3.0,
                     update_rate=1.0,
-                    signal_quality=_RELEASED_SIGNAL_QUALITY,
                 ),
                 sensor_ids=[1],
             ),
