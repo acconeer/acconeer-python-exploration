@@ -14,6 +14,15 @@ from acconeer.exptool.a121.algo.distance import (
 )
 
 
+def _subsweeps(session_config):
+    return [
+        subsweep
+        for group in session_config.groups
+        for sensor_config in group.values()
+        for subsweep in sensor_config.subsweeps
+    ]
+
+
 @pytest.mark.parametrize(
     "detector_config,expected_session_config",
     [
@@ -382,20 +391,7 @@ from acconeer.exptool.a121.algo.distance import (
                                 ),
                                 a121.SubsweepConfig(
                                     start_point=120,
-                                    num_points=18,
-                                    step_length=12,
-                                    profile=a121.Profile.PROFILE_3,
-                                    hwaas=1,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_15_6_MHz,
-                                ),
-                                a121.SubsweepConfig(
-                                    start_point=336,
-                                    num_points=15,
+                                    num_points=33,
                                     step_length=12,
                                     profile=a121.Profile.PROFILE_3,
                                     hwaas=1,
@@ -408,8 +404,6 @@ from acconeer.exptool.a121.algo.distance import (
                                 ),
                             ],
                             sweeps_per_frame=1,
-                            sweep_rate=None,
-                            frame_rate=None,
                             continuous_sweep_mode=False,
                             double_buffering=False,
                             inter_frame_idle_state=a121.IdleState.DEEP_SLEEP,
@@ -814,46 +808,7 @@ from acconeer.exptool.a121.algo.distance import (
                             subsweeps=[
                                 a121.SubsweepConfig(
                                     start_point=-8,
-                                    num_points=66,
-                                    step_length=1,
-                                    profile=a121.Profile.PROFILE_1,
-                                    hwaas=1,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_19_5_MHz,
-                                ),
-                                a121.SubsweepConfig(
-                                    start_point=58,
-                                    num_points=28,
-                                    step_length=1,
-                                    profile=a121.Profile.PROFILE_1,
-                                    hwaas=1,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_19_5_MHz,
-                                ),
-                                a121.SubsweepConfig(
-                                    start_point=86,
-                                    num_points=23,
-                                    step_length=1,
-                                    profile=a121.Profile.PROFILE_1,
-                                    hwaas=1,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_19_5_MHz,
-                                ),
-                                a121.SubsweepConfig(
-                                    start_point=109,
-                                    num_points=21,
+                                    num_points=224,
                                     step_length=1,
                                     profile=a121.Profile.PROFILE_1,
                                     hwaas=1,
@@ -866,73 +821,6 @@ from acconeer.exptool.a121.algo.distance import (
                                 ),
                             ],
                             sweeps_per_frame=1,
-                            sweep_rate=None,
-                            frame_rate=None,
-                            continuous_sweep_mode=False,
-                            double_buffering=False,
-                            inter_frame_idle_state=a121.IdleState.DEEP_SLEEP,
-                            inter_sweep_idle_state=a121.IdleState.READY,
-                        ),
-                    },
-                    {
-                        1: a121.SensorConfig(
-                            subsweeps=[
-                                a121.SubsweepConfig(
-                                    start_point=130,
-                                    num_points=19,
-                                    step_length=1,
-                                    profile=a121.Profile.PROFILE_1,
-                                    hwaas=1,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_19_5_MHz,
-                                ),
-                                a121.SubsweepConfig(
-                                    start_point=149,
-                                    num_points=18,
-                                    step_length=1,
-                                    profile=a121.Profile.PROFILE_1,
-                                    hwaas=1,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_19_5_MHz,
-                                ),
-                                a121.SubsweepConfig(
-                                    start_point=167,
-                                    num_points=17,
-                                    step_length=1,
-                                    profile=a121.Profile.PROFILE_1,
-                                    hwaas=1,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_19_5_MHz,
-                                ),
-                                a121.SubsweepConfig(
-                                    start_point=184,
-                                    num_points=32,
-                                    step_length=1,
-                                    profile=a121.Profile.PROFILE_1,
-                                    hwaas=1,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_19_5_MHz,
-                                ),
-                            ],
-                            sweeps_per_frame=1,
-                            sweep_rate=None,
-                            frame_rate=None,
                             continuous_sweep_mode=False,
                             double_buffering=False,
                             inter_frame_idle_state=a121.IdleState.DEEP_SLEEP,
@@ -1243,33 +1131,7 @@ from acconeer.exptool.a121.algo.distance import (
                             subsweeps=[
                                 a121.SubsweepConfig(
                                     start_point=384,
-                                    num_points=20,
-                                    step_length=24,
-                                    profile=a121.Profile.PROFILE_5,
-                                    hwaas=3,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_15_6_MHz,
-                                ),
-                                a121.SubsweepConfig(
-                                    start_point=864,
-                                    num_points=3,
-                                    step_length=24,
-                                    profile=a121.Profile.PROFILE_5,
-                                    hwaas=3,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_15_6_MHz,
-                                ),
-                                a121.SubsweepConfig(
-                                    start_point=936,
-                                    num_points=2,
+                                    num_points=25,
                                     step_length=24,
                                     profile=a121.Profile.PROFILE_5,
                                     hwaas=3,
@@ -1282,46 +1144,7 @@ from acconeer.exptool.a121.algo.distance import (
                                 ),
                                 a121.SubsweepConfig(
                                     start_point=984,
-                                    num_points=2,
-                                    step_length=24,
-                                    profile=a121.Profile.PROFILE_5,
-                                    hwaas=4,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_15_6_MHz,
-                                ),
-                            ],
-                            sweeps_per_frame=1,
-                            sweep_rate=None,
-                            frame_rate=None,
-                            continuous_sweep_mode=False,
-                            double_buffering=False,
-                            inter_frame_idle_state=a121.IdleState.DEEP_SLEEP,
-                            inter_sweep_idle_state=a121.IdleState.READY,
-                        ),
-                    },
-                    {
-                        1: a121.SensorConfig(
-                            subsweeps=[
-                                a121.SubsweepConfig(
-                                    start_point=1032,
-                                    num_points=2,
-                                    step_length=24,
-                                    profile=a121.Profile.PROFILE_5,
-                                    hwaas=4,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_15_6_MHz,
-                                ),
-                                a121.SubsweepConfig(
-                                    start_point=1080,
-                                    num_points=1,
+                                    num_points=5,
                                     step_length=24,
                                     profile=a121.Profile.PROFILE_5,
                                     hwaas=4,
@@ -1334,20 +1157,7 @@ from acconeer.exptool.a121.algo.distance import (
                                 ),
                                 a121.SubsweepConfig(
                                     start_point=1104,
-                                    num_points=2,
-                                    step_length=24,
-                                    profile=a121.Profile.PROFILE_5,
-                                    hwaas=5,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_15_6_MHz,
-                                ),
-                                a121.SubsweepConfig(
-                                    start_point=1152,
-                                    num_points=18,
+                                    num_points=20,
                                     step_length=24,
                                     profile=a121.Profile.PROFILE_5,
                                     hwaas=5,
@@ -1360,8 +1170,6 @@ from acconeer.exptool.a121.algo.distance import (
                                 ),
                             ],
                             sweeps_per_frame=1,
-                            sweep_rate=None,
-                            frame_rate=None,
                             continuous_sweep_mode=False,
                             double_buffering=False,
                             inter_frame_idle_state=a121.IdleState.DEEP_SLEEP,
@@ -1408,7 +1216,7 @@ from acconeer.exptool.a121.algo.distance import (
                                 ),
                                 a121.SubsweepConfig(
                                     start_point=264,
-                                    num_points=26,
+                                    num_points=31,
                                     step_length=24,
                                     profile=a121.Profile.PROFILE_5,
                                     hwaas=3,
@@ -1419,61 +1227,9 @@ from acconeer.exptool.a121.algo.distance import (
                                     iq_imbalance_compensation=True,
                                     prf=a121.PRF.PRF_15_6_MHz,
                                 ),
-                                a121.SubsweepConfig(
-                                    start_point=888,
-                                    num_points=3,
-                                    step_length=24,
-                                    profile=a121.Profile.PROFILE_5,
-                                    hwaas=3,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_15_6_MHz,
-                                ),
-                                a121.SubsweepConfig(
-                                    start_point=960,
-                                    num_points=2,
-                                    step_length=24,
-                                    profile=a121.Profile.PROFILE_5,
-                                    hwaas=3,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_15_6_MHz,
-                                ),
-                            ],
-                            sweeps_per_frame=1,
-                            sweep_rate=None,
-                            frame_rate=None,
-                            continuous_sweep_mode=False,
-                            double_buffering=False,
-                            inter_frame_idle_state=a121.IdleState.DEEP_SLEEP,
-                            inter_sweep_idle_state=a121.IdleState.READY,
-                        ),
-                    },
-                    {
-                        1: a121.SensorConfig(
-                            subsweeps=[
                                 a121.SubsweepConfig(
                                     start_point=1008,
-                                    num_points=2,
-                                    step_length=24,
-                                    profile=a121.Profile.PROFILE_5,
-                                    hwaas=4,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_15_6_MHz,
-                                ),
-                                a121.SubsweepConfig(
-                                    start_point=1056,
-                                    num_points=2,
+                                    num_points=4,
                                     step_length=24,
                                     profile=a121.Profile.PROFILE_5,
                                     hwaas=4,
@@ -1486,20 +1242,7 @@ from acconeer.exptool.a121.algo.distance import (
                                 ),
                                 a121.SubsweepConfig(
                                     start_point=1104,
-                                    num_points=2,
-                                    step_length=24,
-                                    profile=a121.Profile.PROFILE_5,
-                                    hwaas=5,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_15_6_MHz,
-                                ),
-                                a121.SubsweepConfig(
-                                    start_point=1152,
-                                    num_points=18,
+                                    num_points=20,
                                     step_length=24,
                                     profile=a121.Profile.PROFILE_5,
                                     hwaas=5,
@@ -1512,8 +1255,6 @@ from acconeer.exptool.a121.algo.distance import (
                                 ),
                             ],
                             sweeps_per_frame=1,
-                            sweep_rate=None,
-                            frame_rate=None,
                             continuous_sweep_mode=False,
                             double_buffering=False,
                             inter_frame_idle_state=a121.IdleState.DEEP_SLEEP,
@@ -1603,10 +1344,105 @@ def test_carry_over_signal_quality_reproduces_the_hwaas_from_before_the_gain_fix
 
     session_config = detector_config_to_session_config(carry_over_signal_quality(old_default), [1])
 
-    hwaas = [
-        subsweep.hwaas
-        for group in session_config.groups
-        for sensor_config in group.values()
-        for subsweep in sensor_config.subsweeps
+    assert [subsweep.hwaas for subsweep in _subsweeps(session_config)] == expected_hwaas
+
+
+def test_transition_keeps_its_subsweep_at_equal_hwaas():
+    # A transition carries a profile and a step length of its own, so it stays a
+    # subsweep of its own even where it lands on the HWAAS of its neighbour.
+    subsweeps = _subsweeps(detector_config_to_session_config(DetectorConfig(), [1]))
+
+    assert len(subsweeps) == 8
+    assert subsweeps[1].profile == a121.Profile.PROFILE_3
+    assert subsweeps[2].profile == a121.Profile.PROFILE_5
+    assert subsweeps[1].hwaas == subsweeps[2].hwaas
+    assert subsweeps[1].step_length != subsweeps[2].step_length
+
+
+def test_merged_subsweep_covers_the_whole_span():
+    config = DetectorConfig(
+        start_m=0.05,
+        end_m=0.15,
+        max_step_length=1,
+        max_profile=a121.Profile.PROFILE_1,
+        close_range_leakage_cancellation=False,
+        signal_quality=20.0,
+        threshold_method=ThresholdMethod.FIXED,
+    )
+
+    session_config = detector_config_to_session_config(config, [1])
+    (subsweep,) = _subsweeps(session_config)
+
+    # A range this short measures at one HWAAS throughout, so one subsweep spans it.
+    assert len(session_config.groups) == 1
+    assert (subsweep.start_point, subsweep.num_points, subsweep.step_length) == (4, 72, 1)
+    assert subsweep.profile == a121.Profile.PROFILE_1
+    assert subsweep.hwaas == 1
+
+
+def test_merging_frees_the_second_group():
+    config = DetectorConfig(
+        start_m=0.1,
+        end_m=0.8,
+        max_profile=a121.Profile.PROFILE_3,
+        signal_quality=15.0,
+        threshold_method=ThresholdMethod.FIXED,
+    )
+
+    session_config = detector_config_to_session_config(config, [1])
+
+    # Unmerged, this range takes seven subsweeps and so a second sensor config.
+    assert len(session_config.groups) == 1
+    assert [
+        (s.start_point, s.num_points, s.step_length, s.profile, s.hwaas)
+        for s in _subsweeps(session_config)
+    ] == [
+        (24, 54, 4, a121.Profile.PROFILE_1, 1),
+        (120, 20, 12, a121.Profile.PROFILE_3, 1),
     ]
-    assert hwaas == expected_hwaas
+
+
+def test_merging_keeps_a_boundary_the_sensor_buffer_needs():
+    config = DetectorConfig(
+        start_m=0.05,
+        end_m=10.9,
+        max_step_length=1,
+        max_profile=a121.Profile.PROFILE_5,
+        signal_quality=10.0,
+    )
+
+    session_config = detector_config_to_session_config(config, [1])
+
+    # Merging the two HWAAS 1 subsweeps would pull the HWAAS 3 one into the first
+    # sensor config, taking it to 4117 points against the 4095 it holds.
+    session_config.validate()
+    assert [(s.start_point, s.num_points, s.hwaas) for s in _subsweeps(session_config)] == [
+        (-32, 434, 1),
+        (112, 870, 1),
+        (256, 1655, 1),
+        (1911, 632, 1),
+        (2543, 526, 3),
+        (3069, 466, 5),
+        (3535, 427, 8),
+        (3962, 814, 11),
+    ]
+
+
+@pytest.mark.parametrize(
+    ("start_m", "end_m", "max_profile", "signal_quality"),
+    [
+        (0.05, 6.6, a121.Profile.PROFILE_5, 10.0),
+        (0.25, 11.3, a121.Profile.PROFILE_5, 10.0),
+        (0.05, 10.3, a121.Profile.PROFILE_4, 5.0),
+    ],
+)
+def test_merging_never_overfills_a_sensor_config(start_m, end_m, max_profile, signal_quality):
+    config = DetectorConfig(
+        start_m=start_m,
+        end_m=end_m,
+        max_step_length=1,
+        max_profile=max_profile,
+        signal_quality=signal_quality,
+    )
+
+    detector_config_to_session_config(config, [1]).validate()

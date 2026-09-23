@@ -40,6 +40,7 @@ _MIN_NUM_POINTS_IN_ENVELOPE_FWHM_SPAN = 4.0
 _VALID_STEP_LENGTHS = [1, 2, 3, 4, 6, 8, 12, 24]
 _NUM_FAR_RANGE_GROUPS = 2
 _NUM_SUBSWEEPS_IN_SENSOR_CONFIG = 4
+_MAX_NUM_POINTS_IN_SENSOR_CONFIG = 4095  # what a single buffered sensor config holds
 _HWAAS_MIN_DISTANCE = 1.0
 _MAX_HWAAS = 511
 _MIN_HWAAS = 1
@@ -166,6 +167,57 @@ def _calc_max_profile_breakpoints_m(
     else:
         breakpoints_m = (start_m + (end_m - start_m) * (u**_BREAKPOINT_DENSITY_EXPONENT)).tolist()
     return breakpoints_m
+
+
+def _merge_equal_hwaas(
+    breakpoints: list[int],
+    hwaas_at: t.Callable[[int], int],
+    fits: t.Callable[[list[int]], bool],
+) -> list[int]:
+    """Drop the boundaries between max profile subsweeps that share HWAAS.
+
+    Such a boundary splits a span the sensor measures the same way either side
+    of it, which costs a subsweep, and eventually a sensor config, for nothing.
+    Only the max profile is merged: the transitions carry a profile and a step
+    length of their own, so they stay whatever their HWAAS comes out as.
+
+    A boundary also stays where the breakpoints without it do not ``fit``, since
+    a merge shifts subsweeps between sensor configs and can overfill one.
+    """
+    kept = list(breakpoints)
+    i = 1
+
+    while i < len(kept) - 1:
+        candidate = kept[:i] + kept[i + 1 :]
+
+        if hwaas_at(kept[i]) == hwaas_at(kept[i + 1]) and fits(candidate):
+            kept = candidate
+        else:
+            i += 1
+
+    return kept
+
+
+def _max_profile_layout(
+    breakpoints: list[int], margins: tuple[int, int], step_length: int
+) -> list[tuple[int, int]]:
+    """Start point and number of points of each max profile subsweep, margins included."""
+    spans = [[start, end] for start, end in zip(breakpoints[:-1], breakpoints[1:])]
+
+    if spans:
+        spans[0][0] -= margins[0]
+        spans[-1][1] += margins[1]
+
+    return [(start, int((end - start) / step_length)) for start, end in spans]
+
+
+def _fits_sensor_configs(num_points: list[int]) -> bool:
+    """Whether far range subsweeps with these numbers of points fit their sensor configs."""
+    return all(
+        sum(num_points[i : i + _NUM_SUBSWEEPS_IN_SENSOR_CONFIG])
+        <= _MAX_NUM_POINTS_IN_SENSOR_CONFIG
+        for i in range(0, len(num_points), _NUM_SUBSWEEPS_IN_SENSOR_CONFIG)
+    )
 
 
 def _get_range_types(config: DetectorConfig) -> RangeTypes:
@@ -563,23 +615,28 @@ def detector_config_to_session_config(
 
         breakpoints = [_m_to_point(start_m, bp, step_length) for bp in breakpoints_m]
 
+        margins = (left_filter_margin + cfar_margin, right_filter_margin + cfar_margin)
+        preceding_num_points = [subsweep.num_points for subsweep in far_subsweeps]
+
         breakpoints = remove_dup(breakpoints)
+        breakpoints = _merge_equal_hwaas(
+            breakpoints,
+            lambda point: _calc_hwaas(
+                config.max_profile,
+                step_length,
+                point * APPROX_BASE_STEP_LENGTH_M,
+                config.signal_quality,
+                config.reflector_shape.exponent,
+            ),
+            lambda candidate: _fits_sensor_configs(
+                preceding_num_points
+                + [n for _, n in _max_profile_layout(candidate, margins, step_length)]
+            ),
+        )
 
-        num_max_profile_subsweeps = len(breakpoints) - 1
-
-        for i in range(num_max_profile_subsweeps):
-            marginless_start_point = breakpoints[i]
-            marginless_end_point = breakpoints[i + 1]
-            start_point = marginless_start_point
-            end_point = marginless_end_point
-
-            if i == 0:
-                start_point = marginless_start_point - (left_filter_margin + cfar_margin)
-            if i == (num_max_profile_subsweeps - 1):
-                end_point = marginless_end_point + (right_filter_margin + cfar_margin)
-
-            num_points = int((end_point - start_point) / step_length)
-
+        for (start_point, num_points), marginless_end_point in zip(
+            _max_profile_layout(breakpoints, margins, step_length), breakpoints[1:]
+        ):
             hwaas = _calc_hwaas(
                 config.max_profile,
                 step_length,
