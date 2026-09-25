@@ -125,8 +125,7 @@ try {
 
     String dockerArgs =  (
         "--hostname ${env.NODE_NAME}" +
-        " --mount type=volume,src=cachepip-${env.EXECUTOR_NUMBER},dst=/home/jenkins/.cache/pip" +
-        ' --mount type=volume,src=cacheuv,dst=/home/jenkins/.cache/uv'
+        ' --mount type=volume,src=uv-cache,dst=/home/ci/.cache/uv'
     )
 
     // Meant to catch common (and fast to detect) errors.

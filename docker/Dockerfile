@@ -38,13 +38,14 @@ RUN apt-get update -qq \
 
 ENV QT_QPA_PLATFORM=offscreen
 
-RUN groupadd -g 1000 jenkins \
-    && useradd -rm -d /home/jenkins -u 1000 -g jenkins jenkins
-
-USER jenkins
-
-ENV PATH="$PATH:/home/jenkins/.local/bin"
 COPY --from=uv_build_stage /uv /bin/uv
+
+# Installed system-wide on the system Python, so any user can run them.
+# ARG keeps these settings out of the final image.
+ARG UV_TOOL_DIR=/opt/uv-tools
+ARG UV_TOOL_BIN_DIR=/usr/local/bin
+ARG UV_PYTHON_PREFERENCE=only-system
+ARG UV_NO_CACHE=1
 
 # A tool release can change how CI builds, tests or publishes, so the pins
 # are exact. The date freezes what the tools' own ranges leave open.
@@ -52,7 +53,8 @@ ARG UV_EXCLUDE_NEWER=2026-09-25T00:00:00Z
 RUN uv tool install "hatch==1.18.1" \
     && uv tool install "twine==7.0.0"
 
-RUN mkdir -p /home/jenkins/.cache/pip
-RUN mkdir -p /home/jenkins/.cache/uv
-
-WORKDIR /home/jenkins
+# CI runs the container as an arbitrary uid, which has no home here.
+ENV HOME=/home/ci
+# Writable by any uid, as is a new uv cache volume, which copies the mode of
+# its mount point.
+RUN mkdir -m 1777 /home/ci /home/ci/.cache /home/ci/.cache/uv
