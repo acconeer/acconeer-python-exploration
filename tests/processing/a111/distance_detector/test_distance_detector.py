@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import tempfile
@@ -218,7 +218,7 @@ def test_calibration_against_reference_calibration():
         np.testing.assert_array_equal(expected, actual_legacy_format)
 
 
-@pytest.mark.parametrize("reference_file", HERE.glob("output_*.h5"))
+@pytest.mark.parametrize("reference_file", sorted(HERE.glob("output_*.h5")))
 def test_output_references_have_detections(reference_file):
     reference = load_output(reference_file)
 
