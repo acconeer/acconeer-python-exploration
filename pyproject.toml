@@ -144,7 +144,7 @@ template = "hatch-test"
 
 
 [tool.hatch.envs.docs]
-dependencies = ["sphinx_autobuild", "doc8"]
+dependencies = ["sphinx_autobuild"]
 installer = "pip"
 pre-install-commands = [
     "pip install -r docs/requirements.txt"
