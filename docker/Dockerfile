@@ -50,7 +50,7 @@ ENV PATH="$PATH:/home/jenkins/.local/bin"
 # virtualenv==21.0.0 + the hatch version pin.
 # This should be revisited in the future.
 RUN uv tool install --exclude-newer 2026-02-24T00:00:00Z "hatch>=1.13.0,<1.16.0"
-RUN uv tool install "twine==6.0.1"
+RUN uv tool install "twine==7.0.0"
 
 RUN mkdir -p /home/jenkins/.cache/pip
 RUN mkdir -p /home/jenkins/.cache/uv
