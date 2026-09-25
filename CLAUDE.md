@@ -134,4 +134,6 @@ annotations are the house style too.
   signal-processing dimensions.
 - `Jenkinsfile` — three build scopes (sanity / hourly / nightly) differing in
   Python and RSS versions.
+- `docker/Dockerfile` — `ci`, the default target, is what Jenkins builds, and
+  `dev` takes `UID`/`GID` build args for a devcontainer.
 - Published docs: <https://docs.acconeer.com>, built from `docs/`.

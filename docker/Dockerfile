@@ -1,7 +1,7 @@
 ARG UV_VERSION=0.9.26
 FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv_build_stage
 
-FROM ubuntu:24.04
+FROM ubuntu:24.04 AS base
 
 RUN userdel -r ubuntu
 
@@ -11,6 +11,8 @@ RUN apt-get update -qq \
     && apt-get install software-properties-common -qq \
     && apt-get install --no-install-recommends -qq \
     build-essential \
+    ca-certificates \
+    curl \
     git \
     graphviz \
     latexmk \
@@ -38,7 +40,7 @@ RUN apt-get update -qq \
 
 ENV QT_QPA_PLATFORM=offscreen
 
-COPY --from=uv_build_stage /uv /bin/uv
+COPY --from=uv_build_stage /uv /uvx /bin/
 
 # Installed system-wide on the system Python, so any user can run them.
 # ARG keeps these settings out of the final image.
@@ -52,6 +54,26 @@ ARG UV_NO_CACHE=1
 ARG UV_EXCLUDE_NEWER=2026-09-25T00:00:00Z
 RUN uv tool install "hatch==1.18.1" \
     && uv tool install "twine==7.0.0"
+
+FROM base AS dev
+
+# Built with the host's ids, so files in bind mounts keep their owner.
+ARG UID=1000
+ARG GID=1000
+RUN getent group "$GID" || groupadd -g "$GID" dev \
+    && useradd -l -m -o -u "$UID" -g "$GID" -s /bin/bash dev
+
+USER dev
+
+ENV PATH="/home/dev/.local/bin:$PATH"
+
+# Docker would otherwise create this mount point root-owned.
+RUN mkdir /home/dev/.claude
+
+WORKDIR /home/dev
+
+# This stage comes last, so a build without --target gets it.
+FROM base AS ci
 
 # CI runs the container as an arbitrary uid, which has no home here.
 ENV HOME=/home/ci
