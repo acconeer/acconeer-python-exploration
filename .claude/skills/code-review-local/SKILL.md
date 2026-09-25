@@ -2,11 +2,10 @@
 name: code-review-local
 description: Reviews a local git commit by inspecting its diff and providing structured, actionable feedback.
 disable-model-invocation: true
+allowed-tools: Bash(${CLAUDE_SKILL_DIR}/scripts/gather_commit_info.sh *)
 ---
 
 # Code Review Skill
-
-This skill inspects a local git commit diff and performs a code review.
 
 Act as a senior Python developer and signal processing expert. Your role is to perform thorough
 code reviews of data processing algorithms, evaluating correctness, efficiency, readability, and
@@ -14,30 +13,19 @@ engineering best practices.
 
 ## Step 1: Identify the commit
 
-If the user hasn't specified a commit, default to `HEAD` (the most recent commit).
-
-Accepted inputs:
-- No input → review `HEAD`
-- `HEAD`, `HEAD~1`, etc.
-- A short or full commit SHA (e.g. `a1b2c3d`)
-- A branch name
+Review the commit the user names (a ref, SHA or branch), or `HEAD` if none. A range (`A..B`) is
+reviewed commit by commit in one report: one summary sentence per commit, one table with each
+Status the worst across commits, and each finding and positive tagged with its commit, as in
+`F1 [abc1234 file:line]`. "The commit" in any rule means the finding's commit. Run the gates
+once, in a worktree at the range's last commit, and note on the Gates line that the copyright
+check then covers only that commit's files.
 
 ## Step 2: Gather commit information
 
-Run the following commands in the repo root:
+!`${CLAUDE_SKILL_DIR}/scripts/gather_commit_info.sh $ARGUMENTS`
 
-```bash
-# Commit metadata
-git show --stat <commit>
-
-# Full diff with context
-git show <commit>
-
-# Commit message
-git log -1 --pretty=format:"%H%n%an <%ae>%n%ad%n%n%s%n%n%b" <commit>
-```
-
-If the working directory is not a git repo, tell the user and stop.
+If that reports no git repository, tell the user and stop. If it reports no such commit or range,
+resolve what the user named to a ref and rerun the script with it.
 
 ## Step 3: Review criteria
 
@@ -48,6 +36,9 @@ Systematically review the diff across these dimensions:
 - Are there obvious bugs or off-by-one errors?
 - Are edge cases handled (null/empty/boundary values)?
 - Could this change introduce regressions?
+- If the commit presents itself as a move or refactor, diff the old content against the new and
+  report every change in behavior or content, however small.
+- What do outside consumers lose: public API, persisted formats, published URLs or anchors?
 - Are error paths and exceptions handled properly?
 
 ### 3b. Security
@@ -93,54 +84,90 @@ Systematically review the diff across these dimensions:
 - Is the commit focused, or does it mix unrelated concerns?
 - Does the commit message describe what's actually changed?
 
-## Step 4: Output format
+## Step 4: Verify
 
-Structure your output as follows:
+Check every finding before reporting it: read the surrounding code, grep for the other callers,
+or reproduce it with a command. Drop what doesn't hold up. Mark a finding that can't be checked
+as unverified in the finding itself, and say what would settle it. A claim the commit relies
+on that no gate here can check (a server's behaviour, hardware, another repo) is such a
+finding, not a gate note.
 
-### 📋 Commit Summary
+Run the narrowest gate that fits the change: `hatch check code` and `hatch check fmt`, the
+touched test module on one interpreter (`hatch test -py=<version> <path>`), or
+`hatch run docs:build` for docs. Keep only the failing tail of the output. If a gate can't run
+here, say which one and why. CLAUDE.md's Commands section says how to invoke each gate.
 
-One-paragraph plain-English description of what this commit does and why (inferred from the diff + message).
+Run gates in a worktree of the reviewed commit, so checkers that read HEAD see that commit:
+`git worktree add --detach <scratch>/wt <commit>`, plus a second one at `<commit>^` when comparing
+built output. Remove them with `git worktree remove` when done.
 
-### 🔍 Review
+## Step 5: Output format
 
-Group findings by severity. Within each group, list files/lines affected.
+Use exactly this skeleton, keeping every heading except Positives even when it is empty:
 
-**🔴 Critical** — Must fix before merging (bugs, security issues, data loss risk)
-**🟡 Important** — Should fix (logic issues, missing error handling, performance problems)
-**🟢 Suggestions** — Nice to have (readability, naming, test coverage, style)
+````markdown
+### 📋 Commit summary
 
-For each finding, follow this format:
+<One or two sentences: what the commit does and why.>
 
-> **[File:line]** Short title
-> Explanation of the problem and why it matters.
-> ```diff
-> - old code (if helpful)
-> + suggested fix (if helpful)
-> ```
+| Dimension | Status | Findings |
+|---|---|---|
+| Correctness | ❌ | F1 |
+| Security | ✅ | none |
+| Performance | ✅ | none |
+| Readability | ✅ | F2 |
+| Domain correctness | ✅ | none |
+| Tests | ✅ | none |
+| Commit hygiene | ✅ | none |
 
-If a category has no findings, write "None" rather than omitting it.
+### 🔴 Critical
+
+**F1 [file:line] Short title.** What is wrong and why it matters.
+
+### 🟡 Important
+
+None.
+
+### 🟢 Suggestions
+
+**F2 [file:line] Short title.** ... (unverified: <what would settle it>)
 
 ### ✅ Positives
 
-Briefly call out 1–3 things done well. Concrete and genuine — skip this section if there's nothing worth highlighting.
+<One to three concrete things done well, or omit this heading if there are none.>
 
-### 📊 Summary
+**🧪 Gates:** docs:build ✅, check fmt not run (<why>)
 
-| Category | Status |
-|---|---|
-| Correctness | ✅ / ⚠️ / ❌ |
-| Security | ✅ / ⚠️ / ❌ |
-| Performance | ✅ / ⚠️ / ❌ |
-| Readability | ✅ / ⚠️ / ❌ |
-| Tests | ✅ / ⚠️ / ❌ |
-| Commit hygiene | ✅ / ⚠️ / ❌ |
+**⚖️ Verdict:** Approve / Approve with suggestions / Request changes
 
-**Overall verdict:** `Approve` / `Approve with suggestions` / `Request changes`
+**🔧 Worth fixing:** F1 (fold)
+````
+
+- Critical: must fix before merging (bugs, security issues, data loss risk). Important: should
+  fix (logic issues, missing error handling, performance problems). Suggestions: nice to have.
+- Before filing a finding under Suggestions, ask whether it fails without an error (a fallthrough
+  return, a swallowed exception, a placeholder left in output), whether the work the commit
+  says comes next will hit it, or whether it breaks loading existing recordings or saved
+  configs. If any holds, it goes under Important.
+- Status is ❌ for any Critical finding, ⚠️ for any Important one, ✅ otherwise (Suggestions
+  only, or none).
+- Number findings F1, F2 and on in the order they appear, worst first within each heading, so
+  a fix can be asked for by number. Every finding appears in the table under its dimension.
+- Add a diff only when the fix isn't obvious from the prose.
+- Verdict is Request changes if any finding is Critical or Important, Approve with suggestions
+  if there are only Suggestions, and Approve if there are none.
+- Gates lists each gate Step 4 ran with its result, and each one it couldn't run with why.
+- Worth fixing lists the Critical and Important findings and nothing else, or "none". Mark it
+  "(fold)" when the commit is local, or "(follow-up: already upstream)" when Step 2 found it
+  upstream. For a range, name the commit: "(fold into abc1234)".
+- Stop after the "Worth fixing" line. A fix waits to be asked for.
+- Write tight: a finding is two or three sentences, the defect and its consequence. Leave out
+  how you found it, restatements of the diff, and hedging. Tightness is for wording, not
+  coverage: report every verified finding, minor ones under Suggestions.
 
 ## Notes
 
 - Focus on the diff, not the entire file. Avoid commenting on code that wasn't changed unless it directly interacts with the changed code.
 - Be direct but constructive. Explain *why* something is a problem, not just *that* it is.
-- If the diff is very large (>500 lines), call that out and focus the review on the highest-risk areas first.
 - If the commit touches multiple languages or frameworks, apply language-appropriate idioms.
 - If you can't determine intent from context, say so rather than guessing.
