@@ -374,7 +374,9 @@ module = [
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
-addopts = "--ignore=src/acconeer/exptool/a111 --ignore=tests/gui"
+# Lets -p import tests.cli_options.
+pythonpath = ["."]
+addopts = "-p tests.cli_options --ignore=src/acconeer/exptool/a111 --ignore=tests/gui"
 doctest_optionflags = [
     "ELLIPSIS",
     "NORMALIZE_WHITESPACE",

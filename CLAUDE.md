@@ -28,7 +28,7 @@ Test-running traps:
 
 - `tests/integration/` and `tests/model/` only run when given CLI paths to RSS
   artifacts (`--a121-exploration-server-paths` and friends, see
-  `pytest_addoption` in `tests/conftest.py`). Without them every test **skips**,
+  `tests/cli_options.py`). Without them every test **skips**,
   so a green run exercised nothing — only CI, which fetches the binaries, runs
   them for real.
 - `tests/processing/`'s only test module is `test_processing.py`, which
