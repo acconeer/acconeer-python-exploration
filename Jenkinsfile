@@ -114,6 +114,11 @@ try {
         messageOnFailure = false
     }
 
+    // Change builds have no changeset, so Jenkins would show "Branch indexing".
+    if (env.GERRIT_CHANGE_SUBJECT) {
+        currentBuild.description = "${env.GERRIT_CHANGE_SUBJECT} (${env.GERRIT_PATCHSET_UPLOADER_NAME})"
+    }
+
     stage('Report start to Gerrit') {
         gerritReview labels: [Verified: 0], message: "Test started:: ${env.BUILD_URL}, Scope: ${buildScope}"
     }
