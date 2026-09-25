@@ -70,6 +70,9 @@ app = [
     "qtpy>=2.3.0",
 ]
 
+[dependency-groups]
+lint = ["ruff==0.4.8"]
+
 [tool.hatch.build.targets.wheel]
 packages = [
     "src/acconeer",
@@ -195,21 +198,12 @@ platform.windows.scripts = [
     'globlint=echo Skipping "globlint" on Windows: CI will take care of it!',
 ]
 
-[tool.hatch.envs.hatch-static-analysis]
-# This is the environment for "hatch fmt"
+[tool.hatch.envs.hatch-check-code]
 config-path = "none"
-dependencies = [
-    "ruff==0.4.8",
-    "packaging",
-]
+dependencies = ["packaging"]
+dependency-groups = ["lint"]
 
-[tool.hatch.envs.hatch-static-analysis.scripts]
-format-check = [
-    "python -m ruff format --diff .",
-]
-format-fix = [
-    "python -m ruff format .",
-]
+[tool.hatch.envs.hatch-check-code.scripts]
 lint-check = [
     "python internal_tools/check_permissions.py",
     "python internal_tools/check_line_length.py",
@@ -225,6 +219,30 @@ lint-fix = [
     "python -m ruff check --fix .",
     "lint-check"
 ]
+
+[tool.hatch.envs.hatch-check-fmt]
+config-path = "none"
+# Drops hatch's default ruff.
+dependencies = []
+dependency-groups = ["lint"]
+
+[tool.hatch.envs.hatch-check-fmt.scripts]
+format-check = [
+    "python -m ruff format --diff .",
+]
+format-fix = [
+    "python -m ruff format .",
+]
+
+[tool.hatch.envs.hatch-static-analysis]
+dependencies = []
+
+[tool.hatch.envs.hatch-static-analysis.scripts]
+# "hatch fmt" would lint with hatch's defaults, skipping this repo's checkers.
+format-check = "echo 'Use hatch check code/fmt, and rerun internal_tools/install-git-hooks.sh.' && exit 1"
+format-fix = "format-check"
+lint-check = "format-check"
+lint-fix = "format-check"
 
 [tool.hatch.envs.test-multiple-qt-bindings]
 # Single purpose environment.

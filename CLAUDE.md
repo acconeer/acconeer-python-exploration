@@ -16,8 +16,8 @@ not `UV_EXCLUDE_NEWER`, which hatch's envs inherit.
 
 | Command | Purpose |
 |---|---|
-| `hatch fmt --check` | The lint gate — what CI and the pre-push hook run. Much more than ruff; see below. |
-| `hatch fmt` | Auto-fix: copyright years, example-script doc pages, `ruff check --fix`, `ruff format`. |
+| `hatch check code`, `hatch check fmt` | The lint gate — what CI and the pre-push hook run. Much more than ruff; see below. |
+| `hatch check code --fix`, `hatch check fmt --fix` | Auto-fix: copyright years, example-script doc pages, `ruff check --fix`, `ruff format`. |
 | `hatch run mypy:check` | Type check — pinned mypy on the oldest supported Python; see the `mypy` env in `pyproject.toml`. |
 | `hatch test` | Tests across the Python matrix in `pyproject.toml`. Extra args pass to pytest; `-py=<version>` picks one interpreter. |
 | `hatch test --update-outputs tests/processing/test_processing.py -k distance` | Regenerate one algorithm's regression baselines. |
@@ -41,17 +41,17 @@ Test-running traps:
   them.
 - `tests/flash/test_devsite.py` needs `--test-devsite` and credentials.
 - `internal_tools/install-git-hooks.sh` installs the pre-push
-  `hatch fmt --check`.
+  `hatch check code && hatch check fmt`.
 
 ## The lint gate is more than ruff
 
-`hatch fmt --check` also runs bespoke checkers from `internal_tools/`, covering
+`hatch check code` also runs bespoke checkers from `internal_tools/`, covering
 repo obligations nothing in a diff would hint at:
 
 - **Copyright headers** — `# Copyright (c) Acconeer AB, <years>` /
   `# All rights reserved` in every `.py` file. Two traps: the checker looks only
-  at files touched by **HEAD's commit**, not the working tree, so `hatch fmt`
-  won't add a header to an uncommitted new file — use
+  at files touched by **HEAD's commit**, not the working tree, so
+  `hatch check code --fix` won't add a header to an uncommitted new file — use
   `python internal_tools/check_copyright.py --update-year --all-files`. And the
   year it wants is HEAD's *commit* year, so old commits stay green.
 - **Changelog roles** — user-visible changes go in `UNRELEASED_CHANGELOG.md`;

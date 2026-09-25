@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import nox
@@ -17,14 +17,14 @@ or
 
 @nox.session
 def lint(session):
-    print("Use 'hatch fmt --check' instead")
+    print("Use 'hatch check code' and 'hatch check fmt' instead")
     print(INSTALL_HATCH)
     session.error()
 
 
 @nox.session
 def reformat(session):
-    print("Use 'hatch fmt' instead")
+    print("Use 'hatch check code --fix' and 'hatch check fmt --fix' instead")
     print(INSTALL_HATCH)
     session.error()
 

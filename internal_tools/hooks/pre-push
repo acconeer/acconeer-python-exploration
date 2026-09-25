@@ -1,2 +1,2 @@
 #!/bin/sh
-hatch fmt --check
+hatch check code && hatch check fmt

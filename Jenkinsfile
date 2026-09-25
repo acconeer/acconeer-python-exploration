@@ -138,7 +138,8 @@ try {
 
                 buildDocker(path: 'docker').inside(dockerArgs) {
                     sh 'python3 -V'
-                    hatchWrap 'fmt --check'
+                    hatchWrap 'check code'
+                    hatchWrap 'check fmt'
                 }
             }
         }
