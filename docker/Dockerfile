@@ -7,8 +7,6 @@ RUN userdel -r ubuntu
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-COPY --from=uv_build_stage /uv /bin/uv
-
 RUN apt-get update -qq \
     && apt-get install software-properties-common -qq \
     && apt-get install --no-install-recommends -qq \
@@ -46,11 +44,13 @@ RUN groupadd -g 1000 jenkins \
 USER jenkins
 
 ENV PATH="$PATH:/home/jenkins/.local/bin"
-# The "--exclude-newer" is due to an issue that come from
-# virtualenv==21.0.0 + the hatch version pin.
-# This should be revisited in the future.
-RUN uv tool install --exclude-newer 2026-02-24T00:00:00Z "hatch>=1.13.0,<1.16.0"
-RUN uv tool install "twine==7.0.0"
+COPY --from=uv_build_stage /uv /bin/uv
+
+# A tool release can change how CI builds, tests or publishes, so the pins
+# are exact. The date freezes what the tools' own ranges leave open.
+ARG UV_EXCLUDE_NEWER=2026-09-25T00:00:00Z
+RUN uv tool install "hatch==1.18.1" \
+    && uv tool install "twine==7.0.0"
 
 RUN mkdir -p /home/jenkins/.cache/pip
 RUN mkdir -p /home/jenkins/.cache/uv

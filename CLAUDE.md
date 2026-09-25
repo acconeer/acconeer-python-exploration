@@ -10,9 +10,9 @@ stages, the test layout, the per-algorithm file split.
 
 Everything goes through [Hatch](https://hatch.pypa.io/) envs in
 `pyproject.toml`; `noxfile.py` only prints the Hatch equivalent. Without
-`hatch` on PATH, run it through `uvx` with the same `--exclude-newer` date and
-`--from` hatch constraint as `docker/Dockerfile` — the date pin is required, or
-a newer `virtualenv` breaks every env build.
+`hatch` on PATH, run `uvx --exclude-newer <date> --from hatch==<pin> hatch`
+with the date and pin from `docker/Dockerfile`, passing the date as the flag,
+not `UV_EXCLUDE_NEWER`, which hatch's envs inherit.
 
 | Command | Purpose |
 |---|---|
