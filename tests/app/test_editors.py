@@ -62,7 +62,7 @@ class StubEnum(enum.Enum):
 
 @pytest.fixture(autouse=True, scope="module")
 def qapplication() -> QApplication:
-    return QApplication()
+    return QApplication.instance() or QApplication()
 
 
 @pytest.fixture(
