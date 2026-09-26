@@ -123,7 +123,7 @@ check = "python -m mypy {args}"
 [tool.hatch.envs.hatch-test]
 # This is the environment for "hatch test"
 features = ["app"]
-extra-args = ["--doctest-modules"]
+extra-args = ["--doctest-modules", "--dist=worksteal"]
 extra-dependencies = [
     "pandas>=2.2.2",
     "dirty-equals==0.5.0",
