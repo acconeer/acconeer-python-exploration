@@ -36,6 +36,7 @@ class ReplaySessionsExhaustedError(Exception):
 @attrs.define
 class _StartedSession:
     results: Iterator[list[dict[int, Result]]]
+    extended: bool
     origin_time: float | None = None
 
 
@@ -119,7 +120,9 @@ class _ReplayingClient(Client, register=False):
 
     def start_session(self) -> None:
         session_record = self._record.session(self._actual_session_idx)
-        self._started = _StartedSession(session_record.extended_results)
+        self._started = _StartedSession(
+            session_record.extended_results, session_record.session_config.extended
+        )
 
     def get_next(self) -> Union[Result, list[dict[int, Result]]]:  # type: ignore[override]
         session = self._started_session()
@@ -142,7 +145,7 @@ class _ReplayingClient(Client, register=False):
             if delta < 0:
                 time.sleep(-delta)
 
-        if self.session_config.extended:
+        if session.extended:
             return result
         else:
             return core_utils.unextend(result)

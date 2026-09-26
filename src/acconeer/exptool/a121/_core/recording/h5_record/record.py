@@ -8,7 +8,6 @@ import warnings
 from typing import Callable, Iterator, Tuple, TypeVar
 
 import h5py
-import numpy as np
 from packaging.version import Version
 
 import acconeer.exptool
@@ -32,6 +31,9 @@ from acconeer.exptool.utils import get_module_version
 
 T = TypeVar("T")
 
+# Frames per h5 read: fewer reads, at a bounded memory cost.
+_RESULT_READ_CHUNK_FRAMES = 256
+
 
 class H5RecordException(RecordException):
     pass
@@ -48,8 +50,22 @@ class H5SessionRecord(SessionRecord):
 
     @property
     def extended_results(self) -> Iterator[list[dict[int, Result]]]:
-        for frame_no in range(self.num_frames):
-            yield self._get_result_for_all_entries(frame_no)
+        # The entries and their result contexts are the same for every frame.
+        entries = self._get_entries()
+        contexts = utils.map_over_extended_structure(
+            self._get_result_context_for_entry_group, entries
+        )
+        entries_and_contexts = utils.zip_extended_structures(entries, contexts)
+        num_frames = self.num_frames
+
+        for start in range(0, num_frames, _RESULT_READ_CHUNK_FRAMES):
+            frames = slice(start, min(start + _RESULT_READ_CHUNK_FRAMES, num_frames))
+            chunks = utils.map_over_extended_structure(
+                lambda pair: self._entry_group_to_stacked_results(*pair, frames=frames),
+                entries_and_contexts,
+            )
+            for i in range(frames.stop - frames.start):
+                yield utils.map_over_extended_structure(lambda stacked: stacked[i], chunks)
 
     @property
     def extended_stacked_results(self) -> list[dict[int, StackedResults]]:
@@ -98,29 +114,23 @@ class H5SessionRecord(SessionRecord):
     def _get_metadata_for_entry_group(g: h5py.Group) -> Metadata:
         return Metadata.from_json(g["metadata"][()])
 
-    def _get_result_for_all_entries(self, frame_no: int) -> list[dict[int, Result]]:
-        def entry_group_to_result(entry_group: h5py.Group) -> Result:
-            return Result(
-                data_saturated=entry_group["result/data_saturated"][frame_no],
-                frame_delayed=entry_group["result/frame_delayed"][frame_no],
-                calibration_needed=entry_group["result/calibration_needed"][frame_no],
-                temperature=entry_group["result/temperature"][frame_no],
-                tick=entry_group["result/tick"][frame_no],
-                frame=np.array(entry_group["result/frame"][frame_no]),
-                context=self._get_result_context_for_entry_group(entry_group),
-            )
+    def _entry_group_to_stacked_results(
+        self,
+        entry_group: h5py.Group,
+        context: ResultContext | None = None,
+        frames: slice = slice(None),
+    ) -> StackedResults:
+        if context is None:
+            context = self._get_result_context_for_entry_group(entry_group)
 
-        return self._map_over_entries(entry_group_to_result)
-
-    def _entry_group_to_stacked_results(self, entry_group: h5py.Group) -> StackedResults:
         return StackedResults(
-            data_saturated=entry_group["result/data_saturated"][()],
-            calibration_needed=entry_group["result/calibration_needed"][()],
-            temperature=entry_group["result/temperature"][()],
-            tick=entry_group["result/tick"][()],
-            frame_delayed=entry_group["result/frame_delayed"][()],
-            frame=entry_group["result/frame"][()],
-            context=self._get_result_context_for_entry_group(entry_group),
+            data_saturated=entry_group["result/data_saturated"][frames],
+            calibration_needed=entry_group["result/calibration_needed"][frames],
+            temperature=entry_group["result/temperature"][frames],
+            tick=entry_group["result/tick"][frames],
+            frame_delayed=entry_group["result/frame_delayed"][frames],
+            frame=entry_group["result/frame"][frames],
+            context=context,
         )
 
     def _get_result_context_for_entry_group(self, entry_group: h5py.Group) -> ResultContext:

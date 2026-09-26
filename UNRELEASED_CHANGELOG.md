@@ -34,6 +34,7 @@
 - `ExampleInterruptHandler` prints the Ctrl-C prompt itself, once it can
   catch the interrupt, so scripts no longer need to print their own. Pass
   `prompt=None` to print nothing.
+- Replaying A121 H5 recordings, or iterating over their results, is much faster.
 
 ### Fixed
 

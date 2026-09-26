@@ -15,6 +15,7 @@ round-trip through:
 
 from __future__ import annotations
 
+from importlib.resources import as_file, files
 from typing import Any, Iterator
 
 import numpy as np
@@ -22,6 +23,9 @@ import numpy.typing as npt
 import pytest
 
 from acconeer.exptool import a121
+from acconeer.exptool.a121._core.recording.h5_record.record import _RESULT_READ_CHUNK_FRAMES
+
+from tests.processing.a121.data_files import recorded_data
 
 
 def test_lib_version(ref_record: a121.Record, ref_lib_version: str) -> None:
@@ -119,3 +123,20 @@ def test_sensor_id(ref_record: a121.Record, ref_structure: Iterator[Iterator[int
         else:
             with pytest.raises(ValueError):
                 _ = ref_record.session(i).sensor_id
+
+
+def test_extended_results_across_read_chunks() -> None:
+    # The fixtures' records are too short to span more than one chunk of the h5 reads.
+    with (
+        as_file(files(recorded_data) / "breathing-sitting.h5") as path,
+        a121.open_record(path) as record,
+    ):
+        session = record.session(0)
+        stacked = session.extended_stacked_results
+        results = list(session.extended_results)
+        num_frames = session.num_frames
+
+    assert len(results) == num_frames > 2 * _RESULT_READ_CHUNK_FRAMES
+    for frame_no, extended_result in enumerate(results):
+        for group_idx, sensor_id, result in a121.iterate_extended_structure(extended_result):
+            assert result == stacked[group_idx][sensor_id][frame_no]
