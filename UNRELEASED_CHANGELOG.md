@@ -41,6 +41,8 @@
   NumPy 1, which fails to import with NumPy 2.
 - A script using `PGProcess` or `PlotProcess` no longer hangs on exit when
   its plot has fallen behind.
+- A Ctrl+C right after start-up no longer kills the Exploration Tool's
+  backend, or the plotting process of `PGProcess` and `PlotProcess`.
 
 ### Removed
 

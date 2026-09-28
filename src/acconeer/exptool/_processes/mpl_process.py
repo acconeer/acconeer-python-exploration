@@ -4,12 +4,16 @@
 import contextlib
 import multiprocessing as mp
 import queue
-import signal
 import sys
 from time import sleep, time
 
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+
+from acconeer.exptool._processes.sigint_ignoring_process import (
+    SigintIgnoringProcess,
+    SigintIgnoringProcessStartError,
+)
 
 
 class PlotProcess:
@@ -26,10 +30,12 @@ class PlotProcess:
             interval / 1000.0,
         )
 
-        self._process = mp.Process(target=plot_process_program, args=args, daemon=True)
+        self._process = SigintIgnoringProcess(target=plot_process_program, args=args, daemon=True)
 
     def start(self):
-        self._process.start()
+        # put_data() reports a child that died, which is where the examples catch it.
+        with contextlib.suppress(SigintIgnoringProcessStartError):
+            self._process.start()
 
     def put_data(self, data):
         if self._process.exitcode is not None:
@@ -56,8 +62,6 @@ class PlotProcess:
 
 
 def plot_process_program(q, exit_event, fig_updater, interval):
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
-
     last_t = None
     artists = []
     fig = plt.figure()

@@ -6,7 +6,6 @@ from __future__ import annotations
 import logging
 import multiprocessing as mp
 import queue
-import signal
 import time
 import traceback
 import uuid
@@ -16,6 +15,8 @@ from typing import Generator, Optional, Tuple, Union
 import attrs
 import psutil
 from typing_extensions import Literal
+
+from acconeer.exptool._processes.sigint_ignoring_process import SigintIgnoringProcess
 
 from ._backend_logger import BackendLogger
 from ._message import GeneralMessage, Message
@@ -47,7 +48,8 @@ class MpBackend:
         self._recv_queue: mp.Queue[FromBackendQueueItem] = mp.Queue()
         self._send_queue: mp.Queue[ToBackendQueueItem] = mp.Queue()
         self._stop_event = mp.Event()
-        self._process = mp.Process(
+        # Only the parent stops the backend (see MpBackend.stop), not a terminal Ctrl+C.
+        self._process = SigintIgnoringProcess(
             target=process_program,
             args=(
                 self._send_queue,
@@ -148,12 +150,6 @@ def process_program(
     send_queue: mp.Queue[FromBackendQueueItem],
     stop_event: mp_EventType,
 ) -> None:
-    # A terminal Ctrl+C sends SIGINT to this whole process group, not just
-    # the parent. Shutdown is driven by the parent through 'stop_event' and
-    # the "stop" message (see MpBackend.stop), so the default handler must
-    # not run here.
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
-
     # Continuously consumes from the generator,
     # making the 'yield' not have any effect
     for _ in process_generator(

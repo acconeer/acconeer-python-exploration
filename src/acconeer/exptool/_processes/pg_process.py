@@ -1,11 +1,16 @@
 # Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
+import contextlib
 import multiprocessing as mp
 import queue
-import signal
 import warnings
 from time import sleep, time
+
+from acconeer.exptool._processes.sigint_ignoring_process import (
+    SigintIgnoringProcess,
+    SigintIgnoringProcessStartError,
+)
 
 
 _MISSING = object()
@@ -33,10 +38,12 @@ class PGProcess:
             allow_subsampling,
         )
 
-        self._process = mp.Process(target=pg_process_program, args=args, daemon=True)
+        self._process = SigintIgnoringProcess(target=pg_process_program, args=args, daemon=True)
 
     def start(self):
-        self._process.start()
+        # put_data() reports a child that died, which is where the examples catch it.
+        with contextlib.suppress(SigintIgnoringProcessStartError):
+            self._process.start()
 
     def put_data(self, data):
         if self._exit_event.is_set() or self._process.exitcode is not None:
@@ -66,8 +73,6 @@ def pg_process_program(q, exit_event, updater, max_freq, setup_style, allow_subs
     from PySide6 import QtWidgets
 
     import pyqtgraph as pg
-
-    signal.signal(signal.SIGINT, signal.SIG_IGN)
 
     app = QtWidgets.QApplication([])
     pg.setConfigOption("background", "w")
