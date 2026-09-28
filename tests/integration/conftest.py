@@ -34,72 +34,70 @@ def fuzzing_a121_worker_tcp_port(worker_id: int) -> int:
 
 @pytest.fixture(scope="session")
 def fuzzing_a121_exploration_server(
-    fuzzing_a121_worker_tcp_port: int, a121_exploration_server_path: Path
+    fuzzing_a121_worker_tcp_port: int,
+    a121_exploration_server_path: Path,
+    tmp_path_factory: pytest.TempPathFactory,
 ) -> t.Iterator[None]:
     # NOTE!
     # This server might be running at the same time as the servers managed by the
     # "a121_exploration_server" fixture
-
-    args = [a121_exploration_server_path.as_posix(), "--port", str(fuzzing_a121_worker_tcp_port)]
-    env = {"ACC_MOCK_TEST_PATTERN": "1"}
-
-    # Don't capture stdout as it introduces overhead/risks blocking
-    with sp.Popen(args, env=env) as server:
-        # Assume startup takes 0.5 s.
-        # Since this fixture is session-scoped, this sleep will only happen once.
-        time.sleep(0.5)
-
-        if server.poll() is not None:
-            pytest.fail("Server exited prematurely")
-
-        yield
-        server.terminate()
+    yield from exploration_server_process_fixture(
+        fuzzing_a121_worker_tcp_port,
+        a121_exploration_server_path,
+        tmp_path_factory.mktemp("fuzzing_server"),
+    )
 
 
 def exploration_server_process_fixture(
-    tcp_port: int, server_binary_path: Path
+    tcp_port: int,
+    server_binary_path: Path,
+    log_dir: Path,
+    startup_timeout_s: float = 60,
+    stop_timeout_s: float = 5,
 ) -> t.Iterator[None]:
     args = [server_binary_path.as_posix(), "--port", str(tcp_port)]
     env = {"ACC_MOCK_TEST_PATTERN": "1"}
 
-    server_logs = []
-    with sp.Popen(args, stdout=sp.PIPE, stderr=sp.STDOUT, text=True, env=env) as server_process:
-        server_stdout = server_process.stdout
-        assert server_stdout is not None
-
-        while True:
-            if server_process.poll() is not None:
+    # A file, unlike a pipe, never fills up and blocks the server.
+    log_path = log_dir / "server.log"
+    with (
+        log_path.open("w") as log_file,
+        sp.Popen(args, stdout=log_file, stderr=sp.STDOUT, env=env) as server_process,
+    ):
+        try:
+            deadline = time.monotonic() + startup_timeout_s
+            while "waiting" not in log_path.read_text().lower():
+                if time.monotonic() > deadline:
+                    pytest.fail("Server did not start listening in time")
+                try:
+                    server_process.wait(timeout=0.01)
+                except sp.TimeoutExpired:
+                    continue
                 pytest.fail("Server exited prematurely")
 
-            server_log = server_stdout.readline()
-            server_logs.append(server_log)
-
-            if "waiting" in server_log.lower():
-                break
-
-        yield  # give control to test function
-
-        server_process.terminate()  # stop server and close write-end of pipe
-
-        while True:
-            server_log = server_stdout.readline()
-            server_logs.append(server_log)
-
-            if server_log == "":  # "" is read when no more data is left to read
-                break
-
-        print(*server_logs, sep="")
+            yield  # give control to test function
+        finally:
+            server_process.terminate()
+            try:
+                server_process.wait(timeout=stop_timeout_s)
+            except sp.TimeoutExpired:
+                server_process.kill()
+            print(log_path.read_text(), end="")
 
 
 @pytest.fixture(scope="function")
 def a121_exploration_server(
-    worker_tcp_port: int, a121_exploration_server_path: Path
+    worker_tcp_port: int, a121_exploration_server_path: Path, tmp_path: Path
 ) -> t.Iterator[None]:
-    yield from exploration_server_process_fixture(worker_tcp_port, a121_exploration_server_path)
+    yield from exploration_server_process_fixture(
+        worker_tcp_port, a121_exploration_server_path, tmp_path
+    )
 
 
 @pytest.fixture(scope="function")
 def a111_exploration_server(
-    worker_tcp_port: int, a111_exploration_server_path: Path
+    worker_tcp_port: int, a111_exploration_server_path: Path, tmp_path: Path
 ) -> t.Iterator[None]:
-    yield from exploration_server_process_fixture(worker_tcp_port, a111_exploration_server_path)
+    yield from exploration_server_process_fixture(
+        worker_tcp_port, a111_exploration_server_path, tmp_path
+    )
