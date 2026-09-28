@@ -245,7 +245,7 @@ class SessionConfig:
         return sensor_config
 
     def __eq__(self, other: Any) -> bool:
-        return type(self) == type(other) and self.to_dict() == other.to_dict()
+        return type(self) is type(other) and self.to_dict() == other.to_dict()
 
     def __repr__(self) -> str:
         return (

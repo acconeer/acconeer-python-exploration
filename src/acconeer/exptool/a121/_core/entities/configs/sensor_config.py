@@ -249,7 +249,7 @@ class SensorConfig:
         return len(self.subsweeps)
 
     def __eq__(self, other: Any) -> bool:
-        return type(self) == type(other) and self.to_dict() == other.to_dict()
+        return type(self) is type(other) and self.to_dict() == other.to_dict()
 
     def to_dict(self) -> dict[str, Any]:
         return {

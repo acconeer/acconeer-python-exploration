@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -37,10 +37,10 @@ def assert_client_types(obj, attribute_path, types: Union[List[Type], Type]):
     obj = resolve_attribute_path(obj, attribute_path)
 
     if isinstance(types, list):
-        assert any([type(obj) == t for t in list(types)])
+        assert any([type(obj) is t for t in list(types)])
     else:
         type_ = types
-        assert type(obj) == type_
+        assert type(obj) is type_
 
 
 def assert_client_values(obj, attribute_path, value):
