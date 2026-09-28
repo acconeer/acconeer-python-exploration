@@ -67,14 +67,14 @@ class ObstacleDetectionCalibration(algo.Calibration):
 
         with open(path, "w") as stream:
             yaml.dump(
-                dict(
-                    static_pwl_dist=self.static_pwl_dist,
-                    static_pwl_amp=self.static_pwl_amp,
-                    moving_pwl_dist=self.moving_pwl_dist,
-                    moving_pwl_amp=self.moving_pwl_amp,
-                    static_adjacent_factor=self.static_adjacent_factor,
-                    moving_max=self.moving_max,
-                ),
+                {
+                    "static_pwl_dist": self.static_pwl_dist,
+                    "static_pwl_amp": self.static_pwl_amp,
+                    "moving_pwl_dist": self.moving_pwl_dist,
+                    "moving_pwl_amp": self.moving_pwl_amp,
+                    "static_adjacent_factor": self.static_adjacent_factor,
+                    "moving_max": self.moving_max,
+                },
                 stream=stream,
                 default_flow_style=False,
             )

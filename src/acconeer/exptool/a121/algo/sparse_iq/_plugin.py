@@ -368,10 +368,10 @@ class PlotPlugin(PlotPluginBase):
                 phase_plot.addLegend(brush=SEMI_TRANSPARENT_BRUSH)
 
             subsweep_styles = [
-                dict(symbol="o", symbolSize=5),  # circle
-                dict(symbol="t1", symbolSize=5),  # triangle
-                dict(symbol="s", symbolSize=4),  # square
-                dict(symbol="d", symbolSize=6),  # diamond
+                {"symbol": "o", "symbolSize": 5},  # circle
+                {"symbol": "t1", "symbolSize": 5},  # triangle
+                {"symbol": "s", "symbolSize": 4},  # square
+                {"symbol": "d", "symbolSize": 6},  # diamond
             ]
 
             subsweep_phase_curves = [

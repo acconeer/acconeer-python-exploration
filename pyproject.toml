@@ -309,6 +309,7 @@ select = ["E4", "E7", "E9", "F"]
 # SIM = flake8-simplify
 extend-select = [
     "Q", "TID", "I", "FA", "NPY", "EM", "S110", "S112", "LOG", "SIM",
+    "C408",
     "PLR1722",
     "UP008", "UP017", "UP021", "UP034", "UP037",
     "UP018",

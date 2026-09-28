@@ -267,14 +267,14 @@ class PlotPlugin(PgPlotPlugin):
 
         pen = et.utils.pg_pen_cycler(0)
         brush = et.utils.pg_brush_cycler(0)
-        symbol_kw = dict(symbol="o", symbolSize=1, symbolBrush=brush, symbolPen="k")
-        feat_kw = dict(pen=pen, **symbol_kw)
+        symbol_kw = {"symbol": "o", "symbolSize": 1, "symbolBrush": brush, "symbolPen": "k"}
+        feat_kw = {"pen": pen, **symbol_kw}
         self.sweep_curves = [self.sweep_plot.plot(**feat_kw) for _ in range(self.num_curves)]
 
         pen = et.utils.pg_pen_cycler(1)
         brush = et.utils.pg_brush_cycler(1)
-        symbol_kw = dict(symbol="o", symbolSize=1, symbolBrush=brush, symbolPen="k")
-        feat_kw = dict(pen=pen, **symbol_kw)
+        symbol_kw = {"symbol": "o", "symbolSize": 1, "symbolBrush": brush, "symbolPen": "k"}
+        feat_kw = {"pen": pen, **symbol_kw}
         self.threshold_curves = [self.sweep_plot.plot(**feat_kw) for _ in range(self.num_curves)]
 
         sweep_plot_legend = pg.LegendItem(offset=(0.0, 0.5))
@@ -307,24 +307,23 @@ class PlotPlugin(PgPlotPlugin):
         self.dist_history_plot.setXRange(0, self._DISTANCE_HISTORY_LEN)
 
         brush = et.utils.pg_brush_cycler(0)
-        symbol_kw_main = dict(
-            symbol="o", symbolSize=5, symbolBrush=brush, symbolPen=None, pen=None
-        )
-        feat_kw = dict(**symbol_kw_main)
-        self.main_peak_history_curve = self.dist_history_plot.plot(**feat_kw)
+        symbol_kw_main = {
+            "symbol": "o",
+            "symbolSize": 5,
+            "symbolBrush": brush,
+            "symbolPen": None,
+            "pen": None,
+        }
+        self.main_peak_history_curve = self.dist_history_plot.plot(**symbol_kw_main)
 
         minor_colors = [et.utils.color_cycler(i) for i in range(1, self._MAX_NUM_MINOR_PEAKS)]
         self.minor_peaks_history_curves = [
             self.dist_history_plot.plot(
-                **dict(
-                    **dict(
-                        symbol="o",
-                        symbolSize=5,
-                        symbolBrush=pg.mkBrush(color),
-                        symbolPen=None,
-                        pen=None,
-                    ),
-                )
+                symbol="o",
+                symbolSize=5,
+                symbolBrush=pg.mkBrush(color),
+                symbolPen=None,
+                pen=None,
             )
             for color in minor_colors
         ]

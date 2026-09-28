@@ -1578,9 +1578,9 @@ class GUI(QMainWindow):
         protocol = self.protocol_dd.currentData()
 
         if link == "mock":
-            return dict(mock=True)
+            return {"mock": True}
 
-        kwargs = dict(link=link, protocol=protocol)
+        kwargs = {"link": link, "protocol": protocol}
 
         if link == et.a111.Link.SOCKET:
             kwargs["host"] = self.textboxes["host"].text()

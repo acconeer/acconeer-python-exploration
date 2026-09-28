@@ -28,8 +28,8 @@ from acconeer.exptool.a2.algo._shared_config import WallMountSessionAbstractionC
 from acconeer.exptool.a2.algo._utils import get_distances
 
 
-_LEVEL = dict(mount_height_m=1.8)
-_TILTED = dict(mount_height_m=2.0, x_rotation=-20.0)
+_LEVEL = {"mount_height_m": 1.8}
+_TILTED = {"mount_height_m": 2.0, "x_rotation": -20.0}
 
 # name -> (SensorInstallation and DetectionVolume kwargs, signal_quality_db,
 #          world z of the SNR evaluation plane, frame_rate)

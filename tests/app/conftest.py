@@ -94,48 +94,48 @@ class Tasks:
     CONNECT_CLIENT_TASK: dict[PluginGeneration, Task] = {
         PluginGeneration.A121: (
             "connect_client",
-            dict(
-                client_factory=functools.partial(a121.Client.open, mock=True),
-                get_connection_warning=ALWAYS_RETURNS_NONE,
-            ),
+            {
+                "client_factory": functools.partial(a121.Client.open, mock=True),
+                "get_connection_warning": ALWAYS_RETURNS_NONE,
+            },
         ),
         PluginGeneration.A2: (
             "connect_client",
-            dict(
-                client_factory=functools.partial(a2.Client.open, mock=True),
-                get_connection_warning=ALWAYS_RETURNS_NONE,
-            ),
+            {
+                "client_factory": functools.partial(a2.Client.open, mock=True),
+                "get_connection_warning": ALWAYS_RETURNS_NONE,
+            },
         ),
     }
     BAD_CONNECT_CLIENT_TASK = {
         PluginGeneration.A121: (
             "connect_client",
-            dict(
-                client_factory=functools.partial(a121.Client.open, ip_address="some_ip"),
-                get_connection_warning=ALWAYS_RETURNS_NONE,
-            ),
+            {
+                "client_factory": functools.partial(a121.Client.open, ip_address="some_ip"),
+                "get_connection_warning": ALWAYS_RETURNS_NONE,
+            },
         ),
         PluginGeneration.A2: (
             "connect_client",
-            dict(
-                client_factory=functools.partial(a2.Client.open, ip_address="some_ip"),
-                get_connection_warning=ALWAYS_RETURNS_NONE,
-            ),
+            {
+                "client_factory": functools.partial(a2.Client.open, ip_address="some_ip"),
+                "get_connection_warning": ALWAYS_RETURNS_NONE,
+            },
         ),
     }
     DISCONNECT_CLIENT_TASK: Task = ("disconnect_client", {})
     LOAD_PLUGIN_TASK: dict[PluginGeneration, Task] = {
         PluginGeneration.A121: (
             "load_plugin",
-            dict(plugin_factory=A121_SPARSE_IQ_PLUGIN.create_backend_plugin, key="key"),
+            {"plugin_factory": A121_SPARSE_IQ_PLUGIN.create_backend_plugin, "key": "key"},
         ),
         PluginGeneration.A2: (
             "load_plugin",
-            dict(plugin_factory=A2_SPARSE_IQ_PLUGIN.create_backend_plugin, key="key"),
+            {"plugin_factory": A2_SPARSE_IQ_PLUGIN.create_backend_plugin, "key": "key"},
         ),
     }
     UNLOAD_PLUGIN_TASK: Task = ("unload_plugin", {})
-    START_SESSION_TASK: Task = ("start_session", dict(with_recorder=True))
+    START_SESSION_TASK: Task = ("start_session", {"with_recorder": True})
     STOP_SESSION_TASK: Task = ("stop_session", {})
     CALIBRATE_DETECTOR_TASK: Task = ("calibrate_detector", {})
 
@@ -159,17 +159,17 @@ class Tasks:
     def load_from_file_task(path: Path) -> Task:
         return (
             "load_from_file",
-            dict(path=path),
+            {"path": path},
         )
 
     @staticmethod
     def load_plugin_task(spec: PluginSpec) -> Task:
         return (
             "load_plugin",
-            dict(
-                plugin_factory=spec.create_backend_plugin,
-                key=spec.key,
-            ),
+            {
+                "plugin_factory": spec.create_backend_plugin,
+                "key": spec.key,
+            },
         )
 
 

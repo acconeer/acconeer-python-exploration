@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from acconeer.exptool.a121._core import utils
 
 @pytest.fixture
 def client_kwargs(worker_tcp_port: int, a121_exploration_server: None) -> dict[str, t.Any]:
-    return dict(ip_address="localhost", tcp_port=worker_tcp_port)
+    return {"ip_address": "localhost", "tcp_port": worker_tcp_port}
 
 
 def test_can_connect(client_kwargs):

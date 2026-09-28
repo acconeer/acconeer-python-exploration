@@ -194,7 +194,7 @@ class PlotPlugin(PgPlotPlugin):
         self.plot_layout.clear()
 
         brush = et.utils.pg_brush_cycler(0)
-        symbol_dot_kw = dict(symbol="o", symbolSize=10, symbolBrush=brush, symbolPen="k")
+        symbol_dot_kw = {"symbol": "o", "symbolSize": 10, "symbolBrush": brush, "symbolPen": "k"}
 
         self.history_plot = self.plot_layout.addPlot()
         self.history_plot.setMenuEnabled(False)
@@ -202,9 +202,7 @@ class PlotPlugin(PgPlotPlugin):
         self.history_plot.setLabel("left", "Score")
         self.history_plot.setLabel("bottom", "Time (s)")
 
-        self.history_curve = self.history_plot.plot(
-            **dict(pen=et.utils.pg_pen_cycler(0), **symbol_dot_kw)
-        )
+        self.history_curve = self.history_plot.plot(pen=et.utils.pg_pen_cycler(0), **symbol_dot_kw)
 
         self.threshold_line = pg.InfiniteLine(pen=et.utils.pg_pen_cycler(1), angle=0)
         self.history_plot.addItem(self.threshold_line)

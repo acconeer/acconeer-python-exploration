@@ -49,16 +49,16 @@ def assert_client_values(obj, attribute_path, value):
 
 def test_conflicting_keyword_arguments_raises_value_error():
     with pytest.raises(ValueError):
-        ClientFactory.from_kwargs(**dict(serial_port="port", host="host"))
+        ClientFactory.from_kwargs(serial_port="port", host="host")
 
 
 @pytest.mark.parametrize(
     "kwargs",
     [
-        dict(link="socket"),  # only socket no host
-        dict(protocol="b", link="socket", host="host"),  # socket, bad protocol
-        dict(protocol="b", link="uart", serial_port="port"),  # uart, bad protocol
-        dict(link="blablabla"),  # bad link
+        {"link": "socket"},  # only socket no host
+        {"protocol": "b", "link": "socket", "host": "host"},  # socket, bad protocol
+        {"protocol": "b", "link": "uart", "serial_port": "port"},  # uart, bad protocol
+        {"link": "blablabla"},  # bad link
     ],
 )
 def test_supplying_weird_arguments_raises_value_error(kwargs):
@@ -82,8 +82,8 @@ def test_single_acconeer_port_success():
 @pytest.mark.parametrize(
     "kwargs,expected_links_enum",
     [
-        (dict(protocol="module"), "uart"),  # Only protocol => infer uart
-        (dict(host="mock-host"), "socket"),  # Only host => infer socket
+        ({"protocol": "module"}, "uart"),  # Only protocol => infer uart
+        ({"host": "mock-host"}, "socket"),  # Only host => infer socket
         ({}, "uart"),  # No args -> Infer uart
     ],
 )
@@ -101,31 +101,31 @@ def test_try_infer_protocol_from_kwargs(kwargs, expected_protocols_enum):
     [
         # Only host => infer SocketClient
         (
-            dict(host="host"),
+            {"host": "host"},
             [("", SocketClient), ("_link", links.SocketLink)],
             [("_link._host", "host")],
         ),
         # Exploration over socket
         (
-            dict(protocol="exploration", link="socket", host="host"),
+            {"protocol": "exploration", "link": "socket", "host": "host"},
             [("", SocketClient), ("_link", links.SocketLink)],
             [("_link._host", "host")],
         ),
         # Exploration over UART
         (
-            dict(protocol="exploration", link="uart", serial_port="port"),
+            {"protocol": "exploration", "link": "uart", "serial_port": "port"},
             [("", SocketClient), ("_link", links.ExploreSerialLink)],
             [("_link._port", "port")],
         ),
         # Streaming over socket
         (
-            dict(protocol="streaming", link="socket", host="host"),
+            {"protocol": "streaming", "link": "socket", "host": "host"},
             [("", SocketClient), ("_link", links.SocketLink)],
             [("_link._host", "host")],
         ),
         # Module over UART
         (
-            dict(protocol="module", link="uart", serial_port="port"),
+            {"protocol": "module", "link": "uart", "serial_port": "port"},
             [
                 ("", UARTClient),
                 ("_link", [links.SerialLink, links.SerialProcessLink]),
@@ -134,7 +134,7 @@ def test_try_infer_protocol_from_kwargs(kwargs, expected_protocols_enum):
         ),
         # Module over SPI
         (
-            dict(protocol="module", link="spi"),
+            {"protocol": "module", "link": "spi"},
             [("", SPIClient)],
             [],
         ),

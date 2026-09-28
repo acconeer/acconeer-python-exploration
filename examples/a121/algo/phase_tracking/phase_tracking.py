@@ -62,8 +62,8 @@ class PGUpdater:
     def setup(self, win):
         pens = [et.utils.pg_pen_cycler(i) for i in range(3)]
         brush = et.utils.pg_brush_cycler(0)
-        symbol_kw = dict(symbol="o", symbolSize=1, symbolBrush=brush, symbolPen="k")
-        feat_kws = [dict(pen=pen, **symbol_kw) for pen in pens]
+        symbol_kw = {"symbol": "o", "symbolSize": 1, "symbolBrush": brush, "symbolPen": "k"}
+        feat_kws = [{"pen": pen, **symbol_kw} for pen in pens]
 
         # sweep and threshold plot
         self.sweep_plot = win.addPlot(row=0, col=0)
@@ -93,9 +93,7 @@ class PGUpdater:
         argument_plot.getAxis("left").setTicks(et.utils.pg_phase_ticks)
         argument_plot.setYRange(-np.pi, np.pi)
         argument_plot.addItem(pg.ScatterPlotItem())
-        self.argument_curve = argument_plot.plot(
-            **dict(pen=None, symbol="o", symbolSize=5, symbolPen="k")
-        )
+        self.argument_curve = argument_plot.plot(pen=None, symbol="o", symbolSize=5, symbolPen="k")
         self.argument_vertical_line = pg.InfiniteLine(pen=pens[2])
         argument_plot.addItem(self.argument_vertical_line)
 

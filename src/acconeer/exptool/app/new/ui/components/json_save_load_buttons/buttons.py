@@ -203,7 +203,7 @@ def _flatten_dict(
     data: dict[str, t.Any], root: dict[str, t.Any] | None = None, parent_key: str = ""
 ) -> dict[str, t.Any]:
     if root is None:
-        root = dict()
+        root = {}
 
     for key, value in data.items():
         src_key = parent_key + "_" + key if parent_key else key

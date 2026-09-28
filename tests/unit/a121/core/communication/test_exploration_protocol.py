@@ -26,10 +26,10 @@ class TestLatestExplorationProtocolCommands:
         [
             (ExplorationProtocol.get_system_info_command, {}),
             (ExplorationProtocol.get_sensor_info_command, {}),
-            (ExplorationProtocol.setup_command, dict(session_config=a121.SessionConfig())),
+            (ExplorationProtocol.setup_command, {"session_config": a121.SessionConfig()}),
             (ExplorationProtocol.start_streaming_command, {}),
             (ExplorationProtocol.stop_streaming_command, {}),
-            (ExplorationProtocol.set_baudrate_command, dict(baudrate=0)),
+            (ExplorationProtocol.set_baudrate_command, {"baudrate": 0}),
         ],
     )
     def test_all_command_functions_end_with_linebreak(

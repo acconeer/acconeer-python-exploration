@@ -81,7 +81,7 @@ class TestBackendPlugins:
     def extra_tasks(self, plugin: PluginSpec) -> t.Iterable[Task]:
         if plugin is BILATERATION_PLUGIN:
             return [
-                ("update_sensor_ids", dict(sensor_ids=[1, 2])),
+                ("update_sensor_ids", {"sensor_ids": [1, 2]}),
             ]
         else:
             return []
@@ -102,7 +102,7 @@ class TestBackendPlugins:
 
         if plugin.requires_algo_bundle_artifact:
             # As the app does once it has installed the bundle
-            b.put_task(("import_algo_bundle", dict(extract_dir=algo_bundle_extract_dir)))
+            b.put_task(("import_algo_bundle", {"extract_dir": algo_bundle_extract_dir}))
             assert_messages(b, received=[tasks.SUCCESSFULLY_CLOSED_TASK])
 
         b.put_task(tasks.load_plugin_task(plugin))

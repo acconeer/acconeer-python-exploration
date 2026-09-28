@@ -14,7 +14,7 @@ from acconeer.exptool._core.communication.comm_devices import SerialDevice
 
 CLIENT_INFO_PARAMETRIZE = [
     (
-        dict(ip_address="addr", tcp_port=None),
+        {"ip_address": "addr", "tcp_port": None},
         {
             "serial": None,
             "usb": None,
@@ -23,7 +23,7 @@ CLIENT_INFO_PARAMETRIZE = [
         },
     ),
     (
-        dict(serial_port="port", override_baudrate=0),
+        {"serial_port": "port", "override_baudrate": 0},
         {
             "serial": {
                 "port": "port",
@@ -37,7 +37,7 @@ CLIENT_INFO_PARAMETRIZE = [
         },
     ),
     (
-        dict(usb_device=True),
+        {"usb_device": True},
         {
             "serial": None,
             "socket": None,
@@ -46,7 +46,7 @@ CLIENT_INFO_PARAMETRIZE = [
         },
     ),
     (
-        dict(usb_device="1234"),
+        {"usb_device": "1234"},
         {
             "serial": None,
             "usb": {"vid": None, "pid": None, "serial_number": "1234"},
@@ -55,7 +55,7 @@ CLIENT_INFO_PARAMETRIZE = [
         },
     ),
     (
-        dict(mock=True),
+        {"mock": True},
         {
             "serial": None,
             "usb": None,

@@ -217,25 +217,30 @@ class PlotPlugin(PgPlotPlugin):
         blue_color = et.utils.color_cycler(0)
         orange_color = et.utils.color_cycler(1)
         brush = et.utils.pg_brush_cycler(0)
-        self.blue = dict(
-            pen=pg.mkPen(blue_color, width=2),
-            symbol="o",
-            symbolSize=1,
-            symbolBrush=brush,
-            symbolPen="k",
-        )
-        self.orange = dict(
-            pen=pg.mkPen(orange_color, width=2),
-            symbol="o",
-            symbolSize=1,
-            symbolBrush=brush,
-            symbolPen="k",
-        )
+        self.blue = {
+            "pen": pg.mkPen(blue_color, width=2),
+            "symbol": "o",
+            "symbolSize": 1,
+            "symbolBrush": brush,
+            "symbolPen": "k",
+        }
+        self.orange = {
+            "pen": pg.mkPen(orange_color, width=2),
+            "symbol": "o",
+            "symbolSize": 1,
+            "symbolBrush": brush,
+            "symbolPen": "k",
+        }
         self.blue_transparent_pen = pg.mkPen(f"{blue_color}50", width=2)
         self.orange_transparent_pen = pg.mkPen(f"{orange_color}50", width=2)
 
         brush_dot = et.utils.pg_brush_cycler(1)
-        symbol_dot_kw = dict(symbol="o", symbolSize=10, symbolBrush=brush_dot, symbolPen="k")
+        symbol_dot_kw = {
+            "symbol": "o",
+            "symbolSize": 10,
+            "symbolBrush": brush_dot,
+            "symbolPen": "k",
+        }
 
         font = QFont()
         font.setPixelSize(16)
@@ -312,9 +317,7 @@ class PlotPlugin(PgPlotPlugin):
         self.breathing_rate_plot.addItem(pg.PlotDataItem())
         self.breathing_rate_curves = []
         self.breathing_rate_curves.append(self.breathing_rate_plot.plot(**self.blue))
-        self.breathing_rate_curves.append(
-            self.breathing_rate_plot.plot(**dict(pen=None, **symbol_dot_kw))
-        )
+        self.breathing_rate_curves.append(self.breathing_rate_plot.plot(pen=None, **symbol_dot_kw))
         self.smooth_breathing_rate = et.utils.SmoothLimits()
 
         self.breathing_rate_plot_legend = pg.LegendItem(offset=(0.0, 0.5))

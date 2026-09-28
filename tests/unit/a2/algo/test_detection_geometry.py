@@ -54,7 +54,7 @@ _ROTATIONS = [(0.0, 0.0, 0.0), (15.0, 0.0, -10.0), (-30.0, 25.0, 20.0), (45.0, -
 
 
 def _make_volume(**overrides):
-    kwargs = dict(x_bounds_m=(-4.0, 4.0), y_bounds_m=(1.0, 6.0))
+    kwargs = {"x_bounds_m": (-4.0, 4.0), "y_bounds_m": (1.0, 6.0)}
     kwargs.update(overrides)
     return DetectionVolume(**kwargs)
 
@@ -207,10 +207,10 @@ def test_validators_reject_el_angle_range_lo_ge_hi():
 @pytest.mark.parametrize(
     "overrides",
     [
-        dict(start_m=-0.1),
-        dict(start_m=MAX_RANGE_M),
-        dict(end_m=0.0),
-        dict(end_m=MAX_RANGE_M + 0.1),
+        {"start_m": -0.1},
+        {"start_m": MAX_RANGE_M},
+        {"end_m": 0.0},
+        {"end_m": MAX_RANGE_M + 0.1},
     ],
 )
 def test_validators_reject_range_limits_outside_reach(overrides):
@@ -304,8 +304,8 @@ def test_volume_without_a_farthest_point_is_an_error(volume):
 @pytest.mark.parametrize(
     "bounds,missing",
     [
-        (dict(x_bounds_m=(-4.0, 4.0)), ["y_bounds_m"]),
-        (dict(y_bounds_m=(0.0, 6.0)), ["x_bounds_m"]),
+        ({"x_bounds_m": (-4.0, 4.0)}, ["y_bounds_m"]),
+        ({"y_bounds_m": (0.0, 6.0)}, ["x_bounds_m"]),
     ],
 )
 def test_box_bounds_x_and_y_together(bounds, missing):
@@ -425,8 +425,8 @@ def test_range_limits_alone_set_the_range():
 @pytest.mark.parametrize(
     ("volume_kwargs", "signal_quality_db"),
     [
-        (dict(az_angle_range=(-60.0, 60.0)), 20.5),
-        (dict(), 16.0),
+        ({"az_angle_range": (-60.0, 60.0)}, 20.5),
+        ({}, 16.0),
     ],
     ids=["az60", "default_az"],
 )
@@ -456,9 +456,9 @@ def test_session_config_without_a_box_measures_the_range_limits(
     "overrides,aspect",
     [
         # start_m beyond the box's farthest corner.
-        (dict(start_m=9.0), "start_m"),
+        ({"start_m": 9.0}, "start_m"),
         # end_m short of the box's nearest point; start_m is not even set.
-        (dict(y_bounds_m=(5.0, 6.0), end_m=3.0), "end_m"),
+        ({"y_bounds_m": (5.0, 6.0), "end_m": 3.0}, "end_m"),
     ],
 )
 def test_range_limits_outside_the_box_blame_the_limit_that_empties_it(overrides, aspect):

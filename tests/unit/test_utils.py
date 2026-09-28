@@ -104,11 +104,11 @@ def namespace_transformations():
         argparse.Namespace(serial_port=None, socket_addr=None, spi=True),
     ]
     client_dict = [
-        dict(link="uart", protocol="module"),
-        dict(link="uart", protocol="exploration"),
-        dict(serial_port="serial_port_name", link="uart", protocol="module"),
-        dict(host="localhost", link="socket"),
-        dict(link="spi"),
+        {"link": "uart", "protocol": "module"},
+        {"link": "uart", "protocol": "exploration"},
+        {"serial_port": "serial_port_name", "link": "uart", "protocol": "module"},
+        {"host": "localhost", "link": "socket"},
+        {"link": "spi"},
     ]
     assert len(cli_args) == len(namespaces) == len(client_dict)
     return zip(cli_args, namespaces, client_dict)

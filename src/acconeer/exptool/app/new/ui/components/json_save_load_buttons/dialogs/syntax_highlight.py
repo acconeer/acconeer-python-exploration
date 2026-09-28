@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -17,13 +17,13 @@ class _Rgb(te.TypedDict, total=True):
 
 
 class SyntaxHighlighter(QSyntaxHighlighter):
-    GOLDEN_ROD: _Rgb = dict(r=218, g=165, b=32)
-    PURPLE: _Rgb = dict(r=160, g=32, b=240)
-    FOREST_GREEN: _Rgb = dict(r=34, g=139, b=34)
-    DODGER_BLUE: _Rgb = dict(r=30, g=144, b=255)
-    FIREBRICK: _Rgb = dict(r=178, g=34, b=34)
-    SIENNA: _Rgb = dict(r=160, g=82, b=45)
-    GRAY: _Rgb = dict(r=100, g=100, b=100)
+    GOLDEN_ROD: _Rgb = {"r": 218, "g": 165, "b": 32}
+    PURPLE: _Rgb = {"r": 160, "g": 32, "b": 240}
+    FOREST_GREEN: _Rgb = {"r": 34, "g": 139, "b": 34}
+    DODGER_BLUE: _Rgb = {"r": 30, "g": 144, "b": 255}
+    FIREBRICK: _Rgb = {"r": 178, "g": 34, "b": 34}
+    SIENNA: _Rgb = {"r": 160, "g": 82, "b": 45}
+    GRAY: _Rgb = {"r": 100, "g": 100, "b": 100}
 
     def __init__(self, parent: QTextDocument, highlights: dict[str, QTextCharFormat]) -> None:
         super().__init__(parent)

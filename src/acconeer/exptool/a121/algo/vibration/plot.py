@@ -134,10 +134,15 @@ class VibrationPlot:
         pen_orange = et.utils.pg_pen_cycler(1)
         brush = et.utils.pg_brush_cycler(0)
         brush_dot = et.utils.pg_brush_cycler(1)
-        symbol_kw = dict(symbol="o", symbolSize=1, symbolBrush=brush, symbolPen="k")
-        feat_kw_blue = dict(pen=pen_blue, **symbol_kw)
-        feat_kw_orange = dict(pen=pen_orange)
-        symbol_dot_kw = dict(symbol="o", symbolSize=10, symbolBrush=brush_dot, symbolPen="k")
+        symbol_kw = {"symbol": "o", "symbolSize": 1, "symbolBrush": brush, "symbolPen": "k"}
+        feat_kw_blue = {"pen": pen_blue, **symbol_kw}
+        feat_kw_orange = {"pen": pen_orange}
+        symbol_dot_kw = {
+            "symbol": "o",
+            "symbolSize": 10,
+            "symbolBrush": brush_dot,
+            "symbolPen": "k",
+        }
 
         # presence plot
         self.object_detection_plot = pg.PlotItem()
@@ -146,9 +151,7 @@ class VibrationPlot:
         self.object_detection_plot.setLabel("left", "Max amplitude")
         self.object_detection_plot.setLabel("bottom", "Distance (m)")
         self.object_detection_plot.setXRange(meas_dist_m - 0.001, meas_dist_m + 0.001)
-        self.presence_curve = self.object_detection_plot.plot(
-            **dict(pen=pen_blue, **symbol_dot_kw)
-        )
+        self.presence_curve = self.object_detection_plot.plot(pen=pen_blue, **symbol_dot_kw)
 
         self.presence_threshold = pg.InfiniteLine(pen=pen_blue, angle=0)
         self.object_detection_plot.addItem(self.presence_threshold)
@@ -192,7 +195,7 @@ class VibrationPlot:
         self.fft_curve = [
             self.fft_plot.plot(**feat_kw_blue),
             self.fft_plot.plot(**feat_kw_orange),
-            self.fft_plot.plot(**dict(pen=None, **symbol_dot_kw)),
+            self.fft_plot.plot(pen=None, **symbol_dot_kw),
         ]
 
         self.smooth_max_fft = et.utils.SmoothMax()

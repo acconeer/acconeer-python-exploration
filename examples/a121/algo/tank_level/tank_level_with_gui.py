@@ -156,14 +156,14 @@ class PGUpdater:
 
         pen = et.utils.pg_pen_cycler(0)
         brush = et.utils.pg_brush_cycler(0)
-        symbol_kw = dict(symbol="o", symbolSize=1, symbolBrush=brush, symbolPen="k")
-        feat_kw = dict(pen=pen, **symbol_kw)
+        symbol_kw = {"symbol": "o", "symbolSize": 1, "symbolBrush": brush, "symbolPen": "k"}
+        feat_kw = {"pen": pen, **symbol_kw}
         self.sweep_curves = [self.sweep_plot.plot(**feat_kw) for _ in range(self.num_curves)]
 
         pen = et.utils.pg_pen_cycler(1)
         brush = et.utils.pg_brush_cycler(1)
-        symbol_kw = dict(symbol="o", symbolSize=1, symbolBrush=brush, symbolPen="k")
-        feat_kw = dict(pen=pen, **symbol_kw)
+        symbol_kw = {"symbol": "o", "symbolSize": 1, "symbolBrush": brush, "symbolPen": "k"}
+        feat_kw = {"pen": pen, **symbol_kw}
         self.threshold_curves = [self.sweep_plot.plot(**feat_kw) for _ in range(self.num_curves)]
 
         sweep_plot_legend = pg.LegendItem(offset=(0.0, 0.5))
@@ -182,8 +182,8 @@ class PGUpdater:
 
         pen = et.utils.pg_pen_cycler(0)
         brush = et.utils.pg_brush_cycler(0)
-        symbol_kw = dict(symbol="o", symbolSize=5, symbolBrush=brush, symbolPen="k")
-        feat_kw = dict(pen=pen, **symbol_kw)
+        symbol_kw = {"symbol": "o", "symbolSize": 5, "symbolBrush": brush, "symbolPen": "k"}
+        feat_kw = {"pen": pen, **symbol_kw}
         self.level_history_curve = self.level_history_plot.plot(**feat_kw)
 
         self.sweep_smooth_max = et.utils.SmoothMax()

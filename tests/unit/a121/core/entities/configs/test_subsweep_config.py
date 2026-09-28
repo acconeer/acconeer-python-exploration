@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import json
@@ -23,10 +23,10 @@ def test_init_with_arguments() -> None:
 @pytest.mark.parametrize(
     ("kwargs", "exception_type"),
     [
-        (dict(hwaas="1"), TypeError),
-        (dict(hwaas=3.5), TypeError),
-        (dict(hwaas=0), ValueError),
-        (dict(hwaas=-1), ValueError),
+        ({"hwaas": "1"}, TypeError),
+        ({"hwaas": 3.5}, TypeError),
+        ({"hwaas": 0}, ValueError),
+        ({"hwaas": -1}, ValueError),
     ],
 )
 def test_init_with_bad_arguments(kwargs: Any, exception_type: Any) -> None:

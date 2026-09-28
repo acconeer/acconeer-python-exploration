@@ -22,15 +22,15 @@ from acconeer.exptool.a2._core.communication import ExplorationClient
 
 @pytest.fixture
 def client_constructor_kwargs(worker_tcp_port, a2_exploration_server):
-    return dict(
-        client_info=ClientInfo(
+    return {
+        "client_info": ClientInfo(
             socket=SocketInfo(
                 ip_address="localhost",
                 tcp_port=worker_tcp_port,
             )
         ),
-        enable_diagnostics=False,
-    )
+        "enable_diagnostics": False,
+    }
 
 
 def test_can_connect(client_constructor_kwargs: dict[str, t.Any]):

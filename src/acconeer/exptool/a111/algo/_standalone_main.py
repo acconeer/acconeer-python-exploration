@@ -6,7 +6,7 @@ from acconeer.exptool.a111.algo import ModuleInfo
 
 
 def main(module_info: ModuleInfo):
-    arg_parse_kwargs = {} if module_info.multi_sensor else dict(num_sens=1)
+    arg_parse_kwargs = {} if module_info.multi_sensor else {"num_sens": 1}
     args = et.a111.ExampleArgumentParser(**arg_parse_kwargs).parse_args()
     et.utils.config_logging(args)
 

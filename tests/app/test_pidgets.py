@@ -49,14 +49,14 @@ class TestPidgets:
         self, factory_class: type[pidgets.PidgetFactory], hooks_argument: t.Any
     ) -> None:
         EXTRA_KWARGS: dict[type, dict[str, t.Any]] = {
-            pidgets.EnumPidgetFactory: dict(enum_type=enum.Enum, label_mapping={}),
-            pidgets.OptionalEnumPidgetFactory: dict(enum_type=enum.Enum, label_mapping={}),
-            pidgets.ComboboxPidgetFactory: dict(items=[]),
-            pidgets.SensorIdPidgetFactory: dict(items=[]),
-            pidgets.FloatSliderPidgetFactory: dict(limits=(None, None)),
-            pidgets.FloatRangeSliderPidgetFactory: dict(limits=(None, None)),
-            pidgets.OptionalFloatRangeSliderPidgetFactory: dict(limits=(None, None)),
-            pidgets.IntFlagPidgetFactory: dict(num_bits=1),
+            pidgets.EnumPidgetFactory: {"enum_type": enum.Enum, "label_mapping": {}},
+            pidgets.OptionalEnumPidgetFactory: {"enum_type": enum.Enum, "label_mapping": {}},
+            pidgets.ComboboxPidgetFactory: {"items": []},
+            pidgets.SensorIdPidgetFactory: {"items": []},
+            pidgets.FloatSliderPidgetFactory: {"limits": (None, None)},
+            pidgets.FloatRangeSliderPidgetFactory: {"limits": (None, None)},
+            pidgets.OptionalFloatRangeSliderPidgetFactory: {"limits": (None, None)},
+            pidgets.IntFlagPidgetFactory: {"num_bits": 1},
         }
         if _class_is_ABC(factory_class):
             pytest.xfail(f"{factory_class.__name__} is abstract.")
@@ -76,7 +76,7 @@ class TestPidgets:
         self, group_class: type[pidgets.PidgetGroup], hooks_argument: t.Any
     ) -> None:
         EXTRA_KWARGS: dict[type, dict[str, t.Any]] = {
-            pidgets.CollapsiblePidgetGroup: dict(label=":)", collapsed=True)
+            pidgets.CollapsiblePidgetGroup: {"label": ":)", "collapsed": True}
         }
         group = group_class(
             hooks=hooks_argument,

@@ -97,8 +97,8 @@ class PlotPlugin:
         pen_sweep_1 = et.utils.pg_pen_cycler(1)
 
         # Add sweep curves for the two sensors.
-        feat_kw_1 = dict(pen=pen_sweep_0)
-        feat_kw_2 = dict(pen=pen_sweep_1)
+        feat_kw_1 = {"pen": pen_sweep_0}
+        feat_kw_2 = {"pen": pen_sweep_1}
         self.sweep_curves_1 = [self.sweep_plot.plot(**feat_kw_1) for _ in range(self.num_curves)]
         self.sweep_curves_2 = [self.sweep_plot.plot(**feat_kw_2) for _ in range(self.num_curves)]
 
@@ -106,8 +106,8 @@ class PlotPlugin:
         pen_sweep_1 = et.utils.pg_pen_cycler(1, "--")
 
         # Add threshold curves for the two sensors.
-        feat_kw_1 = dict(pen=pen_sweep_0)
-        feat_kw_2 = dict(pen=pen_sweep_1)
+        feat_kw_1 = {"pen": pen_sweep_0}
+        feat_kw_2 = {"pen": pen_sweep_1}
         self.threshold_curves_1 = [
             self.sweep_plot.plot(**feat_kw_1) for _ in range(self.num_curves)
         ]
@@ -141,10 +141,15 @@ class PlotPlugin:
 
         pen_sweep_0 = et.utils.pg_pen_cycler(0)
         brush_sweep_0 = et.utils.pg_brush_cycler(0)
-        symbol_kw = dict(symbol="o", symbolSize=10, symbolBrush=brush_sweep_0, symbolPen=None)
-        feat_kw = dict(pen=None, **symbol_kw)
+        symbol_kw = {
+            "symbol": "o",
+            "symbolSize": 10,
+            "symbolBrush": brush_sweep_0,
+            "symbolPen": None,
+        }
+        feat_kw = {"pen": None, **symbol_kw}
         self.obstacle_location_curve = self.obstacle_location_plot.plot(**feat_kw)
-        feat_kw = dict(pen=pen_sweep_0)
+        feat_kw = {"pen": pen_sweep_0}
         self.obstacle_location_half_curve = [
             self.obstacle_location_plot.plot(**feat_kw) for _ in range(Processor._MAX_NUM_OBJECTS)
         ]

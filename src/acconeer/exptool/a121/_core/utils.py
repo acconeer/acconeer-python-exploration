@@ -289,7 +289,7 @@ def transpose_extended_structures(
         raise ValueError(msg)
 
     product: list[dict[int, list[ValueT]]] = map_over_extended_structure(
-        lambda _: list(), structures[0]
+        lambda _: [], structures[0]
     )
 
     for group_idx, sensor_id, value in itertools.chain(

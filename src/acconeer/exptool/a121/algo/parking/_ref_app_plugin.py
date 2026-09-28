@@ -278,20 +278,20 @@ class PlotPlugin(PgPlotPlugin):
         orange_color = et.utils.color_cycler(1)
         brush = et.utils.pg_brush_cycler(0)
 
-        self.blue = dict(
-            pen=pg.mkPen(blue_color, width=2),
-            symbol="o",
-            symbolSize=1,
-            symbolBrush=brush,
-            symbolPen="k",
-        )
-        self.orange = dict(
-            pen=pg.mkPen(orange_color, width=2),
-            symbol="o",
-            symbolSize=1,
-            symbolBrush=brush,
-            symbolPen="k",
-        )
+        self.blue = {
+            "pen": pg.mkPen(blue_color, width=2),
+            "symbol": "o",
+            "symbolSize": 1,
+            "symbolBrush": brush,
+            "symbolPen": "k",
+        }
+        self.orange = {
+            "pen": pg.mkPen(orange_color, width=2),
+            "symbol": "o",
+            "symbolSize": 1,
+            "symbolBrush": brush,
+            "symbolPen": "k",
+        }
         self.blue_transparent_pen = pg.mkPen(f"{blue_color}50", width=2)
         self.orange_transparent_pen = pg.mkPen(f"{orange_color}50", width=2)
 
@@ -312,9 +312,13 @@ class PlotPlugin(PgPlotPlugin):
         )
         self.sig_plot.setXRange(self.sig_plot_x_range[0], self.sig_plot_x_range[1])
         self.sig_plot.setYRange(0, 100)
-        symbol_kw_main = dict(
-            symbol="o", symbolSize=7, symbolBrush=brush, symbolPen=None, pen=None
-        )
+        symbol_kw_main = {
+            "symbol": "o",
+            "symbolSize": 7,
+            "symbolBrush": brush,
+            "symbolPen": None,
+            "pen": None,
+        }
         self.sig_plot_curve = self.sig_plot.plot(**symbol_kw_main)
         energy_threshold_line = pg.InfiniteLine(
             angle=0, pen=pg.mkPen("k", width=1.5, style=QtCore.Qt.PenStyle.DashLine)
@@ -375,18 +379,22 @@ class PlotPlugin(PgPlotPlugin):
             self.obstruction_plot.setYRange(0, MAX_AMPLITUDE)  # Set to standard
             self.obstruction_plot_curve = self.obstruction_plot.plot(**self.orange)
 
-            symbol_obstruction_dot = dict(
-                symbol="o",
-                symbolSize=7,
-                symbolBrush=brush_dot,
-                symbolPen=None,
-                pen=None,
-            )
+            symbol_obstruction_dot = {
+                "symbol": "o",
+                "symbolSize": 7,
+                "symbolBrush": brush_dot,
+                "symbolPen": None,
+                "pen": None,
+            }
             self.obstruction_plot_point = self.obstruction_plot.plot(**symbol_obstruction_dot)
 
-            symbol_kw_main = dict(
-                symbol="o", symbolSize=7, symbolBrush=brush, symbolPen=None, pen=None
-            )
+            symbol_kw_main = {
+                "symbol": "o",
+                "symbolSize": 7,
+                "symbolBrush": brush,
+                "symbolPen": None,
+                "pen": None,
+            }
             self.obstruction_plot_center = self.obstruction_plot.plot(**symbol_kw_main)
 
             self.obstruction_center_rect = pg.QtWidgets.QGraphicsRectItem(0, 0, 0.01, 0.01)

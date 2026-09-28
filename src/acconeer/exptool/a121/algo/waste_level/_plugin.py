@@ -255,8 +255,8 @@ class PlotPlugin(PgPlotPlugin):
 
         pen = et.utils.pg_pen_cycler(0)
         brush = et.utils.pg_brush_cycler(0)
-        symbol_kw = dict(symbol="o", symbolSize=5, symbolBrush=brush, symbolPen="k")
-        feat_kw = dict(pen=pen, **symbol_kw)
+        symbol_kw = {"symbol": "o", "symbolSize": 5, "symbolBrush": brush, "symbolPen": "k"}
+        feat_kw = {"pen": pen, **symbol_kw}
         self.level_history_curve = self.level_history_plot.plot(**feat_kw, connect="finite")
 
         top_bin_horizontal_line = pg.InfiniteLine(

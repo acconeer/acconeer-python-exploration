@@ -142,14 +142,24 @@ class PGUpdater:
 
                 pen = et.utils.pg_pen_cycler(0)
                 brush = et.utils.pg_brush_cycler(0)
-                symbol_kw = dict(symbol="o", symbolSize=1, symbolBrush=brush, symbolPen="k")
-                feat_kw = dict(pen=pen, **symbol_kw)
+                symbol_kw = {
+                    "symbol": "o",
+                    "symbolSize": 1,
+                    "symbolBrush": brush,
+                    "symbolPen": "k",
+                }
+                feat_kw = {"pen": pen, **symbol_kw}
                 self.bin0_curves += [self.bin0.plot(**feat_kw) for _ in range(self.num_subsweeps)]
 
                 pen = et.utils.pg_pen_cycler(1)
                 brush = et.utils.pg_brush_cycler(1)
-                symbol_kw = dict(symbol="o", symbolSize=1, symbolBrush=brush, symbolPen="k")
-                feat_kw = dict(pen=pen, **symbol_kw)
+                symbol_kw = {
+                    "symbol": "o",
+                    "symbolSize": 1,
+                    "symbolBrush": brush,
+                    "symbolPen": "k",
+                }
+                feat_kw = {"pen": pen, **symbol_kw}
                 self.bin0_threshold_curves += [
                     self.bin0.plot(**feat_kw) for _ in range(self.num_subsweeps)
                 ]
@@ -175,16 +185,26 @@ class PGUpdater:
 
                 pen = et.utils.pg_pen_cycler(0)
                 brush = et.utils.pg_brush_cycler(0)
-                symbol_kw = dict(symbol="o", symbolSize=1, symbolBrush=brush, symbolPen="k")
-                feat_kw = dict(pen=pen, **symbol_kw)
+                symbol_kw = {
+                    "symbol": "o",
+                    "symbolSize": 1,
+                    "symbolBrush": brush,
+                    "symbolPen": "k",
+                }
+                feat_kw = {"pen": pen, **symbol_kw}
                 self.other_bins_curves += [
                     self.other_bins.plot(**feat_kw) for _ in range(self.num_subsweeps)
                 ]
 
                 pen = et.utils.pg_pen_cycler(1)
                 brush = et.utils.pg_brush_cycler(1)
-                symbol_kw = dict(symbol="o", symbolSize=1, symbolBrush=brush, symbolPen="k")
-                feat_kw = dict(pen=pen, **symbol_kw)
+                symbol_kw = {
+                    "symbol": "o",
+                    "symbolSize": 1,
+                    "symbolBrush": brush,
+                    "symbolPen": "k",
+                }
+                feat_kw = {"pen": pen, **symbol_kw}
                 self.other_bins_threshold_curves += [
                     self.other_bins.plot(**feat_kw) for _ in range(self.num_subsweeps)
                 ]
