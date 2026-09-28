@@ -23,8 +23,8 @@ class StringPersistor(core.Persistor):
     """
 
     @classmethod
-    def is_applicable(cls, __type: core.TypeLike) -> bool:
-        return __type is str
+    def is_applicable(cls, type_: core.TypeLike, /) -> bool:
+        return type_ is str
 
     def _save(self, data: t.Any) -> None:
         if not isinstance(data, str):
@@ -47,8 +47,8 @@ class EnumPersistor(core.Persistor):
     """
 
     @classmethod
-    def is_applicable(cls, __type: core.TypeLike) -> bool:
-        return core.is_subclass(__type, Enum)
+    def is_applicable(cls, type_: core.TypeLike, /) -> bool:
+        return core.is_subclass(type_, Enum)
 
     def _save(self, data: t.Any) -> None:
         if not isinstance(data, Enum):
@@ -75,8 +75,8 @@ class NonePersistor(core.Persistor):
     """
 
     @classmethod
-    def is_applicable(cls, __type: core.TypeLike) -> bool:
-        return core.is_subclass(__type, type(None))
+    def is_applicable(cls, type_: core.TypeLike, /) -> bool:
+        return core.is_subclass(type_, type(None))
 
     def _save(self, data: t.Any) -> None:
         if data is not None:
@@ -99,8 +99,8 @@ class FloatPersistor(core.Persistor):
     """
 
     @classmethod
-    def is_applicable(cls, __type: core.TypeLike) -> bool:
-        return __type is float
+    def is_applicable(cls, type_: core.TypeLike, /) -> bool:
+        return type_ is float
 
     def _save(self, data: t.Any) -> None:
         if not isinstance(data, (float, int)):
@@ -126,8 +126,8 @@ class BoolPersistor(core.Persistor):
     """
 
     @classmethod
-    def is_applicable(cls, __type: core.TypeLike) -> bool:
-        return __type is bool
+    def is_applicable(cls, type_: core.TypeLike, /) -> bool:
+        return type_ is bool
 
     def _save(self, data: t.Any) -> None:
         if data not in {True, False}:
@@ -153,8 +153,8 @@ class IntPersistor(core.Persistor):
     """
 
     @classmethod
-    def is_applicable(cls, __type: core.TypeLike) -> bool:
-        return __type is int
+    def is_applicable(cls, type_: core.TypeLike, /) -> bool:
+        return type_ is int
 
     def _save(self, data: t.Any) -> None:
         if not isinstance(data, (int, np.integer)):
@@ -182,8 +182,8 @@ class ListPersistor(core.Persistor):
     """
 
     @classmethod
-    def is_applicable(cls, __type: core.TypeLike) -> bool:
-        should_be_list, *_ = core.unwrap_generic(__type)
+    def is_applicable(cls, type_: core.TypeLike, /) -> bool:
+        should_be_list, *_ = core.unwrap_generic(type_)
         return should_be_list is list
 
     def _save(self, data: t.Any) -> None:
@@ -219,8 +219,8 @@ class DictPersistor(core.Persistor):
     KEY_GROUP_KEY = "key"
 
     @classmethod
-    def is_applicable(cls, __type: core.TypeLike) -> bool:
-        should_be_dict, *_ = core.unwrap_generic(__type)
+    def is_applicable(cls, type_: core.TypeLike, /) -> bool:
+        should_be_dict, *_ = core.unwrap_generic(type_)
         return should_be_dict is dict
 
     def _save(self, data: t.Any) -> None:
@@ -259,8 +259,8 @@ class TuplePersistor(core.Persistor):
     """
 
     @classmethod
-    def is_applicable(cls, __type: core.TypeLike) -> bool:
-        should_be_tuple, *_ = core.unwrap_generic(__type)
+    def is_applicable(cls, type_: core.TypeLike, /) -> bool:
+        should_be_tuple, *_ = core.unwrap_generic(type_)
         return should_be_tuple is tuple
 
     def _save(self, data: t.Any) -> None:
@@ -290,8 +290,8 @@ class UnionPersistor(core.Persistor):
     """
 
     @classmethod
-    def is_applicable(cls, __type: core.TypeLike) -> bool:
-        should_be_union, *_ = core.unwrap_generic(__type)
+    def is_applicable(cls, type_: core.TypeLike, /) -> bool:
+        should_be_union, *_ = core.unwrap_generic(type_)
         return should_be_union in core.UNION_ORIGINS
 
     def _save(self, data: t.Any) -> None:
@@ -331,8 +331,8 @@ class AttrsInstancePersistor(core.Persistor):
     """
 
     @classmethod
-    def is_applicable(cls, __type: core.TypeLike) -> bool:
-        return attrs.has(__type)
+    def is_applicable(cls, type_: core.TypeLike, /) -> bool:
+        return attrs.has(type_)
 
     def _save(self, data: t.Any) -> None:
         if not isinstance(data, self.type_tree.data):
@@ -366,8 +366,8 @@ class NumpyPersistor(core.Persistor):
     """
 
     @classmethod
-    def is_applicable(cls, __type: core.TypeLike) -> bool:
-        return core.is_ndarray(__type) or core.is_subclass(__type, np.generic)
+    def is_applicable(cls, type_: core.TypeLike, /) -> bool:
+        return core.is_ndarray(type_) or core.is_subclass(type_, np.generic)
 
     def _save(self, data: t.Any) -> None:
         if not isinstance(data, (np.ndarray, np.generic)):

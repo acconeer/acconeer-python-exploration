@@ -104,8 +104,8 @@ def _wrap_with_ignored_completer(f: t.Callable[[_T], _R]) -> _Transform[_T, te.N
         msg = "f must be a callable"
         raise TypeError(msg)
 
-    def wrapper(__x: _T, _: Completer[t.Any]) -> _R:
-        return f(__x)
+    def wrapper(x: _T, /, _: Completer[t.Any]) -> _R:
+        return f(x)
 
     return wrapper
 
@@ -113,8 +113,8 @@ def _wrap_with_ignored_completer(f: t.Callable[[_T], _R]) -> _Transform[_T, te.N
 def _flip(f: t.Callable[[_S, _T], _R]) -> t.Callable[[_T, _S], _R]:
     """Flips the parameters of a 2-parameter function"""
 
-    def wrapper(__x: _T, __y: _S) -> _R:
-        return f(__y, __x)
+    def wrapper(x: _T, y: _S, /) -> _R:
+        return f(y, x)
 
     return wrapper
 

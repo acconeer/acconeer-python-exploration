@@ -21,29 +21,29 @@ class RegistryPersistor(core.Persistor):
     _REGISTRY: t.ClassVar[dict[str, type[core.Persistor]]] = {}
 
     @classmethod
-    def register_persistor(cls, __persistor: type[core.Persistor]) -> type[core.Persistor]:
+    def register_persistor(cls, persistor: type[core.Persistor], /) -> type[core.Persistor]:
         """
         Registers a persistor that can extend the handled types.
 
         This can be called many times with the same persistor without repercussions.
         """
-        cls._REGISTRY[__persistor.__name__] = __persistor
-        return __persistor
+        cls._REGISTRY[persistor.__name__] = persistor
+        return persistor
 
     @classmethod
-    def priority_higher_than(cls, __persistor: type[core.Persistor]) -> int:
+    def priority_higher_than(cls, persistor: type[core.Persistor], /) -> int:
         """Returns a priority that is higher than the priority of the specified persistor."""
         try:
-            return cls._REGISTRY[__persistor.__name__].PRIORITY + 1
+            return cls._REGISTRY[persistor.__name__].PRIORITY + 1
         except KeyError:
-            msg = f"Persistor {__persistor} is not in the registry"
+            msg = f"Persistor {persistor} is not in the registry"
             raise RuntimeError(msg)
 
     @classmethod
-    def _get_applicable_persistors(cls, __type: type) -> list[type[core.Persistor]]:
+    def _get_applicable_persistors(cls, type_: type, /) -> list[type[core.Persistor]]:
         """Retrieves the persistors that can handle the specified type"""
         return sorted(
-            (persistor for persistor in cls._REGISTRY.values() if persistor.is_applicable(__type)),
+            (persistor for persistor in cls._REGISTRY.values() if persistor.is_applicable(type_)),
             key=lambda p: p.PRIORITY,
             reverse=True,
         )
@@ -53,8 +53,8 @@ class RegistryPersistor(core.Persistor):
         return len(cls._REGISTRY)
 
     @classmethod
-    def is_applicable(cls, __type: core.TypeLike) -> bool:
-        return len(cls._get_applicable_persistors(__type)) > 0
+    def is_applicable(cls, type_: core.TypeLike, /) -> bool:
+        return len(cls._get_applicable_persistors(type_)) > 0
 
     def _save(self, instance: t.Any) -> None:
         persistor_classes = self._get_applicable_persistors(self.type_tree.data)

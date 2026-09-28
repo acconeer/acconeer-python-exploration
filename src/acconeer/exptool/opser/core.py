@@ -101,8 +101,8 @@ class Persistor(abc.ABC):
     def from_json_presentable(cls, presentable_type: type[JsonPresentable]) -> type[Persistor]:
         """Generates a Persistor class for the specified JsonPresentable"""
 
-        def _is_applicable(cls: type[Persistor], __type: TypeLike) -> bool:
-            return is_subclass(__type, presentable_type)
+        def _is_applicable(cls: type[Persistor], type_: TypeLike, /) -> bool:
+            return is_subclass(type_, presentable_type)
 
         def _save(self: Persistor, data: t.Any) -> None:
             if not isinstance(data, presentable_type):
@@ -204,7 +204,7 @@ class Persistor(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def is_applicable(cls, __type: TypeLike) -> bool:
+    def is_applicable(cls, type_: TypeLike, /) -> bool:
         pass
 
     @abc.abstractmethod
@@ -224,13 +224,13 @@ class Node:
     children: dict[str, Node]
 
 
-def is_class(__type: TypeLike) -> te.TypeGuard[type]:
-    """Return True if '__type' is a class"""
-    return not is_ndarray(__type) and isinstance(__type, type)
+def is_class(type_: TypeLike, /) -> te.TypeGuard[type]:
+    """Return True if 'type_' is a class"""
+    return not is_ndarray(type_) and isinstance(type_, type)
 
 
-def is_subclass(__type: TypeLike, superclass: type | tuple[type, ...]) -> bool:
-    """Return True if '__type' is a subclass of superclass"""
+def is_subclass(type_: TypeLike, /, superclass: type | tuple[type, ...]) -> bool:
+    """Return True if 'type_' is a subclass of superclass"""
     cannot_be_generic: t.Iterable[type]
     if isinstance(superclass, type):
         cannot_be_generic = [superclass]
@@ -243,40 +243,40 @@ def is_subclass(__type: TypeLike, superclass: type | tuple[type, ...]) -> bool:
             raise ValueError(msg)
 
     try:
-        if is_generic(__type):
-            (origin_t, *_) = unwrap_generic(__type)
+        if is_generic(type_):
+            (origin_t, *_) = unwrap_generic(type_)
             return is_subclass(origin_t, superclass)
         else:
-            return is_class(__type) and issubclass(__type, superclass)
+            return is_class(type_) and issubclass(type_, superclass)
     except Exception as e:
-        msg = f"Could not determine if {__type} is a subclass of {superclass}"
+        msg = f"Could not determine if {type_} is a subclass of {superclass}"
         raise TypeError(msg) from e
 
 
-def is_generic(__type: TypeLike) -> bool:
-    """Return True if '__type' is a generic type"""
-    return te.get_origin(__type) is not None and te.get_args(__type) != ()
+def is_generic(type_: TypeLike, /) -> bool:
+    """Return True if 'type_' is a generic type"""
+    return te.get_origin(type_) is not None and te.get_args(type_) != ()
 
 
-def is_optional(__type: TypeLike) -> bool:
-    """Return True if '__type' is an optional type"""
-    origin, *type_args = unwrap_generic(__type)
+def is_optional(type_: TypeLike, /) -> bool:
+    """Return True if 'type_' is an optional type"""
+    origin, *type_args = unwrap_generic(type_)
 
     return origin in UNION_ORIGINS and type(None) in type_args and len(type_args) > 1
 
 
-def optional_args(__type: TypeLike) -> tuple[TypeLike, ...]:
-    _, *type_args = unwrap_generic(__type)
+def optional_args(type_: TypeLike, /) -> tuple[TypeLike, ...]:
+    _, *type_args = unwrap_generic(type_)
 
     return tuple(ta for ta in type_args if ta is not type(None))
 
 
-def optional_arg(__type: TypeLike) -> TypeLike:
-    (arg,) = optional_args(__type)
+def optional_arg(type_: TypeLike, /) -> TypeLike:
+    (arg,) = optional_args(type_)
     return arg
 
 
-def unwrap_generic(__type: TypeLike) -> t.Sequence[TypeLike]:
+def unwrap_generic(type_: TypeLike, /) -> t.Sequence[TypeLike]:
     """
     'Unwraps' a generic returning its origin and type args.
 
@@ -284,22 +284,22 @@ def unwrap_generic(__type: TypeLike) -> t.Sequence[TypeLike]:
         list[int] |-> (list, int)
         dict[int, Enum] |-> (dict, int, Enum)
     """
-    return (te.get_origin(__type), *te.get_args(__type))
+    return (te.get_origin(type_), *te.get_args(type_))
 
 
-def is_ndarray(__type: TypeLike) -> bool:
+def is_ndarray(type_: TypeLike, /) -> bool:
     # True for 'numpy.ndarray' and any 'numpy.typing.NDArray[...]' annotation.
     #   The representation of 'NDArray' differs across numpy versions (a plain
     # GenericAlias up to 2.4, a PEP 695 type alias from 2.5), so match the numpy
     # objects by identity instead of by a fragile '__name__' string.
-    if __type is np.ndarray or __type is npt.NDArray:
+    if type_ is np.ndarray or type_ is npt.NDArray:
         return True
-    origin = te.get_origin(__type)
+    origin = te.get_origin(type_)
     return origin is np.ndarray or origin is npt.NDArray
 
 
-def get_class_type_hints(__type: type) -> dict[str, TypeLike]:
-    return t.get_type_hints(__type)
+def get_class_type_hints(type_: type, /) -> dict[str, TypeLike]:
+    return t.get_type_hints(type_)
 
 
 def sequence_index(index: str | int = "X") -> str:
@@ -314,22 +314,22 @@ DICT_KEY_TYPE = "dict_key_type"
 DICT_VALUE_TYPE = "dict_value_type"
 
 
-def create_type_tree(__type: TypeLike, attr_path: str = "") -> Node:
+def create_type_tree(type_: TypeLike, /, attr_path: str = "") -> Node:
     """Creates a tree of Nodes that acts as a schema for serializing
-    instances of `__type`.
+    instances of `type_`.
 
-    :param __type: The type to create a type tree for
+    :param type_: The type to create a type tree for
     :param attr_path: Accumulated attribute path. Used for enhancing error messages.
     :returns: The root of the type tree.
     """
-    if isinstance(__type, t.TypeVar):
+    if isinstance(type_, t.TypeVar):
         msg = "Cannot resolve type variables of generic classes"
         raise NotImplementedError(msg)
 
-    if is_ndarray(__type):
+    if is_ndarray(type_):
         hints = {}
-    elif is_generic(__type):
-        origin, *type_args = unwrap_generic(__type)
+    elif is_generic(type_):
+        origin, *type_args = unwrap_generic(type_)
 
         if origin in [list, t.Sequence, collections.abc.Sequence]:
             (type_arg,) = type_args
@@ -353,18 +353,18 @@ def create_type_tree(__type: TypeLike, attr_path: str = "") -> Node:
             hints = {union_index(i): arg for i, arg in enumerate(type_args)}
 
         else:
-            msg = f"Unexpected generic type at {attr_path!r}: '{__type}' (origin={origin}, type_args={type_args})"
+            msg = f"Unexpected generic type at {attr_path!r}: '{type_}' (origin={origin}, type_args={type_args})"
             raise ValueError(msg)
-    elif is_class(__type):
-        hints = get_class_type_hints(__type)
+    elif is_class(type_):
+        hints = get_class_type_hints(type_)
     else:
-        msg = f"Unexpected type at {attr_path!r}: '{__type}' of type {type(__type)}"
+        msg = f"Unexpected type at {attr_path!r}: '{type_}' of type {type(type_)}"
         raise RuntimeError(msg)
 
     try:
-        return Node(__type, {name: create_type_tree(hint) for name, hint in hints.items()})
+        return Node(type_, {name: create_type_tree(hint) for name, hint in hints.items()})
     except RecursionError:
-        msg = f"{__type} is recursive. Recursively defined classes are not supported"
+        msg = f"{type_} is recursive. Recursively defined classes are not supported"
         raise TypeError(msg)
 
 

@@ -57,7 +57,7 @@ def try_deserialize(group: h5py.Group, typ: type[_T]) -> _T | None:
 register_persistor = RegistryPersistor.register_persistor
 
 
-def register_json_presentable(__class: type[core.JsonPresentable]) -> None:
+def register_json_presentable(class_: type[core.JsonPresentable], /) -> None:
     """
     Register a JSON presentable class (class with 'to_json' & 'from_json')
 
@@ -65,4 +65,4 @@ def register_json_presentable(__class: type[core.JsonPresentable]) -> None:
 
     This can be called many times with the same type without repercussions.
     """
-    RegistryPersistor.register_persistor(core.Persistor.from_json_presentable(__class))
+    RegistryPersistor.register_persistor(core.Persistor.from_json_presentable(class_))

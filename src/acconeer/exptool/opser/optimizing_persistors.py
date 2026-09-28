@@ -25,8 +25,8 @@ class ScalarListPersistor(core.Persistor):
     SCALARS = (float, int, bool)
 
     @classmethod
-    def is_applicable(cls, __type: core.TypeLike) -> bool:
-        should_be_list, *type_args = core.unwrap_generic(__type)
+    def is_applicable(cls, type_: core.TypeLike, /) -> bool:
+        should_be_list, *type_args = core.unwrap_generic(type_)
 
         if should_be_list is list:
             (type_arg,) = type_args
@@ -68,8 +68,8 @@ class RaggedNumpyArrayPersistor(core.Persistor):
     PRIORITY: t.ClassVar[int] = RegistryPersistor.priority_higher_than(ListPersistor)
 
     @classmethod
-    def is_applicable(cls, __type: core.TypeLike) -> bool:
-        should_be_list, *type_args = core.unwrap_generic(__type)
+    def is_applicable(cls, type_: core.TypeLike, /) -> bool:
+        should_be_list, *type_args = core.unwrap_generic(type_)
 
         if should_be_list is not list:
             return False
@@ -121,8 +121,8 @@ class TrileanListPersistor(core.Persistor):
     PRIORITY: t.ClassVar[int] = RegistryPersistor.priority_higher_than(ListPersistor)
 
     @classmethod
-    def is_applicable(cls, __type: core.TypeLike) -> bool:
-        should_be_list, *type_args = core.unwrap_generic(__type)
+    def is_applicable(cls, type_: core.TypeLike, /) -> bool:
+        should_be_list, *type_args = core.unwrap_generic(type_)
 
         if should_be_list is list:
             (type_arg,) = type_args
@@ -189,8 +189,8 @@ class OptionalFloatListPersistor(core.Persistor):
     SENTINEL = np.inf
 
     @classmethod
-    def is_applicable(cls, __type: core.TypeLike) -> bool:
-        should_be_list, *type_args = core.unwrap_generic(__type)
+    def is_applicable(cls, type_: core.TypeLike, /) -> bool:
+        should_be_list, *type_args = core.unwrap_generic(type_)
 
         if should_be_list is list:
             (type_arg,) = type_args
@@ -225,8 +225,8 @@ class OptionalIntListPersistor(core.Persistor):
     SENTINEL = np.iinfo(np.int64).min
 
     @classmethod
-    def is_applicable(cls, __type: core.TypeLike) -> bool:
-        should_be_list, *type_args = core.unwrap_generic(__type)
+    def is_applicable(cls, type_: core.TypeLike, /) -> bool:
+        should_be_list, *type_args = core.unwrap_generic(type_)
 
         if should_be_list is list:
             (type_arg,) = type_args
@@ -257,8 +257,8 @@ class EnumListPersistor(core.Persistor):
     PRIORITY: t.ClassVar[int] = RegistryPersistor.priority_higher_than(ListPersistor)
 
     @classmethod
-    def is_applicable(cls, __type: core.TypeLike) -> bool:
-        should_be_list, *type_args = core.unwrap_generic(__type)
+    def is_applicable(cls, type_: core.TypeLike, /) -> bool:
+        should_be_list, *type_args = core.unwrap_generic(type_)
 
         if should_be_list is not list:
             return False
@@ -371,11 +371,11 @@ class SausageableAttrsPersistor(core.Persistor):
     PRIORITY: t.ClassVar[int] = RegistryPersistor.priority_higher_than(ListPersistor)
 
     @classmethod
-    def is_applicable(cls, __type: core.TypeLike) -> bool:
-        if not core.is_generic(__type):
+    def is_applicable(cls, type_: core.TypeLike, /) -> bool:
+        if not core.is_generic(type_):
             return False
 
-        origin, *type_args = core.unwrap_generic(__type)
+        origin, *type_args = core.unwrap_generic(type_)
 
         if origin is not list:
             return False

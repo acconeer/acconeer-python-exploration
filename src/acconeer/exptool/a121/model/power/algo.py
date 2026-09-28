@@ -23,16 +23,18 @@ _us = _uA = 1e-6
 
 @te.overload
 def _interleave(
-    __a: t.Iterable[_S],
-    __b: t.Iterable[_T],
-    __c: t.Iterable[_U],
+    a: t.Iterable[_S],
+    b: t.Iterable[_T],
+    c: t.Iterable[_U],
+    /,
 ) -> t.Iterator[_S | _T | _U]: ...
 
 
 @te.overload
 def _interleave(
-    __a: t.Iterable[_S],
-    __b: t.Iterable[_T],
+    a: t.Iterable[_S],
+    b: t.Iterable[_T],
+    /,
 ) -> t.Iterator[_S | _T]: ...
 
 
