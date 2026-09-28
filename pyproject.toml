@@ -133,6 +133,9 @@ extra-dependencies = [
 
 [tool.hatch.envs.hatch-test.env-vars]
 QT_QPA_PLATFORM = "offscreen"
+# sys.monitoring traces far cheaper than settrace, but before Python 3.14 can't
+# do branch coverage.
+COVERAGE_CORE = "sysmon"
 
 [[tool.hatch.envs.hatch-test.matrix]]
 python = ["3.12", "3.13"]
