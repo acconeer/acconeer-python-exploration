@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import contextlib
 import enum
 import os
 import signal
@@ -33,6 +34,8 @@ def start_example() -> Iterator[StartExample]:
             args,
             stdout=subprocess.PIPE,
             text=True,
+            # Its own session lets cleanup reach the example's children, e.g. a plotting process.
+            start_new_session=True,
             # Headless, so a closing plt.show() returns rather than waits on its window.
             env={
                 "QT_QPA_PLATFORM": "offscreen",
@@ -60,8 +63,8 @@ def start_example() -> Iterator[StartExample]:
     yield start
 
     for p, forwarder in started:
-        if p.poll() is None:
-            p.kill()
+        with contextlib.suppress(ProcessLookupError):
+            os.killpg(p.pid, signal.SIGKILL)
         # Joined so the example's last output lands in this test's report.
         forwarder.join(timeout=5)
         if not forwarder.is_alive() and p.stdout is not None:
@@ -273,9 +276,9 @@ def test_examples(example_script: str, tmp_path: Path, start_example: StartExamp
                 f" {ExampleInterruptHandler.PROMPT!r} within {startup_timeout_s} seconds."
             )
 
-    # The example is long-running and expects the user to interrupt it.
+    # The example runs until Ctrl-C, which a terminal sends to its whole process group.
     try:
-        p.send_signal(signal.SIGINT)
+        os.killpg(p.pid, signal.SIGINT)
         returncode = p.wait(timeout=interrupt_timeout_s)
     except subprocess.TimeoutExpired:
         pass
