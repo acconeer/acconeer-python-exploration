@@ -132,7 +132,8 @@ class Stm32FlashProtocol:
     def _read_bytes(self, length):
         byte_array = self._uart.read(length=length)
         if len(byte_array) != length:
-            Stm32FlashException("Device did not reply correct amount of data")
+            msg = "Device did not reply correct amount of data"
+            raise Stm32FlashException(msg)
         return byte_array
 
     def _checksum(self, array):
@@ -157,10 +158,11 @@ class Stm32FlashProtocol:
         WRITE_MEMORY = 0x31
 
         if len(byte_array) > 256:
-            Stm32FlashException("Memory chunk to large")
+            msg = "Memory chunk too large"
+            raise Stm32FlashException(msg)
 
         while (len(byte_array) % 4) != 0:
-            byte_array.extend(0xFF)
+            byte_array.append(0xFF)
 
         self._command(WRITE_MEMORY)
         self._send_address(address)
