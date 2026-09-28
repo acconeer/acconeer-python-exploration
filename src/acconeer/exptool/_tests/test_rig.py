@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import tempfile
@@ -87,14 +87,13 @@ class ProcessingTestModule:
         assert self.path_for_parameter_set({"foo": "bar"}) == (self.path / "output_foo-bar.h5")
 
     def test_load_save_compare(self):
-        temp_file = tempfile.TemporaryFile()
+        with tempfile.TemporaryFile() as temp_file:
+            saved_output = self.get_output()
 
-        saved_output = self.get_output()
+            self.save_output(temp_file, saved_output)
+            loaded_output = self.load_output(temp_file)
 
-        self.save_output(temp_file, saved_output)
-        loaded_output = self.load_output(temp_file)
-
-        self.compare_output(saved_output, loaded_output, exact=True)
+            self.compare_output(saved_output, loaded_output, exact=True)
 
     def test_processor_against_reference(self):
         for parameter_set in self.parameter_sets:

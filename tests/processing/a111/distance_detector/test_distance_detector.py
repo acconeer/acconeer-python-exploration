@@ -169,14 +169,13 @@ def path_for_parameter_set(parameter_set, calibration=False):
 
 
 def test_load_save_compare():
-    temp_file = tempfile.TemporaryFile()
+    with tempfile.TemporaryFile() as temp_file:
+        saved_output = get_output()
 
-    saved_output = get_output()
+        save_output(temp_file, saved_output)
+        loaded_output = load_output(temp_file)
 
-    save_output(temp_file, saved_output)
-    loaded_output = load_output(temp_file)
-
-    compare_output(saved_output, loaded_output, exact=True)
+        compare_output(saved_output, loaded_output, exact=True)
 
 
 def test_path_for_parameter_set():

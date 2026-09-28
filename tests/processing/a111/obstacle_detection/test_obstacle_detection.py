@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import tempfile
@@ -145,14 +145,13 @@ def path_for_parameter_set(parameter_set):
 
 
 def test_load_save_compare():
-    temp_file = tempfile.TemporaryFile()
+    with tempfile.TemporaryFile() as temp_file:
+        saved_output = test_module.get_output()
 
-    saved_output = test_module.get_output()
+        save_output(temp_file, saved_output)
+        loaded_output = test_module.load_output(temp_file)
 
-    save_output(temp_file, saved_output)
-    loaded_output = test_module.load_output(temp_file)
-
-    compare_output(saved_output, loaded_output)
+        compare_output(saved_output, loaded_output)
 
 
 def test_path_for_parameter_set():
