@@ -7,7 +7,7 @@ import abc
 import logging
 import traceback
 from pathlib import Path
-from typing import Any, Callable, Generic, Sequence, TypeVar
+from typing import Any, Callable, Sequence, TypeVar
 
 import h5py
 
@@ -42,7 +42,7 @@ def _has_errors(validation_results: Sequence[ValidationResult]) -> bool:
     return any(result.criticality == Criticality.ERROR for result in validation_results)
 
 
-class A2BackendPluginBase(Generic[T], BackendPlugin[T]):
+class A2BackendPluginBase(BackendPlugin[T]):
     _live_client: a2.Client | None
     _replaying_client: a2.Client | None
     _opened_record: a2.H5Record | None

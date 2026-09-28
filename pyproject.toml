@@ -330,6 +330,7 @@ extend-select = [
     "PYI018", "PYI030", "PYI041",
     "PYI032", "PYI036",
     "PYI019", "PYI034",
+    "PYI059",
     "G010",
 ]
 # E741 = Ambiguous variable names, e.g. I vs l

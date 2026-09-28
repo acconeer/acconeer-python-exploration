@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from acconeer.exptool._core.entities.validation_result import ValidationResult
 _DataT = t.TypeVar("_DataT")
 
 
-class DataEditor(t.Generic[_DataT], QWidget):
+class DataEditor(QWidget, t.Generic[_DataT]):
     """A DataEditor is a widget that enables a user to edit some data.
     The updated data can be used programmatically and is propagated via
     the `sig_update` Signal or retrieved via `get_data`.

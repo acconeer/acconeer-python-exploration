@@ -7,7 +7,7 @@ import abc
 import logging
 import re
 from pathlib import Path
-from typing import Any, Callable, Generic, TypeVar
+from typing import Any, Callable, TypeVar
 
 import h5py
 from packaging.version import Version
@@ -35,7 +35,7 @@ log = logging.getLogger(__name__)
 T = TypeVar("T")
 
 
-class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
+class A121BackendPluginBase(BackendPlugin[T]):
     _live_client: a121.Client | None
     _replaying_client: a121.Client | None
     _opened_record: a121.H5Record | None

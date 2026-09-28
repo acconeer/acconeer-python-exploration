@@ -69,8 +69,8 @@ class SetupMessage(GeneralMessage, Generic[ProcessorConfigT]):
 
 
 class GenericProcessorBackendPluginBase(
-    Generic[InputT, ProcessorConfigT, ResultT, MetadataT],
     A121BackendPluginBase[ProcessorBackendPluginSharedState[ProcessorConfigT]],
+    Generic[InputT, ProcessorConfigT, ResultT, MetadataT],
 ):
     _processor_instance: GenericProcessorBase[InputT, ResultT] | None
     _started: bool
