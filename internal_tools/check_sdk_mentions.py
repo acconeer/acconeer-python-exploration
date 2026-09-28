@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import re
+import sys
 import tomllib as toml
 from pathlib import Path
 from typing import Dict, List
@@ -111,4 +112,4 @@ if __name__ == "__main__":
         main()
     except Exception as e:
         print(*e.args)
-        exit(1)
+        sys.exit(1)

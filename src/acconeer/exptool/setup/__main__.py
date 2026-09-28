@@ -1,5 +1,7 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
+
+import sys
 
 from . import platforms as _  # noqa: F401
 from .base import PlatformInstall, SetupStep, prompts, utils
@@ -15,7 +17,7 @@ def main() -> None:
 
     mby_setupper = PlatformInstall.from_key(str(selected_platform))
     if selected_platform is None or mby_setupper is None:
-        exit()
+        sys.exit()
 
     setupper: SetupStep = utils.WithDescription(
         f"==== Setting up {selected_platform!r} will do the following:\n",
@@ -24,7 +26,7 @@ def main() -> None:
 
     if setupper is None:
         print(f"Platform {selected_platform!r} is not supported.")
-        exit(1)
+        sys.exit(1)
 
     if not args.silent:
         setupper.report()

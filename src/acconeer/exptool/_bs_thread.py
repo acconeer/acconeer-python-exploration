@@ -1,8 +1,9 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import logging
 import queue
+import sys
 import time
 from threading import Event, Thread
 
@@ -138,7 +139,7 @@ if __name__ == "__main__":
         try:
             bs_thread.put_data(y)
         except BSThreadDiedException:
-            exit()
+            sys.exit()
 
         time.sleep(0.01)
 

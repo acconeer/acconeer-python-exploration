@@ -4,6 +4,7 @@
 import contextlib
 import multiprocessing as mp
 import queue
+import sys
 import warnings
 from time import sleep, time
 
@@ -162,7 +163,7 @@ if __name__ == "__main__":
         try:
             pg_process.put_data([x, y])
         except PGProccessDiedException:
-            exit()
+            sys.exit()
 
         sleep(0.01)
 

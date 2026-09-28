@@ -43,7 +43,7 @@ try:
 except ImportError:
     traceback.print_exc(file=sys.stdout)
     print(INSTALL_MISSING_APP_EXTRA_INSTRUCTIONS)
-    exit(1)
+    sys.exit(1)
 
 
 from ._enums import ConnectionState, PluginGeneration

@@ -1,6 +1,7 @@
 # Copyright (c) Acconeer AB, 2024-2026
 # All rights reserved
 import argparse
+import sys
 from pathlib import Path
 
 
@@ -94,7 +95,7 @@ def main() -> None:
 
     if not (args.et_root / "pyproject.toml").exists():
         print(f"The directory {args.et_root} does not contain a 'pyproject.toml' file")
-        exit(1)
+        sys.exit(1)
 
     docpages_root = args.et_root / args.example_script_output_folder
     handwritten_example_index = docpages_root / "index.rst"
@@ -132,28 +133,28 @@ def main() -> None:
             print("Superfluous script docpages:")
             for path in superfluous_docpages:
                 print(" -", path)
-            exit(1)
+            sys.exit(1)
 
         if superfluous_category_indexes:
             print("Superfluous script indexes:")
             for path in superfluous_category_indexes:
                 print(" -", path)
-            exit(1)
+            sys.exit(1)
 
         if missing_docpages:
             print("Missing example script docpages for examples:")
             for path in missing_docpages:
                 print(" -", path)
-            exit(1)
+            sys.exit(1)
 
         if missing_category_indexes:
             print("Missing category index pages:")
             for path in missing_category_indexes:
                 print(" -", path)
-            exit(1)
+            sys.exit(1)
 
         print("All examples script docpages are up to date!")
-        exit(0)
+        sys.exit(0)
     elif args.verb == "fix":
         for useless_rst_file in superfluous_docpages.union(superfluous_category_indexes):
             print(f"Removing {useless_rst_file}")
@@ -172,10 +173,10 @@ def main() -> None:
             )
 
         print("All examples script docpages are up to date!")
-        exit(0)
+        sys.exit(0)
     else:
         print(f"Unknown verb {args.verb}.")
-        exit(1)
+        sys.exit(1)
 
 
 if __name__ == "__main__":

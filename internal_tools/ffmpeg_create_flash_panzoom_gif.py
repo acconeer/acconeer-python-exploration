@@ -1,10 +1,11 @@
 #!/bin/usr/env python3
-# Copyright (c) Acconeer AB, 2025
+# Copyright (c) Acconeer AB, 2025-2026
 # All rights reserved
 
 import argparse
 import math
 import subprocess as sp
+import sys
 from pathlib import Path
 
 
@@ -22,10 +23,10 @@ def main() -> None:
 
     if not input_path.is_file():
         print(f"ERROR: '{input_path}' is not a file")
-        exit(1)
+        sys.exit(1)
     if not force and output_path.exists():
         print(f"ERROR: Output path '{output_path}' already exists")
-        exit(1)
+        sys.exit(1)
 
     tmp_dir = Path("./tmp")
     tmp_dir.mkdir(exist_ok=True)

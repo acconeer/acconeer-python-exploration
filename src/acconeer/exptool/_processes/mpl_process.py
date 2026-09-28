@@ -151,7 +151,7 @@ if __name__ == "__main__":
         try:
             pp.put_data([x, y])
         except PlotProccessDiedException:
-            exit()
+            sys.exit()
 
         sleep(0.001)  # not necessary
 

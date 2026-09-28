@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 """This script checks whether CHANGELOG refers to the same version as the current git tag."""
@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import re
 import subprocess
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -108,7 +109,7 @@ def main() -> None:
     version_tag = prepare_release_version or git_tag
 
     if version_tag is None or Version(version_tag).is_prerelease:
-        exit(0 if status else 1)
+        sys.exit(0 if status else 1)
 
     if prepare_release_version is not None:
         print(f"Current commit is a prepare commit for {prepare_release_version}.")
@@ -130,7 +131,7 @@ def main() -> None:
         print("Unreleased changelog is not cleared")
         status = False
 
-    exit(0 if status else 1)
+    sys.exit(0 if status else 1)
 
 
 if __name__ == "__main__":

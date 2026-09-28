@@ -1,9 +1,10 @@
-# Copyright (c) Acconeer AB, 2025
+# Copyright (c) Acconeer AB, 2025-2026
 # All rights reserved
 
 import argparse
 import datetime
 import subprocess as sp
+import sys
 import tempfile
 import zipfile
 from pathlib import Path
@@ -48,16 +49,16 @@ def main() -> None:
     example_path = None if (args.example_path is None) else Path(args.example_path)
     if example_path is not None and not example_path.is_file():
         print(f"Cannot find file '{example_path}'")
-        exit(1)
+        sys.exit(1)
 
     for i, resource in enumerate(args.resources):
         if resource.count(":") != 1:
             print(f"Each --resource should have exactly 1 ':', was {resource!r}")
-            exit(1)
+            sys.exit(1)
         (src_path, _) = resource.split(":")
         if not Path(src_path).is_file():
             print(f"Cannot find resource file {i}, {resource!r}")
-            exit(1)
+            sys.exit(1)
 
     resources = [tuple(map(Path, mapping.split(":"))) for mapping in args.resources]
 
@@ -278,7 +279,7 @@ WINDOWS_BATCH_DOUBLE_CLICK_SCRIPT_CONTENT = """\
 @echo off
 
 echo --- Checking installed Python version
-python -c "import sys; exit(0 if sys.version_info[:2] in [(3, 9), (3, 10), (3, 11), (3, 12)] else 1)"
+python -c "import sys; sys.exit(0 if sys.version_info[:2] in [(3, 9), (3, 10), (3, 11), (3, 12)] else 1)"
 if %errorlevel% neq 0 (
     echo Python not of optimal version. Install one of Python 3.9, 3.10, 3.11, or 3.12.
     pause

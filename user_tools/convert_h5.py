@@ -7,6 +7,7 @@ from __future__ import annotations
 import abc
 import argparse
 import json
+import sys
 import typing as t
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -1632,7 +1633,7 @@ def main() -> None:
     if not (input_args.files_ok):
         # Exit if files files is not ok
         print(input_args.exit_text)
-        exit(1)
+        sys.exit(1)
     else:
         # Create directory if files files is ok
         input_args.output_path.mkdir(parents=True, exist_ok=True)
@@ -1646,7 +1647,7 @@ def main() -> None:
         )
     except Exception as e:
         print(e)
-        exit(1)
+        sys.exit(1)
 
     table_converter.print_information(verbose=input_args.verbose)
     print()
