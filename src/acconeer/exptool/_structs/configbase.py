@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import enum
@@ -276,7 +276,7 @@ class IntParameter(NumberParameter):
         self.step = kwargs.pop("step", 1)
         self.valid_values = kwargs.pop("valid_values", None)
 
-        limits = kwargs.get("limits", None)
+        limits = kwargs.get("limits")
         if self.valid_values is not None and limits is not None:
             msg = "valid_values and limits can not both be set on the same parameter"
             raise ValueError(msg)
@@ -325,7 +325,7 @@ class FloatParameter(NumberParameter):
 
         optional = kwargs.get("optional", False)
 
-        limits = kwargs.get("limits", None)
+        limits = kwargs.get("limits")
         if limits is not None and not any([lim is None for lim in limits]) and not optional:
             kwargs.setdefault("_pidget_class", "FloatSpinBoxAndSliderPidget")
         else:

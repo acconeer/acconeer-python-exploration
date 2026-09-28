@@ -255,7 +255,7 @@ def check_copyright(file_path, ignore_year, update_year, current_year, docs=Fals
             ".py": (copyright_exists_py, copyright_check_year_py, copyright_pattern_py),
         }
 
-        copyright_methods = link_copyright_methods.get(Path(file_path).suffix, None)
+        copyright_methods = link_copyright_methods.get(Path(file_path).suffix)
     else:
         copyright_methods = (
             copyright_exists_docs,
