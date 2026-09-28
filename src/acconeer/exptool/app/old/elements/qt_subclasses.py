@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from collections import namedtuple
@@ -94,7 +94,7 @@ class BiggerMessageBox(QtWidgets.QMessageBox):
 
 class Label(QLabel):
     def __init__(self, img, img_scale=0.7):
-        super(Label, self).__init__()
+        super().__init__()
 
         self.img_scale = img_scale
         self.pixmap = QPixmap(img)
@@ -339,13 +339,13 @@ class SessionInfoView(QWidget):
 
 class QHLine(QFrame):
     def __init__(self):
-        super(QHLine, self).__init__()
+        super().__init__()
         self.setFrameShape(QFrame.HLine)
         self.setFrameShadow(QFrame.Sunken)
 
 
 class QVLine(QFrame):
     def __init__(self):
-        super(QVLine, self).__init__()
+        super().__init__()
         self.setFrameShape(QFrame.VLine)
         self.setFrameShadow(QFrame.Sunken)

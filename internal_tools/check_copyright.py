@@ -350,9 +350,7 @@ def _get_modified_files():
         "--format=tformat:",
         "HEAD",
     ]
-    completed_process = subprocess.run(
-        git_args, stdout=subprocess.PIPE, universal_newlines=True, check=False
-    )
+    completed_process = subprocess.run(git_args, stdout=subprocess.PIPE, text=True, check=False)
     completed_process.check_returncode()
 
     return completed_process.stdout.splitlines()
@@ -360,9 +358,7 @@ def _get_modified_files():
 
 def _get_all_files():
     git_args = ["git", "ls-files"]
-    completed_process = subprocess.run(
-        git_args, stdout=subprocess.PIPE, universal_newlines=True, check=False
-    )
+    completed_process = subprocess.run(git_args, stdout=subprocess.PIPE, text=True, check=False)
     completed_process.check_returncode()
 
     return completed_process.stdout.splitlines()
@@ -377,9 +373,7 @@ def _get_commit_time():
         "--format=%cd",
         "HEAD",
     ]
-    completed_process = subprocess.run(
-        git_args, stdout=subprocess.PIPE, universal_newlines=True, check=False
-    )
+    completed_process = subprocess.run(git_args, stdout=subprocess.PIPE, text=True, check=False)
     completed_process.check_returncode()
 
     return int(completed_process.stdout.splitlines()[0])
@@ -416,7 +410,7 @@ def main():
         commit_time = _get_commit_time()
 
         current_year = (
-            datetime.datetime.fromtimestamp(commit_time, tz=datetime.timezone.utc).year
+            datetime.datetime.fromtimestamp(commit_time, tz=datetime.UTC).year
             if commit_time
             else None
         )

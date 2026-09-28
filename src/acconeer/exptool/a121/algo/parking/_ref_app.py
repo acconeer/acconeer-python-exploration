@@ -594,7 +594,7 @@ def get_sensor_configs(ref_app_config: RefAppConfig) -> dict[str, a121.SensorCon
 
     fwhm = ENVELOPE_FWHM_M[profile]
 
-    step_length_ideal = int(round((fwhm / APPROX_BASE_STEP_LENGTH_M)))
+    step_length_ideal = int(round(fwhm / APPROX_BASE_STEP_LENGTH_M))
     if step_length_ideal >= 24:
         step_length = int(np.floor(step_length_ideal / 24) * 24)
     else:

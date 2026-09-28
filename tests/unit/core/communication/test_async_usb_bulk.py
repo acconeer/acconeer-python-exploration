@@ -164,7 +164,7 @@ class FakeBus:
         self.written = bytearray()
         self.breaks = 0
         self.claimed = False
-        self.transfers: list["FakeAsyncTransfer"] = []
+        self.transfers: list[FakeAsyncTransfer] = []
         self.handle_closed = False
         self.context_closed = False
 

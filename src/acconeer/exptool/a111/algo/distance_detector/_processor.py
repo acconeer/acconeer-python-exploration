@@ -72,10 +72,8 @@ class Processor:
         self.sc_bg_nbr_sweeps = processing_config.sc_nbr_sweep_for_bg
 
         self.idx_cfar_pts = np.round(
-            (
-                processing_config.cfar_guard_m / 2.0 / self.dr
-                + np.arange(processing_config.cfar_window_m / self.dr)
-            )
+            processing_config.cfar_guard_m / 2.0 / self.dr
+            + np.arange(processing_config.cfar_window_m / self.dr)
         )
 
         self.cfar_one_sided = processing_config.cfar_one_sided

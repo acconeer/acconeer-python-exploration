@@ -326,7 +326,7 @@ class ExApp(Controller[ExAppConfig, ExAppResult]):
     def initialize_presence(self) -> None:
         assert self.cargo_presence_config is not None
         self.num_presence_frames_in_burst = int(
-            round((PRESENCE_RUN_TIME_S * self.cargo_presence_config.update_rate))
+            round(PRESENCE_RUN_TIME_S * self.cargo_presence_config.update_rate)
         )
         self.num_presence_frames_in_cycle = (
             self.cargo_presence_config.update_rate / self.cargo_presence_config.burst_rate

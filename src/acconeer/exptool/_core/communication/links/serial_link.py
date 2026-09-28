@@ -180,8 +180,8 @@ class SerialProcessLink(BaseSerialLink):
         pass
 
     def connect(self) -> None:
-        self._recv_queue: "mp.Queue[bytes]" = mp.Queue()
-        self._send_queue: "mp.Queue[tuple[str, int] | bytes]" = mp.Queue()
+        self._recv_queue: mp.Queue[bytes] = mp.Queue()
+        self._send_queue: mp.Queue[tuple[str, int] | bytes] = mp.Queue()
         self._flow_event = mp.Event()
         self._error_event = mp.Event()
 
@@ -324,8 +324,8 @@ class SerialProcessLink(BaseSerialLink):
 def serial_process_program(
     port: int,
     baud: int,
-    recv_q: "mp.Queue[bytes]",
-    send_q: "mp.Queue[tuple[str, int] | bytes]",
+    recv_q: mp.Queue[bytes],
+    send_q: mp.Queue[tuple[str, int] | bytes],
     flow_event: th.Event,
     error_event: th.Event,
 ) -> None:
@@ -349,8 +349,8 @@ def serial_process_program(
 def _serial_process_program(
     port: int,
     baud: int,
-    recv_q: "mp.Queue[bytes]",
-    send_q: "mp.Queue[tuple[str, int] | bytes]",
+    recv_q: mp.Queue[bytes],
+    send_q: mp.Queue[tuple[str, int] | bytes],
     flow_event: th.Event,
     error_event: th.Event,
 ) -> None:

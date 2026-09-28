@@ -51,10 +51,8 @@ class Calibration(ABC):
 
         if not extension_ok:
             raise ValueError(
-                (
-                    f'Extension of file "{path}" ("{extension}") is not valid.'
-                    + f"Should be one of {valid_extensions}."
-                )
+                f'Extension of file "{path}" ("{extension}") is not valid.'
+                + f"Should be one of {valid_extensions}."
             )
 
 

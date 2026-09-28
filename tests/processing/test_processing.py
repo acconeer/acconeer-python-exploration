@@ -442,7 +442,7 @@ def test_heatmap_processor(
 def test_motion_detection_processor(
     resource_name: str,
     processor_factory: t.Callable[
-        [a2.H5Record], "a2.algo.motion_detection.MotionDetectionProcessor"
+        [a2.H5Record], a2.algo.motion_detection.MotionDetectionProcessor
     ],
     should_update_outputs: bool,
 ) -> None:

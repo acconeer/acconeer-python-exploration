@@ -91,18 +91,18 @@ class CurrentBreakdown:
         return sum(self.currents.values(), 0.0)
 
     @classmethod
-    def zero(cls) -> "CurrentBreakdown":
+    def zero(cls) -> CurrentBreakdown:
         # Empty breakdown; arithmetic uses union-of-keys, so this is the
         # identity element for both ``+`` and ``-``.
         return cls({})
 
-    def __add__(self, other: "CurrentBreakdown") -> "CurrentBreakdown":
+    def __add__(self, other: CurrentBreakdown) -> CurrentBreakdown:
         keys = sorted(set(self.currents) | set(other.currents))
         return CurrentBreakdown(
             {s: self.currents.get(s, 0.0) + other.currents.get(s, 0.0) for s in keys}
         )
 
-    def __sub__(self, other: "CurrentBreakdown") -> "CurrentBreakdown":
+    def __sub__(self, other: CurrentBreakdown) -> CurrentBreakdown:
         keys = sorted(set(self.currents) | set(other.currents))
         return CurrentBreakdown(
             {s: self.currents.get(s, 0.0) - other.currents.get(s, 0.0) for s in keys}

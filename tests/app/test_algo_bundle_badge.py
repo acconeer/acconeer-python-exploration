@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import os
 import typing as t
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum, auto
 from pathlib import Path
 from uuid import UUID, uuid4
@@ -117,7 +117,7 @@ def test_badge_of_a_developer_bundle_tells_where_it_is(
     assert "failed" in badge.toolTip()
 
 
-_NOON_UTC = datetime(2026, 10, 22, 12, tzinfo=timezone.utc).timestamp()
+_NOON_UTC = datetime(2026, 10, 22, 12, tzinfo=UTC).timestamp()
 
 
 def _write_bundle(path: Path, content: bytes = b"module") -> Path:

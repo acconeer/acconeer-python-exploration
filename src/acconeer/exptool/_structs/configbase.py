@@ -479,7 +479,7 @@ class ConfigMeta(type):
             if isinstance(val, Parameter):
                 val._attr_name = key
 
-        return super(ConfigMeta, cls).__new__(cls, name, bases, d)
+        return super().__new__(cls, name, bases, d)
 
 
 class Config(metaclass=ConfigMeta):
