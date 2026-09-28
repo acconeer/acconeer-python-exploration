@@ -191,7 +191,7 @@ class DeviceSelectionPage(QWizardPage):
                     [
                         f"No <b>{self.field(WizardField.MODULE)}</b> can be recognized.",
                         "Is your module properly plugged in to this computer?",
-                        "Try reinserting USB cable and the clicking the Refresh Button above."
+                        "Try reinserting USB cable and then clicking the Refresh Button above.",
                         "As a last resort, check <i>Show all devices</i> and look for your device there.",
                     ]
                 )
