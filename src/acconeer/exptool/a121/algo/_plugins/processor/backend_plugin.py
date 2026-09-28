@@ -158,7 +158,6 @@ class GenericProcessorBackendPluginBase(
 
     def _validate_session_config(self, session_config: a121.SessionConfig) -> None:
         """Hook for validating session configs."""
-        pass
 
     def _start_session(self, recorder: a121.H5Recorder | None) -> None:
         session_config = self.shared_state.session_config

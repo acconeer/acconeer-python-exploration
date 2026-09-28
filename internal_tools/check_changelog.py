@@ -61,7 +61,7 @@ def get_first_match_in_string(pattern: str, string: str, *, group: int = 0) -> s
     """
     Searches for the first match of `pattern` in `string`. Returns `group`:th group (default 0)
     """
-    valid_group_numbers = range(0, re.compile(pattern).groups + 1)
+    valid_group_numbers = range(re.compile(pattern).groups + 1)
 
     if group not in valid_group_numbers:
         raise ValueError(

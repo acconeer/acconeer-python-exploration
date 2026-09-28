@@ -325,14 +325,14 @@ class _SubsweepConfig_w_enable_loopback(AttrsMappingTransformsMixin):
     profile: Profile = attrs.field(default=Profile.PROFILE_3, converter=Profile)
     prf: PRF = attrs.field(default=PRF.PRF_20_8_MHZ, converter=PRF)
     tx_antenna_mask: int = attrs.field(
-        default=0b111, converter=int, validator=av.in_(range(0b000, 0b111 + 1))
+        default=0b111, converter=int, validator=av.in_(range(0b111 + 1))
     )
     rx_antenna_mask: int = attrs.field(
-        default=0b1111, converter=int, validator=av.in_(range(0b0000, 0b1111 + 1))
+        default=0b1111, converter=int, validator=av.in_(range(0b1111 + 1))
     )
     hwaas_max: int = attrs.field(default=50, converter=int, validator=av.in_(range(1, 2047 + 1)))
     hwaas_min: int = attrs.field(default=1, converter=int, validator=av.in_(range(1, 2047 + 1)))
-    hwaas_exponent: int = attrs.field(default=0, converter=int, validator=av.in_(range(0, 4 + 1)))
+    hwaas_exponent: int = attrs.field(default=0, converter=int, validator=av.in_(range(4 + 1)))
     receiver_gain: int = attrs.field(default=10, converter=int, validator=av.in_(range(14 + 1)))
     enable_tx: bool = attrs.field(default=True, converter=bool)
     enable_loopback: bool = attrs.field(default=False, converter=bool)
@@ -346,10 +346,10 @@ class _SubsweepConfig_pre_dynamic_hwaas(AttrsMappingTransformsMixin):
     profile: Profile = attrs.field(default=Profile.PROFILE_3, converter=Profile)
     prf: PRF = attrs.field(default=PRF.PRF_20_8_MHZ, converter=PRF)
     tx_antenna_mask: int = attrs.field(
-        default=0b111, converter=int, validator=av.in_(range(0b000, 0b111 + 1))
+        default=0b111, converter=int, validator=av.in_(range(0b111 + 1))
     )
     rx_antenna_mask: int = attrs.field(
-        default=0b1111, converter=int, validator=av.in_(range(0b0000, 0b1111 + 1))
+        default=0b1111, converter=int, validator=av.in_(range(0b1111 + 1))
     )
     hwaas: int = attrs.field(default=50, converter=int, validator=av.in_(range(1, 2047 + 1)))
     receiver_gain: int = attrs.field(default=10, converter=int, validator=av.in_(range(14 + 1)))

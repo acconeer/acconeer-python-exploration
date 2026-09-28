@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -19,13 +19,11 @@ class CommunicationProtocol(abc.ABC, t.Generic[_ConfigT]):
     @abc.abstractmethod
     def setup_command(cls, config: _ConfigT) -> bytes:
         """The `setup` command."""
-        pass
 
     @classmethod
     @abc.abstractmethod
     def parse_message(cls, header: dict[str, t.Any], payload: bytes) -> Message:
         """Parses any supported Message given a header and a payload"""
-        pass
 
     @classmethod
     def get_system_info_command(cls) -> bytes:

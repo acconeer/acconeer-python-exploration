@@ -18,7 +18,6 @@ class SetupStep(abc.ABC):
         This method will be called before `install()` to let the user
         abort.
         """
-        pass
 
     @abc.abstractmethod
     def run(self) -> bool:
@@ -26,7 +25,6 @@ class SetupStep(abc.ABC):
 
         :returns: if the step ran successfully.
         """
-        pass
 
 
 class ShellCommandStep(SetupStep):

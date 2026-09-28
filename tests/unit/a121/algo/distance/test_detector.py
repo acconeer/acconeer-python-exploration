@@ -251,9 +251,7 @@ def test_config_mismatch_detects_changes_relevant_to_noise_calibration(
     original_config = distance.DetectorConfig(start_m=0.25, end_m=1.0)
     context = _calibrated_context(original_config, sensor_ids)
 
-    changed_config = distance.DetectorConfig(
-        **{**{"start_m": 0.25, "end_m": 1.0}, **changed_kwargs}
-    )
+    changed_config = distance.DetectorConfig(start_m=0.25, end_m=1.0, **changed_kwargs)
 
     status = distance.Detector.get_detector_status(changed_config, context, sensor_ids)
 

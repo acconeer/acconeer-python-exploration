@@ -58,12 +58,10 @@ class PlotPluginBase(UiPluginBase):
     @abc.abstractmethod
     def handle_message(self, message: GeneralMessage) -> None:
         """Handles messages with recipient=="plot_plugin" from the BackendPlugin"""
-        pass
 
     @abc.abstractmethod
     def draw(self) -> None:
         """Gets called with a set frequency (see PluginPlotArea)"""
-        pass
 
 
 # def handle_message(self, message: GeneralMessage) -> None:

@@ -1992,7 +1992,7 @@ class GUI(QMainWindow):
         self.textboxes["host"].setText(last_config["host"])
 
         interface_index = last_config["interface"]
-        if interface_index not in range(0, self.interface_dd.count()):
+        if interface_index not in range(self.interface_dd.count()):
             interface_index = 0
         self.interface_dd.setCurrentIndex(interface_index)
 

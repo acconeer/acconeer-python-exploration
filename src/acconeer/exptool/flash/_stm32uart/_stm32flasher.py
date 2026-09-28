@@ -170,7 +170,7 @@ class Stm32FlashProtocol:
     def sync(self):
         CMD_SYNC = bytearray([0x7F])
         # Try so SYNC twice before failing
-        for _ in range(0, 2):
+        for _ in range(2):
             try:
                 self._uart.write(CMD_SYNC)
                 self._wait_for_ack_or_nack()

@@ -853,7 +853,7 @@ class A121ProcessedData:
 
         # Create dict from configurations and sensor id
         self.algo_data_as_dict = {
-            **{"sensor_id": sensor_id},
+            "sensor_id": sensor_id,
             **(RefAppConfig.to_dict()),
             **(RefAppContext.to_dict()),
         }
@@ -890,7 +890,7 @@ class A121ProcessedData:
 
         # Create dict from configurations and sensor id
         self.algo_data_as_dict = {
-            **{"sensor_id": self._record.sensor_id},
+            "sensor_id": self._record.sensor_id,
             **(processor_config.to_dict()),
         }
 
@@ -922,7 +922,7 @@ class A121ProcessedData:
         sensor_id, ref_app_config = breathing._ref_app._load_algo_data(self.h5_file["algo"])
 
         # Create Dict from configurations and sensor id
-        self.algo_data_as_dict = {**{"sensor_id": sensor_id}, **(ref_app_config.to_dict())}
+        self.algo_data_as_dict = {"sensor_id": sensor_id, **(ref_app_config.to_dict())}
 
         # Client preparation
         ref_app = breathing.RefApp(
@@ -955,7 +955,7 @@ class A121ProcessedData:
 
         # Create Dict from configurations, sensor id, and detector context
         self.algo_data_as_dict = {
-            **{"sensor_ids": sensor_ids},
+            "sensor_ids": sensor_ids,
             **(detector_config.to_dict()),
             **(detector_context.to_dict()),
         }
@@ -993,7 +993,7 @@ class A121ProcessedData:
 
         # Create Dict from configurations, sensor id, and detector context
         self.algo_data_as_dict = {
-            **{"sensor_id": sensor_ids},
+            "sensor_id": sensor_ids,
             **(detector_config.to_dict()),
             **(processor_config.to_dict()),
         }
@@ -1034,7 +1034,7 @@ class A121ProcessedData:
         )
 
         # Create DataFrames from configurations, sensor id, and detector context
-        self.algo_data_as_dict = {**{"sensor_id": sensor_id}, **(ModeHandlerConfig.to_dict())}
+        self.algo_data_as_dict = {"sensor_id": sensor_id, **(ModeHandlerConfig.to_dict())}
 
         # Client preparation
         aggregator = hand_motion.ModeHandler(
@@ -1068,7 +1068,7 @@ class A121ProcessedData:
 
         # Create DataFrames from configurations and sensor id
         self.algo_data_as_dict = {
-            **{"sensor_ids": sensor_ids},
+            "sensor_ids": sensor_ids,
             **(config.to_dict()),
             **(tank_level_context.to_dict()),
         }
@@ -1104,7 +1104,7 @@ class A121ProcessedData:
         )
 
         # Create Dict from configurations and sensor id
-        self.algo_data_as_dict = {**{"sensor_ids": sensor_id}, **(ExampleAppConfig.to_dict())}
+        self.algo_data_as_dict = {"sensor_ids": sensor_id, **(ExampleAppConfig.to_dict())}
 
         # Client preparation
         example_app = surface_velocity.ExampleApp(
@@ -1139,7 +1139,7 @@ class A121ProcessedData:
         detector_context_dict = detector_context.to_dict() if detector_context is not None else {}
         # Create Dict from configurations, sensor id, and detector context
         self.algo_data_as_dict = {
-            **{"sensor_ids": sensor_id},
+            "sensor_ids": sensor_id,
             **(detector_config.to_dict()),
             **detector_context_dict,
         }
@@ -1179,7 +1179,7 @@ class A121ProcessedData:
 
         # Create Dict from configurations, sensor id, and detector context
         self.algo_data_as_dict = {
-            **{"sensor_ids": sensor_id},
+            "sensor_ids": sensor_id,
             **(RefAppConfig.to_dict()),
             **(RefAppContext.to_dict()),
         }
@@ -1219,7 +1219,7 @@ class A121ProcessedData:
 
         # Create Dict from configurations and sensor id
         self.algo_data_as_dict = {
-            **{"sensor_ids": self._record.sensor_id},
+            "sensor_ids": self._record.sensor_id,
             **(processor_config.to_dict()),
         }
 
@@ -1252,7 +1252,7 @@ class A121ProcessedData:
         sensor_id, example_app_config = vibration._load_algo_data(self.h5_file["algo"])
 
         # Create Dict from configurations and sensor id
-        self.algo_data_as_dict = {**{"sensor_ids": sensor_id}, **(example_app_config.to_dict())}
+        self.algo_data_as_dict = {"sensor_ids": sensor_id, **(example_app_config.to_dict())}
 
         # Client preparation
         example_app = vibration.ExampleApp(
@@ -1286,7 +1286,7 @@ class A121ProcessedData:
 
         # Create Dict from configurations, sensor id, and detector context
         self.algo_data_as_dict = {
-            **{"sensor_ids": sensor_ids},
+            "sensor_ids": sensor_ids,
             **(detector_config.to_dict()),
             **(detector_context.to_dict()),
         }
@@ -1327,7 +1327,7 @@ class A121ProcessedData:
 
         # Create Dict from configurations and sensor id
         self.algo_data_as_dict = {
-            **{"sensor_ids": self._record.sensor_id},
+            "sensor_ids": self._record.sensor_id,
             **(processor_config.to_dict()),
         }
 
@@ -1360,7 +1360,7 @@ class A121ProcessedData:
         sensor_id, detector_config = speed._detector._load_algo_data(self.h5_file["algo"])
 
         # Create DataFrames from configurations, sensor id, and detector context
-        self.algo_data_as_dict = {**{"sensor_ids": sensor_id}, **(detector_config.to_dict())}
+        self.algo_data_as_dict = {"sensor_ids": sensor_id, **(detector_config.to_dict())}
 
         # Client preparation
         detector = speed.Detector(

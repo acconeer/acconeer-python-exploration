@@ -187,7 +187,7 @@ class MockClient(Client, register=True):
             shape=(sensor_config._sweeps_per_frame, metadata.sweep_data_length),
             dtype=INT_16_COMPLEX,
         )
-        for sweep in range(0, sensor_config._sweeps_per_frame):
+        for sweep in range(sensor_config._sweeps_per_frame):
             sweep_offset = 0
             for subsweep in sensor_config.subsweeps:
                 subsweep_data = self._get_mock_data(sensor_id, subsweep)

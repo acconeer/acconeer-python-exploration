@@ -9,8 +9,6 @@ from enum import Enum
 class _StrEnum(str, Enum):
     """Little middle-class that enables string equality checking and is an enum."""
 
-    pass
-
 
 class Protocol(_StrEnum):
     EXPLORATION = "exploration"

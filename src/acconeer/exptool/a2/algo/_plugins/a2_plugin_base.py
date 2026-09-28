@@ -122,7 +122,6 @@ class A2BackendPluginBase(Generic[T], BackendPlugin[T]):
     @abc.abstractmethod
     def _load_from_cache(self, file: h5py.File) -> T:
         """The current state with what the cache holds applied"""
-        pass
 
     @abc.abstractmethod
     def get_next(self) -> None:

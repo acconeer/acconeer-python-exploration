@@ -71,7 +71,6 @@ class Client(
         Sensor calibrations may be reused by reading it from :py:attr:`Metadata.sensor_calibration`
         passing it to the ``calibration`` parameter.
         """
-        pass
 
     @property
     def calibration(self) -> str:

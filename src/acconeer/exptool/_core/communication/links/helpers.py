@@ -84,7 +84,6 @@ def autodetermine_client_info(
 
     except CommDeviceError as exc:
         error_message += f"\nUSB: {str(exc)}"
-        pass
 
     try:
         serial_info = client_info.serial

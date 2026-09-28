@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 import abc
@@ -24,34 +24,28 @@ class BufferedLink(abc.ABC):
     @abc.abstractmethod
     def _update_timeout(self) -> None:
         """Propagates the newly set timeout (found in self._timeout)"""
-        pass
 
     @abc.abstractmethod
     def connect(self) -> None:
         """Establishes a connection."""
-        pass
 
     @abc.abstractmethod
     def recv(self, num_bytes: int) -> bytes:
         """Recieves `num_bytes` bytes."""
-        pass
 
     @abc.abstractmethod
     def recv_until(self, byte_sequence: bytes) -> bytes:
         """Collects all bytes until `byte_sequence` is encountered,
         returning what was collected
         """
-        pass
 
     @abc.abstractmethod
     def send(self, bytes_: bytes) -> None:
         """Sends all `bytes_` over the link."""
-        pass
 
     @abc.abstractmethod
     def disconnect(self) -> None:
         """Tears down the connection."""
-        pass
 
 
 class LinkError(RuntimeError):

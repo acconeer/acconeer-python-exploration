@@ -21,7 +21,6 @@ class PlatformInstall(SetupGroup):
         This is the same key that gets displayed in the selection menu and is
         used with the `--platform` command line argument.
         """
-        pass
 
     @classmethod
     def from_key(cls, platform_key: str) -> PlatformInstall | None:
