@@ -188,17 +188,11 @@ class AttrsConfigEditor(DataEditor[T | None]):
             # come through here anyway
             return True
 
-        result_handled = False
+        if result.source != self._config or result.aspect not in self._pidget_mapping:
+            return False
 
-        if result.source == self._config:
-            for aspect, pidget in self._pidget_mapping.items():
-                if result.aspect == aspect:
-                    self._pidget_mapping[result.aspect].set_note_text(
-                        result.message, result.criticality
-                    )
-                    result_handled = True
-
-        return result_handled
+        self._pidget_mapping[result.aspect].set_note_text(result.message, result.criticality)
+        return True
 
     def _update_config_aspect(self, aspect: str, value: Any) -> None:
         if self._config is None:

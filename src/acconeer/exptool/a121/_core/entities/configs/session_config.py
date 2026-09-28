@@ -155,7 +155,7 @@ class SessionConfig:
     def _collect_validation_results(self) -> list[ValidationResult]:
         validation_results = []
         for group in self._groups:
-            for _, sensor_config in group.items():
+            for sensor_config in group.values():
                 validation_results.extend(sensor_config._collect_validation_results())
 
         if len(self._groups) > 1:

@@ -310,7 +310,7 @@ class UnionPersistor(core.Persistor):
 
     def _load(self) -> t.Any:
         errors = []
-        for name, subtree in self.type_tree.children.items():
+        for subtree in self.type_tree.children.values():
             try:
                 res = RegistryPersistor(self.parent_group, self.name, subtree).load()
             except core.LoadError as load_error:

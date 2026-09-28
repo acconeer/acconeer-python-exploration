@@ -316,6 +316,7 @@ extend-select = [
     "UP031", "UP032",
     "C401", "C403", "C405", "C413", "C414", "C419",
     "PIE790", "PIE794", "PIE800", "PIE808",
+    "PERF102", "PERF402",
 ]
 # E741 = Ambiguous variable names, e.g. I vs l
 # SIM108 = Has a tendancy to create ternary one-liners.

@@ -65,11 +65,7 @@ def test_cookiejar_contains_logged_in_cookie(
     repo.login(username, password)
     assert repo.cookies is not None
 
-    found = False
-    for k, v in repo.cookies.items():
-        if "logged_in" in k:
-            found = True
-
+    found = any("logged_in" in cookie.name for cookie in repo.cookies)
     assert found, "No cookie with name '*_logged_in_*' was found in cookiejar."
 
 

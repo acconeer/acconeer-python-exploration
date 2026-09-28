@@ -1489,19 +1489,15 @@ class A121ProcessedData:
     def distance_result_as_row(
         self, processed_data: dict[int, distance._detector.DetectorResult], sensor_ids: list[int]
     ) -> None:
-        distances = []
-        strengths = []
+        distances: list[np.float64] = []
+        strengths: list[np.float64] = []
 
         for sensor_id in sensor_ids:
-            # Explicitly inform the type checker that distances is not None here
-            # This will pass mypy checker
+            # Never None here. The cast is for mypy.
             non_null_distances = cast(npt.NDArray[np.float64], processed_data[sensor_id].distances)
-            for distance_result in non_null_distances:
-                distances.append(distance_result)
-            # Explicitly inform the type checker that strengths is not None here
+            distances.extend(non_null_distances)
             non_null_strengths = cast(npt.NDArray[np.float64], processed_data[sensor_id].strengths)
-            for strength_result in non_null_strengths:
-                strengths.append(strength_result)
+            strengths.extend(non_null_strengths)
 
         self.processed_data.setdefault("distances", []).append(distances)
         self.processed_data.setdefault("strengths", []).append(strengths)

@@ -218,7 +218,7 @@ class TestASetupClient(CanAttachAndDetachRecorder):
     def test_not_calibrations_provided(self, client):
         calibrations_provided = client.calibrations_provided
 
-        for _, provided in calibrations_provided.items():
+        for provided in calibrations_provided.values():
             assert not provided
 
     def test_multiple_calibrations_provided_after_setup(self, client):

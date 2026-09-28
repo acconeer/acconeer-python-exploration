@@ -87,7 +87,7 @@ class SelectPluginToReplayInDialog(QDialog, t.Generic[_PluginOptionT]):
         default_button.setChecked(True)
 
         self.button_group = QButtonGroup()
-        for _, (btn, _) in self.plugin_choice_buttons.items():
+        for btn, _ in self.plugin_choice_buttons.values():
             self.button_group.addButton(btn)
 
         self.dialog_buttons = QDialogButtonBox(
@@ -99,7 +99,7 @@ class SelectPluginToReplayInDialog(QDialog, t.Generic[_PluginOptionT]):
         layout = QVBoxLayout()
         layout.addWidget(label)
 
-        for _, (btn, _) in self.plugin_choice_buttons.items():
+        for btn, _ in self.plugin_choice_buttons.values():
             layout.addWidget(btn)
 
         layout.addWidget(self.dialog_buttons)
@@ -109,7 +109,7 @@ class SelectPluginToReplayInDialog(QDialog, t.Generic[_PluginOptionT]):
     @property
     def selected_plugin_option(self) -> _PluginOptionT:
         checked_button = self.button_group.checkedButton()
-        for key, (btn, po) in self.plugin_choice_buttons.items():
+        for btn, po in self.plugin_choice_buttons.values():
             if btn is checked_button:
                 return po
 

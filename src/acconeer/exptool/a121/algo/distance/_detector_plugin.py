@@ -578,7 +578,7 @@ class ViewPlugin(A121ViewPluginBase):
             far_range_configs = []
 
             for group in session_config.groups:
-                for _, sensor_config in group.items():
+                for sensor_config in group.values():
                     if sensor_config.subsweeps[0].enable_loopback:
                         close_range_config = sensor_config
                     else:

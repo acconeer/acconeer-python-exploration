@@ -417,9 +417,7 @@ class SausageableAttrsPersistor(core.Persistor):
             for attribute_name, attribute_type_tree in attrs_type_tree.children.items()
         }
 
-        lengths = {
-            len(attribute_list) for attribute_name, attribute_list in attribute_lists.items()
-        }
+        lengths = {len(attribute_list) for attribute_list in attribute_lists.values()}
 
         (length,) = lengths
 

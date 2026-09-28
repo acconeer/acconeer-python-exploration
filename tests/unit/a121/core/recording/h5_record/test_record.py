@@ -50,7 +50,7 @@ def test_extended_metadata(ref_record: a121.Record, ref_metadata: a121.Metadata)
     # ref_record is setup to have multiple identical sessions
     for i in range(ref_record.num_sessions):
         for group in ref_record.session(i).extended_metadata:
-            for _sensor_id, metadata in group.items():
+            for metadata in group.values():
                 assert metadata == ref_metadata
 
 
@@ -73,7 +73,7 @@ def test_extended_results(
     for i in range(ref_record.num_sessions):
         for measurement in ref_record.session(i).extended_results:
             for group in measurement:
-                for _sensor_id, result in group.items():
+                for result in group.values():
                     np.testing.assert_array_equal(result._frame, ref_frame_raw)
                     np.testing.assert_array_equal(result.frame, ref_frame)
 

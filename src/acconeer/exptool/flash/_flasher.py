@@ -183,7 +183,7 @@ def _get_flash_device_from_args(
 
 def get_flash_known_devices() -> list[str]:
     known_devices = []
-    for _, item in EVK_TO_PRODUCT_MAP.items():
+    for item in EVK_TO_PRODUCT_MAP.values():
         if item not in known_devices:
             known_devices.append(item)
     return known_devices

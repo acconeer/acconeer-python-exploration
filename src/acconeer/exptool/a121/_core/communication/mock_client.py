@@ -245,7 +245,7 @@ class MockClient(Client, register=True):
 
         self._sensor_calibrations = {}
         for group in config.groups:
-            for sensor_id, sensor_config in group.items():
+            for sensor_id in group:
                 self._sensor_calibrations[sensor_id] = SensorCalibration(
                     temperature=25,
                     data="mocked calibration",
