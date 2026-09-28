@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Callable, Mapping, Optional
+from typing import Any, Callable, Mapping
 
 import attrs
 import h5py
@@ -70,7 +70,7 @@ log = logging.getLogger(__name__)
 class SharedState:
     sensor_id: int = attrs.field(default=1)
     config: DetectorConfig = attrs.field(factory=DetectorConfig)
-    context: Optional[DetectorContext] = attrs.field(default=None)
+    context: DetectorContext | None = attrs.field(default=None)
 
 
 @attrs.frozen(kw_only=True)
@@ -95,8 +95,8 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
     ) -> None:
         super().__init__(callback=callback, generation=generation, key=key)
 
-        self._recorder: Optional[a121.H5Recorder] = None
-        self._detector_instance: Optional[Detector] = None
+        self._recorder: a121.H5Recorder | None = None
+        self._detector_instance: Detector | None = None
         self._log = BackendLogger.getLogger(__name__)
 
         self.restore_defaults()
@@ -142,7 +142,7 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
         self.shared_state.context = context
         self.shared_state.sensor_id = record.sensor_id
 
-    def _start_session(self, recorder: Optional[a121.H5Recorder]) -> None:
+    def _start_session(self, recorder: a121.H5Recorder | None) -> None:
         assert self.client
         self._detector_instance = Detector(
             client=self.client,
@@ -179,7 +179,7 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
 class PlotPlugin(PgPlotPlugin):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model=app_model)
-        self._plot_job: Optional[DetectorResult] = None
+        self._plot_job: DetectorResult | None = None
         self._is_setup = False
 
     def handle_message(self, message: backend.GeneralMessage) -> None:
@@ -513,7 +513,7 @@ class ViewPlugin(A121ViewPluginBase):
     def _get_pidget_mapping(cls) -> PidgetGroupFactoryMapping:
         return _pidget_mapping.get_pidget_mapping()
 
-    def on_backend_state_update(self, state: Optional[SharedState]) -> None:
+    def on_backend_state_update(self, state: SharedState | None) -> None:
         if state is None:
             self.config_editor.set_data(None)
             self.sensor_config_status.set_data(None)
@@ -560,7 +560,7 @@ class ViewPlugin(A121ViewPluginBase):
         BackendPlugin.update_sensor_id.rpc(self.app_model.put_task, sensor_id=sensor_id)
 
 
-def _set_config_presenter(config: Any, presentation_type: PresentationType) -> Optional[str]:
+def _set_config_presenter(config: Any, presentation_type: PresentationType) -> str | None:
     if isinstance(config, DetectorConfig) and presentation_type is PresentationType.C_SET_CONFIG:
         step_length_call = (
             "acc_detector_presence_config_auto_step_length_set(presence_config, true)"

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import enum
 import warnings
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import attrs
 import h5py
@@ -62,7 +62,7 @@ class RefAppConfig(AlgoConfigBase):
     end_m: float = attrs.field(default=0.5)
     """End of measurement range."""
 
-    max_step_length: Optional[int] = attrs.field(default=None)
+    max_step_length: int | None = attrs.field(default=None)
     """If set, limits the step length.
 
     If no argument is provided, the step length is automatically calculated based on the profile.
@@ -147,7 +147,7 @@ class RefAppConfig(AlgoConfigBase):
     threshold whenever close range is active.
     """
 
-    update_rate: Optional[float] = attrs.field(default=50.0)
+    update_rate: float | None = attrs.field(default=50.0)
     """Sets the detector update rate."""
 
     median_filter_length: int = attrs.field(default=5)
@@ -300,7 +300,7 @@ class RefAppConfig(AlgoConfigBase):
 @attrs.frozen(kw_only=True)
 class RefAppExtraResult:
     processor_extra_result: ProcessorExtraResult
-    detector_result: Dict[int, DetectorResult]
+    detector_result: dict[int, DetectorResult]
 
 
 RefAppContext = DetectorContext
@@ -309,12 +309,12 @@ ref_app_context_timeline = detector_context_timeline
 
 @attrs.frozen(kw_only=True)
 class RefAppResult:
-    peak_detected: Optional[bool]
+    peak_detected: bool | None
     """True if a peak (level) is detected, False if no peak is
     detected, or None if a result is not available."""
-    peak_status: Optional[ProcessorLevelStatus]
+    peak_status: ProcessorLevelStatus | None
     """Status assigned to the detected peak."""
-    level: Optional[float]
+    level: float | None
     """Liquid level relative to the base of the tank."""
     extra_result: RefAppExtraResult
     """Extra result: Only used for the plots in the GUI."""
@@ -327,7 +327,7 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         client: a121.Client,
         sensor_id: int,
         config: RefAppConfig,
-        context: Optional[RefAppContext] = None,
+        context: RefAppContext | None = None,
     ) -> None:
         super().__init__(client=client, config=config)
         self.sensor_id = sensor_id
@@ -357,7 +357,7 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         self._detector.calibrate_detector()
 
     def start(
-        self, recorder: Optional[a121.Recorder] = None, algo_group: Optional[h5py.Group] = None
+        self, recorder: a121.Recorder | None = None, algo_group: h5py.Group | None = None
     ) -> None:
         if self.started:
             msg = "Already started"
@@ -379,7 +379,7 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
 
         self.started = True
 
-    def _get_next_mean_median(self) -> Tuple[ProcessorResult, RefAppExtraResult]:
+    def _get_next_mean_median(self) -> tuple[ProcessorResult, RefAppExtraResult]:
         current_peak_status = None
         # fetch new data until processor has accumulated enough data to give result.
         # get_next() will be called {median_filter_length * num_medians_to_average} times.
@@ -489,7 +489,7 @@ def _record_algo_data(
     opser.serialize(context, context_group)
 
 
-def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, RefAppConfig, RefAppContext]:
+def _load_algo_data(algo_group: h5py.Group) -> tuple[int, RefAppConfig, RefAppContext]:
     sensor_id = int(algo_group["sensor_id"][()])
 
     try:
@@ -516,7 +516,7 @@ def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, RefAppConfig, RefAppCo
 class _RefAppConfig_v1(AlgoConfigBase):
     start_m: float = attrs.field(default=0.03)
     end_m: float = attrs.field(default=0.5)
-    max_step_length: Optional[int] = attrs.field(default=None)
+    max_step_length: int | None = attrs.field(default=None)
     max_profile: a121.Profile = attrs.field(default=a121.Profile.PROFILE_5, converter=a121.Profile)
     close_range_leakage_cancellation: bool = attrs.field(default=False)
     signal_quality: float = attrs.field(default=15.0)
@@ -536,7 +536,7 @@ class _RefAppConfig_v1(AlgoConfigBase):
     fixed_threshold_value: float = attrs.field(default=100.0)
     fixed_strength_threshold_value: float = attrs.field(default=0.0)
     threshold_sensitivity: float = attrs.field(default=0.5)
-    update_rate: Optional[float] = attrs.field(default=50.0)
+    update_rate: float | None = attrs.field(default=50.0)
     median_filter_length: int = attrs.field(default=5)
     num_medians_to_average: int = attrs.field(default=1)
 

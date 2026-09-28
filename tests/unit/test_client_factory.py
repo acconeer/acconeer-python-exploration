@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-from typing import List, Type, Union
-
 import pytest
 
 from acconeer.exptool._core.communication import links
@@ -29,7 +27,7 @@ def resolve_attribute_path(obj, attribute_path):
     return obj
 
 
-def assert_client_types(obj, attribute_path, types: Union[List[Type], Type]):
+def assert_client_types(obj, attribute_path, types: list[type] | type):
     """
     `types` is a single type or a list of types, where the attribute
     at `attribute_path` needs to be atleast one of the types.

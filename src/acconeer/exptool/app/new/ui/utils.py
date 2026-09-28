@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Optional
 
 from PySide6 import QtCore
 from PySide6.QtWidgets import (
@@ -65,7 +64,7 @@ class LayoutWrapper(QWidget):
 
 
 class HorizontalSeparator(QFrame):
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setFrameShape(QFrame.Shape.HLine)
 

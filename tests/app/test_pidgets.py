@@ -46,7 +46,7 @@ class TestPidgets:
 
     @pytest.mark.parametrize("factory_class", _all_subclasses(pidgets.PidgetFactory))
     def test_pidget_factory(
-        self, factory_class: t.Type[pidgets.PidgetFactory], hooks_argument: t.Any
+        self, factory_class: type[pidgets.PidgetFactory], hooks_argument: t.Any
     ) -> None:
         EXTRA_KWARGS: dict[type, dict[str, t.Any]] = {
             pidgets.EnumPidgetFactory: dict(enum_type=enum.Enum, label_mapping={}),
@@ -73,7 +73,7 @@ class TestPidgets:
 
     @pytest.mark.parametrize("group_class", _all_subclasses(pidgets.PidgetGroup))
     def test_create_pidget_group(
-        self, group_class: t.Type[pidgets.PidgetGroup], hooks_argument: t.Any
+        self, group_class: type[pidgets.PidgetGroup], hooks_argument: t.Any
     ) -> None:
         EXTRA_KWARGS: dict[type, dict[str, t.Any]] = {
             pidgets.CollapsiblePidgetGroup: dict(label=":)", collapsed=True)

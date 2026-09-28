@@ -1,9 +1,8 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
 import enum
-from typing import List, Optional
 
 import attrs
 import numpy as np
@@ -57,7 +56,7 @@ class BreathingProcessorConfig(AlgoProcessorConfigBase):
 
     def _collect_validation_results(
         self, config: a121.SessionConfig
-    ) -> List[a121.ValidationResult]:
+    ) -> list[a121.ValidationResult]:
         validation_results: list[a121.ValidationResult] = []
 
         if config.sensor_config.frame_rate is None:
@@ -84,7 +83,7 @@ class BreathingProcessorExtraResult:
 
 @attrs.mutable(kw_only=True)
 class BreathingProcessorResult:
-    breathing_rate: Optional[float] = attrs.field(default=None)
+    breathing_rate: float | None = attrs.field(default=None)
     """Estimated breathing rate. Breaths per minute."""
 
     extra_result: BreathingProcessorExtraResult
@@ -111,8 +110,8 @@ class BreathingProcessor(ProcessorBase[BreathingProcessorResult]):
     start_time: float
     init_counter: int
     point_counter: int
-    prev_angle: Optional[float]
-    lp_filt_ampl: Optional[float]
+    prev_angle: float | None
+    lp_filt_ampl: float | None
     angle_unwrapped: npt.NDArray[np.float64]
 
     def __init__(
@@ -327,7 +326,7 @@ class ProcessorConfig(AlgoProcessorConfigBase):
 
     def _collect_validation_results(
         self, config: a121.SessionConfig
-    ) -> List[a121.ValidationResult]:
+    ) -> list[a121.ValidationResult]:
         validation_results: list[a121.ValidationResult] = []
 
         if config.sensor_config.frame_rate is None:
@@ -347,13 +346,13 @@ class ProcessorResult:
     app_state: AppState
     """Application state."""
 
-    distances_being_analyzed: Optional[tuple[int, int]] = None
+    distances_being_analyzed: tuple[int, int] | None = None
     """Range where breathing is being analyzed."""
 
     presence_result: PresenceProcessorResult
     """Presence processor result."""
 
-    breathing_result: Optional[BreathingProcessorResult] = attrs.field(default=None)
+    breathing_result: BreathingProcessorResult | None = attrs.field(default=None)
     """Breathing processor result."""
 
 
@@ -408,7 +407,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         self.distance_determination_counter = 0
         self.app_state: AppState = AppState.INIT_STATE
         self.prev_app_state = AppState.INIT_STATE
-        self.base_presence_distance: Optional[float] = None
+        self.base_presence_distance: float | None = None
 
     def process(self, result: a121.Result) -> ProcessorResult:
         presence_result = self.presence_processor.process(result=result)

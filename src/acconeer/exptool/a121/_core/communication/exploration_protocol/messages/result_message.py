@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ class EmptyResultMessage(Message):
     """
 
     @classmethod
-    def parse(cls, header: t.Dict[str, t.Any], payload: bytes) -> EmptyResultMessage:
+    def parse(cls, header: dict[str, t.Any], payload: bytes) -> EmptyResultMessage:
         head = t.cast(ResultMessageHeader, header)
 
         if head.get("payload_size") == 0 and head.get("result_info") == []:
@@ -74,7 +74,7 @@ class ResultMessage(Message):
 
     @classmethod
     def _get_array_from_blob(
-        cls, frame_blob: bytes, start: int, end: int, frame_shape: t.Tuple[int, int]
+        cls, frame_blob: bytes, start: int, end: int, frame_shape: tuple[int, int]
     ) -> npt.NDArray[t.Any]:
         raw_frame_data = frame_blob[start:end]
         assert len(raw_frame_data) == end - start
@@ -103,7 +103,7 @@ class ResultMessage(Message):
         return result
 
     @classmethod
-    def parse(cls, header: t.Dict[str, t.Any], payload: bytes) -> ResultMessage:
+    def parse(cls, header: dict[str, t.Any], payload: bytes) -> ResultMessage:
         t.cast(ResultMessageHeader, header)
         try:
             return cls(header["result_info"], payload)

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 r"""
 This module contains the power modelling building blocks.
@@ -106,7 +106,7 @@ class SimpleRegion(EnergyRegion):
 
     current: float
     duration: float = attrs.field(validator=attrs.validators.ge(0.0))
-    tag: t.Optional[EnergyRegion.Tag] = None
+    tag: EnergyRegion.Tag | None = None
     description: str = ""
 
     @property

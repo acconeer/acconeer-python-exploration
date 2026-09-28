@@ -6,7 +6,7 @@ from __future__ import annotations
 import contextlib
 import itertools
 import threading
-from typing import Iterator, Optional
+from typing import Iterator
 
 import numpy as np
 
@@ -39,7 +39,7 @@ class FrameCountLabel(QLabel):
         app_model.sig_frame_count.connect(self._on_app_model_frame_count)
         self._on_app_model_frame_count(None)
 
-    def _on_app_model_frame_count(self, frame_count: Optional[int]) -> None:
+    def _on_app_model_frame_count(self, frame_count: int | None) -> None:
         if frame_count is None:
             css = "color: #888;"
             text = "Frames: -    "
@@ -177,7 +177,7 @@ class VersionButton(QPushButton):
         super().__init__(parent)
 
         et_version = get_module_version(acconeer.exptool)
-        self._changelog_text: Optional[str] = None
+        self._changelog_text: str | None = None
 
         self.setFlat(True)
         self.setText(f"ET: {et_version}")
@@ -297,7 +297,7 @@ class StatusBar(QStatusBar):
 
 
 class ChangelogDialog(QDialog):
-    def __init__(self, markdown_text: str, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, markdown_text: str, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
         document = QTextDocument()

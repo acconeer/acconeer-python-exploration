@@ -16,7 +16,7 @@ from acconeer.exptool.a2.algo.heatmap.config_common import HeatmapConfigCommon
 
 @attrs.frozen(kw_only=True)
 class ProcessorResultCommon:
-    heatmap: t.Optional[npt.NDArray[np.float64]]
+    heatmap: npt.NDArray[np.float64] | None
     """3D array with dimensions (distance, az, el) containing amplitude information of returned energy."""
     heatmap_config: HeatmapConfigCommon
     """The configuration used to produce the heatmap"""

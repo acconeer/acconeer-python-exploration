@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import typing as t
 from enum import Enum, auto, unique
 
 import typing_extensions as te
@@ -28,7 +27,7 @@ class Profile(Enum):
     PROFILE_7 = 7
 
     @classmethod
-    def _missing_(cls, value: object) -> t.Optional[te.Self]:
+    def _missing_(cls, value: object) -> te.Self | None:
         return find_by_value(cls, value) or find_by_name(cls, value)
 
     def __int__(self) -> int:
@@ -78,7 +77,7 @@ class PRF(Enum):
     PRF_27_7_MHZ = auto()
 
     @classmethod
-    def _missing_(cls, value: object) -> t.Optional[te.Self]:
+    def _missing_(cls, value: object) -> te.Self | None:
         return find_by_name(cls, value)
 
     @property
@@ -105,7 +104,7 @@ class IdleState(Enum):
     ARMED = 1
 
     @classmethod
-    def _missing_(cls, value: object) -> t.Optional[IdleState]:
+    def _missing_(cls, value: object) -> IdleState | None:
         if find_by_value(cls, value) is not None:
             return find_by_value(cls, value)
 

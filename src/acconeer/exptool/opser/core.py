@@ -21,10 +21,7 @@ from . import core
 
 
 _T = t.TypeVar("_T")
-TypeLike = t.Union[
-    type,
-    t._GenericAlias,  # type: ignore[name-defined]
-]
+TypeLike: te.TypeAlias = type | t._GenericAlias  # type: ignore[name-defined]
 # "Union[A, B]" has origin t.Union, "A | B" has types.UnionType.
 UNION_ORIGINS = (t.Union, types.UnionType)
 
@@ -60,7 +57,7 @@ class WrongH5ObjectError(LoadError):
     def __init__(
         self,
         parent: h5py.Group,
-        child: t.Union[h5py.Dataset, h5py.Group],
+        child: h5py.Dataset | h5py.Group,
         expected_type: type,
     ) -> None:
         super().__init__(f"Member {child} of {parent} was expected to be a {expected_type}")
@@ -104,10 +101,10 @@ class Persistor(abc.ABC):
     type_tree: core.Node
 
     @classmethod
-    def from_json_presentable(cls, presentable_type: t.Type[JsonPresentable]) -> t.Type[Persistor]:
+    def from_json_presentable(cls, presentable_type: type[JsonPresentable]) -> type[Persistor]:
         """Generates a Persistor class for the specified JsonPresentable"""
 
-        def _is_applicable(cls: t.Type[Persistor], __type: core.TypeLike) -> bool:
+        def _is_applicable(cls: type[Persistor], __type: core.TypeLike) -> bool:
             return core.is_subclass(__type, presentable_type)
 
         def _save(self: Persistor, data: t.Any) -> None:
@@ -178,7 +175,7 @@ class Persistor(abc.ABC):
         data: t.Any,
         *,
         dtype: t.Any = None,
-        shape: t.Optional[tuple[int, ...]] = None,
+        shape: tuple[int, ...] | None = None,
     ) -> h5py.Dataset:
         if self.name == "./":
             msg = "Datasets cannot be the root entry. Try wrapping the object or save a different representation."
@@ -235,7 +232,7 @@ def is_class(__type: TypeLike) -> te.TypeGuard[type]:
     return not core.is_ndarray(__type) and isinstance(__type, type)
 
 
-def is_subclass(__type: TypeLike, superclass: t.Union[type, t.Tuple[type, ...]]) -> bool:
+def is_subclass(__type: TypeLike, superclass: type | tuple[type, ...]) -> bool:
     """Return True if '__type' is a subclass of superclass"""
     cannot_be_generic: t.Iterable[type]
     if isinstance(superclass, type):
@@ -271,7 +268,7 @@ def is_optional(__type: TypeLike) -> bool:
     return origin in UNION_ORIGINS and type(None) in type_args and len(type_args) > 1
 
 
-def optional_args(__type: TypeLike) -> t.Tuple[TypeLike, ...]:
+def optional_args(__type: TypeLike) -> tuple[TypeLike, ...]:
     _, *type_args = unwrap_generic(__type)
 
     return tuple(ta for ta in type_args if ta is not type(None))
@@ -287,8 +284,8 @@ def unwrap_generic(__type: TypeLike) -> t.Sequence[TypeLike]:
     'Unwraps' a generic returning its origin and type args.
 
     For example:
-        List[int] |-> (list, int)
-        Dict[int, Enum] |-> (dict, int, Enum)
+        list[int] |-> (list, int)
+        dict[int, Enum] |-> (dict, int, Enum)
     """
     return (te.get_origin(__type), *te.get_args(__type))
 
@@ -305,16 +302,10 @@ def is_ndarray(__type: TypeLike) -> bool:
 
 
 def get_class_type_hints(__type: type) -> dict[str, TypeLike]:
-    try:
-        return t.get_type_hints(__type)
-    except TypeError as error:
-        raise TypeError(
-            f"{__type} is annotated with built-ins (list, dict, etc.). "
-            + "Use 'typing' counterpart instead (typing.List, typing.Dict, etc.)"
-        ) from error
+    return t.get_type_hints(__type)
 
 
-def sequence_index(index: t.Union[str, int] = "X") -> str:
+def sequence_index(index: str | int = "X") -> str:
     return f"sequence_index_{index}"
 
 

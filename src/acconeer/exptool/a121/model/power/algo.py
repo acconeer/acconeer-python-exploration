@@ -26,14 +26,14 @@ def _interleave(
     __a: t.Iterable[_S],
     __b: t.Iterable[_T],
     __c: t.Iterable[_U],
-) -> t.Iterator[t.Union[_S, _T, _U]]: ...
+) -> t.Iterator[_S | _T | _U]: ...
 
 
 @te.overload
 def _interleave(
     __a: t.Iterable[_S],
     __b: t.Iterable[_T],
-) -> t.Iterator[t.Union[_S, _T]]: ...
+) -> t.Iterator[_S | _T]: ...
 
 
 def _interleave(*iterables: t.Iterable[_T]) -> t.Iterator[_T]:
@@ -53,7 +53,7 @@ class Algorithm(te.Protocol):
         frame_actives: t.Sequence[t.Mapping[int, domain.EnergyRegion]],
         frame_idles: list[dict[int, domain.SimpleRegion]],
         config: a121.SessionConfig,
-        lower_idle_state: t.Optional[Sensor.LowerIdleState],
+        lower_idle_state: Sensor.LowerIdleState | None,
         sensor: Sensor,
         module: Module,
     ) -> t.Iterable[domain.EnergyRegion]: ...
@@ -65,7 +65,7 @@ class SparseIq(Algorithm):
         frame_actives: t.Sequence[t.Mapping[int, domain.EnergyRegion]],
         frame_idles: list[dict[int, domain.SimpleRegion]],
         config: a121.SessionConfig,
-        lower_idle_state: t.Optional[Sensor.LowerIdleState],
+        lower_idle_state: Sensor.LowerIdleState | None,
         sensor: Sensor,
         module: Module,
     ) -> t.Iterable[domain.EnergyRegion]:
@@ -96,7 +96,7 @@ class Presence(Algorithm):
         frame_actives: t.Sequence[t.Mapping[int, domain.EnergyRegion]],
         frame_idles: list[dict[int, domain.SimpleRegion]],
         config: a121.SessionConfig,
-        lower_idle_state: t.Optional[Sensor.LowerIdleState],
+        lower_idle_state: Sensor.LowerIdleState | None,
         sensor: Sensor,
         module: Module,
     ) -> t.Iterable[domain.EnergyRegion]:
@@ -147,7 +147,7 @@ class Distance(Algorithm):
     @staticmethod
     def recalculate_idle(
         idle_and_processing: tuple[domain.SimpleRegion, domain.EnergyRegion],
-    ) -> t.Optional[domain.SimpleRegion]:
+    ) -> domain.SimpleRegion | None:
         idle, processing = idle_and_processing
 
         if idle.duration < processing.duration:
@@ -160,7 +160,7 @@ class Distance(Algorithm):
         frame_actives: t.Sequence[t.Mapping[int, domain.EnergyRegion]],
         frame_idles: list[dict[int, domain.SimpleRegion]],
         config: a121.SessionConfig,
-        lower_idle_state: t.Optional[Sensor.LowerIdleState],
+        lower_idle_state: Sensor.LowerIdleState | None,
         sensor: Sensor,
         module: Module,
     ) -> t.Iterator[domain.EnergyRegion]:

@@ -11,7 +11,7 @@ import numpy.typing as npt
 import acconeer.exptool.a2.algo._utils as utils
 
 
-T = t.TypeVar("T", bound=t.Union[np.floating[t.Any], np.complexfloating[t.Any, t.Any]])
+T = t.TypeVar("T", bound=np.floating[t.Any] | np.complexfloating[t.Any, t.Any])
 
 
 class ExponentialLowPassNode(t.Generic[T]):
@@ -25,11 +25,11 @@ class ExponentialLowPassNode(t.Generic[T]):
 
     def __init__(
         self,
-        input_shape: t.Tuple[int, ...],
+        input_shape: tuple[int, ...],
         lp_constant: np.float64,
         dtype: type[T],
         warmup: bool = True,
-        init_value: t.Optional[npt.NDArray[T]] = None,
+        init_value: npt.NDArray[T] | None = None,
     ) -> None:
         if not 0.0 <= float(lp_constant) < 1.0:
             msg = f"lp_constant must be in [0.0, 1.0), got {float(lp_constant)}"
@@ -76,11 +76,11 @@ class DelayedExponentialHighPassNode(t.Generic[T]):
 
     def __init__(
         self,
-        input_shape: t.Tuple[int, ...],
+        input_shape: tuple[int, ...],
         lp_constant: np.float64,
         dtype: type[T],
         warmup: bool = True,
-        init_value: t.Optional[npt.NDArray[T]] = None,
+        init_value: npt.NDArray[T] | None = None,
     ) -> None:
         self.filt_node: ExponentialLowPassNode[T] = ExponentialLowPassNode(
             input_shape=input_shape,
@@ -112,11 +112,11 @@ class ExponentialHighPassNode(t.Generic[T]):
 
     def __init__(
         self,
-        input_shape: t.Tuple[int, ...],
+        input_shape: tuple[int, ...],
         lp_constant: np.float64,
         dtype: type[T],
         warmup: bool = True,
-        init_value: t.Optional[npt.NDArray[T]] = None,
+        init_value: npt.NDArray[T] | None = None,
     ) -> None:
         self.filt_node: ExponentialLowPassNode[T] = ExponentialLowPassNode(
             input_shape=input_shape,

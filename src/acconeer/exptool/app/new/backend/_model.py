@@ -6,7 +6,7 @@ from __future__ import annotations
 import contextlib
 import time
 from pathlib import Path
-from typing import Any, Callable, Iterator, Optional, TypeVar
+from typing import Any, Callable, Iterator, TypeVar
 
 import packaging.version
 
@@ -36,8 +36,8 @@ BackendPluginFactory = Callable[[MessageHandler, str], BackendPlugin[Any]]
 
 
 class Model:
-    backend_plugin: Optional[BackendPlugin[Any]]
-    client: Optional[_AnyClient]
+    backend_plugin: BackendPlugin[Any] | None
+    client: _AnyClient | None
 
     def __init__(self, task_callback: Callable[[Message], None]) -> None:
         self.backend_plugin = None
@@ -86,7 +86,7 @@ class Model:
     def connect_client(
         self,
         client_factory: Callable[[], _AnyClient],
-        get_connection_warning: Callable[[packaging.version.Version], Optional[str]],
+        get_connection_warning: Callable[[packaging.version.Version], str | None],
     ) -> None:
         if self.client is not None:
             msg = "Model already has a Client. The current Client needs to be disconnected first."

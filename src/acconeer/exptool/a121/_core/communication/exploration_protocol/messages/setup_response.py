@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -30,13 +30,13 @@ class MetadataDict(te.TypedDict):
 class SetupResponseHeader(te.TypedDict):
     tick_period: int
     metadata: list[list[MetadataDict]]
-    sensor_calibrations: t.Optional[dict[int, SensorCalibrationDict]]
+    sensor_calibrations: dict[int, SensorCalibrationDict] | None
 
 
 @attrs.frozen
 class SetupResponse(Message):
     grouped_metadatas: list[list[Metadata]]
-    sensor_calibrations: t.Optional[dict[int, SensorCalibration]]
+    sensor_calibrations: dict[int, SensorCalibration] | None
 
     @classmethod
     def parse(cls, header: dict[str, t.Any], payload: bytes) -> SetupResponse:

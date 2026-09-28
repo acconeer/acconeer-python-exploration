@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import copy
-from typing import Any, Optional
+from typing import Any
 
 import attrs
 import h5py
@@ -37,13 +37,11 @@ from ._utils import (
 
 @attrs.mutable(kw_only=True)
 class DetectorContext(AlgoBase):
-    offset_calibration: Optional[OffsetCalibration] = attrs.field(default=None)
-    noise_calibration: Optional[NoiseCalibration] = attrs.field(default=None)
-    close_range_calibration: Optional[CloseRangeCalibration] = attrs.field(default=None)
+    offset_calibration: OffsetCalibration | None = attrs.field(default=None)
+    noise_calibration: NoiseCalibration | None = attrs.field(default=None)
+    close_range_calibration: CloseRangeCalibration | None = attrs.field(default=None)
     sensor_ids: list[int] = attrs.field(factory=list)
-    session_config_used_during_calibration: Optional[a121.SessionConfig] = attrs.field(
-        default=None
-    )
+    session_config_used_during_calibration: a121.SessionConfig | None = attrs.field(default=None)
 
 
 @attrs.frozen(kw_only=True)
@@ -329,16 +327,14 @@ class _DetectorContext_v1(AlgoBase):
     v7.13.0-v7.18.2) - frozen so contexts saved by those releases still load. See
     detector_context_timeline and _migrate_detector_context_v1_to_v2."""
 
-    offset_calibration: Optional[OffsetCalibration] = attrs.field(default=None)
-    noise_calibration: Optional[NoiseCalibration] = attrs.field(default=None)
-    close_range_calibration: Optional[_CloseRangeCalibration_v1] = attrs.field(default=None)
-    recorded_threshold_calibration: Optional[_RecordedThresholdCalibration_v1] = attrs.field(
+    offset_calibration: OffsetCalibration | None = attrs.field(default=None)
+    noise_calibration: NoiseCalibration | None = attrs.field(default=None)
+    close_range_calibration: _CloseRangeCalibration_v1 | None = attrs.field(default=None)
+    recorded_threshold_calibration: _RecordedThresholdCalibration_v1 | None = attrs.field(
         default=None
     )
     sensor_ids: list[int] = attrs.field(factory=list)
-    session_config_used_during_calibration: Optional[a121.SessionConfig] = attrs.field(
-        default=None
-    )
+    session_config_used_during_calibration: a121.SessionConfig | None = attrs.field(default=None)
 
 
 def _migrate_detector_context_v1_to_v2(v1: _DetectorContext_v1) -> DetectorContext:
@@ -392,13 +388,11 @@ def _require_recorded_threshold(
 
 @attrs.mutable(kw_only=True)
 class _DetectorContext_v0(AlgoBase):
-    single_sensor_contexts: Optional[dict[int, _SingleSensorContext_v0]] = attrs.field(
-        default=None
-    )
+    single_sensor_contexts: dict[int, _SingleSensorContext_v0] | None = attrs.field(default=None)
     _GROUP_NAME = "sensor_id_"
 
     @property
-    def sensor_ids(self) -> Optional[list[int]]:
+    def sensor_ids(self) -> list[int] | None:
         if self.single_sensor_contexts:
             return list(self.single_sensor_contexts.keys())
         else:
@@ -710,7 +704,7 @@ class _DetectorContext_v0(AlgoBase):
                 recorded_threshold_result.append(group_results)
 
         # Sensor calibrations
-        sensor_calibrations: dict[int, Optional[a121.SensorCalibration]] = {
+        sensor_calibrations: dict[int, a121.SensorCalibration | None] = {
             k: v.sensor_calibration for k, v in self.single_sensor_contexts.items()
         }
         sensor_calibrations_re: dict[int, a121.SensorCalibration] = (
@@ -736,43 +730,41 @@ class _DetectorContext_v0(AlgoBase):
 
 @attrs.mutable(kw_only=True)
 class _SingleSensorExtraContext_v0(AlgoBase):
-    offset_frames: Optional[list[list[npt.NDArray[np.complex128]]]] = attrs.field(
+    offset_frames: list[list[npt.NDArray[np.complex128]]] | None = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    noise_frames: Optional[list[list[npt.NDArray[np.complex128]]]] = attrs.field(
+    noise_frames: list[list[npt.NDArray[np.complex128]]] | None = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    close_range_frames: Optional[list[list[npt.NDArray[np.complex128]]]] = attrs.field(
+    close_range_frames: list[list[npt.NDArray[np.complex128]]] | None = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    recorded_threshold_frames: Optional[list[list[npt.NDArray[np.complex128]]]] = attrs.field(
+    recorded_threshold_frames: list[list[npt.NDArray[np.complex128]]] | None = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
 
 
 @attrs.mutable(kw_only=True)
 class _SingleSensorContext_v0(AlgoBase):
-    loopback_peak_location_m: Optional[float] = attrs.field(default=None)
-    direct_leakage: Optional[npt.NDArray[np.complex128]] = attrs.field(
+    loopback_peak_location_m: float | None = attrs.field(default=None)
+    direct_leakage: npt.NDArray[np.complex128] | None = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    phase_jitter_comp_reference: Optional[npt.NDArray[np.float64]] = attrs.field(
+    phase_jitter_comp_reference: npt.NDArray[np.float64] | None = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    recorded_thresholds_mean_sweep: Optional[list[npt.NDArray[np.float64]]] = attrs.field(
+    recorded_thresholds_mean_sweep: list[npt.NDArray[np.float64]] | None = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    recorded_thresholds_noise_std: Optional[list[list[np.float64]]] = attrs.field(
+    recorded_thresholds_noise_std: list[list[np.float64]] | None = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    bg_noise_std: Optional[list[list[float]]] = attrs.field(
+    bg_noise_std: list[list[float]] | None = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    session_config_used_during_calibration: Optional[a121.SessionConfig] = attrs.field(
-        default=None
-    )
-    reference_temperature: Optional[int] = attrs.field(default=None)
-    sensor_calibration: Optional[a121.SensorCalibration] = attrs.field(default=None)
+    session_config_used_during_calibration: a121.SessionConfig | None = attrs.field(default=None)
+    reference_temperature: int | None = attrs.field(default=None)
+    sensor_calibration: a121.SensorCalibration | None = attrs.field(default=None)
     extra_context: _SingleSensorExtraContext_v0 = attrs.field(factory=_SingleSensorExtraContext_v0)
 
     def to_h5(self, group: h5py.Group) -> None:

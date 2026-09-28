@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -7,7 +7,7 @@ import abc
 import enum
 import json
 import warnings
-from typing import Any, Dict, Generic, List, Optional, TypeVar, Union
+from typing import Any, Generic, TypeVar
 
 import attrs
 
@@ -16,8 +16,8 @@ from acconeer.exptool.a121._core.utils import EntityJSONEncoder
 
 
 AlgoBaseT = TypeVar("AlgoBaseT", bound="AlgoBase")
-InputT = TypeVar("InputT", a121.Result, List[Dict[int, a121.Result]])
-MetadataT = TypeVar("MetadataT", a121.Metadata, List[Dict[int, a121.Metadata]])
+InputT = TypeVar("InputT", a121.Result, list[dict[int, a121.Result]])
+MetadataT = TypeVar("MetadataT", a121.Metadata, list[dict[int, a121.Metadata]])
 ConfigT = TypeVar("ConfigT", bound="AlgoConfigBase")
 ProcessorConfigT = TypeVar("ProcessorConfigT", bound="AlgoProcessorConfigBase")
 ParamEnumT = TypeVar("ParamEnumT", bound="AlgoParamEnum")
@@ -30,7 +30,7 @@ class GenericProcessorBase(abc.ABC, Generic[InputT, ResultT]):
 
 
 ProcessorBase = GenericProcessorBase[a121.Result, ResultT]
-ExtendedProcessorBase = GenericProcessorBase[List[Dict[int, a121.Result]], ResultT]
+ExtendedProcessorBase = GenericProcessorBase[list[dict[int, a121.Result]], ResultT]
 
 
 class Controller(abc.ABC, Generic[ConfigT, ResultT]):
@@ -39,7 +39,7 @@ class Controller(abc.ABC, Generic[ConfigT, ResultT]):
         self.config = config
 
     @abc.abstractmethod
-    def start(self, recorder: Optional[a121.Recorder] = None) -> None: ...
+    def start(self, recorder: a121.Recorder | None = None) -> None: ...
 
     @abc.abstractmethod
     def get_next(self) -> ResultT: ...
@@ -85,7 +85,7 @@ class AlgoConfigBase(AlgoBase, abc.ABC):
 
 @attrs.mutable(slots=False)
 class AlgoProcessorConfigBase(AlgoBase, abc.ABC):
-    def validate(self, config: Union[a121.SensorConfig, a121.SessionConfig]) -> None:
+    def validate(self, config: a121.SensorConfig | a121.SessionConfig) -> None:
         """Performs self-validation and validation of its session config
 
         :raises ValidationError: If anything is invalid.
@@ -110,7 +110,7 @@ class AlgoParamEnum(enum.Enum):
     # TODO: Share with config_enums.py (?)
 
     @classmethod
-    def _missing_(cls: type[ParamEnumT], value: object) -> Optional[ParamEnumT]:
+    def _missing_(cls: type[ParamEnumT], value: object) -> ParamEnumT | None:
         for member in cls:
             if member.name == value:
                 return member

@@ -4,12 +4,11 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 import requests
 
 
-def version_from_filename(filename: Optional[str]) -> str:
+def version_from_filename(filename: str | None) -> str:
     """Derives an artifact's version from its filename, e.g. "1.2.3" from "1.2.3.bin"."""
     if filename is None:
         return "n/a"
@@ -18,8 +17,8 @@ def version_from_filename(filename: Optional[str]) -> str:
 
 
 def try_get_obfuscated_email_from_cookiejar(
-    cookiejar: Optional[requests.cookies.RequestsCookieJar],
-) -> Optional[str]:
+    cookiejar: requests.cookies.RequestsCookieJar | None,
+) -> str | None:
     # A cookie in the cookiejar k,v pairs look like this (2025-08-19):
     # k = wordpress_logged_in_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     # v = firstname-lastnamedomain-com%XXXXXXXXXXXXXXXXXXXXXXXXX...

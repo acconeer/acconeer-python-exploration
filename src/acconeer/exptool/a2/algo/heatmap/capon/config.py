@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-import typing as t
-
 import attrs
 import typing_extensions as te
 from attributes_doc import attributes_doc
@@ -64,7 +62,7 @@ class HeatmapConfig_v0(HeatmapConfigCommon):
     """The number of Results the heatmap processor is fed before getting a heatmap"""
 
     normalized_heat_cutoff: float = attrs.field(default=0.75)
-    max_2d_heat: t.Optional[int] = attrs.field(default=None)
+    max_2d_heat: int | None = attrs.field(default=None)
     log_scale_output: bool = attrs.field(default=False)
 
     @classmethod
@@ -105,7 +103,7 @@ class HeatmapConfig_v1(HeatmapConfigCommon):
     covariance_matrix_time_constant_s: float
     high_pass_filter_time_constant_s: float
     normalized_heat_cutoff: float = attrs.field(default=0.75)
-    max_2d_heat: t.Optional[int] = attrs.field(default=None)
+    max_2d_heat: int | None = attrs.field(default=None)
     log_scale_output: bool = attrs.field(default=False)
 
     @classmethod

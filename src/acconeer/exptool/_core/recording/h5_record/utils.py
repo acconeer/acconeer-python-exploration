@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import os
-from typing import Tuple, Union
+from typing import Union
 
 import h5py
 
@@ -12,7 +12,7 @@ import h5py
 PathOrH5File = Union[str, "os.PathLike[str]", h5py.File]
 
 
-def h5_file_factory(path_or_file: PathOrH5File, h5_file_mode: str) -> Tuple[h5py.File, bool]:
+def h5_file_factory(path_or_file: PathOrH5File, h5_file_mode: str) -> tuple[h5py.File, bool]:
     """Constructs a `h5py.File` given an argument of type `PathOrFile`.
 
     If the argument already is a `h5py.File`, it's simply passed through.

@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, List, Optional, Type, Union
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -84,7 +84,7 @@ class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, ProcessorResult]
         )
 
     @classmethod
-    def get_processor_config_cls(cls) -> Type[ProcessorConfig]:
+    def get_processor_config_cls(cls) -> type[ProcessorConfig]:
         return ProcessorConfig
 
     @classmethod
@@ -151,7 +151,7 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
         }
 
     @classmethod
-    def get_processor_config_cls(cls) -> Type[ProcessorConfig]:
+    def get_processor_config_cls(cls) -> type[ProcessorConfig]:
         return ProcessorConfig
 
     @classmethod
@@ -160,15 +160,15 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
 
 
 class PlotPlugin(PgPlotPlugin):
-    score_history_close: Optional[npt.NDArray[np.float64]]
-    score_history_far: Optional[npt.NDArray[np.float64]]
-    score_history_curves_close: Optional[npt.NDArray[np.object_]]
-    score_history_curves_far: Optional[npt.NDArray[np.object_]]
-    score_history_curves: Union[List[npt.NDArray[Any]], npt.NDArray[Any]]
+    score_history_close: npt.NDArray[np.float64] | None
+    score_history_far: npt.NDArray[np.float64] | None
+    score_history_curves_close: npt.NDArray[np.object_] | None
+    score_history_curves_far: npt.NDArray[np.object_] | None
+    score_history_curves: list[npt.NDArray[Any]] | npt.NDArray[Any]
 
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model=app_model)
-        self._plot_job: Optional[ProcessorResult] = None
+        self._plot_job: ProcessorResult | None = None
         self._is_setup = False
 
     def handle_message(self, message: backend.GeneralMessage) -> None:
@@ -325,7 +325,7 @@ class PlotPlugin(PgPlotPlugin):
             self.score_history_curves_far = score_history_curve_list[1]
 
     def draw_plot_job(self, processor_result: ProcessorResult) -> None:
-        def is_none_or_detection(x: Optional[RangeResult]) -> Optional[bool]:
+        def is_none_or_detection(x: RangeResult | None) -> bool | None:
             return x.detection if x is not None else None
 
         detection = np.array(
@@ -354,7 +354,7 @@ class PlotPlugin(PgPlotPlugin):
 
         max_val = 0.0
 
-        def is_none_or_threshold(x: Optional[RangeResult]) -> Optional[float]:
+        def is_none_or_threshold(x: RangeResult | None) -> float | None:
             return x.threshold if x is not None else None
 
         threshold = np.array(

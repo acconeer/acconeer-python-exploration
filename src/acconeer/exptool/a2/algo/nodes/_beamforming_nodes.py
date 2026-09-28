@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, cast
+from typing import cast
 
 import numpy as np
 import numpy.typing as npt
@@ -194,7 +194,7 @@ class RobustCaponBeamformNode:
     ) -> None:
         self.steering_vectors = steering_vectors
         self.steering_vector_epsilon = steering_vector_epsilon
-        self.start_lambda: Optional[npt.NDArray[np.float64]] = None
+        self.start_lambda: npt.NDArray[np.float64] | None = None
         self.newton_max_iterations: int = newton_max_iterations
         self.newton_tolerance: float = newton_tolerance
 

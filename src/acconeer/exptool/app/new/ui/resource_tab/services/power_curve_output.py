@@ -63,7 +63,7 @@ _mA = _ms = 1e-3
 class PowerCurveBarGraphItem(pg.BarGraphItem):
     def __init__(
         self,
-        power_profile: t.Union[a121_power.CompositeRegion, a2_power.CompositeRegion],
+        power_profile: a121_power.CompositeRegion | a2_power.CompositeRegion,
     ) -> None:
         durations = [r.duration for r in power_profile.flat_iter()]
         starts = list(itertools.accumulate([0] + durations[:-1], operator.add))
@@ -101,7 +101,7 @@ class PowerCurveBarGraphItem(pg.BarGraphItem):
 
     @staticmethod
     def tag_color(
-        tag: t.Optional[t.Union[a121_power.EnergyRegion.Tag, a2_power.EnergyRegion.Tag]],
+        tag: a121_power.EnergyRegion.Tag | a2_power.EnergyRegion.Tag | None,
     ) -> str:
         if tag in [a121_power.EnergyRegion.Tag.MEASURE, a2_power.EnergyRegion.Tag.MEASURE]:
             return "cornflowerblue"
@@ -243,7 +243,7 @@ def _make_component_tile(color: QColor, component_index: int) -> QPixmap:
 
 
 def _component_brush(
-    tag: t.Optional[a2_power.EnergyRegion.Tag],
+    tag: a2_power.EnergyRegion.Tag | None,
     component_index: int,
 ) -> QBrush:
     """Return a patterned brush for a component layer using the tag's base color."""
@@ -535,7 +535,7 @@ class _A121EnergyRegionPlot(QWidget):
         session_config: a121.SessionConfig
         """This received from events"""
 
-        lower_idle_state: t.Optional[a121_power.Sensor.LowerIdleState]
+        lower_idle_state: a121_power.Sensor.LowerIdleState | None
 
     _MIN_DURATION_S = 20 * _ms
     _MAX_DURATION_S = 10
@@ -543,7 +543,7 @@ class _A121EnergyRegionPlot(QWidget):
     def __init__(
         self,
         session_config: a121.SessionConfig,
-        lower_idle_state: t.Optional[a121_power.Sensor.LowerIdleState],
+        lower_idle_state: a121_power.Sensor.LowerIdleState | None,
         algorithm: a121_power.algo.Algorithm,
     ) -> None:
         super().__init__()
@@ -691,9 +691,9 @@ class _A2EnergyRegionPlot(QWidget):
         """This received from events"""
 
         algorithm: a2_power.algo.Algorithm
-        aps_sleep_state: t.Union[
-            a2_power.SensorConstants.ApsIdleState, a2_power.SensorConstants.ApsSleepState
-        ]
+        aps_sleep_state: (
+            a2_power.SensorConstants.ApsIdleState | a2_power.SensorConstants.ApsSleepState
+        )
         aps_idle_state: a2_power.SensorConstants.ApsIdleState
         temperature: int = 25
 
@@ -703,9 +703,8 @@ class _A2EnergyRegionPlot(QWidget):
     def __init__(
         self,
         session_config: a2.SessionConfig,
-        aps_sleep_state: t.Union[
-            a2_power.SensorConstants.ApsIdleState, a2_power.SensorConstants.ApsSleepState
-        ],
+        aps_sleep_state: a2_power.SensorConstants.ApsIdleState
+        | a2_power.SensorConstants.ApsSleepState,
         aps_idle_state: a2_power.SensorConstants.ApsIdleState,
         algorithm: a2_power.algo.Algorithm,
         temperature: int = 25,
@@ -940,7 +939,7 @@ class EnergyRegionOutput(QTabWidget):
     def __init__(self, broker: EventBroker) -> None:
         super().__init__()
 
-        self._tabs: dict[str, t.Union[_A121EnergyRegionPlot, _A2EnergyRegionPlot]] = {}
+        self._tabs: dict[str, _A121EnergyRegionPlot | _A2EnergyRegionPlot] = {}
         self.setContentsMargins(0, 0, 0, 0)
         self.setStyleSheet("QTabBar { font: bold 14px; font-family: monospace; }")
 

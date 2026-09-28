@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import warnings
-from typing import Any, Optional, Tuple
+from typing import Any
 
 import attrs
 import h5py
@@ -109,13 +109,13 @@ class RefAppResult:
     app_state: AppState
     """Application state."""
 
-    distances_being_analyzed: Optional[Tuple[int, int]] = None
+    distances_being_analyzed: tuple[int, int] | None = None
     """Range where breathing is being analyzed."""
 
     presence_result: PresenceProcessorResult
     """Presence processor result."""
 
-    breathing_result: Optional[BreathingProcessorResult] = attrs.field(default=None)
+    breathing_result: BreathingProcessorResult | None = attrs.field(default=None)
     """Breathing processor result."""
 
 
@@ -145,7 +145,7 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         self.started = False
 
     def start(
-        self, recorder: Optional[a121.Recorder] = None, algo_group: Optional[h5py.Group] = None
+        self, recorder: a121.Recorder | None = None, algo_group: h5py.Group | None = None
     ) -> None:
         if self.started:
             msg = "Already started"
@@ -230,7 +230,7 @@ def _record_algo_data(
     _create_h5_string_dataset(algo_group, "ref_app_config", ref_app_config.to_json())
 
 
-def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, RefAppConfig]:
+def _load_algo_data(algo_group: h5py.Group) -> tuple[int, RefAppConfig]:
     sensor_id = int(algo_group["ref_app_sensor_id"][()])
     config = RefAppConfig.from_json(algo_group["ref_app_config"][()])
     return sensor_id, config

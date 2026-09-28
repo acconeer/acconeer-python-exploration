@@ -1,9 +1,7 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
-
-from typing import Optional
 
 from acconeer.exptool.a121._core.entities import (
     SensorCalibration,
@@ -14,7 +12,7 @@ from acconeer.exptool.a121._core.utils import iterate_extended_structure
 
 def get_calibrations_provided(
     session_config: SessionConfig,
-    calibrations: Optional[dict[int, SensorCalibration]] = None,
+    calibrations: dict[int, SensorCalibration] | None = None,
 ) -> dict[int, bool]:
     calibrations_provided = {}
     for _, sensor_id, _ in iterate_extended_structure(session_config.groups):

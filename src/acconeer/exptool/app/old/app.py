@@ -15,7 +15,7 @@ import time
 import traceback
 import warnings
 import webbrowser
-from typing import Any, Optional, Tuple
+from typing import Any
 
 import numpy as np
 import platformdirs
@@ -120,7 +120,7 @@ class GUI(QMainWindow):
         self.current_module_label = None
         self.canvas = None
         self.sensors_available = None
-        self.calibration: Optional[Calibration] = None
+        self.calibration: Calibration | None = None
         self.basic_sensor_param_count = Count()
         self.advanced_sensor_param_count = Count()
         self.control_grid_count = Count()
@@ -138,7 +138,7 @@ class GUI(QMainWindow):
         self.module_label_to_sensor_config_map = {}
         self.module_label_to_processing_config_map = {}
         self.module_label_to_calibration_config_map = {}
-        self.current_module_info: Optional[ModuleInfo] = None
+        self.current_module_info: ModuleInfo | None = None
         for mi in MODULE_INFOS:
             if mi.sensor_config_class is not None:
                 self.module_label_to_sensor_config_map[mi.label] = mi.sensor_config_class()
@@ -1190,7 +1190,7 @@ class GUI(QMainWindow):
         self.canvas_layout.addWidget(new_canvas)
         self.canvas = new_canvas
 
-    def populate_protocol_dd(self, *text_data_tuples: Tuple[str, Any]):
+    def populate_protocol_dd(self, *text_data_tuples: tuple[str, Any]):
         """
         Populates the Protocol dropdown (self.protocol_dd)
 

@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import traceback
-from typing import Callable, Dict, Optional
+from typing import Callable
 
 from ._message import LogMessage, Message
 
@@ -14,8 +14,8 @@ class BackendLoggerError(Exception):
 
 
 class BackendLogger:
-    _callback: Optional[Callable[[Message], None]] = None
-    _instances: Dict[str, BackendLogger] = {}
+    _callback: Callable[[Message], None] | None = None
+    _instances: dict[str, BackendLogger] = {}
 
     def __init__(self, name: str):
         self.name = name

@@ -1,9 +1,7 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
-
-from typing import Optional
 
 from acconeer.exptool.a121._core.entities import SensorCalibration, SessionConfig
 
@@ -16,7 +14,7 @@ class ExplorationProtocol_NoCalibrationReuse(ExplorationProtocol_No_5_2MHz_PRF):
     def setup_command(
         cls,
         session_config: SessionConfig,
-        calibrations: Optional[dict[int, SensorCalibration]] = None,
+        calibrations: dict[int, SensorCalibration] | None = None,
     ) -> bytes:
         if calibrations:
             raise ExplorationProtocolError(

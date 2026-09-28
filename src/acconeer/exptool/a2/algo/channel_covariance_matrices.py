@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import functools
-import typing as t
 
 import attrs
 import numpy as np
@@ -139,7 +138,7 @@ class ChannelCovarianceMatrices:
         return min(self.beta, self.num_updates / (self.num_updates + 1))
 
     def submatrices(
-        self, tx_mask: int, rx_mask: int, depths: t.Optional[list[int]] = None
+        self, tx_mask: int, rx_mask: int, depths: list[int] | None = None
     ) -> npt.NDArray[np.complex128]:
         """
         Returns a subset of the covariance matrices according to the supplied masks and depths.

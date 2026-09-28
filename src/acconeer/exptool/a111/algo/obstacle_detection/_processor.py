@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -6,7 +6,6 @@ from __future__ import annotations
 import copy
 import logging
 import os
-from typing import Optional
 
 import attrs
 import numpy as np
@@ -268,7 +267,7 @@ class Processor:
         if calibration is not None:
             self.update_calibration(calibration)
 
-    def update_calibration(self, calibration: Optional[ObstacleDetectionCalibration]):
+    def update_calibration(self, calibration: ObstacleDetectionCalibration | None):
         """
         Updates the calibration of processor
 

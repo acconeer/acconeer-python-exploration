@@ -67,7 +67,7 @@ from .services import (
 )
 
 
-_QWidgetT = t.TypeVar("_QWidgetT", bound=t.Type[QWidget])
+_QWidgetT = t.TypeVar("_QWidgetT", bound=type[QWidget])
 
 
 log = logging.getLogger(__name__)
@@ -138,7 +138,7 @@ class _UserUnderstandings:
 
 
 class _TitleBarLabel(QLabel):
-    def __init__(self, text: str, parent: t.Optional[QWidget] = None) -> None:
+    def __init__(self, text: str, parent: QWidget | None = None) -> None:
         super().__init__(text=text, parent=parent)
         self.setTextFormat(Qt.TextFormat.RichText)
 
@@ -160,7 +160,7 @@ class _EditableTitleBarLabel(QWidget):
     description: t.ClassVar[str] = ""
     window_title: str = ""
 
-    def __init__(self, text: str, broker: EventBroker, parent: t.Optional[QWidget] = None) -> None:
+    def __init__(self, text: str, broker: EventBroker, parent: QWidget | None = None) -> None:
         super().__init__(parent=parent)
         self._broker = broker
 
@@ -262,7 +262,7 @@ class _TitleBarWidget(QWidget):
 class _EditableTitleBarWidget(_TitleBarWidget):
     def __init__(
         self,
-        editable_title: t.Optional[str],
+        editable_title: str | None,
         fixed_title: str,
         tooltip: str,
         broker: EventBroker,

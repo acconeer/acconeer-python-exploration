@@ -120,11 +120,11 @@ def _is_usb_device(name: str) -> bool:
 
 def _get_flash_device_from_args(
     args: argparse.Namespace,
-) -> t.Union[comm_devices.SerialDevice, comm_devices.USBDevice]:
+) -> comm_devices.SerialDevice | comm_devices.USBDevice:
     device_name: str = args.device
     port = args.port if hasattr(args, "port") else None
     serial_number = args.serial_number if hasattr(args, "serial_number") else None
-    flash_device: t.Optional[t.Union[comm_devices.SerialDevice, comm_devices.USBDevice]] = None
+    flash_device: comm_devices.SerialDevice | comm_devices.USBDevice | None = None
 
     if device_name == "XM125":
         device_name = "XE125"
@@ -187,7 +187,7 @@ def get_flash_known_devices() -> list[str]:
     return known_devices
 
 
-def get_flash_download_name(device: comm_devices.CommDevice, device_name: t.Optional[str]) -> str:
+def get_flash_download_name(device: comm_devices.CommDevice, device_name: str | None) -> str:
     name = device_name or device.name
     if name in EVK_TO_PRODUCT_MAP:
         return EVK_TO_PRODUCT_MAP[name]
@@ -198,7 +198,7 @@ def get_flash_download_name(device: comm_devices.CommDevice, device_name: t.Opti
 def get_boot_description(
     flash_device: comm_devices.CommDevice,
     device_name: str,
-) -> t.Optional[str]:
+) -> str | None:
     flash_device_name = device_name or flash_device.name
     product = None
 
@@ -214,7 +214,7 @@ def get_boot_description(
 def get_post_dfu_description(
     flash_device: comm_devices.CommDevice,
     device_name: str,
-) -> t.Optional[str]:
+) -> str | None:
     flash_device_name = device_name or flash_device.name
     product = None
 

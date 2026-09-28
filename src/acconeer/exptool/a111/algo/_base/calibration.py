@@ -1,11 +1,11 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 from abc import ABC, abstractclassmethod, abstractmethod
 from pathlib import Path
-from typing import Optional, Sequence, Tuple, Union
+from typing import Sequence
 
 
 try:
@@ -18,8 +18,8 @@ import acconeer.exptool as et
 
 _Description = str
 _FileExtension = str
-_Path = Union[str, Path]
-_AcceptedFileExtensions = Sequence[Tuple[_FileExtension, _Description]]
+_Path = str | Path
+_AcceptedFileExtensions = Sequence[tuple[_FileExtension, _Description]]
 
 
 class Calibration(ABC):
@@ -34,7 +34,7 @@ class Calibration(ABC):
 
     @classmethod
     def validate_path(
-        cls, path: _Path, file_extensions: Optional[_AcceptedFileExtensions] = None
+        cls, path: _Path, file_extensions: _AcceptedFileExtensions | None = None
     ) -> None:
         """
         :param path: Path to validate
@@ -67,7 +67,7 @@ class CalibrationMapper(Protocol):
 
     @abstractclassmethod
     def get_updated_calibration_from_configuration(
-        cls, configuration: et.configbase.Config, calibration: Optional[Calibration]
+        cls, configuration: et.configbase.Config, calibration: Calibration | None
     ) -> Calibration:
         """
         Creates a new Calibration instance given a Config and (optionally) a Calibration.

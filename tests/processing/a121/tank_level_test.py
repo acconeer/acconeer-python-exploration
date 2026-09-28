@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -15,17 +15,15 @@ from acconeer.exptool.a121.algo import tank_level
 from acconeer.exptool.a121.algo.tank_level._ref_app import _load_algo_data
 
 
-def _nan_is_none(x: t.Optional[float]) -> t.Optional[float]:
+def _nan_is_none(x: float | None) -> float | None:
     return None if x is None or np.isnan(x) else float(x)
 
 
 @attrs.frozen
 class RefAppResultSlice:
-    peak_detected: t.Optional[bool]
-    peak_status: t.Optional[tank_level.ProcessorLevelStatus]
-    level: t.Optional[float] = attrs.field(
-        converter=_nan_is_none, eq=attrs_optional_ndarray_isclose
-    )
+    peak_detected: bool | None
+    peak_status: tank_level.ProcessorLevelStatus | None
+    level: float | None = attrs.field(converter=_nan_is_none, eq=attrs_optional_ndarray_isclose)
 
     @classmethod
     def from_ref_app_result(cls, result: tank_level.RefAppResult) -> te.Self:

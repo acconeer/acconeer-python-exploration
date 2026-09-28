@@ -167,9 +167,9 @@ class SimpleRegion(EnergyRegion):
     which shape is stored.
     """
 
-    current: t.Union[float, CurrentBreakdown]
+    current: float | CurrentBreakdown
     duration: float = attrs.field(validator=attrs.validators.ge(0.0))
-    tag: t.Optional[EnergyRegion.Tag] = None
+    tag: EnergyRegion.Tag | None = None
     description: str = ""
 
     @property

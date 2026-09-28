@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2025
+# Copyright (c) Acconeer AB, 2025-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from acconeer.exptool.a121._core_ext import _ReplayingClient
 from acconeer.exptool.a121.algo import cargo
 
 
-def optional_float(x: object) -> t.Optional[float]:
+def optional_float(x: object) -> float | None:
     if x is None:
         return None
     else:
@@ -22,24 +22,24 @@ def optional_float(x: object) -> t.Optional[float]:
 
 @attrs.frozen
 class ResultSlice:
-    presence_detected: t.Optional[bool] = attrs.field()
-    inter_presence_score: t.Optional[float] = attrs.field(
+    presence_detected: bool | None = attrs.field()
+    inter_presence_score: float | None = attrs.field(
         eq=attrs_optional_ndarray_isclose,
         converter=optional_float,
     )
-    intra_presence_score: t.Optional[float] = attrs.field(
+    intra_presence_score: float | None = attrs.field(
         eq=attrs_optional_ndarray_isclose,
         converter=optional_float,
     )
-    distance: t.Optional[float] = attrs.field(
+    distance: float | None = attrs.field(
         eq=attrs_optional_ndarray_isclose,
         converter=optional_float,
     )
-    level_m: t.Optional[float] = attrs.field(
+    level_m: float | None = attrs.field(
         eq=attrs_optional_ndarray_isclose,
         converter=optional_float,
     )
-    level_percent: t.Optional[float] = attrs.field(
+    level_percent: float | None = attrs.field(
         eq=attrs_optional_ndarray_isclose,
         converter=optional_float,
     )

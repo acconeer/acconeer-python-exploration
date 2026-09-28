@@ -19,16 +19,16 @@ from acconeer.exptool.a121.algo.distance._detector import _load_algo_data
 
 @attrs.frozen
 class ResultSlice:
-    distances: t.Optional[npt.NDArray[np.float64]] = attrs.field(eq=attrs_optional_ndarray_isclose)
-    strengths: t.Optional[npt.NDArray[np.float64]] = attrs.field(eq=attrs_optional_ndarray_isclose)
-    near_edge_status: t.Optional[bool]
+    distances: npt.NDArray[np.float64] | None = attrs.field(eq=attrs_optional_ndarray_isclose)
+    strengths: npt.NDArray[np.float64] | None = attrs.field(eq=attrs_optional_ndarray_isclose)
+    near_edge_status: bool | None
 
     @property
-    def estimated_distances(self) -> t.Optional[npt.NDArray[np.float64]]:
+    def estimated_distances(self) -> npt.NDArray[np.float64] | None:
         return self.distances
 
     @property
-    def estimated_strengths(self) -> t.Optional[npt.NDArray[np.float64]]:
+    def estimated_strengths(self) -> npt.NDArray[np.float64] | None:
         return self.strengths
 
     @classmethod

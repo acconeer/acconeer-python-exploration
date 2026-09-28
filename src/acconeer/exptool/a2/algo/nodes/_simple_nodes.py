@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, Generic, Tuple, TypeVar, Union, cast
+from typing import Any, Generic, TypeVar, cast
 
 import numpy as np
 import numpy.typing as npt
@@ -23,10 +23,10 @@ class NoopNode(Generic[T]):
 class MeanNode(Generic[T]):
     """Standard numpy mean wrapper."""
 
-    def __init__(self, axis: Union[int, Tuple[int, ...], None]) -> None:
+    def __init__(self, axis: int | tuple[int, ...] | None) -> None:
         self.axis = axis
 
-    def execute(self, inp: npt.NDArray[T]) -> Union[npt.NDArray[T], T]:
+    def execute(self, inp: npt.NDArray[T]) -> npt.NDArray[T] | T:
         # Perform calculation
         result = np.mean(cast(Any, inp), axis=self.axis)
 
@@ -40,10 +40,10 @@ class MeanNode(Generic[T]):
 class MaxNode(Generic[T]):
     """Standard numpy max wrapper."""
 
-    def __init__(self, axis: Union[int, Tuple[int, ...], None]) -> None:
+    def __init__(self, axis: int | tuple[int, ...] | None) -> None:
         self.axis = axis
 
-    def execute(self, inp: npt.NDArray[T]) -> Union[npt.NDArray[T], T]:
+    def execute(self, inp: npt.NDArray[T]) -> npt.NDArray[T] | T:
         result = np.max(cast(Any, inp), axis=self.axis)
 
         if np.isscalar(result):
@@ -76,10 +76,10 @@ class ConstantGainNode(Generic[T]):
 class ArgmaxNode(Generic[T]):
     """Standard numpy argmax wrapper."""
 
-    def __init__(self, axis: Union[int, None]) -> None:
+    def __init__(self, axis: int | None) -> None:
         self.axis = axis
 
-    def execute(self, inp: npt.NDArray[T]) -> Union[npt.NDArray[np.intp], np.intp]:
+    def execute(self, inp: npt.NDArray[T]) -> npt.NDArray[np.intp] | np.intp:
         result = np.argmax(cast(Any, inp), axis=self.axis)
 
         if np.isscalar(result):
@@ -107,7 +107,7 @@ class IndexedSliceStackNode(Generic[T]):
     def execute(
         self,
         inp: npt.NDArray[T],
-        indices: list[Tuple[int, ...]],
+        indices: list[tuple[int, ...]],
     ) -> npt.NDArray[T]:
         slice_axis = self.slice_axis % inp.ndim
         moved = np.moveaxis(inp, slice_axis, -1)
@@ -122,7 +122,7 @@ class IndexedSliceStackNode(Generic[T]):
 class ReshapeNode(Generic[T]):
     """Standard numpy reshape wrapper."""
 
-    def __init__(self, target_shape: Tuple[int, ...]) -> None:
+    def __init__(self, target_shape: tuple[int, ...]) -> None:
         self.target_shape = target_shape
 
     def execute(self, inp: npt.NDArray[T]) -> npt.NDArray[T]:
@@ -178,9 +178,7 @@ class ModeSelectNode:
     def __init__(self, mode: str) -> None:
         self.mode = mode
 
-    def execute(
-        self, data: npt.NDArray[np.complex128]
-    ) -> Union[npt.NDArray[np.float64], np.float64]:
+    def execute(self, data: npt.NDArray[np.complex128]) -> npt.NDArray[np.float64] | np.float64:
         if self.mode == "abs":
             ret = np.abs(data)
         elif self.mode == "angle":
@@ -223,7 +221,7 @@ class ZeroHoldoffNode(Generic[T]):
     """
 
     def __init__(
-        self, input_shape: Tuple[int, ...], dtype: type[T], num_holdoff_calls: int
+        self, input_shape: tuple[int, ...], dtype: type[T], num_holdoff_calls: int
     ) -> None:
         if num_holdoff_calls < 0:
             msg = f"num_holdoff_calls must be >= 0, got {num_holdoff_calls}"

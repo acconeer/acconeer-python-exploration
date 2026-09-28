@@ -7,7 +7,7 @@ import abc
 import logging
 import traceback
 from pathlib import Path
-from typing import Any, Callable, Generic, Optional, Sequence, TypeVar
+from typing import Any, Callable, Generic, Sequence, TypeVar
 
 import h5py
 
@@ -45,11 +45,11 @@ def _has_errors(validation_results: Sequence[ValidationResult]) -> bool:
 
 
 class A2BackendPluginBase(Generic[T], BackendPlugin[T]):
-    _live_client: Optional[a2.Client]
-    _replaying_client: Optional[a2.Client]
-    _opened_record: Optional[a2.H5Record]
+    _live_client: a2.Client | None
+    _replaying_client: a2.Client | None
+    _opened_record: a2.H5Record | None
     _started: bool = False
-    _recorder: Optional[a2.H5Recorder] = None
+    _recorder: a2.H5Recorder | None = None
 
     def __init__(
         self, callback: Callable[[Message], None], generation: PluginGeneration, key: str
@@ -69,8 +69,8 @@ class A2BackendPluginBase(Generic[T], BackendPlugin[T]):
         self,
         *,
         path: Path,
-        config_override: Optional[Any] = None,
-        context_override: Optional[Any] = None,
+        config_override: Any | None = None,
+        context_override: Any | None = None,
     ) -> None:
         try:
             self._opened_record = a2.open_record(path)
@@ -100,8 +100,8 @@ class A2BackendPluginBase(Generic[T], BackendPlugin[T]):
         self,
         *,
         record: a2.H5Record,
-        config_override: Optional[Any] = None,
-        context_override: Optional[Any] = None,
+        config_override: Any | None = None,
+        context_override: Any | None = None,
     ) -> None:
         pass
 
@@ -152,7 +152,7 @@ class A2BackendPluginBase(Generic[T], BackendPlugin[T]):
         return True
 
     @property
-    def client(self) -> Optional[a2.Client]:
+    def client(self) -> a2.Client | None:
         if self._replaying_client is not None:
             return self._replaying_client
         else:
@@ -170,7 +170,7 @@ class A2BackendPluginBase(Generic[T], BackendPlugin[T]):
         self._live_client = None
 
     @abc.abstractmethod
-    def _start_session(self, recorder: Optional[a2.H5Recorder]) -> None:
+    def _start_session(self, recorder: a2.H5Recorder | None) -> None:
         pass
 
     @abc.abstractmethod

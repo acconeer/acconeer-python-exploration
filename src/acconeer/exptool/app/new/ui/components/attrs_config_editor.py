@@ -8,11 +8,8 @@ import itertools
 from functools import partial
 from typing import (
     Any,
-    Optional,
     Sequence,
-    Type,
     TypeVar,
-    Union,
     cast,
 )
 
@@ -47,7 +44,7 @@ T = TypeVar("T", bound=JsonPresentable)
 
 
 def _to_group_factory_mapping(
-    factory_mapping: Union[PidgetFactoryMapping, PidgetGroupFactoryMapping],
+    factory_mapping: PidgetFactoryMapping | PidgetGroupFactoryMapping,
 ) -> PidgetGroupFactoryMapping:
     if factory_mapping == {}:
         return {}
@@ -70,8 +67,8 @@ def _to_group_factory_mapping(
     raise RuntimeError(msg)
 
 
-class AttrsConfigEditor(DataEditor[Optional[T]]):
-    _config: Optional[T]
+class AttrsConfigEditor(DataEditor[T | None]):
+    _config: T | None
     _erroneous_aspects: set[str]
 
     sig_update = Signal(object)
@@ -79,14 +76,14 @@ class AttrsConfigEditor(DataEditor[Optional[T]]):
     def __init__(
         self,
         title: str,
-        factory_mapping: Union[PidgetFactoryMapping, PidgetGroupFactoryMapping],
-        config_type: Type[T],
+        factory_mapping: PidgetFactoryMapping | PidgetGroupFactoryMapping,
+        config_type: type[T],
         *,
         header_widgets: Sequence[QWidget] = (),
         save_load_buttons: bool = True,
         min_top_padding: int = 0,
         extra_presenter: PresenterFunc = lambda i, t: None,
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent=parent)
         self._config = None
@@ -137,7 +134,7 @@ class AttrsConfigEditor(DataEditor[Optional[T]]):
 
         self.setLayout(layout)
 
-    def set_data(self, config: Optional[T]) -> None:
+    def set_data(self, config: T | None) -> None:
         if self._config == config:
             return
 
@@ -161,7 +158,7 @@ class AttrsConfigEditor(DataEditor[Optional[T]]):
             for hook in hooks:
                 hook(group_widget, self._pidget_mapping)
 
-    def get_data(self) -> Optional[T]:
+    def get_data(self) -> T | None:
         return copy.deepcopy(self._config)
 
     def handle_validation_results(self, results: list[ValidationResult]) -> list[ValidationResult]:
@@ -242,7 +239,7 @@ class AttrsConfigEditor(DataEditor[Optional[T]]):
         pidget.set_unset_value(value)
 
 
-class JoinedPartialAttrsConfigEditors(DataEditor[Optional[T]]):
+class JoinedPartialAttrsConfigEditors(DataEditor[T | None]):
     """
     A Partial Editor is a pattern that has emerged where
     an ``AttrsConfigEditor`` is constructed with an ``PidgetFactoryMapping``
@@ -299,11 +296,11 @@ class JoinedPartialAttrsConfigEditors(DataEditor[Optional[T]]):
 
     def __init__(
         self,
-        editor_kwargs: dict[str, Union[PidgetFactoryMapping, PidgetGroupFactoryMapping]],
+        editor_kwargs: dict[str, PidgetFactoryMapping | PidgetGroupFactoryMapping],
         config_type: type[T],
         save_load_buttons: bool = True,
         extra_presenter: PresenterFunc = lambda i, t: None,
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent=parent)
 
@@ -365,7 +362,7 @@ class JoinedPartialAttrsConfigEditors(DataEditor[Optional[T]]):
             )
             self.setLayout(layout)
 
-    def get_data(self) -> Optional[T]:
+    def get_data(self) -> T | None:
         (head_editor, *tail_editors) = self._editors
         (_, *tail_editor_aspects) = self._editor_aspects
 
@@ -383,7 +380,7 @@ class JoinedPartialAttrsConfigEditors(DataEditor[Optional[T]]):
 
         return instance
 
-    def set_data(self, data: Optional[T]) -> None:
+    def set_data(self, data: T | None) -> None:
         for editor in self._editors:
             editor.set_data(data)
 

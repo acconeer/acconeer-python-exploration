@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import NoReturn, Optional, Tuple, Type, TypeVar, Union
+from typing import NoReturn, TypeVar
 
 import attrs
 import typing_extensions as te
@@ -62,23 +62,23 @@ log = logging.getLogger(__name__)
 
 class ExplorationClient(Client, register=True):
     _link: BufferedLink
-    _protocol: Type[ExplorationProtocol]
+    _protocol: type[ExplorationProtocol]
     _tick_unwrapper: TickUnwrapper
-    _server_info: Optional[ServerInfo]
+    _server_info: ServerInfo | None
     _result_queue: list[list[dict[int, Result]]]
     _log_queue: list[ServerLog]
 
     @classmethod
     def open(
         cls,
-        ip_address: Optional[str] = None,
-        tcp_port: Optional[int] = None,
-        serial_port: Optional[str] = None,
-        usb_device: Optional[Union[str, bool]] = None,
-        mock: Optional[bool] = None,
-        override_baudrate: Optional[int] = None,
+        ip_address: str | None = None,
+        tcp_port: int | None = None,
+        serial_port: str | None = None,
+        usb_device: str | bool | None = None,
+        mock: bool | None = None,
+        override_baudrate: int | None = None,
         flow_control: bool = True,
-        generation: Optional[str] = "a121",
+        generation: str | None = "a121",
     ) -> te.Self:
         if generation != "a121":
             raise ClientCreationError
@@ -100,7 +100,7 @@ class ExplorationClient(Client, register=True):
     def __init__(
         self,
         client_info: ClientInfo = ClientInfo(mock=None),
-        _override_protocol: Optional[Type[ExplorationProtocol]] = None,
+        _override_protocol: type[ExplorationProtocol] | None = None,
     ) -> None:
         super().__init__(client_info)
         self._tick_unwrapper = TickUnwrapper()
@@ -109,7 +109,7 @@ class ExplorationClient(Client, register=True):
         self._closed = False
         self._crashing = False
 
-        self._time_drift_monitor: Optional[TimeDriftMonitor] = None
+        self._time_drift_monitor: TimeDriftMonitor | None = None
 
         self._protocol = ExplorationProtocol
 
@@ -203,9 +203,9 @@ class ExplorationClient(Client, register=True):
 
     def setup_session(  # type: ignore[override]
         self,
-        config: Union[SensorConfig, SessionConfig],
-        calibrations: Optional[dict[int, SensorCalibration]] = None,
-    ) -> Union[Metadata, list[dict[int, Metadata]]]:
+        config: SensorConfig | SessionConfig,
+        calibrations: dict[int, SensorCalibration] | None = None,
+    ) -> Metadata | list[dict[int, Metadata]]:
         if self.session_is_started:
             msg = "Session is currently running, can't setup."
             raise ClientError(msg)
@@ -281,7 +281,7 @@ class ExplorationClient(Client, register=True):
         self._recorder_start_session()
         self._session_is_started = True
 
-    def get_next(self) -> Union[Result, list[dict[int, Result]]]:  # type: ignore[override]
+    def get_next(self) -> Result | list[dict[int, Result]]:  # type: ignore[override]
         self._assert_session_started()
 
         result_message = self._server_stream.wait_for_message(a121_messages.ResultMessage)
@@ -375,14 +375,14 @@ class TickUnwrapper:
     """Wraps unwrap_ticks to be applied over extended results"""
 
     def __init__(self) -> None:
-        self.next_minimum_tick: Optional[int] = None
+        self.next_minimum_tick: int | None = None
 
     def unwrap_ticks(self, extended_results: list[dict[int, Result]]) -> list[dict[int, Result]]:
         result_items = list(iterate_extended_structure(extended_results))
         ticks = [result.tick for _, _, result in result_items]
         unwrapped_ticks, self.next_minimum_tick = unwrap_ticks(ticks, self.next_minimum_tick)
 
-        def f(result_item: Tuple[int, int, Result], updated_tick: int) -> Tuple[int, int, Result]:
+        def f(result_item: tuple[int, int, Result], updated_tick: int) -> tuple[int, int, Result]:
             group_index, sensor_id, result = result_item
             updated_result = attrs.evolve(result, tick=updated_tick)
             return (group_index, sensor_id, updated_result)

@@ -38,7 +38,7 @@ class Sensor:
 
     inter_sweep_currents: t.Mapping[a121.IdleState, float]
     inter_sweep_currents_high_speed_mode: t.Mapping[a121.IdleState, float]
-    inter_frame_currents: t.Mapping[t.Union[a121.IdleState, IdleState], float]
+    inter_frame_currents: t.Mapping[a121.IdleState | IdleState, float]
     measure_currents: t.Mapping[a121.Profile, float]
 
     time_for_measure_transition: t.Mapping[a121.IdleState, float]
@@ -199,7 +199,7 @@ class Module:
         ASLEEP = auto()
         IO = auto()
 
-    currents: t.Mapping[t.Union[PowerState, Sensor.IdleState], float]
+    currents: t.Mapping[PowerState | Sensor.IdleState, float]
 
     @classmethod
     def xm125(cls) -> te.Self:

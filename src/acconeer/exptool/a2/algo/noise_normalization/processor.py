@@ -224,7 +224,7 @@ class NoiseNormalizationRecording_v2:
 
 
 def save_noise_normalization_recording(
-    group: h5py.Group, noise_normalization_recording: t.Optional[NoiseNormalizationRecording]
+    group: h5py.Group, noise_normalization_recording: NoiseNormalizationRecording | None
 ) -> None:
     """
     Provides saving functionality between plugins.
@@ -236,7 +236,7 @@ def save_noise_normalization_recording(
 
 def load_noise_normalization_recording(
     group: h5py.Group,
-) -> t.Optional[NoiseNormalizationRecording]:
+) -> NoiseNormalizationRecording | None:
     """
     Provides loading functionality between plugins.
     """

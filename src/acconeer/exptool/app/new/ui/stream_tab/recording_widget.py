@@ -1,10 +1,9 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from PySide6 import QtCore, QtGui
 from PySide6.QtWidgets import QCheckBox, QFileDialog, QHBoxLayout, QPushButton, QWidget
@@ -59,8 +58,8 @@ class FileButton(QPushButton):
         app_model: AppModel,
         text: str,
         icon: QtGui.QIcon,
-        shortcut: Optional[str],
-        tooltip: Optional[str],
+        shortcut: str | None,
+        tooltip: str | None,
         parent: QWidget,
     ) -> None:
         super().__init__(parent)

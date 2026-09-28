@@ -516,9 +516,7 @@ def test_example_config_average_current(
     a2_sensor_current_limits: dict[str, dict[str, float]],
     configuration: str,
     session_config: a2.SessionConfig,
-    aps_sleep_state: t.Union[
-        power.SensorConstants.ApsIdleState, power.SensorConstants.ApsSleepState
-    ],
+    aps_sleep_state: power.SensorConstants.ApsIdleState | power.SensorConstants.ApsSleepState,
     algorithm: power.algo.Algorithm,
 ) -> None:
     unit_factor = 1e-6

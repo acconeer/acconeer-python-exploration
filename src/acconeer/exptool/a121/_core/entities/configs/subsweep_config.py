@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -295,7 +295,7 @@ class SubsweepConfig:
     def from_json(cls, json_str: str) -> SubsweepConfig:
         return cls.from_dict(json.loads(json_str))
 
-    def _pretty_str_lines(self, index: t.Optional[int] = None) -> list[str]:
+    def _pretty_str_lines(self, index: int | None = None) -> list[str]:
         lines = []
         index_str = "" if index is None else f" @ index {index}"
         lines.append(f"{type(self).__name__}{index_str}:")

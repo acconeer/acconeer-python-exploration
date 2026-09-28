@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import importlib
 import logging
-import typing as t
 
 import attrs
 import typing_extensions as te
@@ -14,7 +13,7 @@ from ._enums import PluginFamily
 from .app_model import PluginSpec
 
 
-_REGISTERED_PLUGINS: t.List[PluginSpec] = []
+_REGISTERED_PLUGINS: list[PluginSpec] = []
 _LOG = logging.getLogger(__name__)
 
 

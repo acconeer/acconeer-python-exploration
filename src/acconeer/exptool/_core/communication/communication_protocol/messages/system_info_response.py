@@ -15,8 +15,8 @@ class SystemInfoDict(te.TypedDict):
     sensor: str
     sensor_count: int
     ticks_per_second: int
-    hw: te.NotRequired[t.Optional[str]]
-    serial: te.NotRequired[t.Optional[str]]
+    hw: te.NotRequired[str | None]
+    serial: te.NotRequired[str | None]
     max_baudrate: te.NotRequired[int]
 
 
@@ -25,7 +25,7 @@ class SystemInfoResponse(Message):
     system_info: SystemInfoDict
 
     @classmethod
-    def parse(cls, header: t.Dict[str, t.Any], payload: bytes) -> SystemInfoResponse:
+    def parse(cls, header: dict[str, t.Any], payload: bytes) -> SystemInfoResponse:
         try:
             return cls(header["system_info"])
         except KeyError as ke:

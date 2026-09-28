@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import copy
-from typing import List, Optional
 
 import attrs
 import numpy as np
@@ -47,7 +46,7 @@ class ProcessorConfig(AlgoProcessorConfigBase):
     sensitivity: float = attrs.field(default=0.5)
 
     def _collect_validation_results(
-        self, config: Optional[a121.SessionConfig]
+        self, config: a121.SessionConfig | None
     ) -> list[a121.ValidationResult]:
         return []
 
@@ -90,7 +89,7 @@ class ProcessorResult:
     targets: list[Target] = attrs.field(factory=list)
     time: float = attrs.field(default=None)
     extra_result: ProcessorExtraResult = attrs.field(factory=ProcessorExtraResult)
-    subsweeps_extra_results: List[SubsweepProcessorExtraResult] = attrs.field(default=None)
+    subsweeps_extra_results: list[SubsweepProcessorExtraResult] = attrs.field(default=None)
 
 
 @attrs.frozen(kw_only=True)
@@ -103,7 +102,7 @@ class ProcessorContext:
     update_rate: float = attrs.field()
     mean_sweeps: list[npt.NDArray[np.float64]] = attrs.field(factory=list)
     std_sweeps: list[npt.NDArray[np.float64]] = attrs.field(factory=list)
-    reference_temperature: Optional[float] = attrs.field(default=None)
+    reference_temperature: float | None = attrs.field(default=None)
     loopback_peak_location_m: float = attrs.field(default=0.0)
 
 
@@ -123,7 +122,7 @@ class SubsweepProcessor:
         sensor_config: a121.SensorConfig,
         processor_config: ProcessorConfig,
         proc_context: ProcessorContext,
-        ssproc_context: Optional[SubsweepProcessorContext] = None,
+        ssproc_context: SubsweepProcessorContext | None = None,
     ) -> None:
         self.proc_context = proc_context
         if ssproc_context is None:
@@ -292,7 +291,7 @@ class Processor(ProcessorBase[ProcessorResult]):
 
         self.num_subsweeps = sensor_config.num_subsweeps
 
-        self.subsweep_processors: List[SubsweepProcessor] = []
+        self.subsweep_processors: list[SubsweepProcessor] = []
 
         for i in range(self.num_subsweeps):
             subsweep_sensor_config_dict = sensor_config.to_dict()
@@ -314,7 +313,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         self.true_zero_dist_idx = 0
         self.calbration_temperature = None
 
-        self.filtered_sensor_temperature: Optional[float] = None
+        self.filtered_sensor_temperature: float | None = None
         self.temperature_filter_factor: float = 1 - np.exp(-TEMPERATURE_FILTER_CONSTANT)
 
         if self.sensor_config.sweep_rate is None:
@@ -388,8 +387,8 @@ class Processor(ProcessorBase[ProcessorResult]):
         )
 
     def _merge_subsweep_targets(
-        self, subsweep_results: List[SubsweepProcessorResult]
-    ) -> List[Target]:
+        self, subsweep_results: list[SubsweepProcessorResult]
+    ) -> list[Target]:
         # The same object can be seen at multiple subsweeps, objects close can be mereged.
 
         all_targets = [target for sr in subsweep_results for target in sr.targets]
@@ -438,9 +437,9 @@ class Processor(ProcessorBase[ProcessorResult]):
 
     @staticmethod
     def _sort_targets(
-        targets: List[Target],
+        targets: list[Target],
         method: PeakSortingMethod,
-    ) -> List[Target]:
+    ) -> list[Target]:
         if method == PeakSortingMethod.CLOSEST:
             quantity_to_sort = np.array([target.distance for target in targets])
         elif method == PeakSortingMethod.STRONGEST:
@@ -468,10 +467,10 @@ class Processor(ProcessorBase[ProcessorResult]):
 
     def _update_kalman_filters(
         self,
-        kfs: List[_KalmanFilter],
-        distances: List[float],
-        velocities: List[float],
-    ) -> List[_KalmanFilter]:
+        kfs: list[_KalmanFilter],
+        distances: list[float],
+        velocities: list[float],
+    ) -> list[_KalmanFilter]:
         """Update Kalman filters for a sensor, using new distance and velocity estimates.
         Identifying the target, based on distance and velocity, closest to the current state of the filter.
         If the target is sufficiently close to the current state, it is used to update the filter.

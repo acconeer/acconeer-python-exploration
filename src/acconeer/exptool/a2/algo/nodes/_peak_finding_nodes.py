@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-import typing as t
-
 import numpy as np
 import numpy.typing as npt
 from scipy.ndimage import maximum_filter
@@ -49,7 +47,7 @@ class LocalMaxima1DNode:
     def execute(
         self,
         data: _NDf64,
-        threshold: t.Union[float, _NDf64] = -np.inf,
+        threshold: float | _NDf64 = -np.inf,
     ) -> list[int]:
         """Find all local maxima in a 1D data array.
 
@@ -104,7 +102,7 @@ class LocalMaxima2DNode:
 
     def __init__(
         self,
-        radii: t.Tuple[int, int] = (1, 1),
+        radii: tuple[int, int] = (1, 1),
     ) -> None:
         """
         :param radii: Half-widths ``(axis0, axis1)`` of the search window in cells.
@@ -121,7 +119,7 @@ class LocalMaxima2DNode:
     def execute(
         self,
         data: _NDf64,
-        threshold: t.Union[float, _NDf64] = -np.inf,
+        threshold: float | _NDf64 = -np.inf,
     ) -> list[tuple[int, int]]:
         """Find all local maxima in a 2D data array.
 

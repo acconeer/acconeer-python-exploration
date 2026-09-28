@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -106,7 +106,7 @@ class RaggedNumpyArrayPersistor(core.Persistor):
         for i, array in enumerate(data):
             ragged_dataset[i] = array
 
-    def _load(self) -> t.List[t.Any]:
+    def _load(self) -> list[t.Any]:
         self.assert_not_empty(self.dataset[()])
 
         return list(self.dataset[()])
@@ -115,7 +115,7 @@ class RaggedNumpyArrayPersistor(core.Persistor):
 @RegistryPersistor.register_persistor
 class TrileanListPersistor(core.Persistor):
     """
-    Persists lists of "trileans" (i.e. Optional[bool]) by encoding it as an enum.
+    Persists lists of "trileans" (i.e. bool | None) by encoding it as an enum.
     """
 
     PRIORITY: t.ClassVar[int] = RegistryPersistor.priority_higher_than(ListPersistor)
@@ -126,7 +126,7 @@ class TrileanListPersistor(core.Persistor):
 
         if should_be_list is list:
             (type_arg,) = type_args
-            return type_arg == t.Optional[bool]
+            return type_arg == bool | None
         else:
             return False
 
@@ -142,7 +142,7 @@ class TrileanListPersistor(core.Persistor):
             dtype=_Trilean.dtype(),
         )
 
-    def _load(self) -> t.List[t.Optional[bool]]:
+    def _load(self) -> list[bool | None]:
         self.assert_not_empty(self.dataset[()])
 
         return [_Trilean.from_stored_value(e).object_value for e in self.dataset[()]]
@@ -158,7 +158,7 @@ class _Trilean(Enum):
         return int(self.value[0])
 
     @property
-    def object_value(self) -> t.Optional[bool]:
+    def object_value(self) -> bool | None:
         return self.value[1]  # type: ignore[no-any-return]
 
     @classmethod
@@ -166,7 +166,7 @@ class _Trilean(Enum):
         return {member.stored_value: member for member in cls}.get(value)
 
     @classmethod
-    def from_object_value(cls, value: t.Optional[bool]) -> t.Any:
+    def from_object_value(cls, value: bool | None) -> t.Any:
         return {member.object_value: member for member in cls}.get(value)
 
     @classmethod
@@ -180,7 +180,7 @@ class _Trilean(Enum):
 @RegistryPersistor.register_persistor
 class OptionalFloatListPersistor(core.Persistor):
     """
-    Persists a list of Optional[float] by encoding ``None``s as np.inf
+    Persists a list of float | None by encoding ``None``s as np.inf
     if no np.inf exists in the list
     """
 
@@ -194,7 +194,7 @@ class OptionalFloatListPersistor(core.Persistor):
 
         if should_be_list is list:
             (type_arg,) = type_args
-            return type_arg == t.Optional[float]
+            return type_arg == float | None
         else:
             return False
 
@@ -206,7 +206,7 @@ class OptionalFloatListPersistor(core.Persistor):
 
         self.create_own_dataset(data_with_replaced_nones)
 
-    def _load(self) -> t.List[t.Optional[float]]:
+    def _load(self) -> list[float | None]:
         self.assert_not_empty(self.dataset[()])
 
         return [(None if e == self.SENTINEL else float(e)) for e in self.dataset[()]]
@@ -215,7 +215,7 @@ class OptionalFloatListPersistor(core.Persistor):
 @RegistryPersistor.register_persistor
 class OptionalIntListPersistor(core.Persistor):
     """
-    Persists a list of Optional[int] by encoding ``None``s as
+    Persists a list of int | None by encoding ``None``s as
     ``np.iinfo(np.int64).min`` (minimum value of int64)
     if the minimum values doesn't exists in the list
     """
@@ -230,7 +230,7 @@ class OptionalIntListPersistor(core.Persistor):
 
         if should_be_list is list:
             (type_arg,) = type_args
-            return type_arg == t.Optional[int]
+            return type_arg == int | None
         else:
             return False
 
@@ -242,7 +242,7 @@ class OptionalIntListPersistor(core.Persistor):
 
         self.create_own_dataset(data_with_replaced_nones)
 
-    def _load(self) -> t.List[t.Optional[float]]:
+    def _load(self) -> list[float | None]:
         self.assert_not_empty(self.dataset[()])
 
         return [(None if e == self.SENTINEL else int(e)) for e in self.dataset[()]]
@@ -270,7 +270,7 @@ class EnumListPersistor(core.Persistor):
         return core.is_optional(type_arg) and core.is_subclass(core.optional_arg(type_arg), Enum)
 
     @property
-    def enum_class(self) -> t.Type[Enum]:
+    def enum_class(self) -> type[Enum]:
         (element_type_tree,) = self.type_tree.children.values()
         element_type = element_type_tree.data
 
@@ -300,7 +300,7 @@ class EnumListPersistor(core.Persistor):
             dtype=h5_enum.dtype(),
         )
 
-    def _load(self) -> t.List[t.Optional[Enum]]:
+    def _load(self) -> list[Enum | None]:
         self.assert_not_empty(self.dataset[()])
 
         h5_enum = H5Enum(self.enum_class, include_none=self.is_optional)
@@ -310,7 +310,7 @@ class EnumListPersistor(core.Persistor):
 
 @attrs.frozen
 class H5Enum:
-    enum_class: t.Type[Enum] = attrs.field(validator=attrs.validators.max_len(2**8 - 2))
+    enum_class: type[Enum] = attrs.field(validator=attrs.validators.max_len(2**8 - 2))
     include_none: bool = attrs.field(default=False)
 
     NONE_NAME: t.ClassVar[str] = "NONE"
@@ -326,10 +326,10 @@ class H5Enum:
     def _stored_mapping(self) -> dict[int, str]:
         return {index: name for name, index in self._name_mapping.items()}
 
-    def stored_value(self, member: t.Optional[Enum]) -> int:
+    def stored_value(self, member: Enum | None) -> int:
         return self._name_mapping[self.NONE_NAME if member is None else member.name]
 
-    def member(self, stored_value: int) -> t.Optional[Enum]:
+    def member(self, stored_value: int) -> Enum | None:
         name = self._stored_mapping[stored_value]
         if name == self.NONE_NAME:
             return None
@@ -360,8 +360,8 @@ class SausageableAttrsPersistor(core.Persistor):
     .. codeblock: python
         @attrs.define
         class Foo:
-            i: t.List[int]
-            f: t.List[float]
+            i: list[int]
+            f: list[float]
 
         Foo([1, 2, 3, ...], [1.0, 2.0, 3.0, ...])
 
@@ -394,12 +394,12 @@ class SausageableAttrsPersistor(core.Persistor):
                 self.require_own_group(),
                 attribute_name,
                 core.Node(
-                    t.List[attribute_type_tree.data],  # type: ignore[name-defined]
+                    list[attribute_type_tree.data],  # type: ignore[name-defined]
                     {attribute_name: attribute_type_tree},
                 ),
             ).save([getattr(attrs_instance, attribute_name) for attrs_instance in data])
 
-    def _load(self) -> t.List[attrs.AttrsInstance]:
+    def _load(self) -> list[attrs.AttrsInstance]:
         (attrs_type_tree,) = self.type_tree.children.values()
         attrs_type = attrs_type_tree.data
 
@@ -410,7 +410,7 @@ class SausageableAttrsPersistor(core.Persistor):
                 self.group,
                 attribute_name,
                 core.Node(
-                    t.List[attribute_type_tree.data],  # type: ignore[name-defined]
+                    list[attribute_type_tree.data],  # type: ignore[name-defined]
                     {attribute_name: attribute_type_tree},
                 ),
             ).load()

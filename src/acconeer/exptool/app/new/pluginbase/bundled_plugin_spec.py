@@ -6,7 +6,7 @@ from __future__ import annotations
 import importlib
 import importlib.util
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 import attrs
 from typing_extensions import Literal
@@ -65,10 +65,10 @@ class BundledPluginSpec(PluginSpecBase):
         return self._bundled().create_plot_plugin(app_model)
 
     # Instance methods, unlike the base's class methods, since the key picks the bundled spec
-    def replay_dialog_create_config_editor(self) -> Optional[DataEditor[Any]]:  # type: ignore[override]
+    def replay_dialog_create_config_editor(self) -> DataEditor[Any] | None:  # type: ignore[override]
         return self._bundled().replay_dialog_create_config_editor()
 
     def replay_dialog_get_config(  # type: ignore[override]
         self, file: Path
-    ) -> Optional[tuple[Literal["default", "loaded"], Any, Any]]:
+    ) -> tuple[Literal["default", "loaded"], Any, Any] | None:
         return self._bundled().replay_dialog_get_config(file)

@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Callable, List, Mapping, Optional
+from typing import Callable, Mapping
 
 import attrs
 import h5py
@@ -75,13 +75,13 @@ log = logging.getLogger(__name__)
 class SharedState:
     sensor_id: int = attrs.field(default=1)
     config: ExAppConfig = attrs.field(factory=get_20_ft_container_config)
-    ex_app_context: Optional[ExAppContext] = attrs.field(default=None)
+    ex_app_context: ExAppContext | None = attrs.field(default=None)
 
 
 @attrs.frozen(kw_only=True)
 class SetupMessage(GeneralMessage):
     ex_app_config: ExAppConfig
-    estimated_frame_rate: Optional[float]
+    estimated_frame_rate: float | None
     name: str = attrs.field(default="setup", init=False)
     recipient: backend.RecipientLiteral = attrs.field(default="plot_plugin", init=False)
 
@@ -99,8 +99,8 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
     ) -> None:
         super().__init__(callback=callback, generation=generation, key=key, use_app_client=False)
 
-        self._recorder: Optional[a121.H5Recorder] = None
-        self._ex_app_instance: Optional[ExApp] = None
+        self._recorder: a121.H5Recorder | None = None
+        self._ex_app_instance: ExApp | None = None
         self._log = BackendLogger.getLogger(__name__)
         self._frame_count = 0
 
@@ -157,7 +157,7 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
         self.shared_state.ex_app_context = ex_app_context
         self.shared_state.sensor_id = record.session(0).sensor_id
 
-    def _start_session(self, recorder: Optional[a121.H5Recorder]) -> None:
+    def _start_session(self, recorder: a121.H5Recorder | None) -> None:
         assert self.client
 
         if (
@@ -227,7 +227,7 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
 class PlotPlugin(PgPlotPlugin):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model=app_model)
-        self._plot_jobs: List[ExAppResult] = []
+        self._plot_jobs: list[ExAppResult] = []
         self._is_setup = False
 
     def handle_message(self, message: backend.GeneralMessage) -> None:
@@ -260,7 +260,7 @@ class PlotPlugin(PgPlotPlugin):
     def setup(
         self,
         ex_app_config: ExAppConfig,
-        estimated_frame_rate: Optional[float],
+        estimated_frame_rate: float | None,
     ) -> None:
         self.plot_layout.clear()
 
@@ -832,7 +832,7 @@ class ViewPlugin(A121ViewPluginBase):
             index = self.utilization_level_sensor_config_editor_tabs.indexOf(sensor_config_editor)
             self.utilization_level_sensor_config_editor_tabs.setTabVisible(index, False)
 
-    def on_backend_state_update(self, state: Optional[SharedState]) -> None:
+    def on_backend_state_update(self, state: SharedState | None) -> None:
         if state is None:
             self.config_editor.set_data(None)
             self.utilization_level_config_editor.set_data(None)

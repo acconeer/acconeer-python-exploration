@@ -27,7 +27,6 @@ The convenience wrappers in :mod:`._cfar_nodes` compose these into typical patte
 
 from __future__ import annotations
 
-import typing as t
 from dataclasses import dataclass
 from enum import Enum
 
@@ -128,7 +127,7 @@ class IntegralImageNode:
         """
         result = np.asarray(data, dtype=np.float64)
         for axis in range(result.ndim):
-            pad_width: list[t.Tuple[int, int]] = [(0, 0)] * result.ndim
+            pad_width: list[tuple[int, int]] = [(0, 0)] * result.ndim
             pad_width[axis] = (1, 0)
             result = np.pad(result, pad_width, mode="constant", constant_values=0.0)
             result = np.cumsum(result, axis=axis, dtype=np.float64)
@@ -263,8 +262,8 @@ class ArmExtraction2DNode:
 
     def __init__(
         self,
-        guard_radii: t.Tuple[int, int],
-        ref_radii: t.Tuple[int, int],
+        guard_radii: tuple[int, int],
+        ref_radii: tuple[int, int],
         kernel_type: CFARKernelType = CFARKernelType.THIN_CROSS,
     ):
         """
@@ -424,7 +423,7 @@ class CFARAggregateNode:
         self._method = method
         self._axis = axis
 
-    def execute(self, arms: ArmStats) -> t.Tuple[_NDf64, _NDf64]:
+    def execute(self, arms: ArmStats) -> tuple[_NDf64, _NDf64]:
         """Aggregate the arms on the configured axis.
 
         :param arms: Per-axis arm sums, counts and ranks.
@@ -449,7 +448,7 @@ class CFARAggregateNode:
         return self._select_best(axis_arms, maximize=(self._method == CFARAggregateMethod.GO))
 
     @staticmethod
-    def _select_best(axis_arms: AxisArmStats, maximize: bool) -> t.Tuple[_NDf64, _NDf64]:
+    def _select_best(axis_arms: AxisArmStats, maximize: bool) -> tuple[_NDf64, _NDf64]:
         """Pick the arm with highest/lowest mean per cell, preferring higher rank."""
         means = _axis_arm_means(axis_arms)
 
@@ -492,9 +491,9 @@ class AxisPoolNode:
 
     @staticmethod
     def execute(
-        axis_0_aggregate: t.Tuple[_NDf64, _NDf64],
-        axis_1_aggregate: t.Tuple[_NDf64, _NDf64],
-    ) -> t.Tuple[_NDf64, _NDf64]:
+        axis_0_aggregate: tuple[_NDf64, _NDf64],
+        axis_1_aggregate: tuple[_NDf64, _NDf64],
+    ) -> tuple[_NDf64, _NDf64]:
         """Pool axis-0 and axis-1 ``(sum, count)`` pairs element-wise.
 
         :param axis_0_aggregate: ``(sum, count)`` from the axis-0 :class:`CFARAggregateNode`.
@@ -582,7 +581,7 @@ class SidelobeCompensationNode:
     both axes, instantiate two nodes (one per axis) and run them in sequence.
     """
 
-    def __init__(self, side_lobe_compensation_dB: t.Optional[float], axis: int = 0):
+    def __init__(self, side_lobe_compensation_dB: float | None, axis: int = 0):
         """
         :param side_lobe_compensation_dB: dB below the per-axis maximum that the threshold may
             not fall below. Must be smaller than zero when set; ``None`` makes the node a no-op

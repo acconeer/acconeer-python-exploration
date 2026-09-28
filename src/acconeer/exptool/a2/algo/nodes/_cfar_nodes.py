@@ -13,8 +13,6 @@ that axis entirely).
 
 from __future__ import annotations
 
-import typing as t
-
 import numpy as np
 import numpy.typing as npt
 
@@ -60,13 +58,13 @@ class CFAR1DThresholdNode:
 
     def __init__(
         self,
-        input_shape: t.Tuple[int],
+        input_shape: tuple[int],
         guard_radius: int,
         ref_radius: int,
         aggregate_method: CFARAggregateMethod = CFARAggregateMethod.CA,
         theoretical_fpr: float = 1e-2,
         fixed_threshold: float = 0.0,
-        side_lobe_compensation_dB: t.Optional[float] = None,
+        side_lobe_compensation_dB: float | None = None,
     ):
         """
         :param input_shape: Shape of the 1D array passed to :meth:`execute`, as a length-1
@@ -182,17 +180,17 @@ class CFAR2DThresholdNode:
 
     def __init__(
         self,
-        input_shape: t.Tuple[int, int],
-        guard_radii: t.Tuple[int, int],
-        ref_radii: t.Tuple[int, int],
+        input_shape: tuple[int, int],
+        guard_radii: tuple[int, int],
+        ref_radii: tuple[int, int],
         kernel_type: CFARKernelType = CFARKernelType.THIN_CROSS,
-        aggregate_method: t.Tuple[CFARAggregateMethod, CFARAggregateMethod] = (
+        aggregate_method: tuple[CFARAggregateMethod, CFARAggregateMethod] = (
             CFARAggregateMethod.CA,
             CFARAggregateMethod.CA,
         ),
         theoretical_fpr: float = 1e-2,
         fixed_threshold: float = 0.0,
-        side_lobe_compensation_dB: t.Tuple[t.Optional[float], t.Optional[float]] = (None, None),
+        side_lobe_compensation_dB: tuple[float | None, float | None] = (None, None),
     ):
         """
         :param input_shape: Shape ``(N0, N1)`` of the 2D array passed to :meth:`execute`.

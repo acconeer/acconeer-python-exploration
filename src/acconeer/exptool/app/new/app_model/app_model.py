@@ -19,13 +19,8 @@ from pathlib import Path
 from typing import (
     Any,
     Callable,
-    Dict,
     Iterator,
-    List,
-    Optional,
     Sequence,
-    Tuple,
-    Union,
 )
 from uuid import UUID
 
@@ -94,7 +89,7 @@ class PluginPresetSpec(Protocol):
     """
 
     name: str
-    description: Optional[str]
+    description: str | None
     preset_id: Enum
 
 
@@ -106,7 +101,7 @@ class PluginSpec(Protocol):
 
     key: str
     generation: PluginGeneration
-    presets: List[PluginPresetSpec]
+    presets: list[PluginPresetSpec]
     title: str
     default_preset_id: Enum
     requires_algo_bundle_artifact: bool
@@ -120,12 +115,12 @@ class PluginSpec(Protocol):
     def create_plot_plugin(self, app_model: AppModel) -> PlotPluginInterface: ...
 
     @classmethod
-    def replay_dialog_create_config_editor(cls) -> Optional[DataEditor[Any]]: ...
+    def replay_dialog_create_config_editor(cls) -> DataEditor[Any] | None: ...
 
     @classmethod
     def replay_dialog_get_config(
         cls, path: Path
-    ) -> Optional[tuple[Literal["default", "loaded"], Any, Any]]: ...
+    ) -> tuple[Literal["default", "loaded"], Any, Any] | None: ...
 
 
 class _BackendListeningThread(QThread):
@@ -155,13 +150,13 @@ class _BackendListeningThread(QThread):
         log.debug("Backend listening thread stopping...")
 
 
-def _to_usbdevice(obj: Union[dict[str, Any], USBDevice]) -> Optional[USBDevice]:
+def _to_usbdevice(obj: dict[str, Any] | USBDevice) -> USBDevice | None:
     if isinstance(obj, dict):
         return USBDevice.from_dict(obj)
     return obj
 
 
-def _to_serialdevice(obj: Union[dict[str, Any], SerialDevice]) -> Optional[SerialDevice]:
+def _to_serialdevice(obj: dict[str, Any] | SerialDevice) -> SerialDevice | None:
     if isinstance(obj, dict):
         return SerialDevice.from_dict(obj)
     return obj
@@ -195,11 +190,11 @@ class _PersistentState:
     connection_interface: ConnectionInterface = attrs.field(default=ConnectionInterface.SERIAL)
     plugin_generation: PluginGeneration = attrs.field(default=PluginGeneration.A121)
     socket_connection_ip: str = attrs.field(default="")
-    serial_connection_device: Optional[SerialDevice] = attrs.field(
+    serial_connection_device: SerialDevice | None = attrs.field(
         default=None, converter=_to_serialdevice
     )
-    usb_connection_device: Optional[USBDevice] = attrs.field(default=None, converter=_to_usbdevice)
-    overridden_baudrate: Optional[int] = attrs.field(default=None)
+    usb_connection_device: USBDevice | None = attrs.field(default=None, converter=_to_usbdevice)
+    overridden_baudrate: int | None = attrs.field(default=None)
     autoconnect_enabled: bool = attrs.field(default=False)
     flow_control_enabled: bool = attrs.field(default=True)
     recording_enabled: bool = attrs.field(default=True)
@@ -246,7 +241,7 @@ class AppModel(QObject):
     """Signals the elapsed time of different things: tuple[<name>, <start time (s)>, <end time (s)>]"""
 
     plugins: list[PluginSpec]
-    plugin: Optional[PluginSpec]
+    plugin: PluginSpec | None
     algo_bundle: Path
     """The zip this launch installs, whether given by '--algo-bundle' or downloaded"""
     algo_bundle_available: bool
@@ -255,11 +250,11 @@ class AppModel(QObject):
 
     backend_plugin_state: Any
 
-    connection_warning: Optional[str]
-    available_serial_devices: List[SerialDevice]
-    available_usb_devices: List[USBDevice]
+    connection_warning: str | None
+    available_serial_devices: list[SerialDevice]
+    available_usb_devices: list[USBDevice]
 
-    saveable_file: Optional[Path]
+    saveable_file: Path | None
 
     def __init__(
         self,
@@ -267,9 +262,9 @@ class AppModel(QObject):
         plugins: list[PluginSpec],
         use_port_updater: bool,
         force_autoconnect: bool = False,
-        socket_autoconnect: Optional[str] = None,
+        socket_autoconnect: str | None = None,
         simulated_autocconnect: bool = False,
-        plugin_generation: Optional[PluginGeneration] = None,
+        plugin_generation: PluginGeneration | None = None,
         *,
         algo_bundle: Path,
         skip_integrity_check: bool = False,
@@ -280,7 +275,7 @@ class AppModel(QObject):
         self._listener.sig_backend_message.connect(self._handle_backend_message)
         self._listener.sig_backend_closed_task.connect(self._handle_backend_closed_task)
 
-        self._port_updater: Optional[PortUpdater] = None
+        self._port_updater: PortUpdater | None = None
         if use_port_updater:
             self._port_updater = PortUpdater(self)
             self._port_updater.sig_update.connect(self._handle_port_update)
@@ -290,8 +285,8 @@ class AppModel(QObject):
         self._backend_task_send_timestamps: dict[UUID, float] = {}
         self._force_autoconnect = force_autoconnect
 
-        self._a121_server_info: Optional[a121.ServerInfo] = None
-        self._a2_server_info: Optional[a2.ServerInfo] = None
+        self._a121_server_info: a121.ServerInfo | None = None
+        self._a2_server_info: a2.ServerInfo | None = None
 
         try:
             self._persistent_state = _PersistentState.from_config_file()
@@ -312,8 +307,8 @@ class AppModel(QObject):
         self._connection_state = ConnectionState.DISCONNECTED
         self.connection_warning = None
         self._plugin_state = PluginState.UNLOADED
-        self._serial_connection_device: Optional[SerialDevice] = None
-        self._usb_connection_device: Optional[USBDevice] = None
+        self._serial_connection_device: SerialDevice | None = None
+        self._usb_connection_device: USBDevice | None = None
         self.available_serial_devices = []
         self.available_usb_devices = []
 
@@ -346,7 +341,7 @@ class AppModel(QObject):
             self.sig_timing.emit((name, start, end))
 
     def excepthook(
-        self, etype: type[BaseException], value: BaseException, tb: Optional[types.TracebackType]
+        self, etype: type[BaseException], value: BaseException, tb: types.TracebackType | None
     ) -> None:
         """
         An excepthook is a top-level exception handler.
@@ -437,7 +432,7 @@ class AppModel(QObject):
         self.sig_backend_state_changed.emit(self.backend_plugin_state)
 
     def emit_error(
-        self, exception: BaseException, traceback_format_exc: Optional[str] = None
+        self, exception: BaseException, traceback_format_exc: str | None = None
     ) -> None:
         log.debug("Emitting error")
         self.sig_error.emit(exception, traceback_format_exc)
@@ -446,8 +441,8 @@ class AppModel(QObject):
         self,
         task: Task,
         *,
-        on_ok: Optional[Callable[[], None]] = None,
-        on_error: Optional[Callable[[Exception, Optional[str]], None]] = None,
+        on_ok: Callable[[], None] | None = None,
+        on_error: Callable[[Exception, str | None], None] | None = None,
     ) -> None:
         key = self._backend.put_task(task)
         self._backend_task_callbacks[key] = {
@@ -564,20 +559,20 @@ class AppModel(QObject):
             msg = f"Got unknown general message '{message.name}'"
             raise RuntimeError(msg)
 
-    def _update_saveable_file(self, path: Optional[Path]) -> None:
+    def _update_saveable_file(self, path: Path | None) -> None:
         if self.saveable_file is not None:
             self.saveable_file.unlink(missing_ok=True)
 
         self.saveable_file = path
         self.broadcast()
 
-    def _is_serial_device_unflashed(self, serial_device: Optional[SerialDevice]) -> bool:
+    def _is_serial_device_unflashed(self, serial_device: SerialDevice | None) -> bool:
         return bool(serial_device and serial_device.unflashed)
 
-    def _is_usb_device_unflashed(self, usb_device: Optional[USBDevice]) -> bool:
+    def _is_usb_device_unflashed(self, usb_device: USBDevice | None) -> bool:
         return bool(usb_device and usb_device.unflashed)
 
-    def _is_usb_device_inaccessible(self, usb_device: Optional[USBDevice]) -> bool:
+    def _is_usb_device_inaccessible(self, usb_device: USBDevice | None) -> bool:
         return bool(usb_device and not usb_device.accessible)
 
     def _handle_port_update(
@@ -667,8 +662,8 @@ class AppModel(QObject):
         self,
         old_devices: Sequence[CommDevice],
         new_devices: Sequence[CommDevice],
-        current_port: Optional[CommDevice],
-    ) -> Tuple[Optional[CommDevice], bool]:
+        current_port: CommDevice | None,
+    ) -> tuple[CommDevice | None, bool]:
         if self.connection_state != ConnectionState.DISCONNECTED:
             return current_port, False
 
@@ -692,7 +687,7 @@ class AppModel(QObject):
         return current_port, False
 
     def connect_client(self, auto: bool = False) -> None:
-        open_client_parameters: Dict[str, Any]
+        open_client_parameters: dict[str, Any]
 
         if self.connection_interface == ConnectionInterface.SIMULATED:
             open_client_parameters = {"mock": True}
@@ -757,7 +752,7 @@ class AppModel(QObject):
         return functools.partial(factory, **open_kwargs)
 
     @staticmethod
-    def _connection_warning(supported: Version, server: Version) -> Optional[str]:
+    def _connection_warning(supported: Version, server: Version) -> str | None:
         if server > supported:
             return "New server version - please upgrade client"
         elif server < supported:
@@ -790,7 +785,7 @@ class AppModel(QObject):
         )
 
     def _failed_autoconnect(
-        self, exception: Exception, traceback_format_exc: Optional[str] = None
+        self, exception: Exception, traceback_format_exc: str | None = None
     ) -> None:
         self.send_warning_message("Failed to autoconnect")
 
@@ -819,11 +814,11 @@ class AppModel(QObject):
         return self._persistent_state.socket_connection_ip
 
     @property
-    def serial_connection_device(self) -> Optional[SerialDevice]:
+    def serial_connection_device(self) -> SerialDevice | None:
         return self._serial_connection_device
 
     @property
-    def usb_connection_device(self) -> Optional[USBDevice]:
+    def usb_connection_device(self) -> USBDevice | None:
         return self._usb_connection_device
 
     @property
@@ -839,7 +834,7 @@ class AppModel(QObject):
         return self._persistent_state.flow_control_enabled
 
     @property
-    def overridden_baudrate(self) -> Optional[int]:
+    def overridden_baudrate(self) -> int | None:
         return self._persistent_state.overridden_baudrate
 
     @property
@@ -865,12 +860,12 @@ class AppModel(QObject):
         self._persistent_state.socket_connection_ip = ip
         self.broadcast()
 
-    def set_serial_connection_device(self, device: Optional[SerialDevice]) -> None:
+    def set_serial_connection_device(self, device: SerialDevice | None) -> None:
         self._serial_connection_device = device
         self._persistent_state.serial_connection_device = device
         self.broadcast()
 
-    def set_usb_connection_device(self, device: Optional[USBDevice]) -> None:
+    def set_usb_connection_device(self, device: USBDevice | None) -> None:
         self._usb_connection_device = device
         self._persistent_state.usb_connection_device = device
         self.broadcast()
@@ -883,7 +878,7 @@ class AppModel(QObject):
         self._persistent_state.flow_control_enabled = flow_control_enabled
         self.broadcast()
 
-    def set_overridden_baudrate(self, overridden_baudrate: Optional[int]) -> None:
+    def set_overridden_baudrate(self, overridden_baudrate: int | None) -> None:
         self._persistent_state.overridden_baudrate = overridden_baudrate
         self.broadcast()
 
@@ -896,7 +891,7 @@ class AppModel(QObject):
         self.load_plugin(None)
         self.broadcast()
 
-    def load_plugin(self, plugin: Optional[PluginSpec]) -> None:
+    def load_plugin(self, plugin: PluginSpec | None) -> None:
         log.debug(f"AppModel is loading the plugin {plugin}")
         if plugin == self.plugin:
             return
@@ -925,7 +920,7 @@ class AppModel(QObject):
         self.broadcast()
         self.broadcast_backend_state()
 
-    def _refuse_without_algo_bundle(self, plugin: Optional[PluginSpec]) -> bool:
+    def _refuse_without_algo_bundle(self, plugin: PluginSpec | None) -> bool:
         if plugin is None or not plugin.requires_algo_bundle_artifact:
             return False
         if self.algo_bundle_available:
@@ -1090,7 +1085,7 @@ class AppModel(QObject):
         self.load_plugin(plugin)
         BackendPlugin.load_from_file.rpc(self.put_task, path=path, config_override=config_override)
 
-    def find_plugin(self, plugin_key: str, generation: PluginGeneration) -> Optional[PluginSpec]:
+    def find_plugin(self, plugin_key: str, generation: PluginGeneration) -> PluginSpec | None:
         return next(
             (
                 plugin
@@ -1101,7 +1096,7 @@ class AppModel(QObject):
         )
 
     @property
-    def rss_version(self) -> Optional[str]:
+    def rss_version(self) -> str | None:
         if self._a121_server_info is not None:
             return self._a121_server_info.rss_version
 
@@ -1117,8 +1112,8 @@ class AppModel(QObject):
     def send_status_file_path(self, file_path: str, opened: bool) -> None:
         self.sig_status_file_path.emit(file_path, opened)
 
-    def send_status_message(self, message: Optional[str]) -> None:
+    def send_status_message(self, message: str | None) -> None:
         self.sig_status_message.emit(message)
 
-    def send_warning_message(self, message: Optional[str]) -> None:
+    def send_warning_message(self, message: str | None) -> None:
         self.sig_status_message.emit(f'<p style="color: #FD5200;"><b>{message}</b></p>')

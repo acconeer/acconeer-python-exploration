@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 import attrs
 import h5py
@@ -16,11 +15,11 @@ from acconeer.exptool.app.new._enums import PluginGeneration
 @attrs.frozen(kw_only=True)
 class FileFindings:
     generation: PluginGeneration
-    key: Optional[str]
-    et_version: Optional[Version]
+    key: str | None
+    et_version: Version | None
 
 
-def investigate_file(path: Path) -> Optional[FileFindings]:
+def investigate_file(path: Path) -> FileFindings | None:
     if path.suffix != ".h5":
         return None
 

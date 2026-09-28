@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -8,7 +8,6 @@ import os
 import sys
 from argparse import SUPPRESS, ArgumentParser
 from pathlib import Path
-from typing import Optional
 
 from PySide6.QtWidgets import QCheckBox, QLabel, QLineEdit, QPushButton
 
@@ -86,15 +85,15 @@ class CalibrationUiState:
 
     def __init__(
         self,
-        load_btn: Optional[QPushButton] = None,
-        save_btn: Optional[QPushButton] = None,
-        clear_btn: Optional[QPushButton] = None,
-        source_text: Optional[QLineEdit] = None,
-        status_label: Optional[QLabel] = None,
-        auto_apply_cb: Optional[QCheckBox] = None,
-        apply_btn: Optional[QPushButton] = None,
+        load_btn: QPushButton | None = None,
+        save_btn: QPushButton | None = None,
+        clear_btn: QPushButton | None = None,
+        source_text: QLineEdit | None = None,
+        status_label: QLabel | None = None,
+        auto_apply_cb: QCheckBox | None = None,
+        apply_btn: QPushButton | None = None,
     ):
-        self._source: Optional[str] = None
+        self._source: str | None = None
         self._modified: bool = False
         self._auto_apply: bool = False
         self._scan_is_running: bool = False  # Will be updated from GUI

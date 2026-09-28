@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ class ErroneousMessage(Message):
     message: str
 
     @classmethod
-    def parse(cls, header: t.Dict[str, t.Any], payload: bytes) -> ErroneousMessage:
+    def parse(cls, header: dict[str, t.Any], payload: bytes) -> ErroneousMessage:
         t.cast(ErrorMessageHeader, header)
 
         if header["status"] == "error":

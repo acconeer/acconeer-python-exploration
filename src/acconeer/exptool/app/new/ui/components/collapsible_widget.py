@@ -1,9 +1,7 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
-
-import typing as t
 
 from PySide6 import QtCore, QtGui
 from PySide6.QtWidgets import QGridLayout, QLabel, QToolButton, QWidget
@@ -12,7 +10,7 @@ from PySide6.QtWidgets import QGridLayout, QLabel, QToolButton, QWidget
 class CollapsibleWidget(QWidget):
     _ICON_SIZE = 28
 
-    def __init__(self, label: str, widget: QWidget, parent: t.Optional[QWidget] = None) -> None:
+    def __init__(self, label: str, widget: QWidget, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
         self.widget = widget
@@ -43,7 +41,7 @@ class CollapsibleWidget(QWidget):
             QtCore.Qt.ArrowType.RightArrow if collapsed else QtCore.Qt.ArrowType.DownArrow
         )
 
-    def set_icon(self, icon: t.Optional[QtGui.QIcon]) -> None:
+    def set_icon(self, icon: QtGui.QIcon | None) -> None:
         if icon is not None:
             self.icon_label.setVisible(True)
             self.icon_label.setPixmap(icon.pixmap(self._ICON_SIZE))

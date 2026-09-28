@@ -53,7 +53,7 @@ _ms = _mA = 1e-3
 _us = _uA = 1e-6
 
 
-def configured_rate(config: a2.SessionConfig) -> t.Optional[float]:
+def configured_rate(config: a2.SessionConfig) -> float | None:
     """
     Returns the configured rate of the session config.
     Either returns the update_rate or a frame_rate.
@@ -66,7 +66,7 @@ def configured_rate(config: a2.SessionConfig) -> t.Optional[float]:
 
 def get_idle_aps_current(
     config: a2.SessionConfig,
-    aps_sleep_state: t.Union[SensorConstants.ApsIdleState, SensorConstants.ApsSleepState],
+    aps_sleep_state: SensorConstants.ApsIdleState | SensorConstants.ApsSleepState,
     aps_idle_state: SensorConstants.ApsIdleState,
     sensor: Sensor = di.DEFAULT_SENSOR,
 ) -> CurrentBreakdown:
@@ -249,7 +249,7 @@ def sweep_idle(
 
 def exit_idle(
     config: a2.SessionConfig,
-    aps_sleep_state: t.Union[SensorConstants.ApsIdleState, SensorConstants.ApsSleepState],
+    aps_sleep_state: SensorConstants.ApsIdleState | SensorConstants.ApsSleepState,
     aps_idle_state: SensorConstants.ApsIdleState,
     aps_active_state: SensorConstants.ApsActiveState,
     sensor: Sensor = di.DEFAULT_SENSOR,
@@ -355,7 +355,7 @@ def radar_off(
 
 def enter_idle(
     config: a2.SessionConfig,
-    aps_sleep_state: t.Union[SensorConstants.ApsIdleState, SensorConstants.ApsSleepState],
+    aps_sleep_state: SensorConstants.ApsIdleState | SensorConstants.ApsSleepState,
     aps_active_state: SensorConstants.ApsActiveState,
     sensor: Sensor = di.DEFAULT_SENSOR,
 ) -> domain.CompositeRegion:
@@ -414,7 +414,7 @@ def enter_idle(
 
 def frame_start(
     config: a2.SessionConfig,
-    aps_sleep_state: t.Union[SensorConstants.ApsIdleState, SensorConstants.ApsSleepState],
+    aps_sleep_state: SensorConstants.ApsIdleState | SensorConstants.ApsSleepState,
     aps_idle_state: SensorConstants.ApsIdleState,
     aps_active_state: SensorConstants.ApsActiveState,
     sensor: Sensor = di.DEFAULT_SENSOR,
@@ -461,7 +461,7 @@ def frame_active(
 
 def frame_idle(
     config: a2.SessionConfig,
-    aps_sleep_state: t.Union[SensorConstants.ApsIdleState, SensorConstants.ApsSleepState],
+    aps_sleep_state: SensorConstants.ApsIdleState | SensorConstants.ApsSleepState,
     aps_idle_state: SensorConstants.ApsIdleState,
     aps_active_state: SensorConstants.ApsActiveState,
     duration: float,
@@ -484,7 +484,7 @@ def frame_idle(
 
 def group_active(
     session_config: a2.SessionConfig,
-    aps_sleep_state: t.Union[SensorConstants.ApsIdleState, SensorConstants.ApsSleepState],
+    aps_sleep_state: SensorConstants.ApsIdleState | SensorConstants.ApsSleepState,
     aps_idle_state: SensorConstants.ApsIdleState,
     aps_active_state: SensorConstants.ApsActiveState,
     algorithm: algo.Algorithm = di.DEFAULT_ALGO,
@@ -503,7 +503,7 @@ def group_active(
 @functools.cache
 def _group_active(
     session_config: frozen_subclasses.FrozenSessionConfig,
-    aps_sleep_state: t.Union[SensorConstants.ApsIdleState, SensorConstants.ApsSleepState],
+    aps_sleep_state: SensorConstants.ApsIdleState | SensorConstants.ApsSleepState,
     aps_idle_state: SensorConstants.ApsIdleState,
     aps_active_state: SensorConstants.ApsActiveState,
     algorithm: algo.Algorithm = di.DEFAULT_ALGO,
@@ -541,7 +541,7 @@ def _group_active(
 
 def session_generator(
     session_config: a2.SessionConfig,
-    aps_sleep_state: t.Union[SensorConstants.ApsIdleState, SensorConstants.ApsSleepState],
+    aps_sleep_state: SensorConstants.ApsIdleState | SensorConstants.ApsSleepState,
     aps_idle_state: SensorConstants.ApsIdleState,
     aps_active_state: SensorConstants.ApsActiveState,
     algorithm: algo.Algorithm = di.DEFAULT_ALGO,
@@ -583,7 +583,7 @@ def session_generator(
 
 def active_frame(
     session_config: a2.SessionConfig,
-    aps_sleep_state: t.Union[SensorConstants.ApsIdleState, SensorConstants.ApsSleepState],
+    aps_sleep_state: SensorConstants.ApsIdleState | SensorConstants.ApsSleepState,
     aps_idle_state: SensorConstants.ApsIdleState,
     aps_active_state: SensorConstants.ApsActiveState,
     algorithm: algo.Algorithm = di.DEFAULT_ALGO,
@@ -616,11 +616,11 @@ def active_frame(
 
 def session(
     session_config: a2.SessionConfig,
-    aps_sleep_state: t.Union[SensorConstants.ApsIdleState, SensorConstants.ApsSleepState],
+    aps_sleep_state: SensorConstants.ApsIdleState | SensorConstants.ApsSleepState,
     aps_idle_state: SensorConstants.ApsIdleState,
     aps_active_state: SensorConstants.ApsActiveState,
-    duration: t.Optional[float] = None,
-    num_actives: t.Optional[int] = None,
+    duration: float | None = None,
+    num_actives: int | None = None,
     algorithm: algo.Algorithm = di.DEFAULT_ALGO,
     sensor: Sensor = di.DEFAULT_SENSOR,
 ) -> domain.CompositeRegion:
@@ -671,7 +671,7 @@ def session(
 
 def converged_session(
     session_config: a2.SessionConfig,
-    aps_sleep_state: t.Union[SensorConstants.ApsIdleState, SensorConstants.ApsSleepState],
+    aps_sleep_state: SensorConstants.ApsIdleState | SensorConstants.ApsSleepState,
     aps_idle_state: SensorConstants.ApsIdleState,
     aps_active_state: SensorConstants.ApsActiveState,
     absolute_tolerance: float,
@@ -716,7 +716,7 @@ def converged_session(
 
 def converged_average_current(
     session_config: a2.SessionConfig,
-    aps_sleep_state: t.Union[SensorConstants.ApsIdleState, SensorConstants.ApsSleepState],
+    aps_sleep_state: SensorConstants.ApsIdleState | SensorConstants.ApsSleepState,
     aps_idle_state: SensorConstants.ApsIdleState,
     aps_active_state: SensorConstants.ApsActiveState,
     absolute_tolerance: float,

@@ -38,7 +38,7 @@ class Overlay(QWidget):
         self,
         base: QWidget,
         overlays: list[tuple[QWidget, t.Callable[[QRect, QSize], QRect]]],
-        parent: t.Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent=parent)
 

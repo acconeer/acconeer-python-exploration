@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 import h5py
 import pytest
@@ -83,7 +82,7 @@ def test_start_can_only_be_called_once(
 
 @pytest.mark.parametrize("chunk_size", [None, 1, 512])
 def test_sample_whole_record(
-    tmp_path: Path, ref_record: a121.Record, chunk_size: Optional[int]
+    tmp_path: Path, ref_record: a121.Record, chunk_size: int | None
 ) -> None:
     filename = tmp_path / "empty.h5"
     with a121.H5Recorder(

@@ -77,8 +77,8 @@ class PlotPlugin(PlotPluginBase, t.Generic[_HeatMapConfigT, _PlotConfigT]):
 
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model)
-        self._plot_job: t.Optional[tuple[a2.GroupResult, ProcessorResultCommon]] = None
-        self._config: t.Optional[a2.SessionConfig] = None
+        self._plot_job: tuple[a2.GroupResult, ProcessorResultCommon] | None = None
+        self._config: a2.SessionConfig | None = None
         # setup widget buttons
         self._rotate_button = QPushButton()
         self._rotate_button.setToolTip("Rotate plot counterclockwise")
@@ -412,7 +412,7 @@ class PlotPlugin(PlotPluginBase, t.Generic[_HeatMapConfigT, _PlotConfigT]):
             view_widget.addItem(line)
 
     def on_backend_state_update(
-        self, state: t.Optional[SharedState[_HeatMapConfigT, _PlotConfigT]]
+        self, state: SharedState[_HeatMapConfigT, _PlotConfigT] | None
     ) -> None:
         if state is None:
             return

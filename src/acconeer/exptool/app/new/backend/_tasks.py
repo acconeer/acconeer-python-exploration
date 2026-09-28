@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from typing_extensions import Concatenate as C
 
 
 #              name kwargs
-Task = t.Tuple[str, t.Dict[str, t.Any]]
+Task = tuple[str, dict[str, t.Any]]
 
 _TaskSender = t.Callable[[Task], t.Any]
 _R = t.TypeVar("_R")
@@ -22,10 +22,10 @@ _P = te.ParamSpec("_P")
 class _TaskDescriptor(t.Generic[_P, _R]):
     def __init__(self, method: t.Callable[C[t.Any, _P], _R]) -> None:
         self._method = method
-        self._task_name: t.Optional[str] = None
+        self._task_name: str | None = None
         setattr(self._method, "is_task", True)
 
-    def __set_name__(self, owner: t.Type[t.Any], name: str) -> None:
+    def __set_name__(self, owner: type[t.Any], name: str) -> None:
         self._task_name = name
 
     @t.overload
@@ -34,9 +34,7 @@ class _TaskDescriptor(t.Generic[_P, _R]):
     @t.overload
     def __get__(self, obj: t.Any, objtype: t.Any = ...) -> t.Callable[_P, _R]: ...
 
-    def __get__(
-        self, obj: t.Optional[t.Any], objtype: t.Any = None
-    ) -> t.Union[te.Self, t.Callable[_P, _R]]:
+    def __get__(self, obj: t.Any | None, objtype: t.Any = None) -> te.Self | t.Callable[_P, _R]:
         """If called with an instance, bind and return the wrapped function"""
         if obj is None:
             return self
@@ -85,7 +83,7 @@ def _has_task_marker(obj: object) -> bool:
     return getattr(obj, "is_task", False)
 
 
-def get_task(obj: t.Any, name: str) -> t.Optional[t.Callable[..., t.Any]]:
+def get_task(obj: t.Any, name: str) -> t.Callable[..., t.Any] | None:
     """
     Gets the task method "<name>" of the obj.
     If obj does not have a task named "<name>", None is returned.

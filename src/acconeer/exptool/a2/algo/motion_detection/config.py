@@ -52,24 +52,24 @@ class HeatmapDisplayMode(str, Enum):
 
 def _to_aggregate_methods(
     v: t.Iterable[t.Any],
-) -> t.Tuple[CFARAggregateMethod, CFARAggregateMethod]:
+) -> tuple[CFARAggregateMethod, CFARAggregateMethod]:
     a, b = (CFARAggregateMethod(m) for m in v)
     return a, b
 
 
-def _to_float_pair(v: t.Iterable[float]) -> t.Tuple[float, float]:
+def _to_float_pair(v: t.Iterable[float]) -> tuple[float, float]:
     a, b = v
     return float(a), float(b)
 
 
 def _to_optional_float_pair(
-    v: t.Optional[t.Iterable[float]],
-) -> t.Optional[t.Tuple[float, float]]:
+    v: t.Iterable[float] | None,
+) -> tuple[float, float] | None:
     return None if v is None else _to_float_pair(v)
 
 
 def _aggregate_methods_not_all_drop(
-    instance: t.Any, attribute: t.Any, value: t.Tuple[CFARAggregateMethod, CFARAggregateMethod]
+    instance: t.Any, attribute: t.Any, value: tuple[CFARAggregateMethod, CFARAggregateMethod]
 ) -> None:
     if all(m == CFARAggregateMethod.DROP for m in value):
         msg = (
@@ -256,7 +256,7 @@ class MotionDetectionConfig(AttrsMappingTransformsMixin):
     )
     """Fraction of jitter assumed spatially uncorrelated across channels."""
 
-    az_angle_range: t.Optional[t.Tuple[float, float]] = attrs.field(
+    az_angle_range: tuple[float, float] | None = attrs.field(
         default=None,
         converter=_to_optional_float_pair,
         validator=av.optional([av.min_len(2), av.max_len(2)]),
@@ -265,7 +265,7 @@ class MotionDetectionConfig(AttrsMappingTransformsMixin):
     ``az_angle_range`` for this processor. ``None`` uses the detection
     volume's value unmodified."""
 
-    el_angle_range: t.Optional[t.Tuple[float, float]] = attrs.field(
+    el_angle_range: tuple[float, float] | None = attrs.field(
         default=None,
         converter=_to_optional_float_pair,
         validator=av.optional([av.min_len(2), av.max_len(2)]),
@@ -283,7 +283,7 @@ class MotionDetectionConfig(AttrsMappingTransformsMixin):
     across the effective az angle range; inspect :py:meth:`num_az_angles` or
     :py:meth:`az_angles` to see the resulting grid."""
 
-    el_grid_resolution_deg: t.Optional[float] = attrs.field(
+    el_grid_resolution_deg: float | None = attrs.field(
         default=15.0,
         validator=av.optional(av.gt(0.0)),  # type: ignore[arg-type]
     )
@@ -304,7 +304,7 @@ class MotionDetectionConfig(AttrsMappingTransformsMixin):
     THICK_CROSS: Wider cross where arm width matches the guard width.
     """
 
-    cfar_aggregate_method: t.Tuple[CFARAggregateMethod, CFARAggregateMethod] = attrs.field(
+    cfar_aggregate_method: tuple[CFARAggregateMethod, CFARAggregateMethod] = attrs.field(
         default=(CFARAggregateMethod.GO, CFARAggregateMethod.SO),
         converter=_to_aggregate_methods,
         validator=_aggregate_methods_not_all_drop,
@@ -352,7 +352,7 @@ class MotionDetectionConfig(AttrsMappingTransformsMixin):
     above 1 implements the absolute-floor term that some classical CFAR
     formulations write as ``thermal_mean + N·σ_thermal``."""
 
-    cfar_side_lobe_compensation_db: t.Optional[float] = attrs.field(
+    cfar_side_lobe_compensation_db: float | None = attrs.field(
         default=-10.0,
         validator=av.optional(av.le(0.0)),  # type: ignore[arg-type]
     )
@@ -389,7 +389,7 @@ class MotionDetectionConfig(AttrsMappingTransformsMixin):
     # The detection volume defines the physical area the sensor covers;
     # these let this processor narrow, widen, or opt out of that area on a
     # per-axis basis without changing the shared DetectionVolume.
-    detection_volume_x_bound_offset_m: t.Optional[t.Tuple[float, float]] = attrs.field(
+    detection_volume_x_bound_offset_m: tuple[float, float] | None = attrs.field(
         default=None, converter=_to_optional_float_pair
     )
     """``(lo, hi)`` offset in metres added to the detection volume's
@@ -398,7 +398,7 @@ class MotionDetectionConfig(AttrsMappingTransformsMixin):
     independent of the detection volume). Without a box in the detection
     volume, this processor has no bound on that axis either."""
 
-    detection_volume_y_bound_offset_m: t.Optional[t.Tuple[float, float]] = attrs.field(
+    detection_volume_y_bound_offset_m: tuple[float, float] | None = attrs.field(
         default=None, converter=_to_optional_float_pair
     )
     """``(lo, hi)`` offset in metres added to the detection volume's
@@ -407,7 +407,7 @@ class MotionDetectionConfig(AttrsMappingTransformsMixin):
     independent of the detection volume). Without a box in the detection
     volume, this processor has no bound on that axis either."""
 
-    detection_volume_z_bound_offset_m: t.Optional[t.Tuple[float, float]] = attrs.field(
+    detection_volume_z_bound_offset_m: tuple[float, float] | None = attrs.field(
         default=None, converter=_to_optional_float_pair
     )
     """``(lo, hi)`` offset in metres added to the room's height (see
@@ -421,14 +421,14 @@ class MotionDetectionConfig(AttrsMappingTransformsMixin):
         # attrs+Enum hybrid; recursing expands it into its full geometry.
         return attrs.asdict(self, recurse=False)
 
-    def effective_az_angle_range(self, detection_volume: DetectionVolume) -> t.Tuple[float, float]:
+    def effective_az_angle_range(self, detection_volume: DetectionVolume) -> tuple[float, float]:
         return (
             self.az_angle_range
             if self.az_angle_range is not None
             else detection_volume.az_angle_range
         )
 
-    def effective_el_angle_range(self, detection_volume: DetectionVolume) -> t.Tuple[float, float]:
+    def effective_el_angle_range(self, detection_volume: DetectionVolume) -> tuple[float, float]:
         return (
             self.el_angle_range
             if self.el_angle_range is not None
@@ -437,7 +437,7 @@ class MotionDetectionConfig(AttrsMappingTransformsMixin):
 
     @staticmethod
     def _offset_bound(
-        offset: t.Optional[t.Tuple[float, float]],
+        offset: tuple[float, float] | None,
         detection_volume_bound: tuple[float, float] | None,
     ) -> tuple[float, float] | None:
         if offset is None or detection_volume_bound is None:
@@ -446,7 +446,7 @@ class MotionDetectionConfig(AttrsMappingTransformsMixin):
 
     def effective_x_bounds_m(
         self, detection_volume: DetectionVolume
-    ) -> t.Optional[t.Tuple[float, float]]:
+    ) -> tuple[float, float] | None:
         """This processor's x bound: ``None`` (unbounded) if
         :py:attr:`detection_volume_x_bound_offset_m` or the detection
         volume's ``x_bounds_m`` is ``None``, else the latter offset by
@@ -457,7 +457,7 @@ class MotionDetectionConfig(AttrsMappingTransformsMixin):
 
     def effective_y_bounds_m(
         self, detection_volume: DetectionVolume
-    ) -> t.Optional[t.Tuple[float, float]]:
+    ) -> tuple[float, float] | None:
         """This processor's y bound: ``None`` (unbounded) if
         :py:attr:`detection_volume_y_bound_offset_m` or the detection
         volume's ``y_bounds_m`` is ``None``, else the latter offset by
@@ -480,7 +480,7 @@ class MotionDetectionConfig(AttrsMappingTransformsMixin):
         )
 
     @staticmethod
-    def _get_angles(num: int, angle_range: t.Tuple[float, float]) -> npt.NDArray[np.float64]:
+    def _get_angles(num: int, angle_range: tuple[float, float]) -> npt.NDArray[np.float64]:
         if num == 1:
             midpoint = (angle_range[0] + angle_range[1]) / 2.0
             return np.array([midpoint])
@@ -489,7 +489,7 @@ class MotionDetectionConfig(AttrsMappingTransformsMixin):
         )
 
     @staticmethod
-    def _num_from_resolution(angle_range: t.Tuple[float, float], resolution_deg: float) -> int:
+    def _num_from_resolution(angle_range: tuple[float, float], resolution_deg: float) -> int:
         """Round ``span / resolution`` to the nearest integer number of bins.
 
         ``num_angles = n_intervals + 1`` with ``n_intervals >= 1`` whenever the

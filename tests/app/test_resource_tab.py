@@ -168,7 +168,7 @@ def outputs(
 
 def _memory_row(
     output: memory_breakdown_output.MemoryBreakdownOutput, service_id: str
-) -> t.Optional[list[str]]:
+) -> list[str] | None:
     for line in output.toPlainText().splitlines():
         if line.startswith(f"{service_id} "):
             return line.split()

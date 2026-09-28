@@ -128,8 +128,8 @@ class SharedState:
     processor_config: MotionDetectionConfig
     sensor_installation: SensorInstallation
     detection_volume: DetectionVolume
-    metadata: t.Optional[Metadata]
-    noise_normalization_recording: t.Optional[NoiseNormalizationRecording]
+    metadata: Metadata | None
+    noise_normalization_recording: NoiseNormalizationRecording | None
     heatmap_plot_orientation: HeatmapPlotOrientation
     tab_state: TabState
     replaying_record: bool
@@ -171,10 +171,10 @@ class BackendPlugin(A2BackendPluginBase[SharedState]):
             replaying_record=False,
             plot_settings=PlotSettings(),
         )
-        self.processor: t.Optional[MotionDetectionProcessor] = None
+        self.processor: MotionDetectionProcessor | None = None
         self.broadcast()
 
-    def _start_session(self, recorder: t.Optional[a2.H5Recorder]) -> None:
+    def _start_session(self, recorder: a2.H5Recorder | None) -> None:
         assert self.client is not None
 
         if (
@@ -346,8 +346,8 @@ class BackendPlugin(A2BackendPluginBase[SharedState]):
         self,
         *,
         record: a2.H5Record,
-        config_override: t.Optional[t.Any] = None,
-        context_override: t.Optional[t.Any] = None,
+        config_override: t.Any | None = None,
+        context_override: t.Any | None = None,
     ) -> None:
         if context_override is not None:
             self._logger.warning(f"Ignoring context override of type: {type(context_override)}")
@@ -619,7 +619,7 @@ class ViewPlugin(A2ViewPluginBase):
         )
         self.start_button.setEnabled(start_enabled)
 
-    def on_backend_state_update(self, state: t.Optional[SharedState]) -> None:
+    def on_backend_state_update(self, state: SharedState | None) -> None:
         if state is None:
             self.processor_config_editor.set_data(None)
             self.session_abstraction_editor.set_data(None)
@@ -672,9 +672,9 @@ class PlotPlugin(PlotPluginBase):
 
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model)
-        self._plot_job: t.Optional[MotionDetectionResult] = None
-        self._session_config: t.Optional[a2.SessionConfig] = None
-        self._processor_config: t.Optional[MotionDetectionConfig] = None
+        self._plot_job: MotionDetectionResult | None = None
+        self._session_config: a2.SessionConfig | None = None
+        self._processor_config: MotionDetectionConfig | None = None
         self._sensor_installation: SensorInstallation | None = None
         self._detection_volume: DetectionVolume | None = None
         self.heatmap_plot_orientation: HeatmapPlotOrientation = HeatmapPlotOrientation()
@@ -839,7 +839,7 @@ class PlotPlugin(PlotPluginBase):
         self._standard_viridis_lut = _make_viridis_lut()
         self._cart_bounds_item = pg.PlotCurveItem(pen=_BOUNDS_PEN)
 
-    def on_backend_state_update(self, state: t.Optional[SharedState]) -> None:
+    def on_backend_state_update(self, state: SharedState | None) -> None:
         if state is None:
             return
 
@@ -1268,7 +1268,7 @@ class ReplayDialogConfig:
         )
 
 
-class ReplayDialogConfigEditor(DataEditor[t.Optional[ReplayDialogConfig]]):
+class ReplayDialogConfigEditor(DataEditor[ReplayDialogConfig | None]):
     """Edits the processor config of a :class:`ReplayDialogConfig`. The
     sensor installation and detection volume are passed through unchanged."""
 
@@ -1290,7 +1290,7 @@ class ReplayDialogConfigEditor(DataEditor[t.Optional[ReplayDialogConfig]]):
         layout.addWidget(self._processor_config_editor)
         self.setLayout(layout)
 
-    def set_data(self, data: t.Optional[ReplayDialogConfig]) -> None:
+    def set_data(self, data: ReplayDialogConfig | None) -> None:
         if data is None:
             self._geometry = None
             self._processor_config_editor.set_data(None)
@@ -1298,7 +1298,7 @@ class ReplayDialogConfigEditor(DataEditor[t.Optional[ReplayDialogConfig]]):
             self._geometry = (data.sensor_installation, data.detection_volume)
             self._processor_config_editor.set_data(data.processor_config)
 
-    def get_data(self) -> t.Optional[ReplayDialogConfig]:
+    def get_data(self) -> ReplayDialogConfig | None:
         processor_config = self._processor_config_editor.get_data()
         if processor_config is None or self._geometry is None:
             return None

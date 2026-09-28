@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 from enum import Enum, auto
-from typing import Tuple
 
 import typing_extensions as te
 
@@ -47,4 +46,4 @@ class ArtifactRepository(te.Protocol):
         """
         ...
 
-    def download(self, artifact: Artifact, path: str) -> Tuple[str, str]: ...
+    def download(self, artifact: Artifact, path: str) -> tuple[str, str]: ...

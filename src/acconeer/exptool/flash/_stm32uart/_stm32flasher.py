@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import functools
 import operator
-from typing import Optional
 
 import serial
 
@@ -66,7 +65,7 @@ class Stm32UartFlasher(DeviceFlasherBase):
         flasher.close()
 
     @staticmethod
-    def get_boot_description(device_name: str) -> Optional[str]:
+    def get_boot_description(device_name: str) -> str | None:
         description = (
             "Please visit https://developer.acconeer.com to find the latest flash "
             f"instructions for {device_name}."
@@ -81,7 +80,7 @@ class Stm32UartFlasher(DeviceFlasherBase):
         return description
 
     @staticmethod
-    def get_post_dfu_description(device_name: str) -> Optional[str]:
+    def get_post_dfu_description(device_name: str) -> str | None:
         description = None
         if device_name in POST_DFU_DESCRIPTION:
             description = (

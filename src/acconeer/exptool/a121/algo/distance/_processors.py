@@ -8,7 +8,6 @@ import json
 import warnings
 from abc import abstractmethod
 from collections.abc import Sequence
-from typing import Optional, Union
 
 import attrs
 import numpy as np
@@ -96,28 +95,28 @@ class ProcessorConfig(AlgoProcessorConfigBase):
     )
 
     def _collect_validation_results(
-        self, config: Optional[a121.SessionConfig]
+        self, config: a121.SessionConfig | None
     ) -> list[a121.ValidationResult]:
         return []
 
 
 @attrs.frozen(kw_only=True)
 class ProcessorContext:
-    direct_leakage: Optional[npt.NDArray[np.complex128]] = attrs.field(
+    direct_leakage: npt.NDArray[np.complex128] | None = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    phase_jitter_comp_ref: Optional[npt.NDArray[np.float64]] = attrs.field(
+    phase_jitter_comp_ref: npt.NDArray[np.float64] | None = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    recorded_threshold_mean_sweep: Optional[npt.NDArray[np.float64]] = attrs.field(
+    recorded_threshold_mean_sweep: npt.NDArray[np.float64] | None = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    recorded_threshold_noise_std: Optional[list[np.float64]] = attrs.field(
+    recorded_threshold_noise_std: list[np.float64] | None = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    bg_noise_std: Optional[list[float]] = attrs.field(default=None)
-    reference_temperature: Optional[int] = attrs.field(default=None)
-    loopback_peak_location_m: Optional[float] = attrs.field(default=None)
+    bg_noise_std: list[float] | None = attrs.field(default=None)
+    reference_temperature: int | None = attrs.field(default=None)
+    loopback_peak_location_m: float | None = attrs.field(default=None)
 
 
 @attrs.frozen(kw_only=True)
@@ -126,13 +125,13 @@ class ProcessorExtraResult:
     Contains information for visualization in ET.
     """
 
-    abs_sweep: Optional[npt.NDArray[np.float64]] = attrs.field(
+    abs_sweep: npt.NDArray[np.float64] | None = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    used_threshold: Optional[npt.NDArray[np.float64]] = attrs.field(
+    used_threshold: npt.NDArray[np.float64] | None = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    distances_m: Optional[npt.NDArray[np.float64]] = attrs.field(
+    distances_m: npt.NDArray[np.float64] | None = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
 
@@ -190,7 +189,7 @@ class DistanceFilter:
 
 
 class DistanceProcessorBase(
-    GenericProcessorBase[Union[a121.Result, SensorResultsView], ProcessorResult]  # type: ignore[type-var]
+    GenericProcessorBase[a121.Result | SensorResultsView, ProcessorResult]  # type: ignore[type-var]
 ):
     """Distance processor base class. Contains logic common for both close-range and far-range processing.
 
@@ -495,8 +494,8 @@ def Processor(
     session_config: a121.SessionConfig,
     metadata: a121.Metadata,
     processor_config: ProcessorConfig,
-    subsweep_references: Optional[list[SubsweepReference]] = None,
-    context: Optional[ProcessorContext] = None,
+    subsweep_references: list[SubsweepReference] | None = None,
+    context: ProcessorContext | None = None,
 ) -> DistanceProcessorBase:
     """Factory for distance processors.
 

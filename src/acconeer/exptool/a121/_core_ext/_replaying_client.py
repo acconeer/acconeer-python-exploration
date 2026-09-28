@@ -6,7 +6,7 @@ from __future__ import annotations
 import itertools
 import time
 import warnings
-from typing import Any, Iterator, Optional, Union
+from typing import Any, Iterator
 
 import attrs
 
@@ -45,7 +45,7 @@ class _ReplayingClient(Client, register=False):
         self,
         record: Record,
         *,
-        cycled_session_idx: Optional[int] = None,
+        cycled_session_idx: int | None = None,
         realtime_replay: bool = True,
     ):
         """
@@ -59,8 +59,8 @@ class _ReplayingClient(Client, register=False):
         self._record = record
         self._started: _StartedSession | None = None
         self._realtime_replay = realtime_replay
-        self._session_idx: Optional[int] = None
-        self._session_idx_iter: Union[Iterator[int], itertools.repeat[int]]
+        self._session_idx: int | None = None
+        self._session_idx_iter: Iterator[int] | itertools.repeat[int]
         if cycled_session_idx is not None:
             self._session_idx_iter = itertools.repeat(cycled_session_idx)
         else:
@@ -97,9 +97,9 @@ class _ReplayingClient(Client, register=False):
 
     def setup_session(  # type: ignore[override]
         self,
-        config: Union[SensorConfig, SessionConfig],
-        calibrations: Optional[dict[int, SensorCalibration]] = None,
-    ) -> Union[Metadata, list[dict[int, Metadata]]]:
+        config: SensorConfig | SessionConfig,
+        calibrations: dict[int, SensorCalibration] | None = None,
+    ) -> Metadata | list[dict[int, Metadata]]:
         if isinstance(config, SensorConfig):
             config = SessionConfig(config)
 
@@ -124,7 +124,7 @@ class _ReplayingClient(Client, register=False):
             session_record.extended_results, session_record.session_config.extended
         )
 
-    def get_next(self) -> Union[Result, list[dict[int, Result]]]:  # type: ignore[override]
+    def get_next(self) -> Result | list[dict[int, Result]]:  # type: ignore[override]
         session = self._started_session()
 
         try:

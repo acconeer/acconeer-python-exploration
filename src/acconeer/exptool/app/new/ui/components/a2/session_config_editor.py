@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-import typing as t
-
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from acconeer.exptool import a2
@@ -45,7 +43,7 @@ class _SessionConfigParametersEditor(AttrsConfigEditor[a2.SessionConfig]):
         )
 
 
-class SessionConfigEditor(DataEditor[t.Optional[a2.SessionConfig]]):
+class SessionConfigEditor(DataEditor[a2.SessionConfig | None]):
     def __init__(self, save_load_buttons: bool = True, single_subsweep: bool = False) -> None:
         super().__init__()
 
@@ -87,7 +85,7 @@ class SessionConfigEditor(DataEditor[t.Optional[a2.SessionConfig]]):
     def _emit_current_data(self) -> None:
         self.sig_update.emit(self.get_data())
 
-    def get_data(self) -> t.Optional[a2.SessionConfig]:
+    def get_data(self) -> a2.SessionConfig | None:
         sensor_config = self._sensor_config_editor.get_data()
         partial_session_config = self._session_param_editor.get_data()
 
@@ -99,7 +97,7 @@ class SessionConfigEditor(DataEditor[t.Optional[a2.SessionConfig]]):
                 update_rate=partial_session_config.update_rate,
             )
 
-    def set_data(self, data: t.Optional[a2.SessionConfig]) -> None:
+    def set_data(self, data: a2.SessionConfig | None) -> None:
         self.setDisabled(data is None)
 
         if data is None:

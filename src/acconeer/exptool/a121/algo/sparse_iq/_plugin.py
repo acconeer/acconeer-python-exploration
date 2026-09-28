@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import itertools
 import logging
-from typing import Dict, List, Optional, Type, TypeVar
+from typing import TypeVar
 
 import numpy as np
 import numpy.typing as npt
@@ -73,7 +73,7 @@ class BackendPlugin(ExtendedProcessorBackendPluginBase[ProcessorConfig, Processo
         )
 
     @classmethod
-    def get_processor_config_cls(cls) -> Type[ProcessorConfig]:
+    def get_processor_config_cls(cls) -> type[ProcessorConfig]:
         return ProcessorConfig
 
     @classmethod
@@ -111,7 +111,7 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
         }
 
     @classmethod
-    def get_processor_config_cls(cls) -> Type[ProcessorConfig]:
+    def get_processor_config_cls(cls) -> type[ProcessorConfig]:
         return ProcessorConfig
 
     @classmethod
@@ -123,7 +123,7 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
         return True
 
 
-_Extended = List[Dict[int, _T]]
+_Extended = list[dict[int, _T]]
 
 
 class PlotPlugin(PlotPluginBase):
@@ -131,9 +131,9 @@ class PlotPlugin(PlotPluginBase):
         super().__init__(app_model=app_model)
 
         self.smooth_max = et.utils.SmoothMax()
-        self._plot_job: Optional[ProcessorResult] = None
+        self._plot_job: ProcessorResult | None = None
         self._is_setup = False
-        self.ampl_plot: Optional[pg.PlotItem] = None
+        self.ampl_plot: pg.PlotItem | None = None
 
         self.ampl_curves: _Extended[list[pg.PlotDataItem]] = []
         self.subsweeps_distances_m: _Extended[list[npt.NDArray[np.float64]]] = []

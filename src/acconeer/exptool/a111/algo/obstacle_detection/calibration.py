@@ -1,10 +1,9 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import logging
-from typing import List, Optional, Union
 
 import attr
 import yaml
@@ -16,7 +15,7 @@ from acconeer.exptool.a111 import algo
 log = logging.getLogger(__name__)
 
 
-def list_flattener(list_or_num: Union[list, float]):
+def list_flattener(list_or_num: list | float):
     if isinstance(list_or_num, list):
         if len(list_or_num) != 1:
             msg = f"argument {list_or_num} needs to be a length 1 list or a number."
@@ -36,15 +35,15 @@ class ObstacleDetectionCalibration(algo.Calibration):
     Supports to be loaded from ".yaml" files.
     """
 
-    static_pwl_dist: List[float] = attr.ib(validator=has_float_elements)
-    static_pwl_amp: List[float] = attr.ib(validator=has_float_elements)
-    moving_pwl_dist: List[float] = attr.ib(validator=has_float_elements)
-    moving_pwl_amp: List[float] = attr.ib(validator=has_float_elements)
-    static_adjacent_factor: Union[float, List[float]] = attr.ib(
+    static_pwl_dist: list[float] = attr.ib(validator=has_float_elements)
+    static_pwl_amp: list[float] = attr.ib(validator=has_float_elements)
+    moving_pwl_dist: list[float] = attr.ib(validator=has_float_elements)
+    moving_pwl_amp: list[float] = attr.ib(validator=has_float_elements)
+    static_adjacent_factor: float | list[float] = attr.ib(
         validator=attr.validators.instance_of(float),
         converter=attr.converters.pipe(list_flattener, float),
     )
-    moving_max: Union[float, List[float]] = attr.ib(
+    moving_max: float | list[float] = attr.ib(
         validator=attr.validators.instance_of(float),
         converter=attr.converters.pipe(list_flattener, float),
     )
@@ -221,7 +220,7 @@ class ObstacleDetectionCalibrationMapper(algo.CalibrationMapper):
     def get_updated_calibration_from_configuration(
         cls,
         configuration: ObstacleDetectionCalibrationConfiguration,
-        calibration: Optional[ObstacleDetectionCalibration],
+        calibration: ObstacleDetectionCalibration | None,
     ) -> ObstacleDetectionCalibration:
         """
         Creates a new calibration given a configuration and (optionally) a calibration.

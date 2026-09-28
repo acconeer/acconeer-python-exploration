@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import socket
 from time import monotonic
-from typing import Optional
 
 from .buffered_link import BufferedLink, LinkError
 
@@ -13,10 +12,10 @@ class SocketLink(BufferedLink):
     _CHUNK_SIZE = 4096
     _PORT = 6110
 
-    def __init__(self, host: Optional[str] = None, port: Optional[int] = None) -> None:
+    def __init__(self, host: str | None = None, port: int | None = None) -> None:
         super().__init__()
         self._host = host
-        self._sock: Optional[socket.socket] = None
+        self._sock: socket.socket | None = None
         self._buf: bytearray = bytearray()
         self._port: int = self._PORT if (port is None) else port
 

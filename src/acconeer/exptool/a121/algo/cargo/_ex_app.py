@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import warnings
 from enum import Enum
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any
 
 import attrs
 import h5py
@@ -144,13 +144,13 @@ class ExAppConfig(AlgoConfigBase):
     activate_presence: bool = attrs.field()
     """Activates presence detection."""
 
-    cargo_presence_config: Optional[CargoPresenceConfig] = attrs.field(factory=CargoPresenceConfig)
+    cargo_presence_config: CargoPresenceConfig | None = attrs.field(factory=CargoPresenceConfig)
     """Configuration of presence detector."""
 
     activate_utilization_level: bool = attrs.field()
     """Activates utilization level detection."""
 
-    utilization_level_config: Optional[UtilizationLevelConfig] = attrs.field(
+    utilization_level_config: UtilizationLevelConfig | None = attrs.field(
         factory=UtilizationLevelConfig
     )
     """Configuration for utilization level measurements."""
@@ -191,8 +191,8 @@ class ExAppConfig(AlgoConfigBase):
 
 @attrs.mutable(kw_only=True)
 class ExAppContext(AlgoBase):
-    presence_context: Optional[PresenceContext] = attrs.field(default=None)
-    distance_context: Optional[DistanceContext] = attrs.field(default=None)
+    presence_context: PresenceContext | None = attrs.field(default=None)
+    distance_context: DistanceContext | None = attrs.field(default=None)
 
     @classmethod
     def from_dict(cls: type[AlgoBaseT], d: dict[str, Any]) -> AlgoBaseT:
@@ -209,25 +209,25 @@ class ExAppResult:
     mode: _Mode = attrs.field()
     """Measurement mode, Presence or Distance."""
 
-    presence_detected: Optional[bool] = attrs.field()
+    presence_detected: bool | None = attrs.field()
     """`True` if presence was detected, `False` otherwise."""
 
-    inter_presence_score: Optional[float] = attrs.field()
+    inter_presence_score: float | None = attrs.field()
     """A measure of the amount of slow motion detected."""
 
-    intra_presence_score: Optional[float] = attrs.field()
+    intra_presence_score: float | None = attrs.field()
     """A measure of the amount of fast motion detected."""
 
-    distance: Optional[float] = attrs.field()
+    distance: float | None = attrs.field()
     """The measured distance by the distance detector."""
 
-    level_m: Optional[float] = attrs.field()
+    level_m: float | None = attrs.field()
     """The utilization level in m."""
 
-    level_percent: Optional[float] = attrs.field()
+    level_percent: float | None = attrs.field()
     """The utilization level in percentage."""
 
-    distance_processor_result: Optional[List[DistanceProcessorResult]] = attrs.field()
+    distance_processor_result: list[DistanceProcessorResult] | None = attrs.field()
     """Distance processor result, used for plotting."""
 
     service_result: a121.Result = attrs.field()
@@ -239,7 +239,7 @@ class _Mode(Enum):
 
 
 class ExApp(Controller[ExAppConfig, ExAppResult]):
-    detector: Union[DistanceDetector, PresenceDetector]
+    detector: DistanceDetector | PresenceDetector
 
     def __init__(
         self,
@@ -247,7 +247,7 @@ class ExApp(Controller[ExAppConfig, ExAppResult]):
         client: a121.Client,
         sensor_id: int,
         ex_app_config: ExAppConfig,
-        ex_app_context: Optional[ExAppContext] = None,
+        ex_app_context: ExAppContext | None = None,
     ) -> None:
         super().__init__(client=client, config=ex_app_config)
         self.sensor_id = sensor_id
@@ -277,7 +277,7 @@ class ExApp(Controller[ExAppConfig, ExAppResult]):
         self.started = False
 
     def start(
-        self, recorder: Optional[a121.Recorder] = None, algo_group: Optional[h5py.Group] = None
+        self, recorder: a121.Recorder | None = None, algo_group: h5py.Group | None = None
     ) -> None:
         if self.started:
             msg = "Already started"
@@ -378,7 +378,7 @@ class ExApp(Controller[ExAppConfig, ExAppResult]):
         self.distance_context = self.ex_app_context.distance_context
 
     def start_dual_detectors(
-        self, recorder: Optional[a121.Recorder], algo_group: Optional[h5py.Group]
+        self, recorder: a121.Recorder | None, algo_group: h5py.Group | None
     ) -> None:
         assert self.cargo_presence_config is not None
         assert self.utilization_level_config is not None
@@ -444,8 +444,8 @@ class ExApp(Controller[ExAppConfig, ExAppResult]):
         )
 
     def get_next(self) -> ExAppResult:
-        distance_result: Optional[dict[int, DistanceResult]] = None
-        presence_result: Optional[PresenceResult] = None
+        distance_result: dict[int, DistanceResult] | None = None
+        presence_result: PresenceResult | None = None
 
         if not self.started:
             msg = "Not started"
@@ -621,7 +621,7 @@ def _record_algo_data(
     opser.serialize(ex_app_context, ex_app_context_group)
 
 
-def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, ExAppConfig, ExAppContext]:
+def _load_algo_data(algo_group: h5py.Group) -> tuple[int, ExAppConfig, ExAppContext]:
     sensor_id = int(algo_group["ex_app_sensor_id"][()])
     config = ExAppConfig.from_json(algo_group["ex_app_config"][()])
     ex_app_context = opser.deserialize(algo_group["ex_app_context"], ExAppContext)

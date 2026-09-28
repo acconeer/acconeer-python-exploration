@@ -12,12 +12,8 @@ from typing import (
     Generic,
     Iterable,
     Mapping,
-    Optional,
     Sequence,
-    Tuple,
-    Type,
     TypeVar,
-    Union,
     cast,
 )
 
@@ -70,9 +66,9 @@ def _hooks_converter(a: MaybeIterable[PidgetHook]) -> Sequence[PidgetHook]:
 @attrs.frozen(kw_only=True, slots=False)
 class PidgetFactory(abc.ABC):
     name_label_text: str = attrs.field()
-    name_label_tooltip: Optional[str] = attrs.field(default=None)
-    note_label_text: Optional[str] = None
-    extra_widget_factory: Callable[[], Optional[QWidget]] = lambda: None
+    name_label_tooltip: str | None = attrs.field(default=None)
+    note_label_text: str | None = None
+    extra_widget_factory: Callable[[], QWidget | None] = lambda: None
     hooks: Sequence[PidgetHook] = attrs.field(factory=tuple, converter=_hooks_converter)
 
     @name_label_text.validator
@@ -130,12 +126,7 @@ class Pidget(DataEditor[Any]):
         self,
         factory: PidgetFactory,
         *,
-        first_row_elements: Iterable[
-            Union[
-                QWidget,
-                te.Literal["name_label", "extra_widget"],
-            ]
-        ],
+        first_row_elements: Iterable[QWidget | te.Literal["name_label", "extra_widget"]],
         full_row_widgets: Collection[QWidget] = (),
         colstretch: tuple[int, ...] = (),
     ) -> None:
@@ -208,9 +199,7 @@ class Pidget(DataEditor[Any]):
 
         self.setLayout(layout)
 
-    def set_note_text(
-        self, message: Optional[str], criticality: Optional[Criticality] = None
-    ) -> None:
+    def set_note_text(self, message: str | None, criticality: Criticality | None = None) -> None:
         if not message:
             self.__note_widget.hide()
             return
@@ -245,8 +234,8 @@ class Pidget(DataEditor[Any]):
 
 @attrs.frozen(kw_only=True, slots=False)
 class IntPidgetFactory(PidgetFactory):
-    limits: Optional[Tuple[Optional[int], Optional[int]]] = None
-    suffix: Optional[str] = None
+    limits: tuple[int | None, int | None] | None = None
+    suffix: str | None = None
 
     def create(self, parent: QWidget) -> IntPidget:
         return IntPidget(self, parent)
@@ -369,8 +358,8 @@ class IntFlagPidget(Pidget):
 
 @attrs.frozen(kw_only=True, slots=False)
 class FloatPidgetFactory(PidgetFactory):
-    limits: Optional[Tuple[Optional[float], Optional[float]]] = None
-    suffix: Optional[str] = None
+    limits: tuple[float | None, float | None] | None = None
+    suffix: str | None = None
     decimals: int = 1
 
     def create(self, parent: QWidget) -> FloatPidget:
@@ -409,10 +398,10 @@ class FloatPidget(Pidget):
 
 @attrs.frozen(kw_only=True, slots=False)
 class FloatRangeSliderPidgetFactory(FloatPidgetFactory):
-    limits: Tuple[float, float]
+    limits: tuple[float, float]
     log_scale: bool = False
     show_limit_values: bool = True
-    limit_texts: Optional[Tuple[Optional[str], Optional[str]]] = None
+    limit_texts: tuple[str | None, str | None] | None = None
 
     def __attrs_post_init__(self) -> None:
         if self.log_scale and self.limits[0] <= 0:
@@ -513,7 +502,7 @@ class FloatRangeSliderPidget(Pidget):
                 self._slider.wrapped_set_value(value)
                 self.setting = False
 
-    def get_data(self) -> Tuple[float, float]:
+    def get_data(self) -> tuple[float, float]:
         return self._slider.wrapped_get_value()
 
     def __on_spin_box_r_changed(self, new_r_value: float) -> None:
@@ -530,7 +519,7 @@ class FloatRangeSliderPidget(Pidget):
             self.set_data(new_value)
         self.sig_update.emit(self.get_data())
 
-    def __on_slider_changed(self, value: Tuple[float, float]) -> None:
+    def __on_slider_changed(self, value: tuple[float, float]) -> None:
         with QtCore.QSignalBlocker(self):
             self.set_data(value)
         self.sig_update.emit(self.get_data())
@@ -538,10 +527,10 @@ class FloatRangeSliderPidget(Pidget):
 
 @attrs.frozen(kw_only=True, slots=False)
 class FloatSliderPidgetFactory(FloatPidgetFactory):
-    limits: Tuple[float, float]
+    limits: tuple[float, float]
     log_scale: bool = False
     show_limit_values: bool = True
-    limit_texts: Optional[Tuple[Optional[str], Optional[str]]] = None
+    limit_texts: tuple[str | None, str | None] | None = None
 
     def __attrs_post_init__(self) -> None:
         if self.log_scale and self.limits[0] <= 0:
@@ -641,7 +630,7 @@ class FloatSliderPidget(Pidget):
 
 @attrs.frozen(kw_only=True, slots=False)
 class OptionalPidgetFactory(PidgetFactory):
-    checkbox_label_text: Optional[str] = None
+    checkbox_label_text: str | None = None
 
 
 class OptionalPidget(Pidget):
@@ -659,10 +648,7 @@ class OptionalPidget(Pidget):
         factory: PidgetFactory,
         *,
         first_row_elements: Iterable[
-            Union[
-                QWidget,
-                te.Literal["name_label", "extra_widget", "optional_checkbox"],
-            ]
+            QWidget | te.Literal["name_label", "extra_widget", "optional_checkbox"]
         ],
         full_row_widgets: Collection[QWidget] = (),
         colstretch: tuple[int, ...] = (),
@@ -687,13 +673,13 @@ class OptionalPidget(Pidget):
             self._none_checkbox.setChecked(value is not None)
 
     @abc.abstractmethod
-    def get_data(self) -> Optional[Any]:
+    def get_data(self) -> Any | None:
         pass
 
 
 @attrs.frozen(kw_only=True, slots=False)
 class OptionalIntPidgetFactory(OptionalPidgetFactory, IntPidgetFactory):
-    init_set_value: Optional[int] = None
+    init_set_value: int | None = None
 
     def create(self, parent: QWidget) -> OptionalIntPidget:  # type: ignore[override]
         return OptionalIntPidget(self, parent)
@@ -738,7 +724,7 @@ class OptionalIntPidget(OptionalPidget):
                 self._spin_box.setValue(value)
                 self._spin_box.setEnabled(True)
 
-    def get_data(self) -> Optional[int]:
+    def get_data(self) -> int | None:
         if not self._none_checkbox.isChecked():
             return None
         else:
@@ -747,12 +733,12 @@ class OptionalIntPidget(OptionalPidget):
 
 @attrs.frozen(kw_only=True, slots=False)
 class OptionalFloatPidgetFactory(OptionalPidgetFactory, FloatPidgetFactory):
-    init_set_value: Optional[float] = None
+    init_set_value: float | None = None
     """
     The initial value of the spinbox (ignoring the None-ness of the pidget)
     """
 
-    placeholder_text: Optional[str] = None
+    placeholder_text: str | None = None
     """
     Text that will be displayed when the checkbox is unchecked (and data is None).
     placeholder_text = None disables the placeholder text entierly
@@ -831,7 +817,7 @@ class OptionalFloatPidget(OptionalPidget):
                 self._SPINBOX_INDEX if value is not None else self._DUMMY_INDEX
             )
 
-    def get_data(self) -> Optional[float]:
+    def get_data(self) -> float | None:
         if not self._none_checkbox.isChecked():
             return None
         else:
@@ -840,7 +826,7 @@ class OptionalFloatPidget(OptionalPidget):
 
 @attrs.frozen(kw_only=True, slots=False)
 class OptionalFloatRangeSliderPidgetFactory(OptionalPidgetFactory, FloatRangeSliderPidgetFactory):
-    init_set_value: Optional[Tuple[float, float]] = None
+    init_set_value: tuple[float, float] | None = None
 
     def create(self, parent: QWidget) -> OptionalFloatRangeSliderPidget:  # type: ignore[override]
         return OptionalFloatRangeSliderPidget(self, parent)
@@ -916,7 +902,7 @@ class OptionalFloatRangeSliderPidget(OptionalPidget):
         self.__spin_box_r.setEnabled(enabled)
         self._slider_widget.setEnabled(enabled)
 
-    def __sync_to_value(self, value: Tuple[float, float]) -> None:
+    def __sync_to_value(self, value: tuple[float, float]) -> None:
         self.setting = True
         self.__spin_box_l.setValue(value[0])
         self.__spin_box_r.setValue(value[1])
@@ -946,7 +932,7 @@ class OptionalFloatRangeSliderPidget(OptionalPidget):
             self.__sync_to_value((l_value, new_r_value))
         self.sig_update.emit(self._slider.wrapped_get_value())
 
-    def __on_slider_changed(self, value: Tuple[float, float]) -> None:
+    def __on_slider_changed(self, value: tuple[float, float]) -> None:
         if not self.setting:
             with QtCore.QSignalBlocker(self):
                 self.__sync_to_value(value)
@@ -961,12 +947,12 @@ class OptionalFloatRangeSliderPidget(OptionalPidget):
             else:
                 self.__set_enabled(False)
 
-    def get_data(self) -> Optional[Tuple[float, float]]:
+    def get_data(self) -> tuple[float, float] | None:
         if not self._none_checkbox.isChecked():
             return None
         return self._slider.wrapped_get_value()
 
-    def set_unset_value(self, value: Tuple[float, float]) -> None:
+    def set_unset_value(self, value: tuple[float, float]) -> None:
         """Show ``value``, disabled, while unset: the value that unset stands for,
         which checking the box then starts from. Ignored while set."""
         if self._none_checkbox.isChecked():
@@ -1131,9 +1117,9 @@ class SensorIdPidget(ComboboxPidget[int]):
 
 @attrs.frozen(kw_only=True, slots=False)
 class EnumPidgetFactory(ComboboxPidgetFactory[EnumT]):
-    enum_type: Type[EnumT] = attrs.field()
+    enum_type: type[EnumT] = attrs.field()
     label_mapping: dict[EnumT, str] = attrs.field()
-    tooltip_mapping: Optional[dict[EnumT, str]] = attrs.field(default=None)
+    tooltip_mapping: dict[EnumT, str] | None = attrs.field(default=None)
 
     items: list[tuple[str, EnumT]] = attrs.field(init=False)
 
@@ -1214,7 +1200,7 @@ class OptionalEnumPidget(OptionalPidget):
         else:
             self._combobox.setEnabled(False)
 
-    def get_data(self) -> Optional[Enum]:
+    def get_data(self) -> Enum | None:
         if not self._none_checkbox.isChecked():
             return None
         else:
@@ -1251,9 +1237,9 @@ class _PidgetSpinBox(QSpinBox):
         self,
         parent: QWidget,
         *,
-        limits: Optional[Tuple[Optional[int], Optional[int]]] = None,
-        init_set_value: Optional[int] = None,
-        suffix: Optional[str] = None,
+        limits: tuple[int | None, int | None] | None = None,
+        init_set_value: int | None = None,
+        suffix: str | None = None,
     ) -> None:
         super().__init__(parent)
 
@@ -1282,10 +1268,10 @@ class _PidgetDoubleSpinBox(QDoubleSpinBox):
         self,
         parent: QWidget,
         *,
-        limits: Optional[Tuple[Optional[float], Optional[float]]] = None,
-        init_set_value: Optional[float] = None,
+        limits: tuple[float | None, float | None] | None = None,
+        init_set_value: float | None = None,
         decimals: int = 1,
-        suffix: Optional[str] = None,
+        suffix: str | None = None,
     ) -> None:
         super().__init__(parent)
 
@@ -1332,7 +1318,7 @@ class _PidgetFloatSlider(QSlider):
         self,
         parent: QWidget,
         *,
-        limits: Tuple[float, float],
+        limits: tuple[float, float],
         decimals: int,
         log_scale: bool,
     ) -> None:
@@ -1404,7 +1390,7 @@ class _PidgetRangeSlider(QRangeSlider):
         self,
         parent: QWidget,
         *,
-        limits: Tuple[float, float],
+        limits: tuple[float, float],
         decimals: int,
         log_scale: bool,
     ) -> None:
@@ -1422,14 +1408,14 @@ class _PidgetRangeSlider(QRangeSlider):
 
         self.valueChanged.connect(self.__on_value_changed)
 
-    def __on_value_changed(self, value: Tuple[float, float]) -> None:
+    def __on_value_changed(self, value: tuple[float, float]) -> None:
         val = self.__from_slider_scale(value)
         self.wrapped_value_changed.emit(val)
 
-    def wrapped_set_value(self, value: Tuple[float, float]) -> None:
+    def wrapped_set_value(self, value: tuple[float, float]) -> None:
         self.setValue(self.__to_slider_scale(value))
 
-    def wrapped_get_value(self) -> Tuple[float, float]:
+    def wrapped_get_value(self) -> tuple[float, float]:
         return self.__from_slider_scale((float(self.value()[0]), float(self.value()[1])))
 
     def wheelEvent(self, event: QtGui.QWheelEvent) -> None:
@@ -1438,7 +1424,7 @@ class _PidgetRangeSlider(QRangeSlider):
         else:
             event.ignore()
 
-    def __to_slider_scale(self, value: Tuple[float, float]) -> Tuple[float, float]:
+    def __to_slider_scale(self, value: tuple[float, float]) -> tuple[float, float]:
         lower, upper = self.limits
         [xb, xt] = value
 
@@ -1453,7 +1439,7 @@ class _PidgetRangeSlider(QRangeSlider):
 
         return (int(round(yb)), int(round(yt)))
 
-    def __from_slider_scale(self, value: Tuple[float, float]) -> Tuple[float, float]:
+    def __from_slider_scale(self, value: tuple[float, float]) -> tuple[float, float]:
         lower, upper = self.limits
         [yb, yt] = value
 
@@ -1474,8 +1460,8 @@ class _PidgetRangeSlider(QRangeSlider):
 
 
 def _convert_int_limits_to_qt_range(
-    limits: Optional[Tuple[Optional[int], Optional[int]]],
-) -> Tuple[int, int]:
+    limits: tuple[int | None, int | None] | None,
+) -> tuple[int, int]:
     if limits is None:
         limits = (None, None)
 
@@ -1491,8 +1477,8 @@ def _convert_int_limits_to_qt_range(
 
 
 def _convert_float_limits_to_qt_range(
-    limits: Optional[Tuple[Optional[float], Optional[float]]],
-) -> Tuple[float, float]:
+    limits: tuple[float | None, float | None] | None,
+) -> tuple[float, float]:
     if limits is None:
         limits = (None, None)
 

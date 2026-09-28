@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -11,7 +11,7 @@ from acconeer.exptool.app.new.ui.components import GroupBox
 
 
 def create_plugin_selection_widget(
-    title: str, *rows: t.Tuple[str, t.Iterable[t.Callable[[], t.Any]]]
+    title: str, *rows: tuple[str, t.Iterable[t.Callable[[], t.Any]]]
 ) -> GroupBox[QVBoxLayout]:
     widget = GroupBox.vertical(left_header=title)
 

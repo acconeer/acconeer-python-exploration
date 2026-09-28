@@ -1,8 +1,8 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
@@ -32,7 +32,7 @@ class BlinkstickUpdater:
 
         stick.set_max_rgb_value(150)
 
-        def is_none_or_detection(x: Optional[RangeResult]) -> Optional[bool]:
+        def is_none_or_detection(x: RangeResult | None) -> bool | None:
             return x.detection if x is not None else None
 
         v_close = self.e_close.update(float(bool(is_none_or_detection(data.close))), dt)

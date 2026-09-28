@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import enum
-from typing import Any, Optional, Tuple, Union
+from typing import Any
 
 import attrs
 import h5py
@@ -44,10 +44,10 @@ class ModeHandlerConfig(AlgoConfigBase):
     presence_config: DetectorConfig = attrs.field(factory=DetectorConfig)
     """Presence detector configuration."""
 
-    hand_detection_timeout: Optional[float] = attrs.field(default=5.0)
+    hand_detection_timeout: float | None = attrs.field(default=5.0)
     """Duration without detection before returning back to low power mode (s)."""
 
-    use_presence_detection: Optional[bool] = attrs.field(default=True)
+    use_presence_detection: bool | None = attrs.field(default=True)
     """If true, use presence detector to wake up hand motion detection. """
 
     def _collect_validation_results(self) -> list[a121.ValidationResult]:
@@ -75,13 +75,13 @@ class ModeHandlerResult:
     app_mode: AppMode
     """Application mode."""
 
-    detection_state: Optional[DetectionState] = attrs.field(default=None)
+    detection_state: DetectionState | None = attrs.field(default=None)
     """Detection state."""
 
-    presence_result: Optional[DetectorResult] = attrs.field(default=None)
+    presence_result: DetectorResult | None = attrs.field(default=None)
     """Presence detector result."""
 
-    example_app_result: Optional[ExampleAppResult] = attrs.field(default=None)
+    example_app_result: ExampleAppResult | None = attrs.field(default=None)
     """Hand motion example app result."""
 
 
@@ -131,7 +131,7 @@ class ModeHandler(Controller[ModeHandlerConfig, ModeHandlerResult]):
         self.started = False
 
     def start(
-        self, recorder: Optional[a121.Recorder] = None, _algo_group: Optional[h5py.Group] = None
+        self, recorder: a121.Recorder | None = None, _algo_group: h5py.Group | None = None
     ) -> None:
         """Start application."""
         if self.started:
@@ -202,7 +202,7 @@ class ModeHandler(Controller[ModeHandlerConfig, ModeHandlerResult]):
         return result
 
     def _determine_mode_swap(
-        self, app_result: Union[DetectorResult, ExampleAppResult]
+        self, app_result: DetectorResult | ExampleAppResult
     ) -> ModeHandlerResult:
         """Determine if mode should be swapped, based on result."""
         current_app_mode = self.app_mode
@@ -294,7 +294,7 @@ def _record_algo_data(
     opser.serialize(config, handle_config_group)
 
 
-def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, ModeHandlerConfig]:
+def _load_algo_data(algo_group: h5py.Group) -> tuple[int, ModeHandlerConfig]:
     sensor_id = int(algo_group["sensor_id"][()])
     config = opser.deserialize(algo_group["mode_handler_config"], ModeHandlerConfig)
     return sensor_id, config

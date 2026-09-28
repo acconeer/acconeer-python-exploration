@@ -6,7 +6,7 @@ from __future__ import annotations
 import copy
 import enum
 import warnings
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import attrs
 import h5py
@@ -48,16 +48,16 @@ class RefAppStatus:
 
 @attrs.mutable(kw_only=True)
 class CalibrationData(AlgoBase):
-    noise_frames: Optional[npt.NDArray[np.complex128]] = attrs.field(
+    noise_frames: npt.NDArray[np.complex128] | None = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    obs_tx_off_frames: Optional[npt.NDArray[np.complex128]] = attrs.field(
+    obs_tx_off_frames: npt.NDArray[np.complex128] | None = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    obs_frames: Optional[npt.NDArray[np.complex128]] = attrs.field(
+    obs_frames: npt.NDArray[np.complex128] | None = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
-    temperatures: Optional[List[int]] = attrs.field(default=None)
+    temperatures: list[int] | None = attrs.field(default=None)
 
 
 @attrs.mutable(kw_only=True)
@@ -107,7 +107,7 @@ class RefAppConfig(AlgoConfigBase):
     weighted_distance_threshold_m: float = attrs.field(default=0.1)
     """Max distance between two signatures to consider samples similar."""
 
-    signature_similarity_threshold: Optional[float] = attrs.field(default=60.0)
+    signature_similarity_threshold: float | None = attrs.field(default=60.0)
     """How large fraction of signatures have to be within distance threshold to detect car."""
 
     obstruction_detection: bool = attrs.field(default=False)
@@ -184,7 +184,7 @@ class RefAppExtraResult:
     closest_object_dist: float = attrs.field(default=0.0)
     """Location of closest signature in cluster. Only availible if car is detected."""
 
-    obstruction_data: Optional[npt.NDArray[np.float64]] = attrs.field(default=None)
+    obstruction_data: npt.NDArray[np.float64] | None = attrs.field(default=None)
     """Array with obstruction amplitudes (usually direct leakage)."""
 
     obstruction_signature: npt.NDArray[np.float64] = attrs.field(default=(0.0, 0.0))
@@ -262,8 +262,8 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
 
     def start(
         self,
-        recorder: Optional[a121.Recorder] = None,
-        algo_group: Optional[h5py.Group] = None,
+        recorder: a121.Recorder | None = None,
+        algo_group: h5py.Group | None = None,
     ) -> None:
         if self.started:
             msg = "Already started"
@@ -545,7 +545,7 @@ def _record_algo_data(
     opser.serialize(context, context_group)
 
 
-def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, RefAppConfig, RefAppContext]:
+def _load_algo_data(algo_group: h5py.Group) -> tuple[int, RefAppConfig, RefAppContext]:
     sensor_id = int(algo_group["ref_app_sensor_id"][()])
 
     config = RefAppConfig.from_json(algo_group["ref_app_config"][()])
@@ -581,7 +581,7 @@ def get_obstruction_subsweep_config(ref_app_config: RefAppConfig) -> a121.Subswe
     return conf_obstruction
 
 
-def get_sensor_configs(ref_app_config: RefAppConfig) -> Dict[str, a121.SensorConfig]:
+def get_sensor_configs(ref_app_config: RefAppConfig) -> dict[str, a121.SensorConfig]:
     """
     Returns a dict with sensor configs for the main functionality as well as for obstruction (if applicable)
     Even if the configs will be subsweeps, the function returns separate SensorConfig Objects.

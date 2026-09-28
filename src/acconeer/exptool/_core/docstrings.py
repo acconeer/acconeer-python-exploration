@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -7,12 +7,12 @@ import typing as t
 import attributes_doc
 
 
-def get_docstring(obj: t.Any) -> t.Optional[str]:
+def get_docstring(obj: t.Any) -> str | None:
     """Gets the docstring of an object"""
     return getattr(obj, "__doc__", None)
 
 
-def get_attribute_docstring(obj: t.Any, attribute_name: str) -> t.Optional[str]:
+def get_attribute_docstring(obj: t.Any, attribute_name: str) -> str | None:
     """
     Given an object, retrieve the docstring for the attribute_name with name
     `attribute_name`.
@@ -25,7 +25,7 @@ def get_attribute_docstring(obj: t.Any, attribute_name: str) -> t.Optional[str]:
     )
 
 
-def _get_attribute_docstring_vanilla(obj: t.Any, attribute_name: str) -> t.Optional[str]:
+def _get_attribute_docstring_vanilla(obj: t.Any, attribute_name: str) -> str | None:
     attribute = getattr(obj, attribute_name, None)
     if attribute is None:
         return None

@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any, Optional, Tuple
+from typing import Any
 
 import attrs
 import h5py
@@ -34,7 +34,7 @@ from ._processor import (
 )
 
 
-def optional_profile_converter(profile: Optional[Profile]) -> Optional[Profile]:
+def optional_profile_converter(profile: Profile | None) -> Profile | None:
     if profile is None:
         return None
 
@@ -77,7 +77,7 @@ class ExampleAppConfig(AlgoConfigBase):
     profile: a121.Profile = attrs.field(default=a121.Profile.PROFILE_3, converter=a121.Profile)
     """Sets the profile."""
 
-    frame_rate: Optional[float] = attrs.field(default=None)
+    frame_rate: float | None = attrs.field(default=None)
     """Frame rate in Hz."""
 
     sweep_rate: float = attrs.field(default=3000)
@@ -146,7 +146,7 @@ class ExampleAppResult:
     Used to determine whether an object is in front of the sensor.
     """
 
-    lp_displacements: Optional[npt.NDArray[np.float64]] = attrs.field(
+    lp_displacements: npt.NDArray[np.float64] | None = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
     """Array of estimated displacement (µm) per frequency."""
@@ -164,7 +164,7 @@ class ExampleAppResult:
     )
     """Array of frequencies for detected displacements (Hz)."""
 
-    time_series_std: Optional[float] = attrs.field(default=None)
+    time_series_std: float | None = attrs.field(default=None)
     """Time series standard deviation."""
 
     processor_extra_result: ProcessorExtraResult = attrs.field()
@@ -187,7 +187,7 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
         self.started = False
 
     def start(
-        self, recorder: Optional[a121.Recorder] = None, _algo_group: Optional[h5py.Group] = None
+        self, recorder: a121.Recorder | None = None, _algo_group: h5py.Group | None = None
     ) -> None:
         if self.started:
             msg = "Already started"
@@ -334,7 +334,7 @@ def _record_algo_data(
     _create_h5_string_dataset(algo_group, "example_app_config", config.to_json())
 
 
-def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, ExampleAppConfig]:
+def _load_algo_data(algo_group: h5py.Group) -> tuple[int, ExampleAppConfig]:
     sensor_id = algo_group["sensor_id"][()]
     config = ExampleAppConfig.from_json(algo_group["example_app_config"][()])
     return sensor_id, config

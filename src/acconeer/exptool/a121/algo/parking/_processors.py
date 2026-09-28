@@ -2,7 +2,7 @@
 # All rights reserved
 from __future__ import annotations
 
-from typing import Any, Dict, Tuple
+from typing import Any
 
 import attrs
 import numpy as np
@@ -88,7 +88,7 @@ class ObstructionProcessor:
     @staticmethod
     def get_thresholds(
         distance_threshold: float, distances: npt.NDArray[np.float64]
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         distance_range = max(distances) - min(distances)
 
         x_width = distance_range * distance_threshold
@@ -99,7 +99,7 @@ class ObstructionProcessor:
     @staticmethod
     def get_signature(
         frame: npt.NDArray[np.complex128], noise_level: float, distances: npt.NDArray[np.float64]
-    ) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         # Returns signature for a frame without temperature adjustment
 
         abs_frame = np.squeeze(abs(frame))
@@ -238,7 +238,7 @@ class Processor:
         noise_level = float(np.mean(amp) + n_std_dev * dev)
         return noise_level
 
-    def signature(self, depths: npt.NDArray[np.float64]) -> Tuple[float, float]:
+    def signature(self, depths: npt.NDArray[np.float64]) -> tuple[float, float]:
         total_energy = sum(depths)
         max_energy = max(depths)
         if total_energy != 0.0:
@@ -255,13 +255,13 @@ class Processor:
         ret = n_trigs > (self.queue_length * self.similarity_threshold)
         return ret
 
-    def same_objects(self) -> Dict[str, Any]:
+    def same_objects(self) -> dict[str, Any]:
         depth_sigs = np.sort(self.sig_history, axis=0, order=["weighted_distance", "max_energy"])
         weights = np.array([elm[1] for elm in depth_sigs])
         depth_sigs = depth_sigs[weights > self.weight_threshold]
 
         clusters = []
-        curr_cluster: list[Tuple[float, float]] = []
+        curr_cluster: list[tuple[float, float]] = []
         for elm in depth_sigs:
             if len(curr_cluster) == 0:
                 curr_cluster.append(elm)

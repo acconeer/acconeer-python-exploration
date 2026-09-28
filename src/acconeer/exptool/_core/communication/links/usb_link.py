@@ -9,7 +9,7 @@ import os
 import sys
 import threading
 import time
-from typing import Any, Optional
+from typing import Any
 
 import libusb_package
 import usb.core
@@ -45,7 +45,7 @@ def load_usb1_library() -> None:
         usb1.loadLibrary(ctypes.CDLL(path))
 
 
-def get_libusb_bulk_interface(dev: usb.core.Device) -> Optional[usb.core.Interface]:
+def get_libusb_bulk_interface(dev: usb.core.Device) -> usb.core.Interface | None:
     """
     Helper function to find vendor specific USB interfaces with 2 endpoints
     """
@@ -77,9 +77,9 @@ class PyUsbCdc:
 
     def __init__(
         self,
-        vid: Optional[int] = None,
-        pid: Optional[int] = None,
-        serial: Optional[str] = None,
+        vid: int | None = None,
+        pid: int | None = None,
+        serial: str | None = None,
         start: bool = True,
     ) -> None:
         self.serial = serial
@@ -149,7 +149,7 @@ class PyUsbCdc:
 
         return True
 
-    def read(self, size: Optional[int] = None) -> list[int]:
+    def read(self, size: int | None = None) -> list[int]:
         if self._dev is None:
             msg = "Port is not open"
             raise UsbPortError(msg)
@@ -548,7 +548,7 @@ class USBLink(BufferedLink):
     BREAK_QUIET_S = 0.2
 
     def __init__(
-        self, vid: Optional[int] = None, pid: Optional[int] = None, serial: Optional[str] = None
+        self, vid: int | None = None, pid: int | None = None, serial: str | None = None
     ) -> None:
         super().__init__()
         self._vid = vid

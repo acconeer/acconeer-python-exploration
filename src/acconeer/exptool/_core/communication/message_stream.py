@@ -49,7 +49,7 @@ class MessageStream:
     def wait_for_message(
         self,
         message_type: type[_MessageT],
-        timeout_s: t.Optional[float] = None,
+        timeout_s: float | None = None,
     ) -> _MessageT:
         """Retrieves and applies messages until a message of type ``message_type`` is encountered.
 

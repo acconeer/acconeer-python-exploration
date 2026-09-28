@@ -9,7 +9,6 @@ import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Optional
 
 from packaging.version import Version
 
@@ -41,7 +40,7 @@ def get_current_commit_sha() -> str:
     return utf8_subprocess_output("git", "rev-parse", "--verify", "HEAD")
 
 
-def get_current_commit_prepare_release_version() -> Optional[str]:
+def get_current_commit_prepare_release_version() -> str | None:
     commit_title = utf8_subprocess_output("git", "log", "-n1", "--pretty=format:%s")
     match = re.match(rf"Prepare release ({VERSION_PATTERN})", commit_title)
     return None if match is None else match.groups()[0]
@@ -51,14 +50,14 @@ def get_most_recent_git_tag() -> str:
     return utf8_subprocess_output("git", "describe", "--abbrev=0", "--tags")
 
 
-def get_current_commit_tag() -> Optional[str]:
+def get_current_commit_tag() -> str | None:
     recent_tag = get_most_recent_git_tag()
     return (
         recent_tag if get_current_commit_sha() == get_commit_sha_of_git_tag(recent_tag) else None
     )
 
 
-def get_first_match_in_string(pattern: str, string: str, *, group: int = 0) -> Optional[str]:
+def get_first_match_in_string(pattern: str, string: str, *, group: int = 0) -> str | None:
     """
     Searches for the first match of `pattern` in `string`. Returns `group`:th group (default 0)
     """

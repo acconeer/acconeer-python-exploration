@@ -20,7 +20,7 @@ from .types import PidgetFactoryMapping, PidgetGroupFactoryMapping
 ItemT = t.TypeVar("ItemT", bound=JsonPresentable)
 
 
-class ListWidget(DataEditor[t.List[ItemT]], t.Generic[ItemT]):
+class ListWidget(DataEditor[list[ItemT]], t.Generic[ItemT]):
     """A variable-length list of ``AttrsConfigEditor`` rows, boxed like one.
 
     Unlike a ``Pidget``, this is never a field inside another
@@ -34,13 +34,13 @@ class ListWidget(DataEditor[t.List[ItemT]], t.Generic[ItemT]):
         self,
         *,
         title: str,
-        item_type: t.Type[ItemT],
-        item_factory_mapping: t.Union[PidgetFactoryMapping, PidgetGroupFactoryMapping],
+        item_type: type[ItemT],
+        item_factory_mapping: PidgetFactoryMapping | PidgetGroupFactoryMapping,
         make_default_item: t.Callable[[], ItemT],
         item_title: str = "",
         add_button_text: str = "Add",
-        tooltip: t.Optional[str] = None,
-        parent: t.Optional[QWidget] = None,
+        tooltip: str | None = None,
+        parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent=parent)
         self._item_type = item_type

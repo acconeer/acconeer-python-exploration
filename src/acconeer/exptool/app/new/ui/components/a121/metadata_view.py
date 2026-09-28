@@ -1,9 +1,7 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
-
-from typing import Optional, Union
 
 from PySide6 import QtCore
 from PySide6.QtWidgets import (
@@ -40,7 +38,7 @@ class SmartMetadataView(QWidget):
 
     def set_data(
         self,
-        metadata: Optional[Union[a121.Metadata, list[dict[int, a121.Metadata]]]] = None,
+        metadata: a121.Metadata | list[dict[int, a121.Metadata]] | None = None,
     ) -> None:
         if isinstance(metadata, list):
             self._metadata_view.setHidden(True)
@@ -86,7 +84,7 @@ class ExtendedMetadataView(QWidget):
         while self._tab_widget.count() > needed_widgets:
             self._tab_widget.removeTab(0)
 
-    def set_data(self, extended_metadata: Optional[list[dict[int, a121.Metadata]]]) -> None:
+    def set_data(self, extended_metadata: list[dict[int, a121.Metadata]] | None) -> None:
         if extended_metadata is None:
             self._represent_none()
             return
@@ -155,7 +153,7 @@ class MetadataView(QGroupBox):
         self.setLayout(layout)
         self.set_data(None)
 
-    def set_data(self, metadata: Optional[a121.Metadata]) -> None:
+    def set_data(self, metadata: a121.Metadata | None) -> None:
         self.frame_data_length.setText(f"{metadata.frame_data_length}" if metadata else "-")
         self.calibration_temperature.setText(
             f"{metadata.calibration_temperature}" if metadata else "-"

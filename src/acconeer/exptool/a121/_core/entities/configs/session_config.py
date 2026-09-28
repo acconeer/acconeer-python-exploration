@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import json
 import warnings
-from typing import Any, Optional, Union
+from typing import Any
 
 import numpy as np
 
@@ -94,12 +94,10 @@ class SessionConfig:
 
     def __init__(
         self,
-        arg: Optional[
-            Union[SensorConfig, dict[int, SensorConfig], list[dict[int, SensorConfig]]]
-        ] = None,
+        arg: SensorConfig | dict[int, SensorConfig] | list[dict[int, SensorConfig]] | None = None,
         *,
-        extended: Optional[bool] = None,
-        update_rate: Optional[float] = None,
+        extended: bool | None = None,
+        update_rate: float | None = None,
     ) -> None:
         self.update_rate = update_rate
 
@@ -134,7 +132,7 @@ class SessionConfig:
         return self._groups
 
     @property
-    def update_rate(self) -> Optional[float]:
+    def update_rate(self) -> float | None:
         """The server update rate limit in Hz
 
         Must be > 0 or None, where None means unlimited.
@@ -143,7 +141,7 @@ class SessionConfig:
         return self._update_rate
 
     @update_rate.setter
-    def update_rate(self, value: Optional[float]) -> None:
+    def update_rate(self, value: float | None) -> None:
         if value is None:
             self._update_rate = None
         else:
@@ -323,7 +321,7 @@ class SessionConfig:
 
 
 def _unsqueeze_groups(
-    arg: Union[SensorConfig, dict[int, SensorConfig], list[dict[int, SensorConfig]]],
+    arg: SensorConfig | dict[int, SensorConfig] | list[dict[int, SensorConfig]],
 ) -> list[dict[int, SensorConfig]]:
     if isinstance(arg, SensorConfig):
         return [{1: arg}]

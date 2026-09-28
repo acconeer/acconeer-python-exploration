@@ -1,11 +1,11 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import abc
 import logging
-from typing import Any, Generic, Optional, Type
+from typing import Any, Generic
 
 from PySide6.QtWidgets import QPushButton, QVBoxLayout
 
@@ -99,7 +99,7 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ProcessorConfigT]):
 
     def on_backend_state_update(
         self,
-        backend_plugin_state: Optional[ProcessorBackendPluginSharedState[ProcessorConfigT]],
+        backend_plugin_state: ProcessorBackendPluginSharedState[ProcessorConfigT] | None,
     ) -> None:
         if backend_plugin_state is None:
             self.session_config_editor.set_data(None)
@@ -169,5 +169,5 @@ class ProcessorViewPluginBase(A121ViewPluginBase, Generic[ProcessorConfigT]):
 
     @classmethod
     @abc.abstractmethod
-    def get_processor_config_cls(cls) -> Type[ProcessorConfigT]:
+    def get_processor_config_cls(cls) -> type[ProcessorConfigT]:
         pass

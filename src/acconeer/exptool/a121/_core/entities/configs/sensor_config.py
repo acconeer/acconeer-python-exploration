@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import json
 import warnings
-from typing import Any, List, Optional, TypeVar
+from typing import Any, TypeVar
 
 import numpy as np
 
@@ -105,11 +105,11 @@ class SensorConfig:
     MAX_HWAAS = SubsweepConfig.MAX_HWAAS
     MAX_NUM_SUBSWEEPS = 4
 
-    _subsweeps: List[SubsweepConfig]
+    _subsweeps: list[SubsweepConfig]
 
     _sweeps_per_frame: int
-    _sweep_rate: Optional[float]
-    _frame_rate: Optional[float]
+    _sweep_rate: float | None
+    _frame_rate: float | None
     _continuous_sweep_mode: bool
     _double_buffering: bool
     _inter_frame_idle_state: IdleState
@@ -135,26 +135,26 @@ class SensorConfig:
     def __init__(
         self,
         *,
-        subsweeps: Optional[list[SubsweepConfig]] = None,
-        num_subsweeps: Optional[int] = None,
+        subsweeps: list[SubsweepConfig] | None = None,
+        num_subsweeps: int | None = None,
         sweeps_per_frame: int = 1,
-        sweep_rate: Optional[float] = None,
-        frame_rate: Optional[float] = None,
+        sweep_rate: float | None = None,
+        frame_rate: float | None = None,
         continuous_sweep_mode: bool = False,
         double_buffering: bool = False,
         inter_frame_idle_state: IdleState = IdleState.DEEP_SLEEP,
         inter_sweep_idle_state: IdleState = IdleState.READY,
-        start_point: Optional[int] = None,
-        num_points: Optional[int] = None,
-        step_length: Optional[int] = None,
-        profile: Optional[Profile] = None,
-        hwaas: Optional[int] = None,
-        receiver_gain: Optional[int] = None,
-        enable_tx: Optional[bool] = None,
-        enable_loopback: Optional[bool] = None,
-        phase_enhancement: Optional[bool] = None,
-        iq_imbalance_compensation: Optional[bool] = None,
-        prf: Optional[PRF] = None,
+        start_point: int | None = None,
+        num_points: int | None = None,
+        step_length: int | None = None,
+        profile: Profile | None = None,
+        hwaas: int | None = None,
+        receiver_gain: int | None = None,
+        enable_tx: bool | None = None,
+        enable_loopback: bool | None = None,
+        phase_enhancement: bool | None = None,
+        iq_imbalance_compensation: bool | None = None,
+        prf: PRF | None = None,
     ) -> None:
         if subsweeps is not None and num_subsweeps is not None:
             msg = "It is not allowed to pass both `subsweeps` and `num_subsweeps`. Choose one."
@@ -493,7 +493,7 @@ class SensorConfig:
         self._sweeps_per_frame = int_value
 
     @property
-    def sweep_rate(self) -> Optional[float]:
+    def sweep_rate(self) -> float | None:
         """Sweep rate
 
         The sweep rate for sweeps in a frame (measurement).
@@ -504,14 +504,14 @@ class SensorConfig:
         return self._sweep_rate
 
     @sweep_rate.setter
-    def sweep_rate(self, value: Optional[float]) -> None:
+    def sweep_rate(self, value: float | None) -> None:
         if value is None:
             self._sweep_rate = None
         else:
             self._sweep_rate = utils.validate_float(value, min_value=0.0, inclusive=False)
 
     @property
-    def frame_rate(self) -> Optional[float]:
+    def frame_rate(self) -> float | None:
         """Frame rate
 
         Setting the frame rate to unlimited means that the rate is not limited by the sensor but
@@ -523,7 +523,7 @@ class SensorConfig:
         return self._frame_rate
 
     @frame_rate.setter
-    def frame_rate(self, value: Optional[float]) -> None:
+    def frame_rate(self, value: float | None) -> None:
         if value is None:
             self._frame_rate = None
         else:
@@ -630,7 +630,7 @@ class SensorConfig:
     def inter_sweep_idle_state(self, value: IdleState) -> None:
         self._inter_sweep_idle_state = IdleState(value)
 
-    def _pretty_str_lines(self, sensor_id: Optional[int] = None) -> list[str]:
+    def _pretty_str_lines(self, sensor_id: int | None = None) -> list[str]:
         lines = []
 
         id_str = "" if sensor_id is None else f" @ sensor {sensor_id}"

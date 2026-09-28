@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -18,10 +18,10 @@ class RegistryPersistor(core.Persistor):
     the combinatorial explosion of the problem.
     """
 
-    _REGISTRY: t.ClassVar[t.Dict[str, t.Type[core.Persistor]]] = {}
+    _REGISTRY: t.ClassVar[dict[str, type[core.Persistor]]] = {}
 
     @classmethod
-    def register_persistor(cls, __persistor: t.Type[core.Persistor]) -> t.Type[core.Persistor]:
+    def register_persistor(cls, __persistor: type[core.Persistor]) -> type[core.Persistor]:
         """
         Registers a persistor that can extend the handled types.
 
@@ -31,7 +31,7 @@ class RegistryPersistor(core.Persistor):
         return __persistor
 
     @classmethod
-    def priority_higher_than(cls, __persistor: t.Type[core.Persistor]) -> int:
+    def priority_higher_than(cls, __persistor: type[core.Persistor]) -> int:
         """Returns a priority that is higher than the priority of the specified persistor."""
         try:
             return cls._REGISTRY[__persistor.__name__].PRIORITY + 1
@@ -40,7 +40,7 @@ class RegistryPersistor(core.Persistor):
             raise RuntimeError(msg)
 
     @classmethod
-    def _get_applicable_persistors(cls, __type: type) -> t.List[t.Type[core.Persistor]]:
+    def _get_applicable_persistors(cls, __type: type) -> list[type[core.Persistor]]:
         """Retrieves the persistors that can handle the specified type"""
         return sorted(
             (persistor for persistor in cls._REGISTRY.values() if persistor.is_applicable(__type)),

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -10,13 +10,13 @@ import typing_extensions as te
 from .message import Message, ParseError
 
 
-LogLevelStr = t.Union[
-    te.Literal["ERROR"],
-    te.Literal["WARNING"],
-    te.Literal["INFO"],
-    te.Literal["VERBOSE"],
-    te.Literal["DEBUG"],
-]
+LogLevelStr = (
+    te.Literal["ERROR"]
+    | te.Literal["WARNING"]
+    | te.Literal["INFO"]
+    | te.Literal["VERBOSE"]
+    | te.Literal["DEBUG"]
+)
 
 
 class LogMessageHeader(te.TypedDict):
@@ -31,7 +31,7 @@ class LogMessage(Message):
     message: ServerLog
 
     @classmethod
-    def parse(cls, header: t.Dict[str, t.Any], payload: bytes) -> LogMessage:
+    def parse(cls, header: dict[str, t.Any], payload: bytes) -> LogMessage:
         t.cast(LogMessageHeader, header)
 
         if header["status"] == "log":

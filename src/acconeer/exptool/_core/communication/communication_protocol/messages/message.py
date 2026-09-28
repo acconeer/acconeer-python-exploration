@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ import typing_extensions as te
 class Message(abc.ABC):
     @classmethod
     @abc.abstractmethod
-    def parse(cls, header: t.Dict[str, t.Any], payload: bytes) -> te.Self:
+    def parse(cls, header: dict[str, t.Any], payload: bytes) -> te.Self:
         """Assumes that header and payload contains needed information and tries to parse.
 
         :param header: Message header

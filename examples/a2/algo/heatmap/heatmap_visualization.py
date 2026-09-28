@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import os
 import time
-import typing as t
 
 import numpy as np
 
@@ -47,7 +46,7 @@ class PGUpdater:
     """
 
     def __init__(self, session_config, heatmap_config) -> None:
-        self._config: t.Optional[a2.SessionConfig] = session_config
+        self._config: a2.SessionConfig | None = session_config
         self.heatmap_config = heatmap_config
 
     def setup(self, win):

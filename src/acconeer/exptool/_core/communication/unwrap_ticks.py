@@ -1,14 +1,12 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
-
 
 def unwrap_ticks(
-    ticks: list[int], minimum_tick: Optional[int], limit: int = 2**32
-) -> Tuple[list[int], Optional[int]]:
+    ticks: list[int], minimum_tick: int | None, limit: int = 2**32
+) -> tuple[list[int], int | None]:
     """Unwraps a sequence of ticks belonging to a collection of result
 
     The server tick (attached to produced Results) wraps at 2^32 (uint32_t). Thus, if the raw tick is

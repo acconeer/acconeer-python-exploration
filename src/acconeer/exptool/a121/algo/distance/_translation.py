@@ -89,7 +89,7 @@ def _clamp(value: float, min_val: float, max_val: float) -> float:
     return min(max(value, min_val), max_val)
 
 
-def _range_overlap(a: tuple[float, float], b: tuple[float, float]) -> t.Optional[float]:
+def _range_overlap(a: tuple[float, float], b: tuple[float, float]) -> float | None:
     (a_start, a_end) = sorted(a)
     (b_start, b_end) = sorted(b)
     overlap_start = _clamp(a_start, b_start, b_end)
@@ -841,7 +841,7 @@ def _calc_leakage_free_min_dist(config: DetectorConfig) -> dict[a121.Profile, fl
     return min_dist_m
 
 
-def _limit_step_length(profile: a121.Profile, user_limit: t.Optional[int]) -> int:
+def _limit_step_length(profile: a121.Profile, user_limit: int | None) -> int:
     """
     Calculates step length based on user defined step length and selected profile.
 

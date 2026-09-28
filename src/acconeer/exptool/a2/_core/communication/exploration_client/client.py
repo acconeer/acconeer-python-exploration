@@ -2,8 +2,6 @@
 # All rights reserved
 from __future__ import annotations
 
-import typing as t
-
 import attrs
 import typing_extensions as te
 
@@ -54,14 +52,14 @@ class ExplorationClient(A2Client, register=True):
     @classmethod
     def open(
         cls,
-        ip_address: t.Optional[str] = None,
-        tcp_port: t.Optional[int] = None,
-        serial_port: t.Optional[str] = None,
-        usb_device: t.Optional[t.Union[str, bool]] = None,
-        mock: t.Optional[bool] = None,
-        override_baudrate: t.Optional[int] = None,
+        ip_address: str | None = None,
+        tcp_port: int | None = None,
+        serial_port: str | None = None,
+        usb_device: str | bool | None = None,
+        mock: bool | None = None,
+        override_baudrate: int | None = None,
         flow_control: bool = True,
-        generation: t.Optional[str] = "a2",
+        generation: str | None = "a2",
     ) -> te.Self:
         if generation not in ["a2", "a211"]:
             raise client.ClientCreationError
@@ -108,7 +106,7 @@ class ExplorationClient(A2Client, register=True):
             msg = f"Wrong sensor version, expected a2 or a211 but got {sensor}"
             raise client.ClientError(msg)
 
-        self._server_info: t.Optional[ServerInfo] = ServerInfo(
+        self._server_info: ServerInfo | None = ServerInfo(
             rss_version=system_info_response.system_info["rss_version"],
             ticks_per_second=system_info_response.system_info["ticks_per_second"],
             hardware_name=system_info_response.system_info.get("hw"),
@@ -116,9 +114,7 @@ class ExplorationClient(A2Client, register=True):
             max_baudrate=system_info_response.system_info.get("max_baudrate"),
         )
 
-    def setup_session(
-        self, config: SessionConfig, calibration: t.Optional[str] = None
-    ) -> Metadata:
+    def setup_session(self, config: SessionConfig, calibration: str | None = None) -> Metadata:
         self._config = config
         self._calibration_provided = calibration is not None
         self._server_stream.send_command(
@@ -245,7 +241,7 @@ class ExplorationClient(A2Client, register=True):
 
 @attrs.mutable
 class TickUnwrapper:
-    minimum_tick: t.Optional[int] = None
+    minimum_tick: int | None = None
 
     def update_ticks(self, group_result: GroupResult) -> GroupResult:
         (unwrapped_ticks, self.minimum_tick) = unwrap_ticks(

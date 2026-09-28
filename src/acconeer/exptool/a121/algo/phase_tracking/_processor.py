@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 import attrs
 import numpy as np
 import numpy.typing as npt
@@ -18,7 +16,7 @@ from acconeer.exptool.a121.algo import PERCEIVED_WAVELENGTH, AlgoProcessorConfig
 @attributes_doc
 @attrs.mutable(kw_only=True)
 class ProcessorConfig(AlgoProcessorConfigBase):
-    threshold: Optional[float] = attrs.field(default=25.0)
+    threshold: float | None = attrs.field(default=25.0)
     """Threshold for detection"""
 
     def _collect_validation_results(
@@ -73,16 +71,16 @@ class ProcessorContext: ...
 class ProcessorResult:
     lp_abs_sweep: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
     angle_sweep: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
-    threshold: Optional[float] = attrs.field(default=None)
+    threshold: float | None = attrs.field(default=None)
     rel_time_stamps: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
     distance_history: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
-    peak_loc_m: Optional[float] = attrs.field(default=None)
+    peak_loc_m: float | None = attrs.field(default=None)
     iq_history: npt.NDArray[np.complex128] = attrs.field(eq=attrs_ndarray_isclose)
 
 
 class Processor(ProcessorBase[ProcessorResult]):
-    estimated_distance: Optional[float]
-    prev_peak_loc_m: Optional[float]
+    estimated_distance: float | None
+    prev_peak_loc_m: float | None
 
     M_TO_MM = 1000
     TIME_HORIZON_S = 10.0
@@ -95,8 +93,8 @@ class Processor(ProcessorBase[ProcessorResult]):
         sensor_config: a121.SensorConfig,
         metadata: a121.Metadata,
         processor_config: ProcessorConfig,
-        subsweep_indexes: Optional[list[int]] = None,
-        context: Optional[ProcessorContext] = None,
+        subsweep_indexes: list[int] | None = None,
+        context: ProcessorContext | None = None,
     ) -> None:
         processor_config.validate(sensor_config)
 

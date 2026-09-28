@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 from enum import Enum, unique
-from typing import Optional, TypeVar
+from typing import TypeVar
 
 from acconeer.exptool._core.class_creation.enum import (
     find_by_first_element_in_value,
@@ -28,7 +28,7 @@ class Profile(Enum):
     PROFILE_5 = 5
 
     @classmethod
-    def _missing_(cls, value: object) -> Optional[Profile]:
+    def _missing_(cls, value: object) -> Profile | None:
         return find_by_value(cls, value) or find_by_name(cls, value)
 
 
@@ -93,7 +93,7 @@ class PRF(Enum):
         return self.maximum_unambiguous_range
 
     @classmethod
-    def _missing_(cls, value: object) -> Optional[PRF]:
+    def _missing_(cls, value: object) -> PRF | None:
         return find_by_first_element_in_value(cls, value) or find_by_name(cls, value)
 
 
@@ -106,7 +106,7 @@ class IdleState(Enum):
     READY = 2
 
     @classmethod
-    def _missing_(cls, value: object) -> Optional[IdleState]:
+    def _missing_(cls, value: object) -> IdleState | None:
         if find_by_value(cls, value) is not None:
             return find_by_value(cls, value)
 

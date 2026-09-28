@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import abc
-import typing as t
 from enum import Enum, auto
 
 import typing_extensions as te
@@ -34,14 +33,14 @@ class Client(
     @classmethod
     def open(
         cls,
-        ip_address: t.Optional[str] = None,
-        tcp_port: t.Optional[int] = None,
-        serial_port: t.Optional[str] = None,
-        usb_device: t.Optional[t.Union[str, bool]] = None,
-        mock: t.Optional[bool] = None,
-        override_baudrate: t.Optional[int] = None,
+        ip_address: str | None = None,
+        tcp_port: int | None = None,
+        serial_port: str | None = None,
+        usb_device: str | bool | None = None,
+        mock: bool | None = None,
+        override_baudrate: int | None = None,
         flow_control: bool = True,
-        generation: t.Optional[str] = "a2",
+        generation: str | None = "a2",
     ) -> te.Self:
         return super().open(
             ip_address,
@@ -60,13 +59,11 @@ class Client(
         self._enable_diagnostics = enable_diagnosticts
         self._closed = False
         self._crashing = False
-        self._config: t.Optional[SessionConfig] = None
+        self._config: SessionConfig | None = None
         self._calibration_provided: bool = False
 
     @abc.abstractmethod
-    def setup_session(
-        self, config: SessionConfig, calibration: t.Optional[str] = None
-    ) -> Metadata:
+    def setup_session(self, config: SessionConfig, calibration: str | None = None) -> Metadata:
         """Sets up the session specified by ``config``
 
         A session is typically setup by performing radar calibration on the Exploration Server.
@@ -101,12 +98,10 @@ class Client(
         return self._calibration_provided
 
     @te.overload  # type: ignore[override]
-    def get_next(self) -> t.Union[GroupResult, Result]: ...
+    def get_next(self) -> GroupResult | Result: ...
 
     @te.overload
-    def get_next(
-        self, *, format: te.Literal[ResultFormat.AUTO]
-    ) -> t.Union[GroupResult, Result]: ...
+    def get_next(self, *, format: te.Literal[ResultFormat.AUTO]) -> GroupResult | Result: ...
 
     @te.overload
     def get_next(self, *, format: te.Literal[ResultFormat.FULL]) -> GroupResult: ...
@@ -114,9 +109,7 @@ class Client(
     @te.overload
     def get_next(self, *, format: te.Literal[ResultFormat.SOLE]) -> Result: ...
 
-    def get_next(
-        self, *, format: ResultFormat = ResultFormat.AUTO
-    ) -> t.Union[GroupResult, Result]:
+    def get_next(self, *, format: ResultFormat = ResultFormat.AUTO) -> GroupResult | Result:
         """Gets results from the server.
 
         :param format:

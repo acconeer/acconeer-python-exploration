@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 from enum import Enum, auto
-from typing import Any, Optional
+from typing import Any
 
 from attrs import define, field
 
@@ -17,7 +17,7 @@ class Criticality(Enum):
 @define
 class ValidationResult(Exception):
     source: Any = field()
-    aspect: Optional[str] = field()
+    aspect: str | None = field()
     message: str = field()
     criticality: Criticality = field()
     tag: Any = field(default=None)

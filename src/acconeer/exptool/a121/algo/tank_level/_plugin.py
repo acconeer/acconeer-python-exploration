@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 import math
 import time
-from typing import Any, Callable, Mapping, Optional
+from typing import Any, Callable, Mapping
 
 import attrs
 import h5py
@@ -117,9 +117,9 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
         super().__init__(callback=callback, generation=generation, key=key, use_app_client=False)
 
         self._recorder = None
-        self._ref_app_instance: Optional[RefApp] = None
+        self._ref_app_instance: RefApp | None = None
         self._log = BackendLogger.getLogger(__name__)
-        self._last_get_next_time_s: Optional[float] = None
+        self._last_get_next_time_s: float | None = None
         self._actual_update_rate_hz = 0.0
         self._frame_count = 0
 
@@ -169,7 +169,7 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
         self.shared_state.context = context
         self.shared_state.sensor_id = sensor_id
 
-    def _start_session(self, recorder: Optional[a121.H5Recorder]) -> None:
+    def _start_session(self, recorder: a121.H5Recorder | None) -> None:
         assert self.client
 
         self._ref_app_instance = RefApp(
@@ -250,7 +250,7 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
         self.shared_state.context = self._ref_app_instance._detector.context
         self.broadcast()
 
-    def _sleep_until_next_frame(self) -> Optional[float]:
+    def _sleep_until_next_frame(self) -> float | None:
         if self._ref_app_instance is None:
             raise RuntimeError
 
@@ -273,7 +273,7 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
 
     @staticmethod
     def _iteratively_estimate_update_rate(
-        last_get_next_time_s: Optional[float], current_estimated_update_rate: float
+        last_get_next_time_s: float | None, current_estimated_update_rate: float
     ) -> float:
         if last_get_next_time_s is None:
             return 0.0
@@ -284,7 +284,7 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
 
         return actual_update_rate_hz
 
-    def _update_rate_stats(self, sleep_time: Optional[float], result: RefAppResult) -> None:
+    def _update_rate_stats(self, sleep_time: float | None, result: RefAppResult) -> None:
         if sleep_time is not None:
             if sleep_time > 0:  # had time to sleep -> No rate warning
                 stats = backend._RateStats(self._actual_update_rate_hz, False, math.nan, False)
@@ -325,7 +325,7 @@ class PlotPlugin(PgPlotPlugin):
         self.counter = 0
         self.bar_loc = 0
 
-        self._plot_job: Optional[RefAppResult] = None
+        self._plot_job: RefAppResult | None = None
         self._is_setup = False
 
     def handle_message(self, message: backend.GeneralMessage) -> None:
@@ -758,7 +758,7 @@ class ViewPlugin(A121ViewPluginBase):
             },
         }
 
-    def on_backend_state_update(self, state: Optional[SharedState]) -> None:
+    def on_backend_state_update(self, state: SharedState | None) -> None:
         if state is None:
             self.config_editor.set_data(None)
             self.tank_level_config_editor.set_data(None)
@@ -822,7 +822,7 @@ class ViewPlugin(A121ViewPluginBase):
             )
         )
 
-    def _config_valid(self, config: Optional[RefAppConfig]) -> bool:
+    def _config_valid(self, config: RefAppConfig | None) -> bool:
         if config is None:
             return False
 
@@ -856,7 +856,7 @@ class ViewPlugin(A121ViewPluginBase):
         BackendPlugin.restore_defaults.rpc(self.app_model.put_task)
 
 
-def _set_config_presenter(instance: Any, presentation_type: PresentationType) -> Optional[str]:
+def _set_config_presenter(instance: Any, presentation_type: PresentationType) -> str | None:
     if isinstance(instance, RefAppConfig) and presentation_type is PresentationType.C_SET_CONFIG:
         config: RefAppConfig = instance
         distance_config = config.to_detector_config()

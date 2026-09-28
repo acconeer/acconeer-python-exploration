@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Optional, Union
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -83,14 +83,14 @@ class MockClient(Client, register=True):
     @classmethod
     def open(
         cls,
-        ip_address: Optional[str] = None,
-        tcp_port: Optional[int] = None,
-        serial_port: Optional[str] = None,
-        usb_device: Optional[Union[str, bool]] = None,
-        mock: Optional[bool] = None,
-        override_baudrate: Optional[int] = None,
+        ip_address: str | None = None,
+        tcp_port: int | None = None,
+        serial_port: str | None = None,
+        usb_device: str | bool | None = None,
+        mock: bool | None = None,
+        override_baudrate: int | None = None,
         flow_control: bool = True,
-        generation: Optional[str] = "a121",
+        generation: str | None = "a121",
     ) -> te.Self:
         if generation != "a121":
             raise ClientCreationError
@@ -112,7 +112,7 @@ class MockClient(Client, register=True):
 
     @classmethod
     def _sensor_config_to_metadata(
-        cls, sensor_config: SensorConfig, update_rate: Optional[float]
+        cls, sensor_config: SensorConfig, update_rate: float | None
     ) -> Metadata:
         subsweep_data_length = []
         subsweep_data_offset = []
@@ -201,7 +201,7 @@ class MockClient(Client, register=True):
         self,
         sensor_id: int,
         sensor_config: SensorConfig,
-        update_rate: Optional[float],
+        update_rate: float | None,
     ) -> Result:
         metadata = self._sensor_config_to_metadata(sensor_config, update_rate=update_rate)
         return Result(
@@ -227,9 +227,9 @@ class MockClient(Client, register=True):
 
     def setup_session(  # type: ignore[override]
         self,
-        config: Union[SensorConfig, SessionConfig],
-        calibrations: Optional[dict[int, SensorCalibration]] = None,
-    ) -> Union[Metadata, list[dict[int, Metadata]]]:
+        config: SensorConfig | SessionConfig,
+        calibrations: dict[int, SensorCalibration] | None = None,
+    ) -> Metadata | list[dict[int, Metadata]]:
         if self.session_is_started:
             msg = "Session is currently running, can't setup."
             raise ClientError(msg)
@@ -275,7 +275,7 @@ class MockClient(Client, register=True):
         self._start_time = time.perf_counter()
         self._mock_next_data_time = self._start_time
 
-    def get_next(self) -> Union[Result, list[dict[int, Result]]]:  # type: ignore[override]
+    def get_next(self) -> Result | list[dict[int, Result]]:  # type: ignore[override]
         self._assert_session_started()
 
         if self._metadata is None:

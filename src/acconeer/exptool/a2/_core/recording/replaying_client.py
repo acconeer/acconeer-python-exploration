@@ -21,25 +21,23 @@ class ReplayingClient(A2Client, register=False):
         record: H5Record,
         *,
         realtime_replay: bool = True,
-        cycled_session_idx: t.Optional[int] = None,
+        cycled_session_idx: int | None = None,
     ) -> None:
         super().__init__(record.client_info)
         self.record = record
         self.realtime_replay = realtime_replay
         self.result_iterator: t.Iterator[GroupResult] = iter([])
-        self.replay_start_time: t.Optional[float] = None
-        self.first_result_tick: t.Optional[int] = None
+        self.replay_start_time: float | None = None
+        self.first_result_tick: int | None = None
 
         if cycled_session_idx is None:
             self.session_index_iter = iter(range(record.num_sessions))
         else:
             self.session_index_iter = itertools.repeat(cycled_session_idx)
 
-        self.current_session_index: t.Optional[int] = next(self.session_index_iter)
+        self.current_session_index: int | None = next(self.session_index_iter)
 
-    def setup_session(
-        self, config: SessionConfig, calibration: t.Optional[str] = None
-    ) -> Metadata:
+    def setup_session(self, config: SessionConfig, calibration: str | None = None) -> Metadata:
         if calibration is not None:
             warnings.warn("ReplayingClient will ignore passed calibrations", stacklevel=2)
 

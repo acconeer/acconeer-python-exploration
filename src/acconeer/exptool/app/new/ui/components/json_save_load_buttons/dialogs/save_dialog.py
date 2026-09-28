@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ class SaveDialogWithPreview(QDialog):
         dialog: QFileDialog,
         model: t.Any,
         presenter: PresenterFunc,
-        parent: t.Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent=parent)
 
@@ -43,8 +43,8 @@ class SaveDialogWithPreview(QDialog):
         caption: str = "",
         filter: str = "All (*)",
         options: QFileDialog.Option = QFileDialog.Option.DontUseNativeDialog,
-        parent: t.Optional[QWidget] = None,
-    ) -> t.Tuple[t.Optional[str], t.Optional[str]]:
+        parent: QWidget | None = None,
+    ) -> tuple[str | None, str | None]:
         dialog = QFileDialog(caption=caption)
         dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
         dialog.setNameFilter(filter)

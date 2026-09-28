@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
-from typing import Dict
 
 import pytest
 import yaml
@@ -22,7 +21,7 @@ from acconeer.exptool.a121.model import memory
 
 
 @pytest.fixture
-def xm125_memory_usage(memory_usage_path: Path) -> Dict[str, int]:
+def xm125_memory_usage(memory_usage_path: Path) -> dict[str, int]:
     with open(memory_usage_path, encoding="utf-8") as yaml_file:
         mem_usage = yaml.safe_load(yaml_file)
         return mem_usage["devices"]["xm125"]

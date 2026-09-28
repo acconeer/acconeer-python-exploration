@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-import typing as t
-
 import attrs
 import numpy as np
 import numpy.typing as npt
@@ -70,7 +68,7 @@ _AZ_RX_DROP_MASK = 0b0001  # Drop Rx0 (z=2.5) to obtain a single virtual-elevati
 
 @attrs.frozen(kw_only=True)
 class MotionDetectionResult:
-    peaks: t.List[Peak3DCart]
+    peaks: list[Peak3DCart]
     """Refined peak locations from the heatmap."""
 
     heatmap: npt.NDArray[np.float64]
@@ -101,7 +99,7 @@ class MotionDetectionProcessor:
         processor_config: MotionDetectionConfig,
         sensor_installation: SensorInstallation,
         detection_volume: DetectionVolume,
-        noise_norm_recording: t.Optional[NoiseNormalizationRecording],
+        noise_norm_recording: NoiseNormalizationRecording | None,
     ):
         self.processor_config = processor_config
         self.session_config = session_config
@@ -252,7 +250,7 @@ class MotionDetectionProcessor:
             self._az_channel_indices,
         )
 
-        beamformer: t.Union[CaponBeamformNode, RobustCaponBeamformNode]
+        beamformer: CaponBeamformNode | RobustCaponBeamformNode
         method = processor_config.beamforming_method
         if method is BeamformingMethod.CAPON:
             beamformer = CaponBeamformNode(steering_vectors=self._az_steering)

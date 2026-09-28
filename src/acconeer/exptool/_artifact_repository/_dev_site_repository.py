@@ -11,7 +11,6 @@ import tempfile
 import zipfile
 from email.message import EmailMessage
 from pathlib import Path
-from typing import Optional, Tuple
 
 import attrs
 import bs4
@@ -51,7 +50,7 @@ def _strip_trailing_slash(base_url: str) -> str:
     return base_url.rstrip("/")
 
 
-def _load_saved_cookies() -> Optional[requests.cookies.RequestsCookieJar]:
+def _load_saved_cookies() -> requests.cookies.RequestsCookieJar | None:
     if not os.path.exists(COOKIE_FILEPATH):
         return None
 
@@ -87,7 +86,7 @@ class DevSiteRepository(ArtifactRepository):
     test server to exercise this class against a fake backend instead.
     """
 
-    cookies: Optional[requests.cookies.RequestsCookieJar]
+    cookies: requests.cookies.RequestsCookieJar | None
     base_url: str = attrs.field(default=DEFAULT_BASE_URL, converter=_strip_trailing_slash)
 
     @classmethod
@@ -160,7 +159,7 @@ class DevSiteRepository(ArtifactRepository):
     def has_logged_in_previously(self) -> bool:
         return self.cookies is not None
 
-    def download(self, artifact: Artifact, path: str) -> Tuple[str, str]:
+    def download(self, artifact: Artifact, path: str) -> tuple[str, str]:
         if artifact is Artifact.ALGO_BUNDLE:
             msg = "The algo bundle has no download location on the developer site yet."
             raise NotImplementedError(msg)

@@ -8,7 +8,7 @@ import importlib.metadata
 import logging
 import sys
 import traceback
-from typing import Any, ClassVar, Iterator, Optional
+from typing import Any, ClassVar, Iterator
 
 import pyperclip
 
@@ -32,7 +32,7 @@ from acconeer.exptool.app.new._exceptions import HandledException
 _LOG = logging.getLogger(__name__)
 
 
-def get_installed_packages() -> Optional[list[str]]:
+def get_installed_packages() -> list[str] | None:
     """Return installed packages in 'name==version' format."""
     try:
         packages = []
@@ -56,10 +56,10 @@ class ExceptionWidget(QDialog):
 
     def __init__(
         self,
-        parent: Optional[QWidget],
+        parent: QWidget | None,
         *,
         exc: Exception,
-        traceback_str: Optional[str] = None,
+        traceback_str: str | None = None,
         title: str = "Error",
     ) -> None:
         super().__init__(parent)

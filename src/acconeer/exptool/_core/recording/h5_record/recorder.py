@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -65,7 +65,7 @@ class H5Recorder(recorder.Recorder[_ConfigT, _MetadataT, _ResultT, _ServerInfoT]
 
     _schema = SessionSchema
 
-    path: t.Optional[os.PathLike[t.Any]]
+    path: os.PathLike[t.Any] | None
     """The file path, if a path-like object was given for ``path_or_file``."""
     file: h5py.File
     """The ``h5py.File``."""
@@ -81,21 +81,20 @@ class H5Recorder(recorder.Recorder[_ConfigT, _MetadataT, _ResultT, _ServerInfoT]
         path_or_file: PathOrH5File,
         generation: str,
         saver: H5Saver[_ConfigT, _MetadataT, _ResultT, _ServerInfoT],
-        attachable: t.Optional[
-            recorder.RecorderAttachable[
-                recorder.Recorder[_ConfigT, _MetadataT, _ResultT, _ServerInfoT]
-            ]
-        ] = None,
+        attachable: recorder.RecorderAttachable[
+            recorder.Recorder[_ConfigT, _MetadataT, _ResultT, _ServerInfoT]
+        ]
+        | None = None,
         mode: str = "x",
         *,
-        _lib_version: t.Optional[str] = None,
-        _timestamp: t.Optional[str] = None,
-        _uuid: t.Optional[str] = None,
+        _lib_version: str | None = None,
+        _timestamp: str | None = None,
+        _uuid: str | None = None,
     ) -> None:
         self.file, self.owns_file = h5_file_factory(path_or_file, h5_file_mode=mode)
         self.path = Path(self.file.filename) if self.owns_file else None
         self._saver = saver
-        self._current_session_group: t.Optional[h5py.Group] = None
+        self._current_session_group: h5py.Group | None = None
 
         if attachable is None:
             self._attachable = None

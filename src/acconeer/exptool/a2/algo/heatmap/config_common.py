@@ -24,7 +24,7 @@ from acconeer.exptool._core.entities.validation_result import (
 )
 
 
-def to_tuple(v: t.Any) -> t.Tuple[float, float]:
+def to_tuple(v: t.Any) -> tuple[float, float]:
     return tuple(v)
 
 
@@ -36,13 +36,13 @@ class HeatmapConfigCommon(AttrsMappingTransformsMixin, abc.ABC):
     antenna_array: a2.AntennaArray = attrs.field(converter=a2.AntennaArray)
     """The antenna layout the data is coming from"""
 
-    az_angle_range: t.Tuple[float, float] = attrs.field(
+    az_angle_range: tuple[float, float] = attrs.field(
         validator=[av.min_len(2), av.max_len(2)],
         converter=to_tuple,
     )
     """Min and max az angle"""
 
-    el_angle_range: t.Tuple[float, float] = attrs.field(
+    el_angle_range: tuple[float, float] = attrs.field(
         validator=[av.min_len(2), av.max_len(2)],
         converter=to_tuple,
     )
@@ -137,7 +137,7 @@ class HeatmapConfigCommon(AttrsMappingTransformsMixin, abc.ABC):
         pass
 
     @staticmethod
-    def _get_angles(num: int, angle_range: t.Tuple[float, float]) -> npt.NDArray[np.float64]:
+    def _get_angles(num: int, angle_range: tuple[float, float]) -> npt.NDArray[np.float64]:
         if num == 1:  # Default behavior of what to do with a single depth
             midpoint = (angle_range[0] + angle_range[1]) / 2.0
             angles = np.array([midpoint])
@@ -196,8 +196,8 @@ class HeatmapAndSessionConfigCommon(abc.ABC, t.Generic[_HeatmapConfigT]):
     None while a field is being edited.
     """
 
-    heatmap_config: t.Optional[_HeatmapConfigT]
-    session_config: t.Optional[a2.SessionConfig]
+    heatmap_config: _HeatmapConfigT | None
+    session_config: a2.SessionConfig | None
 
     @classmethod
     @abc.abstractmethod

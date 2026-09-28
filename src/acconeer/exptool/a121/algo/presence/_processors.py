@@ -1,9 +1,7 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
-
-from typing import Optional
 
 import attrs
 import numpy as np
@@ -24,7 +22,7 @@ class ProcessorConfig(AlgoProcessorConfigBase):
     inter_enable: bool = attrs.field(default=True)
     intra_detection_threshold: float = attrs.field(default=1.3)
     inter_detection_threshold: float = attrs.field(default=1)
-    inter_frame_presence_timeout: Optional[int] = attrs.field(default=None)
+    inter_frame_presence_timeout: int | None = attrs.field(default=None)
     inter_frame_fast_cutoff: float = attrs.field(default=20.0)
     inter_frame_slow_cutoff: float = attrs.field(default=0.2)
     inter_frame_deviation_time_const: float = attrs.field(default=0.5)
@@ -60,7 +58,7 @@ class ProcessorConfig(AlgoProcessorConfigBase):
 
 @attrs.frozen(kw_only=True)
 class ProcessorContext:
-    estimated_frame_rate: Optional[float] = attrs.field(default=None)
+    estimated_frame_rate: float | None = attrs.field(default=None)
 
 
 @attrs.frozen(kw_only=True)
@@ -103,8 +101,8 @@ class Processor(ProcessorBase[ProcessorResult]):
         sensor_config: a121.SensorConfig,
         metadata: a121.Metadata,
         processor_config: ProcessorConfig,
-        subsweep_indexes: Optional[list[int]] = None,
-        context: Optional[ProcessorContext] = None,
+        subsweep_indexes: list[int] | None = None,
+        context: ProcessorContext | None = None,
     ) -> None:
         # Subsweep indexes contains a list of subsweep indexes for which to run the presence detector.
         # If None is supplied, use all possible.
@@ -199,7 +197,7 @@ class Processor(ProcessorBase[ProcessorResult]):
     @staticmethod
     def _abs_dev(
         a: npt.NDArray[np.complex128],
-        axis: Optional[int] = None,
+        axis: int | None = None,
         ddof: int = 0,
         subtract_mean: bool = True,
     ) -> npt.NDArray[np.float64]:
@@ -363,7 +361,7 @@ class _ProcessorConfig_v0(AlgoProcessorConfigBase):
     inter_detection_threshold: float = attrs.field(default=1)
     inter_phase_boost: bool = attrs.field(default=False)
     phase_adaptivity_tc: float = attrs.field(default=5)
-    inter_frame_presence_timeout: Optional[int] = attrs.field(default=None)
+    inter_frame_presence_timeout: int | None = attrs.field(default=None)
     inter_frame_fast_cutoff: float = attrs.field(default=20.0)
     inter_frame_slow_cutoff: float = attrs.field(default=0.2)
     inter_frame_deviation_time_const: float = attrs.field(default=0.5)

@@ -1,8 +1,6 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 from __future__ import annotations
-
-from typing import Optional
 
 import attrs
 import typing_extensions as te
@@ -15,8 +13,8 @@ from acconeer.exptool.a121.algo.parking._ref_app import _load_algo_data
 
 @attrs.frozen
 class ResultSlice:
-    car_detected: Optional[bool] = attrs.field()
-    obstruction_detected: Optional[bool] = attrs.field()
+    car_detected: bool | None = attrs.field()
+    obstruction_detected: bool | None = attrs.field()
 
     @classmethod
     def from_ref_app_result(cls, result: parking.RefAppResult) -> te.Self:

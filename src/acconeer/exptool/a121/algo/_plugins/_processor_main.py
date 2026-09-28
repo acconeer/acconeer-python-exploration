@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Iterator, List, Optional, Type, Union
+from typing import Any, Callable, Iterator
 
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
@@ -26,7 +26,7 @@ _ProcessorGetter = Callable[
     [
         a121.SessionConfig,
         ProcessorConfigT,
-        Union[a121.Metadata, List[Dict[int, a121.Metadata]]],
+        a121.Metadata | list[dict[int, a121.Metadata]],
     ],
     algo.GenericProcessorBase[InputT, ResultT],
 ]
@@ -40,10 +40,10 @@ _SessionConfigGetter = Callable[
 def processor_main(
     *,
     processor_getter: _ProcessorGetter[ProcessorConfigT, InputT, ResultT],
-    plot_plugin: Type[PlotPluginBase],
+    plot_plugin: type[PlotPluginBase],
     session_config_getter: _SessionConfigGetter,
     processor_config_getter: Callable[[], ProcessorConfigT],
-    _blinkstick_updater_cls: Optional[Any] = None,
+    _blinkstick_updater_cls: Any | None = None,
 ) -> None:
     parser = a121.ExampleArgumentParser()
     parser.add_argument("--sensor", type=int, default=1)
@@ -106,7 +106,7 @@ def get_loop(
     client: a121.Client,
     processor: algo.GenericProcessorBase[InputT, ResultT],
     plot_plugin_widget: PlotPluginBase,
-    blinkstick_process: Optional[BSThread],
+    blinkstick_process: BSThread | None,
 ) -> Iterator[bool]:
     while True:
         result = client.get_next()

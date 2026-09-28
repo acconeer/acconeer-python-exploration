@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from copy import copy
-from typing import Any, Tuple
+from typing import Any
 
 import pytest
 
@@ -67,37 +67,37 @@ CLIENT_INFO_PARAMETRIZE = [
 
 
 @pytest.fixture(params=CLIENT_INFO_PARAMETRIZE)
-def client_info_fixture(request: pytest.FixtureRequest) -> Tuple[ClientInfo, dict[str, Any]]:
+def client_info_fixture(request: pytest.FixtureRequest) -> tuple[ClientInfo, dict[str, Any]]:
     from_open_args = request.param[0]
     client_info_dict = request.param[1]
     return (ClientInfo._from_open(**from_open_args), client_info_dict)
 
 
-def test_to_dict(client_info_fixture: Tuple[ClientInfo, dict[str, Any]]) -> None:
+def test_to_dict(client_info_fixture: tuple[ClientInfo, dict[str, Any]]) -> None:
     client_info = client_info_fixture[0]
     client_info_dict = client_info_fixture[1]
     assert client_info.to_dict() == client_info_dict
 
 
-def test_from_dict(client_info_fixture: Tuple[ClientInfo, dict[str, Any]]) -> None:
+def test_from_dict(client_info_fixture: tuple[ClientInfo, dict[str, Any]]) -> None:
     client_info = client_info_fixture[0]
     client_info_dict = client_info_fixture[1]
     assert ClientInfo.from_dict(client_info_dict) == client_info
 
 
-def test_to_from_dict_equality(client_info_fixture: Tuple[ClientInfo, dict[str, Any]]) -> None:
+def test_to_from_dict_equality(client_info_fixture: tuple[ClientInfo, dict[str, Any]]) -> None:
     client_info = client_info_fixture[0]
     assert client_info == ClientInfo.from_dict(client_info.to_dict())
 
 
-def test_from_dict_extra_kwarg(client_info_fixture: Tuple[ClientInfo, dict[str, Any]]) -> None:
+def test_from_dict_extra_kwarg(client_info_fixture: tuple[ClientInfo, dict[str, Any]]) -> None:
     client_info_dict = copy(client_info_fixture[1])
     client_info_dict["extra"] = "kwarg"
     with pytest.raises(TypeError):
         ClientInfo.from_dict(client_info_dict)
 
 
-def test_to_from_json_equality(client_info_fixture: Tuple[ClientInfo, dict[str, Any]]) -> None:
+def test_to_from_json_equality(client_info_fixture: tuple[ClientInfo, dict[str, Any]]) -> None:
     client_info = client_info_fixture[0]
     assert client_info == ClientInfo.from_json(client_info.to_json())
 

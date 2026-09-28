@@ -397,7 +397,7 @@ def test_input_output(
 )
 def test_heatmap_processor(
     resource_name: str,
-    processor_factory: t.Callable[[a2.H5Record], t.Tuple[t.Any, t.Any]],
+    processor_factory: t.Callable[[a2.H5Record], tuple[t.Any, t.Any]],
     should_update_outputs: bool,
 ) -> None:
     with (
@@ -406,7 +406,7 @@ def test_heatmap_processor(
     ):
         processor, noise_normalization_processor, _ = processor_factory(record)
         heatmaps = []
-        heatmaps_type: te.TypeAlias = t.List[npt.NDArray[np.float64]]
+        heatmaps_type: te.TypeAlias = list[npt.NDArray[np.float64]]
 
         for idx, result in enumerate(record.results):
             group_result = noise_normalization_processor.process(result)
@@ -460,9 +460,9 @@ def test_motion_detection_processor(
 
         HeatmapType: te.TypeAlias = npt.NDArray[np.float64]
         ThresholdMapType: te.TypeAlias = npt.NDArray[np.float64]
-        DetectionsType: te.TypeAlias = t.List[t.Tuple[float, float, float]]
-        MotionDetectionResultsType: te.TypeAlias = t.List[
-            t.Tuple[HeatmapType, ThresholdMapType, DetectionsType]
+        DetectionsType: te.TypeAlias = list[tuple[float, float, float]]
+        MotionDetectionResultsType: te.TypeAlias = list[
+            tuple[HeatmapType, ThresholdMapType, DetectionsType]
         ]
 
         actual: MotionDetectionResultsType = []

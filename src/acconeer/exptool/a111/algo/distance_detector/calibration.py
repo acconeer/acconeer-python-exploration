@@ -1,11 +1,10 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 import numpy as np
 
@@ -64,7 +63,7 @@ class DistaceDetectorCalibrationMapper(CalibrationMapper):
     def get_updated_calibration_from_configuration(
         cls,
         configuration: DistaceDetectorCalibrationConfiguration,
-        calibration: Optional[DistanceDetectorCalibration],
+        calibration: DistanceDetectorCalibration | None,
     ) -> DistanceDetectorCalibration:
         if calibration is None:
             msg = "Calibration cannot be None in this context."

@@ -6,7 +6,6 @@ from __future__ import annotations
 import sys
 import traceback
 from importlib.resources import as_file, files
-from typing import Optional
 
 from typing_extensions import Literal
 
@@ -40,7 +39,7 @@ except ImportError:
 
 class ImageButton(QToolButton):
     def __init__(
-        self, text: str, image_path: str, size: QSize, parent: Optional[QWidget] = None
+        self, text: str, image_path: str, size: QSize, parent: QWidget | None = None
     ) -> None:
         super().__init__(parent=parent)
         self._layout = QVBoxLayout(self)
@@ -116,7 +115,7 @@ class CentralWidget(QWidget):
     sig_new_app_clicked = Signal()
     sig_old_app_clicked = Signal()
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         layout = QHBoxLayout(self)
 
@@ -135,7 +134,7 @@ class CentralWidget(QWidget):
 
 class ValueHolder:
     def __init__(self) -> None:
-        self.selection: Optional[Literal["new", "old"]] = None
+        self.selection: Literal["new", "old"] | None = None
 
 
 class Launcher(QMainWindow):
@@ -155,7 +154,7 @@ class Launcher(QMainWindow):
         self.close()
 
 
-def run_launcher() -> Optional[Literal["new", "old"]]:
+def run_launcher() -> Literal["new", "old"] | None:
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough,
     )

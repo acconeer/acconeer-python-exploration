@@ -1,10 +1,9 @@
-# Copyright (c) Acconeer AB, 2024-2025
+# Copyright (c) Acconeer AB, 2024-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import collections
-from typing import Optional
 
 import attrs
 import h5py
@@ -134,15 +133,15 @@ class ProcessorExtraResult:
 
     phase_std: npt.NDArray[np.float64]
     """The standard deviation of the phase from which the distance is detemined."""
-    distance_m: Optional[float]
+    distance_m: float | None
     """Distance from sensor to fill level."""
 
 
 @attrs.frozen(kw_only=True)
 class ProcessorResult:
-    level_m: Optional[float]
+    level_m: float | None
     """Fill level in the bin in meters."""
-    level_percent: Optional[int]
+    level_percent: int | None
     """Fill level in the bin in percentage."""
     extra_result: ProcessorExtraResult
     """Extra result used for visualization."""
@@ -155,8 +154,8 @@ class Processor(ProcessorBase[ProcessorResult]):
         sensor_config: a121.SensorConfig,
         metadata: a121.Metadata,
         processor_config: ProcessorConfig,
-        subsweep_indexes: Optional[list[int]] = None,
-        context: Optional[ProcessorContext] = None,
+        subsweep_indexes: list[int] | None = None,
+        context: ProcessorContext | None = None,
     ) -> None:
         self.bin_end_m = processor_config.bin_end_m
         self.bin_start_m = processor_config.bin_start_m

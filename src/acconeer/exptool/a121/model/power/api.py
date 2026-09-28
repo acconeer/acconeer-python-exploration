@@ -65,7 +65,7 @@ _ms = _mA = 1e-3
 _us = _uA = 1e-6
 
 
-def configured_rate(config: a121.SessionConfig) -> t.Optional[float]:
+def configured_rate(config: a121.SessionConfig) -> float | None:
     """
     Returns the configured rate of the session config.
     Either returns the update_rate or a frame_rate.
@@ -290,7 +290,7 @@ def frame_idle(
 
 def group_active(
     session_config: a121.SessionConfig,
-    lower_idle_state: t.Optional[Sensor.LowerIdleState],
+    lower_idle_state: Sensor.LowerIdleState | None,
     algorithm: algo.Algorithm = di.DEFAULT_ALGO,
     sensor: Sensor = di.DEFAULT_SENSOR,
     module: Module = di.DEFAULT_MODULE,
@@ -332,7 +332,7 @@ def group_active(
 
 
 def group_idle(
-    inter_group_power_state: t.Union[a121.IdleState, Sensor.LowerIdleState],
+    inter_group_power_state: a121.IdleState | Sensor.LowerIdleState,
     duration: float,
     sensor: Sensor = di.DEFAULT_SENSOR,
     module: Module = di.DEFAULT_MODULE,
@@ -358,7 +358,7 @@ def group_idle(
 
 def session_generator(
     session_config: a121.SessionConfig,
-    lower_idle_state: t.Optional[Sensor.LowerIdleState],
+    lower_idle_state: Sensor.LowerIdleState | None,
     algorithm: algo.Algorithm = di.DEFAULT_ALGO,
     sensor: Sensor = di.DEFAULT_SENSOR,
     module: Module = di.DEFAULT_MODULE,
@@ -393,9 +393,9 @@ def session_generator(
 
 def session(
     session_config: a121.SessionConfig,
-    lower_idle_state: t.Optional[Sensor.LowerIdleState],
-    duration: t.Optional[float] = None,
-    num_actives: t.Optional[int] = None,
+    lower_idle_state: Sensor.LowerIdleState | None,
+    duration: float | None = None,
+    num_actives: int | None = None,
     algorithm: algo.Algorithm = di.DEFAULT_ALGO,
     sensor: Sensor = di.DEFAULT_SENSOR,
     module: Module = di.DEFAULT_MODULE,
@@ -444,7 +444,7 @@ def session(
 
 def converged_average_current(
     session_config: a121.SessionConfig,
-    lower_idle_state: t.Optional[Sensor.LowerIdleState],
+    lower_idle_state: Sensor.LowerIdleState | None,
     absolute_tolerance: float,
     convergence_window: int = 10,
     algorithm: algo.Algorithm = di.DEFAULT_ALGO,

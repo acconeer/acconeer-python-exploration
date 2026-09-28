@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
-
 import attrs
 import numpy as np
 import numpy.typing as npt
@@ -16,7 +14,7 @@ from acconeer.exptool.a121.algo import PERCEIVED_WAVELENGTH, AlgoProcessorConfig
 
 @attrs.mutable(kw_only=True)
 class ProcessorConfig(AlgoProcessorConfigBase):
-    threshold: Optional[float] = attrs.field(default=10.0)
+    threshold: float | None = attrs.field(default=10.0)
 
     num_segments: int = attrs.field(default=3)
 
@@ -73,7 +71,7 @@ class Processor(ProcessorBase[ProcessorResult]):
 
     def get_welch(
         self, sweep: npt.NDArray[np.complex128]
-    ) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         freqs, psd = welch(
             sweep,
             fs=self.sweep_rate,

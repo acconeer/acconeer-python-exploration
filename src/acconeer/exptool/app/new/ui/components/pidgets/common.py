@@ -1,12 +1,14 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
 import typing as t
 
+import typing_extensions as te
+
 
 _T = t.TypeVar("_T")
-MaybeIterable = t.Union[_T, t.Iterable[_T]]
+MaybeIterable: te.TypeAlias = _T | t.Iterable[_T]
 
 
 def as_sequence(a: MaybeIterable[_T]) -> t.Sequence[_T]:

@@ -92,7 +92,7 @@ class _SensorConfigParametersEditor(AttrsConfigEditor[a2.SensorConfig]):
         )
 
 
-class SensorConfigEditor(DataEditor[t.Optional[a2.SensorConfig]]):
+class SensorConfigEditor(DataEditor[a2.SensorConfig | None]):
     _TAB_LABEL_FMT = "{}    "
     _TMP_LABEL = ""
 
@@ -130,7 +130,7 @@ class SensorConfigEditor(DataEditor[t.Optional[a2.SensorConfig]]):
 
     @staticmethod
     def _append_subsweep(
-        sensor_config: t.Optional[a2.SensorConfig], subsweep_config: a2.SubsweepConfig
+        sensor_config: a2.SensorConfig | None, subsweep_config: a2.SubsweepConfig
     ) -> a2.SensorConfig:
         if sensor_config is None:
             raise RuntimeError
@@ -140,7 +140,7 @@ class SensorConfigEditor(DataEditor[t.Optional[a2.SensorConfig]]):
 
     @staticmethod
     def _remove_subsweep_at_index(
-        sensor_config: t.Optional[a2.SensorConfig], subsweep_index: int
+        sensor_config: a2.SensorConfig | None, subsweep_index: int
     ) -> a2.SensorConfig:
         if sensor_config is None:
             raise RuntimeError
@@ -155,7 +155,7 @@ class SensorConfigEditor(DataEditor[t.Optional[a2.SensorConfig]]):
     def _emit_current_data(self) -> None:
         self.sig_update.emit(self.get_data())
 
-    def set_data(self, data: t.Optional[a2.SensorConfig]) -> None:
+    def set_data(self, data: a2.SensorConfig | None) -> None:
         self.setDisabled(data is None)
 
         if data is None:
@@ -190,7 +190,7 @@ class SensorConfigEditor(DataEditor[t.Optional[a2.SensorConfig]]):
         for i in range(self._tabs.count()):
             self._tabs.setTabText(i, self._TAB_LABEL_FMT.format(i + 1))
 
-    def get_data(self) -> t.Optional[a2.SensorConfig]:
+    def get_data(self) -> a2.SensorConfig | None:
         partial_sensor_config = self._sensor_param_editor.get_data()
 
         assert partial_sensor_config is not None
@@ -216,7 +216,7 @@ class SensorConfigEditor(DataEditor[t.Optional[a2.SensorConfig]]):
 
         assert all(isinstance(widget, SubsweepConfigEditor) for widget in tab_widgets)
 
-        return t.cast(t.List[SubsweepConfigEditor], tab_widgets)
+        return t.cast(list[SubsweepConfigEditor], tab_widgets)
 
     @property
     def is_ready(self) -> bool:

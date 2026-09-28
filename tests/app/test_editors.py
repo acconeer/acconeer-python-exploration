@@ -26,7 +26,7 @@ pytestmark = pytest.mark.usefixtures("qapplication")
 
 @attrs.frozen(kw_only=True)
 class EditorFixture(t.Generic[T]):
-    editor_class: t.Type[pc.DataEditor[T]]
+    editor_class: type[pc.DataEditor[T]]
     data_prototype: T
     good_ui_edit: t.Callable[[pc.DataEditor[T]], t.Any]
     bad_ui_edit: t.Callable[[pc.DataEditor[T]], t.Any]

@@ -1,9 +1,9 @@
-# Copyright (c) Acconeer AB, 2025
+# Copyright (c) Acconeer AB, 2025-2026
 # All rights reserved
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from acconeer.exptool.a121._core.entities import SensorCalibration, SessionConfig
 from acconeer.exptool.a121._core.utils import (
@@ -19,7 +19,7 @@ class ExplorationProtocol_No_IQ_Imb_Comp(ExplorationProtocol):
     def setup_command(
         cls,
         session_config: SessionConfig,
-        calibrations: Optional[dict[int, SensorCalibration]] = None,
+        calibrations: dict[int, SensorCalibration] | None = None,
     ) -> bytes:
         for sensor_config in iterate_extended_structure_values(session_config.groups):
             if any(ssc.iq_imbalance_compensation for ssc in sensor_config.subsweeps):

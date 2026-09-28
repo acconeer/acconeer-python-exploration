@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any, Callable, Generic, Optional, TypeVar, Union, cast
+from typing import Any, Callable, Generic, TypeVar, cast
 
 import typing_extensions as te
 
@@ -51,7 +51,7 @@ class _A121Extractor(_Extractor):
 
     @staticmethod
     def update_rate_calculator(
-        calculator: _RateCalculator, result: Union[a121.Result, list[dict[int, a121.Result]]]
+        calculator: _RateCalculator, result: a121.Result | list[dict[int, a121.Result]]
     ) -> _RateStats:
         if isinstance(result, a121.Result):
             return calculator.update(result.tick, result.frame_delayed)
@@ -61,7 +61,7 @@ class _A121Extractor(_Extractor):
 
     @staticmethod
     def get_status_messages(
-        result: Union[a121.Result, list[dict[int, a121.Result]]],
+        result: a121.Result | list[dict[int, a121.Result]],
     ) -> list[str]:
         if isinstance(result, a121.Result):
             result_list = [result]
@@ -91,7 +91,7 @@ class _A2Extractor(_Extractor):
 
     @staticmethod
     def update_rate_calculator(
-        calculator: _RateCalculator, result: Union[a2.GroupResult, a2.Result]
+        calculator: _RateCalculator, result: a2.GroupResult | a2.Result
     ) -> _RateStats:
         if isinstance(result, a2.Result):
             return calculator.update(result.tick, result.frame_delayed)
@@ -100,7 +100,7 @@ class _A2Extractor(_Extractor):
             return calculator.update(first_result.tick, first_result.frame_delayed)
 
     @staticmethod
-    def get_status_messages(result: Union[a2.GroupResult, a2.Result]) -> list[str]:
+    def get_status_messages(result: a2.GroupResult | a2.Result) -> list[str]:
         if isinstance(result, a2.GroupResult):
             result_list = result.results
         elif isinstance(result, a2.Result):
@@ -126,7 +126,7 @@ class ApplicationClient(Generic[ClientT]):
     callback: Callable[[Message], None]
     extractor_strategy: type[_Extractor]
     _wrapped_client: Client[Any, Any, Any, Any, Any]
-    _rate_stats_calc: Optional[_RateCalculator]
+    _rate_stats_calc: _RateCalculator | None
     _frame_count: int
 
     def __init__(

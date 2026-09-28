@@ -38,7 +38,7 @@ class CaptureSaveableFile:
     """
 
     _backend: Backend
-    saveable_file_path: t.Optional[Path]
+    saveable_file_path: Path | None
 
     def __init__(self, backend: Backend) -> None:
         self._backend = backend
@@ -51,7 +51,7 @@ class CaptureSaveableFile:
     def __getattr__(self, name: str) -> t.Any:
         return getattr(self._backend, name)
 
-    def recv(self, timeout: t.Optional[float] = None) -> FromBackendQueueItem:
+    def recv(self, timeout: float | None = None) -> FromBackendQueueItem:
         received = self._backend.recv(timeout=timeout)
 
         if isinstance(received, GeneralMessage) and received.name == "saveable_file":

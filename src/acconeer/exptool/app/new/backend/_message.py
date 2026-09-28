@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import typing as t
-from typing import Any, Optional, Union
+from typing import Any
 
 import attrs
 from typing_extensions import Literal
@@ -14,7 +14,7 @@ from acconeer.exptool.app.new._enums import ConnectionState, PluginState
 
 _ResultT = t.TypeVar("_ResultT")
 
-RecipientLiteral = Union[Literal["plot_plugin"], Literal["view_plugin"]]
+RecipientLiteral = Literal["plot_plugin"] | Literal["view_plugin"]
 
 
 @attrs.frozen(kw_only=True, slots=False)
@@ -25,7 +25,7 @@ class Message:  # Should not be instantiated
 @attrs.frozen(kw_only=True, slots=False)
 class ConnectionStateMessage(Message):
     state: ConnectionState = attrs.field()
-    warning: Optional[str] = attrs.field(default=None)
+    warning: str | None = attrs.field(default=None)
 
 
 @attrs.frozen(kw_only=True, slots=False)
@@ -40,7 +40,7 @@ class BackendPluginStateMessage(Message):
 
 @attrs.frozen(kw_only=True, slots=False)
 class StatusMessage(Message):
-    status: Optional[str] = attrs.field()
+    status: str | None = attrs.field()
 
 
 @attrs.frozen(kw_only=True, slots=False)
@@ -66,11 +66,11 @@ class TimingMessage(Message):
 @attrs.frozen(kw_only=True, slots=False)
 class GeneralMessage(Message):
     name: str = attrs.field()
-    recipient: Optional[RecipientLiteral] = attrs.field(default=None)
-    data: Optional[Any] = attrs.field(default=None)
-    kwargs: Optional[dict[str, Any]] = attrs.field(default=None)
-    exception: Optional[Exception] = attrs.field(default=None)
-    traceback_format_exc: Optional[str] = attrs.field(default=None)
+    recipient: RecipientLiteral | None = attrs.field(default=None)
+    data: Any | None = attrs.field(default=None)
+    kwargs: dict[str, Any] | None = attrs.field(default=None)
+    exception: Exception | None = attrs.field(default=None)
+    traceback_format_exc: str | None = attrs.field(default=None)
 
 
 @attrs.frozen(kw_only=True)

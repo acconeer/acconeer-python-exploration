@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import json
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable
 
 import pytest
 
@@ -56,7 +56,7 @@ class TestLatestExplorationProtocolCommands:
         )
 
     @pytest.mark.parametrize("update_rate", [20, None])
-    def test_setup_command(self, update_rate: Optional[Union[float, int]]) -> None:
+    def test_setup_command(self, update_rate: float | int | None) -> None:
         # This explicitly sets all fields in order to guard against changes of defaults.
         config = a121.SessionConfig(
             [

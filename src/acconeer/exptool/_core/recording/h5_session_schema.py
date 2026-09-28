@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 """
@@ -20,7 +20,7 @@ class SessionSchema:
         return (f"sessions/session_{i}" for i in itertools.count(start=0))
 
     @staticmethod
-    def _aliased_group(file: h5py.File, session_name: str) -> t.Optional[h5py.Group]:
+    def _aliased_group(file: h5py.File, session_name: str) -> h5py.Group | None:
         if session_name == "sessions/session_0":
             return file.get("session")
         else:

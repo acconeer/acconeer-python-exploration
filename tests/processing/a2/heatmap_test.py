@@ -2,8 +2,6 @@
 # All rights reserved
 from __future__ import annotations
 
-from typing import Tuple
-
 from acconeer.exptool import a2
 from acconeer.exptool.a2.algo._utils import HEATMAP_FALLBACK_UPDATE_RATE
 from acconeer.exptool.a2.algo.heatmap import capon, coherent, conventional
@@ -15,7 +13,7 @@ from acconeer.exptool.a2.algo.noise_normalization import (
 
 def capon_heatmap_processing(
     record: a2.H5Record,
-) -> Tuple[capon.HeatmapProcessor, NoiseNormalizationResultProcessor, capon.HeatmapConfig]:
+) -> tuple[capon.HeatmapProcessor, NoiseNormalizationResultProcessor, capon.HeatmapConfig]:
     ss = record.session_config.sensor_config.subsweep
     algo_group = record.require_algo_group("capon_heatmap")
     heatmap_config_json_str = bytes.decode(algo_group["plugin_config"][()])
@@ -47,7 +45,7 @@ def capon_heatmap_processing(
 
 def coherent_heatmap_processing(
     record: a2.H5Record,
-) -> Tuple[coherent.HeatmapProcessor, NoiseNormalizationResultProcessor, coherent.HeatmapConfig]:
+) -> tuple[coherent.HeatmapProcessor, NoiseNormalizationResultProcessor, coherent.HeatmapConfig]:
     ss = record.session_config.sensor_config.subsweep
     algo_group = record.require_algo_group("coherent_heatmap")
     heatmap_config_json_str = bytes.decode(algo_group["plugin_config"][()])
@@ -79,7 +77,7 @@ def coherent_heatmap_processing(
 
 def conventional_heatmap_processing(
     record: a2.H5Record,
-) -> Tuple[
+) -> tuple[
     conventional.HeatmapProcessor, NoiseNormalizationResultProcessor, conventional.HeatmapConfig
 ]:
     ss = record.session_config.sensor_config.subsweep

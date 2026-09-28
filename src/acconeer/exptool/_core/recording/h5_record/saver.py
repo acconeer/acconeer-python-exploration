@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -52,14 +52,14 @@ class ChunkedH5Saver(H5Saver[_ConfigT, _MetadataT, _ResultT, _ServerInfoT]):
     _AUTO_CHUNK_MAX_TIME = 1.0
 
     _saver: H5Saver[_ConfigT, _MetadataT, _ResultT, _ServerInfoT]
-    _chunk_size: t.Optional[int]
+    _chunk_size: int | None
     _chunk_buffer: list[_ResultT]
     _last_write_time: float
 
     def __init__(
         self,
         saver: H5Saver[_ConfigT, _MetadataT, _ResultT, _ServerInfoT],
-        _chunk_size: t.Optional[int] = None,
+        _chunk_size: int | None = None,
     ) -> None:
         self._saver = saver
         self._chunk_size = _chunk_size

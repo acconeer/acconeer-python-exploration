@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -231,7 +230,7 @@ class CfarThreshold(Threshold):
     def __init__(
         self,
         sensitivity: float,
-        bg_noise_std_per_subsweep: Optional[list[float]],
+        bg_noise_std_per_subsweep: list[float] | None,
         profile: a121.Profile,
         start_point: int,
         step_length: int,

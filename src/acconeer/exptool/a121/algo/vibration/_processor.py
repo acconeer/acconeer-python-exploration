@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import enum
-from typing import Optional
 
 import attrs
 import numpy as np
@@ -185,12 +184,12 @@ class ProcessorExtraResult:
     amplitude_threshold: float
     """Amplitude threshold."""
 
-    zm_time_series: Optional[npt.NDArray[np.float64]] = attrs.field(
+    zm_time_series: npt.NDArray[np.float64] | None = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
     """Time series being analyzed."""
 
-    lp_displacements_threshold: Optional[npt.NDArray[np.float64]] = attrs.field(
+    lp_displacements_threshold: npt.NDArray[np.float64] | None = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
     """CFAR threshold used for detecting significant frequencies in the FFT."""
@@ -204,7 +203,7 @@ class ProcessorResult:
     Used to determine whether an object is in front of the sensor.
     """
 
-    lp_displacements: Optional[npt.NDArray[np.float64]] = attrs.field(
+    lp_displacements: npt.NDArray[np.float64] | None = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
     """Array of estimated displacement (μm) per frequency."""
@@ -222,7 +221,7 @@ class ProcessorResult:
     )
     """Array of frequencies for detected displacements (Hz)."""
 
-    time_series_std: Optional[float] = attrs.field(default=None)
+    time_series_std: float | None = attrs.field(default=None)
     """Time series standard deviation."""
 
     extra_result: ProcessorExtraResult
@@ -240,8 +239,8 @@ class Processor(ProcessorBase[ProcessorResult]):
         sensor_config: a121.SensorConfig,
         metadata: a121.Metadata,
         processor_config: ProcessorConfig,
-        subsweep_indexes: Optional[list[int]] = None,
-        context: Optional[ProcessorContext] = None,
+        subsweep_indexes: list[int] | None = None,
+        context: ProcessorContext | None = None,
     ) -> None:
         # Check sensor config and processor config
         assert sensor_config.sweep_rate is not None

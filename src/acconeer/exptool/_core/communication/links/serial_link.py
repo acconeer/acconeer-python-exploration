@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -10,7 +10,6 @@ import signal
 import threading as th
 import traceback
 from time import sleep, time
-from typing import Optional, Tuple, Union
 
 import serial
 
@@ -28,10 +27,10 @@ class BaseSerialLink(BufferedLink):
 
 
 class SerialLink(BaseSerialLink):
-    def __init__(self, port: Optional[str] = None, flowcontrol: bool = False) -> None:
+    def __init__(self, port: str | None = None, flowcontrol: bool = False) -> None:
         super().__init__()
         self._port = port
-        self._ser: Optional[serial.Serial] = None
+        self._ser: serial.Serial | None = None
         self._flowcontrol = flowcontrol
 
     def _update_timeout(self) -> None:
@@ -172,17 +171,17 @@ class ExploreSerialLink(SerialLink):
 
 
 class SerialProcessLink(BaseSerialLink):
-    def __init__(self, port: Optional[int] = None) -> None:
+    def __init__(self, port: int | None = None) -> None:
         super().__init__()
         self._port = port
-        self._process: Optional[mp.Process] = None
+        self._process: mp.Process | None = None
 
     def _update_timeout(self) -> None:
         pass
 
     def connect(self) -> None:
         self._recv_queue: "mp.Queue[bytes]" = mp.Queue()
-        self._send_queue: "mp.Queue[Union[Tuple[str, int], bytes]]" = mp.Queue()
+        self._send_queue: "mp.Queue[tuple[str, int] | bytes]" = mp.Queue()
         self._flow_event = mp.Event()
         self._error_event = mp.Event()
 
@@ -326,7 +325,7 @@ def serial_process_program(
     port: int,
     baud: int,
     recv_q: "mp.Queue[bytes]",
-    send_q: "mp.Queue[Union[Tuple[str, int], bytes]]",
+    send_q: "mp.Queue[tuple[str, int] | bytes]",
     flow_event: th.Event,
     error_event: th.Event,
 ) -> None:
@@ -351,7 +350,7 @@ def _serial_process_program(
     port: int,
     baud: int,
     recv_q: "mp.Queue[bytes]",
-    send_q: "mp.Queue[Union[Tuple[str, int], bytes]]",
+    send_q: "mp.Queue[tuple[str, int] | bytes]",
     flow_event: th.Event,
     error_event: th.Event,
 ) -> None:

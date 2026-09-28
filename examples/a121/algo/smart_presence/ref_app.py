@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-from typing import List, Tuple
-
 import numpy as np
 import numpy.typing as npt
 
@@ -104,9 +102,9 @@ class PGUpdater:
         self.estimated_frame_rate = estimated_frame_rate
 
         self.history_length_s = 5
-        self.time_fifo: List[float] = []
-        self.intra_fifo: List[float] = []
-        self.inter_fifo: List[float] = []
+        self.time_fifo: list[float] = []
+        self.intra_fifo: list[float] = []
+        self.inter_fifo: list[float] = []
 
         self.intra_limit_lines = []
         self.inter_limit_lines = []
@@ -253,7 +251,7 @@ class PGUpdater:
     @staticmethod
     def create_sector_plot(
         title: str, num_sectors: int, start_m: float, zone_limits: npt.NDArray[np.float64]
-    ) -> Tuple[pg.PlotItem, List[pg.QtWidgets.QGraphicsEllipseItem]]:
+    ) -> tuple[pg.PlotItem, list[pg.QtWidgets.QGraphicsEllipseItem]]:
         sector_plot = pg.PlotItem(title=title)
 
         sector_plot.setAspectLocked()
@@ -432,7 +430,7 @@ class PGUpdater:
     def color_zones(
         data: RefAppResult,
         show_all_detected_zones: bool,
-        sectors: List[pg.QtWidgets.QGraphicsEllipseItem],
+        sectors: list[pg.QtWidgets.QGraphicsEllipseItem],
     ) -> None:
         if show_all_detected_zones:
             for zone, (inter_value, intra_value) in enumerate(

@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import enum
-from typing import Any, Optional, Tuple
+from typing import Any
 
 import attrs
 import h5py
@@ -148,7 +148,7 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
         self.started = False
 
     def start(
-        self, recorder: Optional[a121.Recorder] = None, _algo_group: Optional[h5py.Group] = None
+        self, recorder: a121.Recorder | None = None, _algo_group: h5py.Group | None = None
     ) -> None:
         if self.started:
             msg = "Already started"
@@ -366,7 +366,7 @@ def _record_algo_data(
     opser.serialize(config, app_config_group)
 
 
-def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, ExampleAppConfig]:
+def _load_algo_data(algo_group: h5py.Group) -> tuple[int, ExampleAppConfig]:
     sensor_id = int(algo_group["sensor_id"][()])
     config = opser.deserialize(algo_group["example_app_config"], ExampleAppConfig)
     return sensor_id, config

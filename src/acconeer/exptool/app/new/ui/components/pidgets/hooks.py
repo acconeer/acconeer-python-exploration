@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 """
@@ -99,7 +99,7 @@ def parameter_is(aspect: str, value: t.Any) -> PidgetMappingPredicate:
     return inner
 
 
-def parameter_within(aspect: str, range: t.Tuple[float, float]) -> PidgetMappingPredicate:
+def parameter_within(aspect: str, range: tuple[float, float]) -> PidgetMappingPredicate:
     """Checks whether the parameter of the pidget assigned to aspect is in range"""
 
     def inner(mapping: PidgetMapping) -> bool:

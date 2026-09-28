@@ -21,10 +21,10 @@ from acconeer.exptool.a2._core.rx_major_frame_translation import translate_rx_ma
 class SetupResponse(Message):
     tick_period: int
     calibration: str
-    update_period: t.Optional[float]
+    update_period: float | None
 
     @classmethod
-    def parse(cls, header: t.Dict[str, t.Any], payload: bytes) -> te.Self:
+    def parse(cls, header: dict[str, t.Any], payload: bytes) -> te.Self:
         tick_period = header.get("tick_period")
 
         calibration_info = header.get("calibration_info")
@@ -41,14 +41,14 @@ class ResultMessage(Message):
     ticks: list[int]
     temperatures: list[int]
     data_saturated: list[list[bool]]
-    sweep_rates: list[t.Optional[float]]
+    sweep_rates: list[float | None]
     frame_delayeds: list[bool]
     calibration_temperatures: list[bool]
     calibration_neededs: list[bool]
     payload: bytes
 
     @classmethod
-    def parse(cls, header: t.Dict[str, t.Any], payload: bytes) -> te.Self:
+    def parse(cls, header: dict[str, t.Any], payload: bytes) -> te.Self:
         result_infos = header.get("result_info")
         if result_infos is None:
             raise ParseError

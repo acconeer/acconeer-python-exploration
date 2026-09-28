@@ -1,9 +1,9 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Tuple
+from typing import Any
 
 import acconeer.exptool as et
 
@@ -23,8 +23,8 @@ class ClientFactory:
     def from_kwargs(
         cls,
         *,
-        protocol: Optional[ProtocolArg] = None,
-        link: Optional[LinkArg] = None,
+        protocol: ProtocolArg | None = None,
+        link: LinkArg | None = None,
         **kwargs: Any,
     ) -> BaseClient:
         cls._check_conflicting_kwargs(protocol=protocol, link=link, **kwargs)
@@ -75,7 +75,7 @@ class ClientFactory:
         return Link.UART
 
     @classmethod
-    def _try_infer_protocol_from_kwargs(cls, **_: Any) -> Optional[Protocol]:
+    def _try_infer_protocol_from_kwargs(cls, **_: Any) -> Protocol | None:
         """
         Tries to figure out what protocols to use from `kwargs`.
         """
@@ -85,7 +85,7 @@ class ClientFactory:
 
     @classmethod
     def _try_get_socket_client(
-        cls, host: str, protocol: Optional[ProtocolArg], **kwargs: Any
+        cls, host: str, protocol: ProtocolArg | None, **kwargs: Any
     ) -> BaseClient:
         """
         Tries to create a socket client given the passed `protocol` and `kwargs`.
@@ -102,7 +102,7 @@ class ClientFactory:
 
     @classmethod
     def _try_get_serial_client(
-        cls, port: str, protocol: Optional[ProtocolArg], **kwargs: Any
+        cls, port: str, protocol: ProtocolArg | None, **kwargs: Any
     ) -> BaseClient:
         """
         Tries to create a serial/uart client given `protocol`, `port` and `kwargs`.
@@ -119,7 +119,7 @@ class ClientFactory:
         raise ValueError(msg)
 
     @classmethod
-    def _handle_passed_host(cls, host: Optional[str]) -> str:
+    def _handle_passed_host(cls, host: str | None) -> str:
         """
         :raises: ValueError if `host` is None.
         """
@@ -132,7 +132,7 @@ class ClientFactory:
         return host
 
     @classmethod
-    def _handle_passed_serial_port(cls, serial_port: Optional[str]) -> str:
+    def _handle_passed_serial_port(cls, serial_port: str | None) -> str:
         """
         If `serial_port` is None, tries to get a port from auto-detection.
 
@@ -144,7 +144,7 @@ class ClientFactory:
         return serial_port
 
     @classmethod
-    def _get_single_acconeer_module_port(cls, tagged_ports: List[Tuple[str, str]]):
+    def _get_single_acconeer_module_port(cls, tagged_ports: list[tuple[str, str]]):
         """
         Auto-detects Acconeer modules for use in this factory.
 

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -54,7 +54,7 @@ def _none_coalescing_chain(*funcs: PresenterFunc) -> PresenterFunc:
     the first function returning a non-None value.
     """
 
-    def _chain(instance: t.Any, t: PresentationType) -> t.Optional[str]:
+    def _chain(instance: t.Any, t: PresentationType) -> str | None:
         for f in funcs:
             presentation = f(instance, t)
             if presentation is not None:
@@ -64,7 +64,7 @@ def _none_coalescing_chain(*funcs: PresenterFunc) -> PresenterFunc:
     return _chain
 
 
-def _json_presentation(instance: t.Any, t: PresentationType) -> t.Optional[str]:
+def _json_presentation(instance: t.Any, t: PresentationType) -> str | None:
     if t is PresentationType.JSON and isinstance(instance, JsonPresentable):
         return json.dumps(
             json.loads(instance.to_json()),
@@ -106,7 +106,7 @@ class _JsonLoadButton(QPushButton):
         self,
         setter: t.Callable[[_JsonPresentableT], t.Any],
         decoder: t.Callable[[str], _JsonPresentableT],
-        parent: t.Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ) -> None:
         super().__init__(FOLDER_OPEN(), "", parent=parent)
 
@@ -139,7 +139,7 @@ class _JsonLoadButton(QPushButton):
 class _JsonSaveButton(QPushButton):
     def __init__(
         self,
-        getter: t.Callable[[], t.Optional[_JsonPresentableT]],
+        getter: t.Callable[[], _JsonPresentableT | None],
         encoder: t.Callable[[_JsonPresentableT], str],
         extra_presenter: PresenterFunc,
     ) -> None:
@@ -190,7 +190,7 @@ class _JsonSaveButton(QPushButton):
             _show_transient_checkmark(self)
 
 
-def _dict_to_csv(data: t.Dict[t.Any, t.Any]) -> str:
+def _dict_to_csv(data: dict[t.Any, t.Any]) -> str:
     output_str = ""
 
     for key, value in data.items():
@@ -200,8 +200,8 @@ def _dict_to_csv(data: t.Dict[t.Any, t.Any]) -> str:
 
 
 def _flatten_dict(
-    data: t.Dict[str, t.Any], root: t.Optional[t.Dict[str, t.Any]] = None, parent_key: str = ""
-) -> t.Dict[str, t.Any]:
+    data: dict[str, t.Any], root: dict[str, t.Any] | None = None, parent_key: str = ""
+) -> dict[str, t.Any]:
     if root is None:
         root = dict()
 
@@ -230,9 +230,9 @@ def _flatten_dict(
 
 
 def create_json_save_load_buttons(
-    editor: DataEditor[t.Optional[_JsonPresentableT]],
-    encoder: t.Optional[t.Callable[[_JsonPresentableT], str]] = None,
-    decoder: t.Optional[t.Callable[[str], _JsonPresentableT]] = None,
+    editor: DataEditor[_JsonPresentableT | None],
+    encoder: t.Callable[[_JsonPresentableT], str] | None = None,
+    decoder: t.Callable[[str], _JsonPresentableT] | None = None,
     extra_presenter: PresenterFunc = lambda i, t: None,
 ) -> QWidget:
     """
@@ -279,11 +279,11 @@ class JsonButtonOperations(enum.Flag):
 
 
 def create_json_save_load_buttons_from_type(
-    editor: DataEditor[t.Optional[_JsonPresentableT]],
-    config_type: t.Type[_JsonPresentableT],
+    editor: DataEditor[_JsonPresentableT | None],
+    config_type: type[_JsonPresentableT],
     operations: JsonButtonOperations = JsonButtonOperations.SAVE | JsonButtonOperations.LOAD,
     extra_presenter: PresenterFunc = lambda i, t: None,
-) -> t.Optional[QWidget]:
+) -> QWidget | None:
     """
     Utility variation of "create_json_save_load_buttons".
 

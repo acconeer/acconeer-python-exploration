@@ -6,7 +6,7 @@ from __future__ import annotations
 import copy
 import logging
 from functools import partial
-from typing import Any, Iterator, Optional
+from typing import Any, Iterator
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QTabWidget, QToolButton, QVBoxLayout, QWidget
@@ -28,10 +28,10 @@ from .subsweep_config_editor import SubsweepConfigEditor
 log = logging.getLogger(__name__)
 
 
-class SensorConfigEditor(DataEditor[Optional[a121.SensorConfig]]):
+class SensorConfigEditor(DataEditor[a121.SensorConfig | None]):
     sig_update = Signal(object)
 
-    _sensor_config: Optional[a121.SensorConfig]
+    _sensor_config: a121.SensorConfig | None
 
     _sensor_config_pidgets: dict[str, pidgets.Pidget]
     _erroneous_aspects: set[str]
@@ -137,7 +137,7 @@ class SensorConfigEditor(DataEditor[Optional[a121.SensorConfig]]):
         self,
         supports_multiple_subsweeps: bool = False,
         json_button_operations: JsonButtonOperations = JsonButtonOperations(0),
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent=parent)
 
@@ -206,7 +206,7 @@ class SensorConfigEditor(DataEditor[Optional[a121.SensorConfig]]):
         for editor in self._subsweep_config_editors:
             editor.set_read_only(read_only)
 
-    def set_data(self, sensor_config: Optional[a121.SensorConfig]) -> None:
+    def set_data(self, sensor_config: a121.SensorConfig | None) -> None:
         if self._sensor_config == sensor_config:
             return
 
@@ -239,7 +239,7 @@ class SensorConfigEditor(DataEditor[Optional[a121.SensorConfig]]):
         for subsweep, editor in zip(self._sensor_config.subsweeps, self._subsweep_config_editors):
             editor.set_data(subsweep)
 
-    def get_data(self) -> Optional[a121.SensorConfig]:
+    def get_data(self) -> a121.SensorConfig | None:
         return copy.deepcopy(self._sensor_config)
 
     def handle_validation_results(

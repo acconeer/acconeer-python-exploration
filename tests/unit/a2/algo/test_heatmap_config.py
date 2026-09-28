@@ -5,8 +5,6 @@
 
 from __future__ import annotations
 
-import typing as t
-
 import pytest
 
 from acconeer.exptool import a2
@@ -30,12 +28,12 @@ def _session_config(num_subsweeps: int) -> a2.SessionConfig:
 
 
 @pytest.mark.parametrize("config_type", HEATMAP_CONFIG_TYPES)
-def test_default_config_is_valid(config_type: t.Type[HeatmapConfigCommon]) -> None:
+def test_default_config_is_valid(config_type: type[HeatmapConfigCommon]) -> None:
     config_type.default().validate(_session_config(num_subsweeps=1))
 
 
 @pytest.mark.parametrize("config_type", HEATMAP_CONFIG_TYPES)
-def test_multiple_subsweeps_is_an_error(config_type: t.Type[HeatmapConfigCommon]) -> None:
+def test_multiple_subsweeps_is_an_error(config_type: type[HeatmapConfigCommon]) -> None:
     """The processors take a single subsweep, which must not surface as an AttributeError"""
     session_config = _session_config(num_subsweeps=2)
     config = config_type.default()
@@ -52,7 +50,7 @@ def test_multiple_subsweeps_is_an_error(config_type: t.Type[HeatmapConfigCommon]
 
 @pytest.mark.parametrize("config_type", HEATMAP_CONFIG_TYPES)
 def test_multiple_subsweeps_keeps_the_other_checks(
-    config_type: t.Type[HeatmapConfigCommon],
+    config_type: type[HeatmapConfigCommon],
 ) -> None:
     """Only the Tx mask check needs the subsweep"""
     session_config = _session_config(num_subsweeps=2)

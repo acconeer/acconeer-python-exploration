@@ -37,14 +37,14 @@ class MockClient(A2Client, register=True):
     @classmethod
     def open(
         cls,
-        ip_address: t.Optional[str] = None,
-        tcp_port: t.Optional[int] = None,
-        serial_port: t.Optional[str] = None,
-        usb_device: t.Optional[t.Union[str, bool]] = None,
-        mock: t.Optional[bool] = None,
-        override_baudrate: t.Optional[int] = None,
+        ip_address: str | None = None,
+        tcp_port: int | None = None,
+        serial_port: str | None = None,
+        usb_device: str | bool | None = None,
+        mock: bool | None = None,
+        override_baudrate: int | None = None,
         flow_control: bool = True,
-        generation: t.Optional[str] = "a2",
+        generation: str | None = "a2",
     ) -> te.Self:
         if generation not in ["a2", "a211"]:
             raise ClientCreationError
@@ -58,9 +58,7 @@ class MockClient(A2Client, register=True):
         super().__init__(client_info)
         self._data_generator: t.Iterator[GroupResult] = iter([])
 
-    def setup_session(
-        self, config: SessionConfig, calibration: t.Optional[str] = None
-    ) -> Metadata:
+    def setup_session(self, config: SessionConfig, calibration: str | None = None) -> Metadata:
         self._config = config
         self._calibration_provided = calibration is not None
 
@@ -160,7 +158,7 @@ class _MockObject:
         shifted_array[0] = array[0]
         return (array ^ shifted_array) & array
 
-    def collision_with_ray(self, ray_az: float, ray_el: float, tick: int) -> t.Optional[float]:
+    def collision_with_ray(self, ray_az: float, ray_el: float, tick: int) -> float | None:
         """
         Returns the distance in meter a ray cast from origin with specified angles (in radians)
         collides with this object (if it collides)
@@ -258,7 +256,7 @@ def get_data_generator(
         seconds_since_start = previous_time - start_time
         ticks_since_start = int(seconds_since_start * _MOCK_TICKS_PER_SECOND)
 
-        results: t.List[Result] = []
+        results: list[Result] = []
 
         for sensor_config in config.sensor_configs:
             # Noise-free per angle at a fixed tick, so it's the same for every sweep in
@@ -277,9 +275,9 @@ def get_data_generator(
                 for subsweep_config in sensor_config.subsweeps
             ]
 
-            frame: t.List[t.List[np.complex128]] = []
+            frame: list[list[np.complex128]] = []
             for _ in range(sensor_config.sweeps_per_frame):
-                sweep: t.List[np.complex128] = []
+                sweep: list[np.complex128] = []
 
                 for subsweep_signal in subsweep_signals:
                     subsweep_noise = 100 * (

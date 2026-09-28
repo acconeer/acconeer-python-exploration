@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional, Type
 
 import numpy as np
 
@@ -65,7 +64,7 @@ class BackendPlugin(ProcessorBackendPluginBase[ProcessorConfig, ProcessorResult]
         )
 
     @classmethod
-    def get_processor_config_cls(cls) -> Type[ProcessorConfig]:
+    def get_processor_config_cls(cls) -> type[ProcessorConfig]:
         return ProcessorConfig
 
     @classmethod
@@ -87,14 +86,14 @@ class ViewPlugin(ProcessorViewPluginBase[ProcessorConfig]):
         }
 
     @classmethod
-    def get_processor_config_cls(cls) -> Type[ProcessorConfig]:
+    def get_processor_config_cls(cls) -> type[ProcessorConfig]:
         return ProcessorConfig
 
 
 class PlotPlugin(PgPlotPlugin):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model=app_model)
-        self._plot_job: Optional[ProcessorResult] = None
+        self._plot_job: ProcessorResult | None = None
         self._is_setup = False
 
     def handle_message(self, message: backend.GeneralMessage) -> None:

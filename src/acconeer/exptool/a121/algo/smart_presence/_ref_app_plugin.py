@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Callable, List, Mapping, Optional, Tuple
+from typing import Callable, Mapping
 
 import attrs
 import h5py
@@ -74,7 +74,7 @@ log = logging.getLogger(__name__)
 class SharedState:
     sensor_id: int = attrs.field(default=1)
     config: RefAppConfig = attrs.field(factory=get_medium_range_config)
-    ref_app_context: Optional[RefAppContext] = attrs.field(default=None)
+    ref_app_context: RefAppContext | None = attrs.field(default=None)
 
 
 @attrs.frozen(kw_only=True)
@@ -101,8 +101,8 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
     ) -> None:
         super().__init__(callback=callback, generation=generation, key=key)
 
-        self._recorder: Optional[a121.H5Recorder] = None
-        self._ref_app_instance: Optional[RefApp] = None
+        self._recorder: a121.H5Recorder | None = None
+        self._ref_app_instance: RefApp | None = None
         self._log = BackendLogger.getLogger(__name__)
 
         self.restore_defaults()
@@ -158,7 +158,7 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
         self.shared_state.ref_app_context = ref_app_context
         self.shared_state.sensor_id = record.session(0).sensor_id
 
-    def _start_session(self, recorder: Optional[a121.H5Recorder]) -> None:
+    def _start_session(self, recorder: a121.H5Recorder | None) -> None:
         assert self.client
         self._ref_app_instance = RefApp(
             client=self.client,
@@ -209,7 +209,7 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
 class PlotPlugin(PgPlotPlugin):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model=app_model)
-        self._plot_job: Optional[RefAppResult] = None
+        self._plot_job: RefAppResult | None = None
         self._is_setup = False
 
     def handle_message(self, message: backend.GeneralMessage) -> None:
@@ -251,11 +251,11 @@ class PlotPlugin(PgPlotPlugin):
         self.show_all_detected_zones = self.ref_app_config.show_all_detected_zones
 
         self.history_length_s = 5
-        self.time_fifo: List[float] = []
-        self.intra_fifo: List[float] = []
-        self.inter_fifo: List[float] = []
-        self.switch_data: Optional[RefAppResult] = None
-        self.switch_data_sectors: List[pg.QtWidgets.QGraphicsEllipseItem] = []
+        self.time_fifo: list[float] = []
+        self.intra_fifo: list[float] = []
+        self.inter_fifo: list[float] = []
+        self.switch_data: RefAppResult | None = None
+        self.switch_data_sectors: list[pg.QtWidgets.QGraphicsEllipseItem] = []
 
         win = self.plot_layout
 
@@ -399,7 +399,7 @@ class PlotPlugin(PgPlotPlugin):
     @staticmethod
     def create_sector_plot(
         title: str, num_sectors: int, start_m: float, zone_limits: npt.NDArray[np.float64]
-    ) -> Tuple[pg.PlotItem, List[pg.QtWidgets.QGraphicsEllipseItem]]:
+    ) -> tuple[pg.PlotItem, list[pg.QtWidgets.QGraphicsEllipseItem]]:
         sector_plot = pg.PlotItem(title=title)
 
         sector_plot.setAspectLocked()
@@ -579,7 +579,7 @@ class PlotPlugin(PgPlotPlugin):
     def color_zones(
         data: RefAppResult,
         show_all_detected_zones: bool,
-        sectors: List[pg.QtWidgets.QGraphicsEllipseItem],
+        sectors: list[pg.QtWidgets.QGraphicsEllipseItem],
     ) -> None:
         if show_all_detected_zones:
             for zone, (inter_value, intra_value) in enumerate(
@@ -736,7 +736,7 @@ class ViewPlugin(A121ViewPluginBase):
         )
         return presence_pidget_mapping
 
-    def on_backend_state_update(self, state: Optional[SharedState]) -> None:
+    def on_backend_state_update(self, state: SharedState | None) -> None:
         if state is None:
             self.config_editor.set_data(None)
             self.nominal_config_editor.set_data(None)

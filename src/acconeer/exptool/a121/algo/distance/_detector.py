@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import enum
 import warnings
-from typing import Any, Optional
+from typing import Any
 
 import attrs
 import h5py
@@ -107,7 +107,7 @@ class DetectorConfig(AlgoConfigBase):
     end_m: float = attrs.field(default=3.0)
     """End of measurement range in meters."""
 
-    max_step_length: Optional[int] = attrs.field(default=None)
+    max_step_length: int | None = attrs.field(default=None)
     """If set, limits the step length.
 
     If no argument is provided, the step length is automatically calculated based on the profile.
@@ -188,7 +188,7 @@ class DetectorConfig(AlgoConfigBase):
     threshold whenever close range is active.
     """
 
-    update_rate: Optional[float] = attrs.field(default=50.0)
+    update_rate: float | None = attrs.field(default=50.0)
     """Sets the detector update rate."""
 
     @start_m.validator
@@ -283,24 +283,24 @@ class DetectorConfig(AlgoConfigBase):
 
 @attrs.frozen(kw_only=True)
 class DetectorResult:
-    distances: Optional[npt.NDArray[np.float64]] = attrs.field(
+    distances: npt.NDArray[np.float64] | None = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
     """Estimated distances (m), sorted according to the selected peak sorting strategy."""
 
-    strengths: Optional[npt.NDArray[np.float64]] = attrs.field(
+    strengths: npt.NDArray[np.float64] | None = attrs.field(
         default=None, eq=attrs_optional_ndarray_isclose
     )
     """Estimated reflector strengths (dB) corresponding to the peak amplitude of the estimated
     distances.
     """
 
-    near_edge_status: Optional[bool] = attrs.field(default=None)
+    near_edge_status: bool | None = attrs.field(default=None)
     """Boolean indicating an object close to the start edge, located outside of the
     measurement range.
     """
 
-    calibration_needed: Optional[bool] = attrs.field(default=None)
+    calibration_needed: bool | None = attrs.field(default=None)
     """Indication of calibration needed. The sensor calibration needs to be redone if this
     indication is set.
 
@@ -308,7 +308,7 @@ class DetectorResult:
     :func:`update_detector_calibration`.
     """
 
-    temperature: Optional[int] = attrs.field(default=None)
+    temperature: int | None = attrs.field(default=None)
     """Temperature in sensor during measurement (in degree Celsius). Notice that this has poor
     absolute accuracy.
     """
@@ -341,7 +341,7 @@ class Detector(Controller[DetectorConfig, dict[int, DetectorResult]]):
         client: a121.Client,
         sensor_ids: list[int],
         detector_config: DetectorConfig,
-        context: Optional[DetectorContext] = None,
+        context: DetectorContext | None = None,
     ) -> None:
         super().__init__(client=client, config=detector_config)
         self.sensor_ids = sensor_ids
@@ -352,7 +352,7 @@ class Detector(Controller[DetectorConfig, dict[int, DetectorResult]]):
         else:
             self.context = context
 
-        self.aggregator: Optional[Aggregator] = None
+        self.aggregator: Aggregator | None = None
 
         self.update_config(self.config)
 
@@ -480,9 +480,9 @@ class Detector(Controller[DetectorConfig, dict[int, DetectorResult]]):
 
     def start(
         self,
-        recorder: Optional[a121.Recorder] = None,
+        recorder: a121.Recorder | None = None,
         *,
-        _algo_group: Optional[h5py.Group] = None,
+        _algo_group: h5py.Group | None = None,
     ) -> None:
         """Method for setting up measurement session."""
 
@@ -718,7 +718,7 @@ def _load_algo_data(
 class _DetectorConfig_v0(AlgoConfigBase):
     start_m: float = attrs.field(default=0.25)
     end_m: float = attrs.field(default=3.0)
-    max_step_length: Optional[int] = attrs.field(default=None)
+    max_step_length: int | None = attrs.field(default=None)
     max_profile: a121.Profile = attrs.field(default=a121.Profile.PROFILE_5, converter=a121.Profile)
     close_range_leakage_cancellation: bool = attrs.field(default=False)
     signal_quality: float = attrs.field(default=15.0)
@@ -740,8 +740,8 @@ class _DetectorConfig_v0(AlgoConfigBase):
         default=DEFAULT_FIXED_STRENGTH_THRESHOLD_VALUE
     )
     threshold_sensitivity: float = attrs.field(default=DEFAULT_THRESHOLD_SENSITIVITY)
-    update_rate: Optional[float] = attrs.field(default=50.0)
-    prf: Optional[a121.PRF] = attrs.field(default=None)
+    update_rate: float | None = attrs.field(default=50.0)
+    prf: a121.PRF | None = attrs.field(default=None)
 
     def _collect_validation_results(self) -> list[a121.ValidationResult]:
         return []

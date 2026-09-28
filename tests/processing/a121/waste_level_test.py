@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2024
+# Copyright (c) Acconeer AB, 2024-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -14,8 +14,8 @@ from acconeer.exptool.a121.algo.waste_level._processor import _load_algo_data
 
 @attrs.frozen
 class ResultSlice:
-    level_m: t.Optional[float]
-    level_percent: t.Optional[int]
+    level_m: float | None
+    level_percent: int | None
     # omits extra_result
 
     @classmethod

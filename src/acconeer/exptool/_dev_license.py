@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 import bs4
 import requests
@@ -27,7 +26,7 @@ class DevLicense:
 
     def __init__(self, license_url: str = DEV_LICENSE_URL) -> None:
         self.license_url = license_url
-        self.html: Optional[bs4.BeautifulSoup] = None
+        self.html: bs4.BeautifulSoup | None = None
 
     def load(self) -> None:
         """Loads the license HTML document"""

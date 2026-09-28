@@ -17,7 +17,7 @@ from acconeer.exptool._core.class_creation.enum import find_by_name
 from acconeer.exptool._core.class_creation.mixins import AttrsMappingTransformsMixin
 
 
-def to_tuple(v: t.Any) -> t.Tuple[float, float]:
+def to_tuple(v: t.Any) -> tuple[float, float]:
     return tuple(v)
 
 
@@ -29,7 +29,7 @@ class HeatmapConfigLegacy(AttrsMappingTransformsMixin):
         MOVEMENT = auto()
 
         @classmethod
-        def _missing_(cls, value: object) -> t.Optional[te.Self]:
+        def _missing_(cls, value: object) -> te.Self | None:
             if isinstance(value, str):
                 return find_by_name(cls, value)
             else:
@@ -40,7 +40,7 @@ class HeatmapConfigLegacy(AttrsMappingTransformsMixin):
         CAPON = auto()
 
         @classmethod
-        def _missing_(cls, value: object) -> t.Optional[te.Self]:
+        def _missing_(cls, value: object) -> te.Self | None:
             if isinstance(value, str):
                 return find_by_name(cls, value)
             else:
@@ -58,12 +58,12 @@ class HeatmapConfigLegacy(AttrsMappingTransformsMixin):
 
     update_count: int
 
-    az_angle_range: t.Tuple[float, float] = attrs.field(
+    az_angle_range: tuple[float, float] = attrs.field(
         validator=[av.min_len(2), av.max_len(2)],
         converter=to_tuple,
     )
 
-    el_angle_range: t.Tuple[float, float] = attrs.field(
+    el_angle_range: tuple[float, float] = attrs.field(
         validator=[av.min_len(2), av.max_len(2)],
         converter=to_tuple,
     )
@@ -74,7 +74,7 @@ class HeatmapConfigLegacy(AttrsMappingTransformsMixin):
 
     normalized_heat_cutoff: float
 
-    max_2d_heat: t.Optional[int] = attrs.field(default=100000000)
+    max_2d_heat: int | None = attrs.field(default=100000000)
 
     log_scale_output: bool = attrs.field(default=False)
 
@@ -108,7 +108,7 @@ class _PluginConfig_v0(AttrsMappingTransformsMixin):
     num_azimuth_angles: int
     num_elevation_angles: int
     normalized_heat_cutoff: float
-    max_2d_heat: t.Optional[int] = attrs.field(default=100000000)
+    max_2d_heat: int | None = attrs.field(default=100000000)
     log_scale_output: bool = attrs.field(default=False)
 
     def migrate(self) -> _PluginConfig_v1:
@@ -148,7 +148,7 @@ class _PluginConfig_v1(AttrsMappingTransformsMixin):
     num_az_angles: int
     num_el_angles: int
     normalized_heat_cutoff: float
-    max_2d_heat: t.Optional[int] = attrs.field(default=100000000)
+    max_2d_heat: int | None = attrs.field(default=100000000)
     log_scale_output: bool = attrs.field(default=False)
 
     def migrate(self) -> HeatmapConfigLegacy:

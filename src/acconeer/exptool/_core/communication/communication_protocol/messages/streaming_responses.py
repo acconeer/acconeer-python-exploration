@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ class StopStreamingResponseHeader(te.TypedDict):
 
 class StartStreamingResponse(Message):
     @classmethod
-    def parse(cls, header: t.Dict[str, t.Any], payload: bytes) -> StartStreamingResponse:
+    def parse(cls, header: dict[str, t.Any], payload: bytes) -> StartStreamingResponse:
         t.cast(StartStreamingResponseHeader, header)
 
         if header["status"] == "start":
@@ -30,7 +30,7 @@ class StartStreamingResponse(Message):
 
 class StopStreamingResponse(Message):
     @classmethod
-    def parse(cls, header: t.Dict[str, t.Any], payload: bytes) -> StopStreamingResponse:
+    def parse(cls, header: dict[str, t.Any], payload: bytes) -> StopStreamingResponse:
         t.cast(StopStreamingResponseHeader, header)
 
         if header["status"] == "stop":

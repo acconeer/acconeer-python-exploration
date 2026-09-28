@@ -6,7 +6,7 @@ from __future__ import annotations
 import copy
 from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Optional, overload
+from typing import overload
 
 import attrs
 import numpy as np
@@ -163,7 +163,7 @@ class RangeSweepConfig:
     def from_sensor_config(
         cls,
         sensor_config: a121.SensorConfig,
-        subsweep_indexes: Optional[Sequence[int]] = None,
+        subsweep_indexes: Sequence[int] | None = None,
     ) -> RangeSweepConfig:
         """
         Build a RangeSweepConfig from a sensor config.
@@ -183,7 +183,7 @@ class RangeSweepConfig:
     def from_session_config(
         cls,
         session_config: a121.SessionConfig,
-        subsweep_references: Optional[Sequence[SubsweepReference]] = None,
+        subsweep_references: Sequence[SubsweepReference] | None = None,
     ) -> RangeSweepConfig:
         """
         Build a RangeSweepConfig from a session config.
@@ -334,7 +334,7 @@ class SensorResultsView(Mapping[SubsweepReference, npt.NDArray[np.complex128]]):
 
     @classmethod
     def from_extended_result(
-        cls, extended_result: list[dict[int, a121.Result]], sensor_id: Optional[int] = None
+        cls, extended_result: list[dict[int, a121.Result]], sensor_id: int | None = None
     ) -> SensorResultsView:
         sensor_ids = set().union(*(group.keys() for group in extended_result))
 

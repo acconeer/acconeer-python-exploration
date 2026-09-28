@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, Protocol
+from typing import Protocol
 
 from PySide6 import QtCore
 from PySide6.QtWidgets import QGridLayout, QGroupBox, QLabel, QLineEdit, QWidget
@@ -23,7 +23,7 @@ class _RssLikeRangeSpec(Protocol):
 class RangeHelpView(QGroupBox):
     APPROX_BASE_STEP_LENGTH_M = 2.5e-3
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
         self.setTitle("Approx. selected range")
@@ -45,7 +45,7 @@ class RangeHelpView(QGroupBox):
 
         self.set_data(None)
 
-    def set_data(self, rsslike_range_spec: Optional[_RssLikeRangeSpec]) -> None:
+    def set_data(self, rsslike_range_spec: _RssLikeRangeSpec | None) -> None:
         if rsslike_range_spec:
             end_point = (
                 rsslike_range_spec.start_point

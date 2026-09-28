@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
-
 import attrs
 import numpy as np
 import numpy.typing as npt
@@ -88,7 +86,7 @@ class ProcessorExtraResult:
 
     vertical_velocities: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
     psd: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
-    peak_idx: Optional[np.int_] = attrs.field()
+    peak_idx: np.int_ | None = attrs.field()
     psd_threshold: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
 
 
@@ -109,7 +107,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         sensor_config: a121.SensorConfig,
         metadata: a121.Metadata,
         processor_config: ProcessorConfig,
-        context: Optional[ProcessorContext] = None,
+        context: ProcessorContext | None = None,
     ) -> None:
         self.sensor_config = sensor_config
         self.metadata = metadata
@@ -185,7 +183,7 @@ class Processor(ProcessorBase[ProcessorResult]):
 
     def scipy_welch(
         self, sweeps: npt.NDArray[np.complex128], sweep_rate: float
-    ) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         psds = []
         for i in np.arange(self.num_distances):
             freqs, psd = welch(
@@ -248,7 +246,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         min_peak_to_peak_vel: float,
         velocities: npt.NDArray[np.float64],
         energies: npt.NDArray[np.float64],
-    ) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+    ) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]]:
         sorting_order = np.argsort(velocities)
         velocities_sorted = velocities[sorting_order]
         energies_sorted = energies[sorting_order]
@@ -299,7 +297,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         bin_vertical_vs: npt.NDArray[np.float64],
         peak_idxs: list[int],
         psd: npt.NDArray[np.float64],
-    ) -> Tuple[float, np.int_, float]:
+    ) -> tuple[float, np.int_, float]:
         velocities, peak_widths, energies = self._merge_peaks(
             self.MIN_PEAK_VS, bin_vertical_vs[peak_idxs], psd[peak_idxs]
         )
@@ -314,7 +312,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         bin_vertical_vs: npt.NDArray[np.float64],
         peak_idxs: list[int],
         psd: npt.NDArray[np.float64],
-    ) -> Tuple[float, np.int_]:
+    ) -> tuple[float, np.int_]:
         velocities = bin_vertical_vs[peak_idxs]
         energies = psd[peak_idxs]
         vertical_v = self._get_peak_velocity(velocities, energies, bin_vertical_vs)

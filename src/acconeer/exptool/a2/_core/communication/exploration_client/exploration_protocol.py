@@ -29,7 +29,7 @@ class ExplorationProtocol(CommunicationProtocol[SessionConfig]):
         config: SessionConfig,
         enable_diagnostics: bool = False,
         enable_log: str = "ERROR",
-        calibration: t.Optional[str] = None,
+        calibration: str | None = None,
     ) -> bytes:
         """The `setup` command."""
         setup_dict = {

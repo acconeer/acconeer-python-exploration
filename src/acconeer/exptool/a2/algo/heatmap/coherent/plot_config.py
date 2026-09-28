@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import typing as t
 from enum import Enum, auto
 
 import attrs
@@ -24,7 +23,7 @@ class CoherentHeatmapPlotConfig(HeatmapPlotConfig):
         ANGLE = auto()
 
         @classmethod
-        def _missing_(cls, value: object) -> t.Optional[te.Self]:
+        def _missing_(cls, value: object) -> te.Self | None:
             if isinstance(value, str):
                 return find_by_name(cls, value)
             else:

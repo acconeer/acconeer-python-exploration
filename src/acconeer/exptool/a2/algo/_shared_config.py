@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import typing as t
 import warnings
 
 import attrs
@@ -356,7 +355,7 @@ class WallMountSessionAbstractionConfig(AttrsMappingTransformsMixin):
     sweeps_per_frame: int = attrs.field(default=8, validator=av.gt(0))
     """The number of sweeps used per frame."""
 
-    sweep_rate: t.Optional[float] = attrs.field(kw_only=True)
+    sweep_rate: float | None = attrs.field(kw_only=True)
     """Sweep rate used (Hz). ``None`` lets the sensor pick the maximum allowed
     given the configured profile, HWAAS and step length."""
 
@@ -674,7 +673,7 @@ class _WallMountSessionAbstractionConfig_v0(AttrsMappingTransformsMixin):
     signal_quality_far_db: float = attrs.field(default=20.5, validator=av.gt(0.0))
     hwaas_min: int = attrs.field(default=3, validator=av.gt(0))
     sweeps_per_frame: int = attrs.field(default=8, validator=av.gt(0))
-    sweep_rate: t.Optional[float] = attrs.field(default=None)
+    sweep_rate: float | None = attrs.field(default=None)
     receiver_gain: int = attrs.field(
         default=5, validator=[av.ge(MIN_RECEIVER_GAIN), av.le(MAX_RECEIVER_GAIN)]
     )
@@ -704,7 +703,7 @@ class _WallMountSessionAbstractionConfig_v1(AttrsMappingTransformsMixin):
     update_rate: float = attrs.field(validator=av.gt(0.0))
     max_snr_drop_db: float = attrs.field(default=1.0, validator=[av.ge(0.0), av.le(3.0)])
     sweeps_per_frame: int = attrs.field(default=8, validator=av.gt(0))
-    sweep_rate: t.Optional[float] = attrs.field(kw_only=True)
+    sweep_rate: float | None = attrs.field(kw_only=True)
     receiver_gain: int = attrs.field(
         default=5, validator=[av.ge(MIN_RECEIVER_GAIN), av.le(MAX_RECEIVER_GAIN)]
     )
@@ -739,7 +738,7 @@ class _WallMountSessionAbstractionConfig_v2(AttrsMappingTransformsMixin):
     frame_rate: float = attrs.field(validator=av.gt(0.0))
     max_snr_drop_db: float = attrs.field(default=1.0, validator=[av.ge(0.0), av.le(3.0)])
     sweeps_per_frame: int = attrs.field(default=8, validator=av.gt(0))
-    sweep_rate: t.Optional[float] = attrs.field(kw_only=True)
+    sweep_rate: float | None = attrs.field(kw_only=True)
     receiver_gain: int = attrs.field(
         default=5, validator=[av.ge(MIN_RECEIVER_GAIN), av.le(MAX_RECEIVER_GAIN)]
     )

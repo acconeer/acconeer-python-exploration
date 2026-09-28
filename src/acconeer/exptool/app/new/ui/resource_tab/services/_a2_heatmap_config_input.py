@@ -63,7 +63,7 @@ class HeatmapConfigInput(ScrollAreaDecorator, t.Generic[_HeatmapConfigT, _EventT
         broker: EventBroker,
         initial_config: HeatmapAndSessionConfigCommon[_HeatmapConfigT],
         *,
-        config_type: t.Type[_HeatmapConfigT],
+        config_type: type[_HeatmapConfigT],
         pidget_mapping: PidgetFactoryMapping,
         id_prefix: str,
         title: str,

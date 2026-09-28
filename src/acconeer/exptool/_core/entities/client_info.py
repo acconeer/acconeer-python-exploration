@@ -1,11 +1,11 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import abc
 import json
-from typing import Any, ClassVar, List, Optional, Type, Union
+from typing import Any, ClassVar
 
 import attrs
 
@@ -18,10 +18,10 @@ class ClientInfoCreationError(Exception):
 
 @attrs.frozen(slots=False)
 class ConnectionTypeBase(abc.ABC):
-    __registry: ClassVar[List[Type[ConnectionTypeBase]]] = []
+    __registry: ClassVar[list[type[ConnectionTypeBase]]] = []
 
     @classmethod
-    def _register(cls, subclass: Type[ConnectionTypeBase]) -> Type[ConnectionTypeBase]:
+    def _register(cls, subclass: type[ConnectionTypeBase]) -> type[ConnectionTypeBase]:
         """Registers a subclass"""
         if not issubclass(subclass, cls):
             msg = f"{subclass.__name__!r} needs to be a subclass of {cls.__name__}."
@@ -30,19 +30,19 @@ class ConnectionTypeBase(abc.ABC):
         return subclass
 
     @classmethod
-    def _get_subclasses(cls) -> List[Type[ConnectionTypeBase]]:
+    def _get_subclasses(cls) -> list[type[ConnectionTypeBase]]:
         return cls.__registry
 
     @classmethod
     @abc.abstractmethod
     def _from_open(
         cls,
-        ip_address: Optional[str] = None,
-        tcp_port: Optional[int] = None,
-        serial_port: Optional[str] = None,
-        usb_device: Optional[Union[str, bool]] = None,
-        mock: Optional[bool] = None,
-        override_baudrate: Optional[int] = None,
+        ip_address: str | None = None,
+        tcp_port: int | None = None,
+        serial_port: str | None = None,
+        usb_device: str | bool | None = None,
+        mock: bool | None = None,
+        override_baudrate: int | None = None,
         flow_control: bool = True,
     ) -> ClientInfo: ...
 
@@ -50,19 +50,19 @@ class ConnectionTypeBase(abc.ABC):
         return attrs.asdict(self)
 
     @property
-    def serial(self) -> Optional[SerialInfo]:
+    def serial(self) -> SerialInfo | None:
         return None
 
     @property
-    def usb(self) -> Optional[USBInfo]:
+    def usb(self) -> USBInfo | None:
         return None
 
     @property
-    def socket(self) -> Optional[SocketInfo]:
+    def socket(self) -> SocketInfo | None:
         return None
 
     @property
-    def mock(self) -> Optional[MockInfo]:
+    def mock(self) -> MockInfo | None:
         return None
 
 
@@ -70,19 +70,19 @@ class ConnectionTypeBase(abc.ABC):
 @attrs.frozen(kw_only=True, slots=False)
 class SerialInfo(ConnectionTypeBase):
     port: str
-    override_baudrate: Optional[int] = None
-    serial_number: Optional[str] = None
+    override_baudrate: int | None = None
+    serial_number: str | None = None
     flow_control: bool = True
 
     @classmethod
     def _from_open(
         cls,
-        ip_address: Optional[str] = None,
-        tcp_port: Optional[int] = None,
-        serial_port: Optional[str] = None,
-        usb_device: Optional[Union[str, bool]] = None,
-        mock: Optional[bool] = None,
-        override_baudrate: Optional[int] = None,
+        ip_address: str | None = None,
+        tcp_port: int | None = None,
+        serial_port: str | None = None,
+        usb_device: str | bool | None = None,
+        mock: bool | None = None,
+        override_baudrate: int | None = None,
         flow_control: bool = True,
     ) -> ClientInfo:
         if serial_port is not None:
@@ -104,19 +104,19 @@ class SerialInfo(ConnectionTypeBase):
 @ConnectionTypeBase._register
 @attrs.frozen(kw_only=True, slots=False)
 class USBInfo(ConnectionTypeBase):
-    vid: Optional[int] = None
-    pid: Optional[int] = None
-    serial_number: Optional[str] = None
+    vid: int | None = None
+    pid: int | None = None
+    serial_number: str | None = None
 
     @classmethod
     def _from_open(
         cls,
-        ip_address: Optional[str] = None,
-        tcp_port: Optional[int] = None,
-        serial_port: Optional[str] = None,
-        usb_device: Optional[Union[str, bool]] = None,
-        mock: Optional[bool] = None,
-        override_baudrate: Optional[int] = None,
+        ip_address: str | None = None,
+        tcp_port: int | None = None,
+        serial_port: str | None = None,
+        usb_device: str | bool | None = None,
+        mock: bool | None = None,
+        override_baudrate: int | None = None,
         flow_control: bool = True,
     ) -> ClientInfo:
         if usb_device is not None:
@@ -140,17 +140,17 @@ class USBInfo(ConnectionTypeBase):
 @attrs.frozen(kw_only=True, slots=False)
 class SocketInfo(ConnectionTypeBase):
     ip_address: str
-    tcp_port: Optional[int]
+    tcp_port: int | None
 
     @classmethod
     def _from_open(
         cls,
-        ip_address: Optional[str] = None,
-        tcp_port: Optional[int] = None,
-        serial_port: Optional[str] = None,
-        usb_device: Optional[Union[str, bool]] = None,
-        mock: Optional[bool] = None,
-        override_baudrate: Optional[int] = None,
+        ip_address: str | None = None,
+        tcp_port: int | None = None,
+        serial_port: str | None = None,
+        usb_device: str | bool | None = None,
+        mock: bool | None = None,
+        override_baudrate: int | None = None,
         flow_control: bool = True,
     ) -> ClientInfo:
         if ip_address is not None:
@@ -169,12 +169,12 @@ class MockInfo(ConnectionTypeBase):
     @classmethod
     def _from_open(
         cls,
-        ip_address: Optional[str] = None,
-        tcp_port: Optional[int] = None,
-        serial_port: Optional[str] = None,
-        usb_device: Optional[Union[str, bool]] = None,
-        mock: Optional[bool] = None,
-        override_baudrate: Optional[int] = None,
+        ip_address: str | None = None,
+        tcp_port: int | None = None,
+        serial_port: str | None = None,
+        usb_device: str | bool | None = None,
+        mock: bool | None = None,
+        override_baudrate: int | None = None,
         flow_control: bool = True,
     ) -> ClientInfo:
         if mock is not None:
@@ -193,20 +193,20 @@ class MockInfo(ConnectionTypeBase):
 
 @attrs.frozen(kw_only=True)
 class ClientInfo:
-    socket: Optional[SocketInfo] = None
-    serial: Optional[SerialInfo] = None
-    usb: Optional[USBInfo] = None
-    mock: Optional[MockInfo] = None
+    socket: SocketInfo | None = None
+    serial: SerialInfo | None = None
+    usb: USBInfo | None = None
+    mock: MockInfo | None = None
 
     @classmethod
     def _from_open(
         cls,
-        ip_address: Optional[str] = None,
-        tcp_port: Optional[int] = None,
-        serial_port: Optional[str] = None,
-        usb_device: Optional[Union[str, bool]] = None,
-        mock: Optional[bool] = None,
-        override_baudrate: Optional[int] = None,
+        ip_address: str | None = None,
+        tcp_port: int | None = None,
+        serial_port: str | None = None,
+        usb_device: str | bool | None = None,
+        mock: bool | None = None,
+        override_baudrate: int | None = None,
         flow_control: bool = True,
     ) -> ClientInfo:
         client_info = None

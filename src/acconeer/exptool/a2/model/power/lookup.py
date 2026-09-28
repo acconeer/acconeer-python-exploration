@@ -145,7 +145,7 @@ def _load_measure_model(
 
 def _load_transition(
     d: dict[str, t.Any],
-    aps_active: t.Optional[t.Mapping[str, CurrentBreakdown]] = None,
+    aps_active: t.Mapping[str, CurrentBreakdown] | None = None,
 ) -> SimpleRegion:
     """Load a SimpleRegion from YAML.
 
@@ -246,7 +246,7 @@ class SensorConstants:
     inter_sweep_currents: t.Mapping[a2.IdleState, CurrentBreakdown]
     inter_sweep_currents_hsm: t.Mapping[a2.IdleState, CurrentBreakdown]
     inter_frame_rs_currents: t.Mapping[a2.IdleState, CurrentBreakdown]
-    inter_frame_aps_currents: t.Mapping[t.Union[ApsSleepState, ApsIdleState], CurrentBreakdown]
+    inter_frame_aps_currents: t.Mapping[ApsSleepState | ApsIdleState, CurrentBreakdown]
     aps_active_currents: t.Mapping[ApsActiveState, CurrentBreakdown]
     aps_sleep_wakeup_state: t.Mapping[ApsSleepState, SimpleRegion]
     aps_go_to_sleep_state: t.Mapping[ApsSleepState, SimpleRegion]
@@ -299,7 +299,7 @@ class SensorConstants:
     def at_temperature(
         cls,
         temperature: int,
-        path: t.Union[str, Path] = _DATA_PATH,
+        path: str | Path = _DATA_PATH,
     ) -> te.Self:
         """Returns sensor lookup tables for the given temperature (cached).
 
@@ -326,7 +326,7 @@ class SensorConstants:
     @classmethod
     def from_yaml(
         cls,
-        path: t.Union[str, Path] = _DATA_PATH,
+        path: str | Path = _DATA_PATH,
         temperature: int = 25,
     ) -> te.Self:
         """Load sensor data from a YAML file.

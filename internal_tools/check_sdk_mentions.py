@@ -9,7 +9,6 @@ import re
 import sys
 import tomllib as toml
 from pathlib import Path
-from typing import Dict, List
 
 
 EXPTOOL_ROOT = Path(__file__).resolve().parents[1]
@@ -27,7 +26,7 @@ def get_single_match_in_file(pattern: str, file: Path) -> str:
     return matches[0]
 
 
-def get_matches_in_file(pattern: str, path: Path) -> Dict[str, List[str]]:
+def get_matches_in_file(pattern: str, path: Path) -> dict[str, list[str]]:
     """
     Returns a dict on the form
     {
@@ -45,7 +44,7 @@ def get_matches_in_file(pattern: str, path: Path) -> Dict[str, List[str]]:
     return matches
 
 
-def get_matches_in_globs(pattern: str, globs: List[str], root: Path) -> Dict[str, List[str]]:
+def get_matches_in_globs(pattern: str, globs: list[str], root: Path) -> dict[str, list[str]]:
     matches = {}
 
     for glob in globs:
@@ -56,12 +55,12 @@ def get_matches_in_globs(pattern: str, globs: List[str], root: Path) -> Dict[str
     return matches
 
 
-def parse_comma_separated_list(comma_separated_list: str) -> List[str]:
+def parse_comma_separated_list(comma_separated_list: str) -> list[str]:
     elements = [s.strip() for s in comma_separated_list.split(",")]
     return [s for s in elements if s]
 
 
-def get_options_from_config() -> Dict[str, List[str]]:
+def get_options_from_config() -> dict[str, list[str]]:
     with open("pyproject.toml", "rb") as fp:
         _, section_name = CONFIG_SECTION.split(".")
         return toml.load(fp)["tool"][section_name]

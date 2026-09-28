@@ -2,8 +2,6 @@
 # All rights reserved
 from __future__ import annotations
 
-import typing as t
-
 import attrs
 import attrs.validators as av
 from packaging.version import Version
@@ -17,9 +15,9 @@ from acconeer.exptool._core.version_parsing import parse_rss_version
 class ServerInfo(AttrsMappingTransformsMixin):
     rss_version: str = attrs.field(validator=av.matches_re(r"a2(11)?-v.*"))
     ticks_per_second: int
-    hardware_name: t.Optional[str]
-    sensor_serial: t.Optional[str]
-    max_baudrate: t.Optional[int]
+    hardware_name: str | None
+    sensor_serial: str | None
+    max_baudrate: int | None
 
     @property
     def parsed_rss_version(self) -> Version:
@@ -31,8 +29,8 @@ class ServerInfo(AttrsMappingTransformsMixin):
 class _ServerInfoNoSerial(AttrsMappingTransformsMixin):
     rss_version: str = attrs.field(validator=av.matches_re(r"a2(11)?-v.*"))
     ticks_per_second: int
-    hardware_name: t.Optional[str]
-    max_baudrate: t.Optional[int]
+    hardware_name: str | None
+    max_baudrate: int | None
 
 
 server_info_timeline = (

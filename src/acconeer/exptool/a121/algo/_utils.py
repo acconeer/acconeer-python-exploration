@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import copy
 import enum
-from typing import Any, Optional, Union
+from typing import Any
 
 import numpy as np
 import numpy.typing as npt
@@ -79,7 +79,7 @@ class PeakSortingMethod(AlgoParamEnum):
 
 
 def get_distance_offset(
-    peak_location: Optional[float], profile: a121.Profile, temperature: Optional[Union[float, int]]
+    peak_location: float | None, profile: a121.Profile, temperature: float | int | None
 ) -> float:
     """
     Returns the distance offset in meters based on a loopback measurement.
@@ -142,7 +142,7 @@ def _subsweep_distances(
 
 
 def get_distances_m(
-    config: Union[a121.SensorConfig, a121.SubsweepConfig], metadata: a121.Metadata
+    config: a121.SensorConfig | a121.SubsweepConfig, metadata: a121.Metadata
 ) -> npt.NDArray[np.float64]:
     """
     Returns an array of all distances measured by the config.
@@ -363,7 +363,7 @@ def get_distance_filter_edge_margin(profile: a121.Profile, step_length: int) -> 
 
 def double_buffering_frame_filter(
     _frame: npt.NDArray[Any],
-) -> Optional[npt.NDArray[np.complex128]]:
+) -> npt.NDArray[np.complex128] | None:
     """
     Detects and removes outliers in data that appear when the double buffering mode is enabled,
     and returns the filtered frame.

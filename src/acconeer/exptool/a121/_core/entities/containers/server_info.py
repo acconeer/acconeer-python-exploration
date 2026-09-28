@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import json
-from typing import Any, Optional
+from typing import Any
 
 import attrs
 import packaging.version
@@ -18,7 +18,7 @@ class SensorInfo:
     """Holds information about a single sensor slot on a host."""
 
     connected: bool
-    serial: Optional[str] = None
+    serial: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return attrs.asdict(self)
@@ -34,7 +34,7 @@ class SensorInfo:
     def from_json(cls, json_str: str) -> SensorInfo:
         return cls.from_dict(json.loads(json_str))
 
-    def _pretty_str_lines(self, index: Optional[int] = None) -> list[str]:
+    def _pretty_str_lines(self, index: int | None = None) -> list[str]:
         index_str = "" if index is None else f" @ slot {index}"
         return [
             f"{type(self).__name__}{index_str}:",
@@ -51,8 +51,8 @@ class ServerInfo:
     sensor_count: int = attrs.field()
     ticks_per_second: int = attrs.field()
     sensor_infos: dict[int, SensorInfo] = attrs.field()
-    hardware_name: Optional[str] = attrs.field(default=None)
-    max_baudrate: Optional[int] = attrs.field(default=None)
+    hardware_name: str | None = attrs.field(default=None)
+    max_baudrate: int | None = attrs.field(default=None)
 
     @property
     def parsed_rss_version(self) -> packaging.version.Version:

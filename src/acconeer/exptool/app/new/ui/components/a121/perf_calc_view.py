@@ -1,9 +1,7 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
-
-from typing import Optional, Union
 
 from PySide6 import QtCore
 from PySide6.QtWidgets import (
@@ -37,8 +35,8 @@ class SmartPerfCalcView(QWidget):
 
     def set_data(
         self,
-        session_config: Optional[a121.SessionConfig] = None,
-        metadata: Optional[Union[a121.Metadata, list[dict[int, a121.Metadata]]]] = None,
+        session_config: a121.SessionConfig | None = None,
+        metadata: a121.Metadata | list[dict[int, a121.Metadata]] | None = None,
     ) -> None:
         if isinstance(metadata, list):
             self._layout.setCurrentIndex(1)
@@ -59,8 +57,8 @@ class ExtendedPerfCalcView(GroupBox[QVBoxLayout]):
 
     def set_data(
         self,
-        session_config: Optional[a121.SessionConfig] = None,
-        extended_metadata: Optional[list[dict[int, a121.Metadata]]] = None,
+        session_config: a121.SessionConfig | None = None,
+        extended_metadata: list[dict[int, a121.Metadata]] | None = None,
     ) -> None:
         pass
 
@@ -89,8 +87,8 @@ class PerfCalcView(QGroupBox):
 
     def set_data(
         self,
-        session_config: Optional[a121.SessionConfig] = None,
-        metadata: Optional[a121.Metadata] = None,
+        session_config: a121.SessionConfig | None = None,
+        metadata: a121.Metadata | None = None,
     ) -> None:
         try:
             self._update(session_config, metadata)
@@ -99,8 +97,8 @@ class PerfCalcView(QGroupBox):
 
     def _update(
         self,
-        session_config: Optional[a121.SessionConfig] = None,
-        metadata: Optional[a121.Metadata] = None,
+        session_config: a121.SessionConfig | None = None,
+        metadata: a121.Metadata | None = None,
     ) -> None:
         if session_config is None or metadata is None:
             raise ValueError

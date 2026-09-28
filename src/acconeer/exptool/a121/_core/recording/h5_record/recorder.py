@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -34,8 +34,8 @@ _H5PY_STR_DTYPE = get_h5py_str_dtype()
 class H5Recorder(
     h5_record.H5Recorder[
         SessionConfig,  # Config type
-        t.List[t.Dict[int, Metadata]],  # Metadata type
-        t.List[t.Dict[int, Result]],  # Result type
+        list[dict[int, Metadata]],  # Metadata type
+        list[dict[int, Result]],  # Result type
         ServerInfo,  # Server info type
     ]
 ):
@@ -67,22 +67,21 @@ class H5Recorder(
     def __init__(
         self,
         path_or_file: PathOrH5File,
-        attachable: t.Optional[
-            RecorderAttachable[
-                Recorder[
-                    SessionConfig,  # Config type
-                    t.List[t.Dict[int, Metadata]],  # Metadata type
-                    t.List[t.Dict[int, Result]],  # Result type
-                    ServerInfo,  # Server info type
-                ]
+        attachable: RecorderAttachable[
+            Recorder[
+                SessionConfig,  # Config type
+                list[dict[int, Metadata]],  # Metadata type
+                list[dict[int, Result]],  # Result type
+                ServerInfo,  # Server info type
             ]
-        ] = None,
+        ]
+        | None = None,
         mode: str = "x",
         *,
-        _chunk_size: t.Optional[int] = None,
-        _lib_version: t.Optional[str] = None,
-        _timestamp: t.Optional[str] = None,
-        _uuid: t.Optional[str] = None,
+        _chunk_size: int | None = None,
+        _lib_version: str | None = None,
+        _timestamp: str | None = None,
+        _uuid: str | None = None,
     ) -> None:
         super().__init__(
             path_or_file,
@@ -99,9 +98,9 @@ class H5Recorder(
         self,
         *,
         config: SessionConfig,
-        metadata: t.List[t.Dict[int, Metadata]],
-        calibrations: t.Optional[t.Dict[int, SensorCalibration]] = None,
-        calibrations_provided: t.Optional[t.Dict[int, bool]] = None,
+        metadata: list[dict[int, Metadata]],
+        calibrations: dict[int, SensorCalibration] | None = None,
+        calibrations_provided: dict[int, bool] | None = None,
         **kwargs: t.Any,
     ) -> None:
         super()._start_session(

@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import copy
 import logging
-from typing import Any, List, Optional
+from typing import Any
 
 from PySide6.QtCore import QSignalBlocker, Qt, Signal
 from PySide6.QtWidgets import (
@@ -40,7 +40,7 @@ def session_or_sensor_config_json_to_session_config(json_str: str) -> a121.Sessi
         return a121.SessionConfig(a121.SensorConfig.from_json(json_str))
 
 
-class SensorIdCombobox(DataEditor[Optional[int]]):
+class SensorIdCombobox(DataEditor[int | None]):
     sig_update = Signal(object)
 
     def __init__(self) -> None:
@@ -63,9 +63,9 @@ class SensorIdCombobox(DataEditor[Optional[int]]):
 
     @staticmethod
     def _get_combobox_model(
-        data: Optional[int], selectable: list[int]
-    ) -> list[tuple[str, Optional[int]]]:
-        base: list[tuple[str, Optional[int]]] = [(str(sid), sid) for sid in selectable]
+        data: int | None, selectable: list[int]
+    ) -> list[tuple[str, int | None]]:
+        base: list[tuple[str, int | None]] = [(str(sid), sid) for sid in selectable]
         if data is None:
             return [("-", None)] + base
 
@@ -74,7 +74,7 @@ class SensorIdCombobox(DataEditor[Optional[int]]):
         else:
             return [(f"{data} (unavailable)", data)] + base
 
-    def _update_combobox_model(self, data: Optional[int], selectable: list[int]) -> None:
+    def _update_combobox_model(self, data: int | None, selectable: list[int]) -> None:
         with QSignalBlocker(self):
             self._combobox.clear()
 
@@ -91,19 +91,19 @@ class SensorIdCombobox(DataEditor[Optional[int]]):
         self._update_combobox_model(self.get_data(), sensor_list)
         self.setEnabled(sensor_list != [])
 
-    def set_data(self, sensor_id: Optional[int]) -> None:
+    def set_data(self, sensor_id: int | None) -> None:
         with QSignalBlocker(self):
             self._combobox.setCurrentIndex(self._combobox.findData(sensor_id))
             self._update_combobox_model(sensor_id, self._selectable_sensors)
 
-    def get_data(self) -> Optional[int]:
+    def get_data(self) -> int | None:
         try:
             return int(self._combobox.currentData())
         except TypeError:
             return None
 
 
-class _SensorIdsEditor(DataEditor[List[int]]):
+class _SensorIdsEditor(DataEditor[list[int]]):
     _LABEL_COLUMN = 0
     _SPACING_COLUMN = 1
     _REMOVE_COLUMN = 2
@@ -124,7 +124,7 @@ class _SensorIdsEditor(DataEditor[List[int]]):
 
         self._multiple_sensors = multiple_sensors
         self._selectable_sensors: list[int] = []
-        self._rows: list[tuple[SensorIdCombobox, Optional[QPushButton]]] = []
+        self._rows: list[tuple[SensorIdCombobox, QPushButton | None]] = []
 
         self._grid_layout = QGridLayout()
         self._grid_layout.setContentsMargins(0, 0, 0, 0)
@@ -173,7 +173,7 @@ class _SensorIdsEditor(DataEditor[List[int]]):
     def _emit_current_data(self) -> None:
         self.sig_update.emit(self.get_data())
 
-    def _get_raw_data(self) -> list[Optional[int]]:
+    def _get_raw_data(self) -> list[int | None]:
         """Retrieves the data of the child comboboxes"""
         return [cb.get_data() for cb, _ in self._rows]
 
@@ -252,9 +252,7 @@ class _SensorIdsEditor(DataEditor[List[int]]):
         self._selectable_sensors = sensors
         self._update_visuals()
 
-    def set_note_text(
-        self, message: Optional[str], criticality: Optional[Criticality] = None
-    ) -> None:
+    def set_note_text(self, message: str | None, criticality: Criticality | None = None) -> None:
         if not message:
             self._note_widget.hide()
             return
@@ -276,9 +274,9 @@ class _SensorIdsEditor(DataEditor[List[int]]):
         return self._note_widget.isHidden()
 
 
-class SessionConfigEditor(DataEditor[Optional[a121.SessionConfig]]):
-    _session_config: Optional[a121.SessionConfig]
-    _server_info: Optional[a121.ServerInfo]
+class SessionConfigEditor(DataEditor[a121.SessionConfig | None]):
+    _session_config: a121.SessionConfig | None
+    _server_info: a121.ServerInfo | None
     _sensor_id_pidget: pidgets.SensorIdPidget
 
     _update_rate_erroneous: bool
@@ -291,7 +289,7 @@ class SessionConfigEditor(DataEditor[Optional[a121.SessionConfig]]):
         self,
         supports_multiple_subsweeps: bool = False,
         supports_multiple_sensors: bool = False,
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent=parent)
 
@@ -352,7 +350,7 @@ class SessionConfigEditor(DataEditor[Optional[a121.SessionConfig]]):
         self._update_rate_pidget.setEnabled(not read_only)
         self._sensor_config_editor.set_read_only(read_only)
 
-    def set_data(self, session_config: Optional[a121.SessionConfig]) -> None:
+    def set_data(self, session_config: a121.SessionConfig | None) -> None:
         if self._session_config == session_config:
             return
 
@@ -371,7 +369,7 @@ class SessionConfigEditor(DataEditor[Optional[a121.SessionConfig]]):
     def _get_sensor_ids(config: a121.SessionConfig) -> list[int]:
         return [sensor_id for _, sensor_id, _ in utils.iterate_extended_structure(config.groups)]
 
-    def get_data(self) -> Optional[a121.SessionConfig]:
+    def get_data(self) -> a121.SessionConfig | None:
         return copy.deepcopy(self._session_config)
 
     def handle_validation_results(

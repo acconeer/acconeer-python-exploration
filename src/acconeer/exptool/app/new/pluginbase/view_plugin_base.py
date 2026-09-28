@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -40,7 +40,7 @@ class ViewPluginBase(UiPluginBase):
 
         self.setLayout(layout)
 
-    def on_load_plugin(self, plugin_spec: t.Optional[t.Any]) -> None:
+    def on_load_plugin(self, plugin_spec: t.Any | None) -> None:
         if plugin_spec is None:
             self.app_model.sig_notify.disconnect(self.on_app_model_update)
             self.app_model.sig_backend_state_changed.disconnect(self.on_backend_state_update)
@@ -49,7 +49,7 @@ class ViewPluginBase(UiPluginBase):
     def on_app_model_update(self, app_model: AppModel) -> None:
         pass
 
-    def on_backend_state_update(self, state: t.Optional[t.Any]) -> None:
+    def on_backend_state_update(self, state: t.Any | None) -> None:
         pass
 
     @property

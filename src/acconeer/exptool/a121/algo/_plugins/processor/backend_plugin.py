@@ -1,11 +1,11 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import abc
 import itertools
-from typing import Callable, Dict, Generic, List, Mapping, Optional, Type, Union
+from typing import Callable, Generic, Mapping
 
 import attrs
 import h5py
@@ -46,9 +46,7 @@ class ProcessorBackendPluginSharedState(Generic[ProcessorConfigT]):
     session_config: a121.SessionConfig = attrs.field()
     processor_config: ProcessorConfigT = attrs.field()
     replaying: bool = attrs.field(default=False)
-    metadata: Union[a121.Metadata, list[dict[int, a121.Metadata]], None] = attrs.field(
-        default=None
-    )
+    metadata: a121.Metadata | list[dict[int, a121.Metadata]] | None = attrs.field(default=None)
 
     @property
     def ready(self) -> bool:
@@ -65,7 +63,7 @@ class ProcessorBackendPluginSharedState(Generic[ProcessorConfigT]):
 class SetupMessage(GeneralMessage, Generic[ProcessorConfigT]):
     session_config: a121.SessionConfig
     processor_config: ProcessorConfigT
-    metadata: Union[a121.Metadata, list[dict[int, a121.Metadata]]]
+    metadata: a121.Metadata | list[dict[int, a121.Metadata]]
     name: str = attrs.field(default="setup", init=False)
     recipient: RecipientLiteral = attrs.field(default="plot_plugin", init=False)
 
@@ -74,7 +72,7 @@ class GenericProcessorBackendPluginBase(
     Generic[InputT, ProcessorConfigT, ResultT, MetadataT],
     A121BackendPluginBase[ProcessorBackendPluginSharedState[ProcessorConfigT]],
 ):
-    _processor_instance: Optional[GenericProcessorBase[InputT, ResultT]]
+    _processor_instance: GenericProcessorBase[InputT, ResultT] | None
     _started: bool
 
     PLUGIN_PRESETS: Mapping[int, Callable[[], ProcessorPluginPreset[ProcessorConfigT]]] = {}
@@ -162,7 +160,7 @@ class GenericProcessorBackendPluginBase(
         """Hook for validating session configs."""
         pass
 
-    def _start_session(self, recorder: Optional[a121.H5Recorder]) -> None:
+    def _start_session(self, recorder: a121.H5Recorder | None) -> None:
         session_config = self.shared_state.session_config
         self._validate_session_config(session_config)
 
@@ -212,7 +210,7 @@ class GenericProcessorBackendPluginBase(
 
     @classmethod
     @abc.abstractmethod
-    def get_processor_config_cls(cls) -> Type[ProcessorConfigT]:
+    def get_processor_config_cls(cls) -> type[ProcessorConfigT]:
         pass
 
     @classmethod
@@ -262,7 +260,7 @@ class ProcessorBackendPluginBase(
 
 class ExtendedProcessorBackendPluginBase(
     GenericProcessorBackendPluginBase[
-        List[Dict[int, a121.Result]], ProcessorConfigT, ResultT, List[Dict[int, a121.Metadata]]
+        list[dict[int, a121.Result]], ProcessorConfigT, ResultT, list[dict[int, a121.Metadata]]
     ]
 ):
     @is_task

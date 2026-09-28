@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ class RecorderAttachable(te.Protocol[_RecorderT]):
 
     def attach_recorder(self, recorder: _RecorderT) -> None: ...
 
-    def detach_recorder(self) -> t.Optional[_RecorderT]: ...
+    def detach_recorder(self) -> _RecorderT | None: ...
 
 
 class Recorder(te.Protocol[_ConfigT, _MetadataT, _ResultT, _ServerInfoT]):

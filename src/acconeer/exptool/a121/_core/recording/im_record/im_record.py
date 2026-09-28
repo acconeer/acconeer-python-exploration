@@ -1,9 +1,9 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
-from typing import Iterator, Optional, Sequence
+from typing import Iterator, Sequence
 
 import attrs
 
@@ -32,8 +32,8 @@ class InMemorySessionRecord(SessionRecord):
     extended_stacked_results: list[dict[int, StackedResults]]
     num_frames: int
     session_config: SessionConfig
-    _calibrations: Optional[dict[int, SensorCalibration]]
-    _calibrations_provided: Optional[dict[int, bool]]
+    _calibrations: dict[int, SensorCalibration] | None
+    _calibrations_provided: dict[int, bool] | None
 
     @property
     def extended_results(self) -> Iterator[list[dict[int, Result]]]:

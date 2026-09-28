@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import re
 import warnings
-from typing import Callable, Iterator, Tuple, TypeVar
+from typing import Callable, Iterator, TypeVar
 
 import h5py
 from packaging.version import Version
@@ -157,7 +157,7 @@ class H5SessionRecord(SessionRecord):
 
         return [structure[i] for i in range(len(structure))]
 
-    def _iterate_entries(self) -> Iterator[Tuple[int, int, h5py.Group]]:
+    def _iterate_entries(self) -> Iterator[tuple[int, int, h5py.Group]]:
         """Iterates over "Entry" items in this record.
 
         :returns: An iterable of <group_id>, <sensor_id>, <"EntryGroup">
@@ -172,7 +172,7 @@ class H5SessionRecord(SessionRecord):
         msg = "No calibration in h5 file"
         raise H5RecordException(msg)
 
-    def _iterate_calibrations(self) -> Iterator[Tuple[int, h5py.Group]]:
+    def _iterate_calibrations(self) -> Iterator[tuple[int, h5py.Group]]:
         """Iterates over "Calibration" items in this record.
 
         :returns: An iterable of <sensor_id>, <"CalibrationGroup">

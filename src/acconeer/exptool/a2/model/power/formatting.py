@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import collections
-import typing as t
 
 from . import domain
 from .domain import CurrentBreakdown
@@ -83,7 +82,7 @@ def _collect_components(profile: domain.CompositeRegion) -> tuple[str, ...]:
 
 
 def profile_columns(
-    profile: t.Optional[domain.CompositeRegion] = None,
+    profile: domain.CompositeRegion | None = None,
     show_components: bool = False,
 ) -> tuple[str, ...]:
     """Return the columns used by ``profile_rows`` for the given mode.
@@ -111,7 +110,7 @@ def profile_rows(
     for populating a Qt table or building an ASCII rendering.
     """
     tag_groups: dict[
-        t.Optional[domain.EnergyRegion.Tag],
+        domain.EnergyRegion.Tag | None,
         list[domain.SimpleRegion],
     ] = collections.defaultdict(list)
     for region in profile.flat_iter():

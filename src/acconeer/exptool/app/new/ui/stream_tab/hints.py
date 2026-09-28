@@ -1,11 +1,10 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import abc
 import webbrowser
-from typing import List, Optional
 
 import qtawesome as qta
 
@@ -33,8 +32,8 @@ class UserHintWidget(QWidget):
         super().__init__(parent)
         app_model.sig_notify.connect(self._on_app_model_update)
 
-        self._hints: List[HintObject] = []
-        self._how_to_fix_url: Optional[str] = None
+        self._hints: list[HintObject] = []
+        self._how_to_fix_url: str | None = None
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)

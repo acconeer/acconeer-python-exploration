@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -7,7 +7,7 @@ import base64
 import hashlib
 from enum import Enum
 from struct import pack, unpack_from
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable
 
 import cbor2
 import serial
@@ -43,7 +43,7 @@ class McuMgrUartFlasher(DeviceFlasherBase):
         serial_device: SerialDevice,
         device_name: str,
         image_path: str,
-        progress_callback: Optional[Callable[[int, bool], None]] = None,
+        progress_callback: Callable[[int, bool], None] | None = None,
     ) -> None:
         flasher = McuMgrFlashProtocol(serial_device.port)
 
@@ -55,7 +55,7 @@ class McuMgrUartFlasher(DeviceFlasherBase):
         flasher.close()
 
     @staticmethod
-    def get_boot_description(device_name: str) -> Optional[str]:
+    def get_boot_description(device_name: str) -> str | None:
         description = (
             "Please visit https://developer.acconeer.com to find the latest flash "
             f"instructions for {device_name}."
@@ -197,7 +197,7 @@ class ResetResponse:
             raise McuMgrFlashException(msg)
 
         if len(data) > ResetRequestHeader.size:
-            dec_msg: Dict[str, Any] = cbor2.loads(data[ResetRequestHeader.size :])
+            dec_msg: dict[str, Any] = cbor2.loads(data[ResetRequestHeader.size :])
         else:
             msg = f"Complete header w/o payload: {header}"
             raise McuMgrFlashException(msg)
@@ -216,9 +216,9 @@ class ImageUploadRequest:
         self,
         image_num: int,
         offset: int,
-        data_len: Optional[int],
+        data_len: int | None,
         data: bytes,
-        data_sha: Optional[bytes],
+        data_sha: bytes | None,
         seq_id: int,
     ):
         self.offset = offset
@@ -227,7 +227,7 @@ class ImageUploadRequest:
         self.seq_id = seq_id
 
         if data_sha is None and data_len is None:
-            self.payload_dict: Dict[str, Any] = {
+            self.payload_dict: dict[str, Any] = {
                 "off": self.offset,
                 "data": self.data,
             }
@@ -239,7 +239,7 @@ class ImageUploadRequest:
                 "len": self.data_len,
             }
 
-    def encode(self, line_length: int = 128) -> Tuple[List[bytes], int]:
+    def encode(self, line_length: int = 128) -> tuple[list[bytes], int]:
         """
         encodes self.payload_dict and header
         returns both as bytes
@@ -299,7 +299,7 @@ class ImageUploadResponse:
             raise McuMgrFlashException(msg)
 
         if len(data) > ImageRequestHeader.size:
-            dec_msg: Dict[str, Any] = cbor2.loads(data[ImageRequestHeader.size :])
+            dec_msg: dict[str, Any] = cbor2.loads(data[ImageRequestHeader.size :])
         else:
             msg = f"Complete header w/o payload: {header}"
             raise McuMgrFlashException(msg)
@@ -325,7 +325,7 @@ class McuMgrFlashProtocol:
 
     def __init__(self, port: str):
         self._port = port
-        self._uart: Optional[UartComm] = UartComm(self._port)
+        self._uart: UartComm | None = UartComm(self._port)
         self.seq_id = 0
 
     def close(self) -> None:
@@ -427,7 +427,7 @@ class McuMgrFlashProtocol:
         ResetResponse.decode(decoded_data, seq_id)
 
     def write_image(
-        self, byte_array: bytes, progress_callback: Optional[Callable[[int, bool], None]] = None
+        self, byte_array: bytes, progress_callback: Callable[[int, bool], None] | None = None
     ) -> None:
         assert self._uart is not None
 

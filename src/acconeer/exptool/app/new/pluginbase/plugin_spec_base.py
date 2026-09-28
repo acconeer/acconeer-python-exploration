@@ -6,7 +6,7 @@ from __future__ import annotations
 import abc
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable
 
 import attrs
 from typing_extensions import Literal
@@ -29,10 +29,10 @@ class PluginSpecBase(abc.ABC, PluginSpec):
     generation: PluginGeneration = attrs.field()
     key: str = attrs.field()
     title: str = attrs.field()
-    docs_link: Optional[str] = attrs.field(default=None)
-    description: Optional[str] = attrs.field(default=None)
+    docs_link: str | None = attrs.field(default=None)
+    description: str | None = attrs.field(default=None)
     family: PluginFamily = attrs.field()
-    presets: List[PluginPresetSpec] = attrs.field()
+    presets: list[PluginPresetSpec] = attrs.field()
     default_preset_id: Enum = attrs.field()
     requires_algo_bundle_artifact: bool = attrs.field(default=False, init=False)
 
@@ -51,7 +51,7 @@ class PluginSpecBase(abc.ABC, PluginSpec):
         pass
 
     @classmethod
-    def replay_dialog_create_config_editor(cls) -> Optional[DataEditor[Any]]:
+    def replay_dialog_create_config_editor(cls) -> DataEditor[Any] | None:
         """Opt-in factory for the unique config editor used in the plugin.
 
         Should only be used to support replay dialogs in its current form.
@@ -61,13 +61,7 @@ class PluginSpecBase(abc.ABC, PluginSpec):
     @classmethod
     def replay_dialog_get_config(
         cls, file: Path
-    ) -> Optional[
-        tuple[
-            Literal["default", "loaded"],
-            _UniqueConfigAlias,
-            _ValidatingConfigAlias,
-        ]
-    ]:
+    ) -> tuple[Literal["default", "loaded"], _UniqueConfigAlias, _ValidatingConfigAlias] | None:
         """Opt-in function to extract the ...
 
         - Unique config used in the plugin (and whether its default or actually loaded)

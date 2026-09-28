@@ -18,7 +18,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Iterator, Optional
+from typing import Any, Iterator
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -167,7 +167,7 @@ def _resolve_update_rate(record: a2.H5Record) -> float:
 
 
 def _iter_nn_results(
-    record: a2.H5Record, noise_norm_processor: Optional[NoiseNormalizationResultProcessor]
+    record: a2.H5Record, noise_norm_processor: NoiseNormalizationResultProcessor | None
 ) -> Iterator[a2.Result]:
     client = ReplayingClient(record=record, realtime_replay=False)
     client.setup_session(record.session_config)
@@ -211,7 +211,7 @@ def _replay_and_collect(
     update_rate = _resolve_update_rate(record)
     specs = _make_processors(subsweep_config, update_rate)
 
-    captured: list[Optional[ProcessorResultCommon]] = [None] * len(specs)
+    captured: list[ProcessorResultCommon | None] = [None] * len(specs)
     frames_seen = 0
     for i, nn_result in enumerate(_iter_nn_results(record, noise_norm_processor)):
         frames_seen = i + 1

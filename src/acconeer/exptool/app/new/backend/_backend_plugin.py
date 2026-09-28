@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -7,7 +7,7 @@ import abc
 import time
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Callable, Generic, Iterator, Optional, TypeVar
+from typing import Any, Callable, Generic, Iterator, TypeVar
 
 import h5py
 
@@ -69,8 +69,8 @@ class BackendPlugin(abc.ABC, Generic[StateT]):
         self,
         *,
         path: Path,
-        config_override: Optional[Any] = None,
-        context_override: Optional[Any] = None,
+        config_override: Any | None = None,
+        context_override: Any | None = None,
     ) -> None:
         pass
 
@@ -101,5 +101,5 @@ class BackendPlugin(abc.ABC, Generic[StateT]):
     def send_status_file_access_message(self, file_path: str, opened: bool) -> None:
         self.callback(StatusFileAccessMessage(file_path=file_path, opened=opened))
 
-    def send_status_message(self, message: Optional[str]) -> None:
+    def send_status_message(self, message: str | None) -> None:
         self.callback(StatusMessage(status=message))

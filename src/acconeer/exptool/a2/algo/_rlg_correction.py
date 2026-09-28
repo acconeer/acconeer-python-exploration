@@ -11,7 +11,6 @@ from raw characterization measurements (not part of this package).
 from __future__ import annotations
 
 import functools
-import typing as t
 
 import numpy as np
 import numpy.typing as npt
@@ -20,7 +19,7 @@ from ._rlg_correction_grid import AZ_DEG, CORRECTION_DB, EL_DEG
 
 
 @functools.cache
-def _load_grid() -> t.Tuple[
+def _load_grid() -> tuple[
     npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.float64]
 ]:
     """``(az_deg, el_deg, correction_db)``, loaded once. ``correction_db``
@@ -33,14 +32,14 @@ def _load_grid() -> t.Tuple[
 
 
 @functools.cache
-def measured_az_range_deg() -> t.Tuple[float, float]:
+def measured_az_range_deg() -> tuple[float, float]:
     """``(lo, hi)`` azimuth range the packaged grid was actually characterized over."""
     az_deg, _, _ = _load_grid()
     return float(az_deg[0]), float(az_deg[-1])
 
 
 @functools.cache
-def measured_el_range_deg() -> t.Tuple[float, float]:
+def measured_el_range_deg() -> tuple[float, float]:
     """``(lo, hi)`` elevation range the packaged grid was actually characterized over."""
     _, el_deg, _ = _load_grid()
     return float(el_deg[0]), float(el_deg[-1])

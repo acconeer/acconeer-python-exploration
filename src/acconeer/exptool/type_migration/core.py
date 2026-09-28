@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2024-2025
+# Copyright (c) Acconeer AB, 2024-2026
 # All rights reserved
 
 """
@@ -93,7 +93,7 @@ _NewCtxT = t.TypeVar("_NewCtxT")
 _MigT_contra = t.TypeVar("_MigT_contra", contravariant=True)
 _HeadT = t.TypeVar("_HeadT")
 
-Completer: te.TypeAlias = t.Callable[[t.Type[_T]], _T]
+Completer: te.TypeAlias = t.Callable[[type[_T]], _T]
 _Transform: te.TypeAlias = t.Callable[[_T, Completer[_ReqCtxT]], _R]
 
 
@@ -190,9 +190,7 @@ class Node(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
     def _get_epoch_node_head_types(self) -> set[type]:
         return set(node.head for node in self._node_flatiter() if node.is_epoch)
 
-    def _get_epoch_node_with_head_type(
-        self, head_type: type[_T]
-    ) -> t.Optional[Node[_T, t.Any, t.Any]]:
+    def _get_epoch_node_with_head_type(self, head_type: type[_T]) -> Node[_T, t.Any, t.Any] | None:
         for node in self._node_flatiter():
             if not node.is_epoch:
                 continue
@@ -324,8 +322,8 @@ class Node(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
         obj: _HeadT | _MigT_contra,
         *,
         completer: Completer[t.Any] = _null_completer,
-        target_type: t.Optional[type[_T]] = None,
-    ) -> t.Union[_HeadT, _T]:
+        target_type: type[_T] | None = None,
+    ) -> _HeadT | _T:
         """
         Migrate `obj` be the type of the latest epoch or to `target_type` if `target_type` is an "epoch type".
 

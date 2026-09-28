@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import typing as t
 from enum import Enum, auto
 
 import attrs
@@ -32,7 +31,7 @@ class HeatmapConfig(HeatmapConfigCommon):
         MOVEMENT = auto()
 
         @classmethod
-        def _missing_(cls, value: object) -> t.Optional[te.Self]:
+        def _missing_(cls, value: object) -> te.Self | None:
             if isinstance(value, str):
                 return find_by_name(cls, value)
             else:
@@ -76,7 +75,7 @@ class HeatmapConfig_v0(HeatmapConfigCommon):
         ANGLE = auto()
 
         @classmethod
-        def _missing_(cls, value: object) -> t.Optional[te.Self]:
+        def _missing_(cls, value: object) -> te.Self | None:
             if isinstance(value, str):
                 return find_by_name(cls, value)
             else:
@@ -95,7 +94,7 @@ class HeatmapConfig_v0(HeatmapConfigCommon):
     """
 
     normalized_heat_cutoff: float = attrs.field(default=0.75)
-    max_2d_heat: t.Optional[int] = attrs.field(default=None)
+    max_2d_heat: int | None = attrs.field(default=None)
     log_scale_output: bool = attrs.field(default=False)
 
     @classmethod
@@ -137,7 +136,7 @@ class HeatmapConfig_v1(HeatmapConfigCommon):
         converter=CoherentHeatmapPlotConfig.DisplayMode
     )
     normalized_heat_cutoff: float = attrs.field(default=0.75)
-    max_2d_heat: t.Optional[int] = attrs.field(default=None)
+    max_2d_heat: int | None = attrs.field(default=None)
     log_scale_output: bool = attrs.field(default=False)
 
     @classmethod

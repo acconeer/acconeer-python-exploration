@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import contextlib
 from copy import copy
-from typing import Any, Callable, List, Optional
+from typing import Any, Callable
 
 from PySide6.QtWidgets import (
     QButtonGroup,
@@ -28,7 +28,7 @@ class TabPGWidget(QFrame):
     Since QTabWidget and GraphicsLayoutWidget caused GUI to freeze.
     """
 
-    def __init__(self, parent: Optional[QWidget] = None, right_controls: Optional[QWidget] = None):
+    def __init__(self, parent: QWidget | None = None, right_controls: QWidget | None = None):
         super().__init__(parent=parent)
 
         self._button_group = QButtonGroup()
@@ -46,7 +46,7 @@ class TabPGWidget(QFrame):
         self._main_layout = QVBoxLayout()
         self._main_layout.addWidget(LayoutWrapper(top_layout))
 
-        self._plot_widgets: List[pg.GrachicsLayoutWidget] = []
+        self._plot_widgets: list[pg.GrachicsLayoutWidget] = []
 
         self.setLayout(self._main_layout)
 

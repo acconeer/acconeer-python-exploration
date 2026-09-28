@@ -221,7 +221,7 @@ class H5Record:
     file: h5py.File
 
     _chunk_size: int = 100
-    _schema: te.ClassVar[t.Type[SessionSchema]] = SessionSchema
+    _schema: te.ClassVar[type[SessionSchema]] = SessionSchema
 
     def __attrs_post_init__(self) -> None:
         try:

@@ -174,7 +174,7 @@ class Tasks:
 
 
 @pytest.fixture
-def tasks() -> t.Type[Tasks]:
+def tasks() -> type[Tasks]:
     return Tasks
 
 
@@ -185,8 +185,8 @@ def assert_messages() -> t.Callable[..., None]:
     def f(
         backend: Backend,
         *,
-        received: list[t.Union[Message, ClosedTask]],
-        not_received: t.Iterable[t.Union[Message, ClosedTask]] = (Tasks.FAILED_CLOSED_TASK,),
+        received: list[Message | ClosedTask],
+        not_received: t.Iterable[Message | ClosedTask] = (Tasks.FAILED_CLOSED_TASK,),
     ) -> None:
         """
         Utility function that asserts that
@@ -197,7 +197,7 @@ def assert_messages() -> t.Callable[..., None]:
         If any receive from Backend times out, checking will be terminated.
         """
         not_yet_seen_messages = copy.deepcopy(received)
-        received_messages: list[t.Union[Message, ClosedTask]] = []
+        received_messages: list[Message | ClosedTask] = []
         while not_yet_seen_messages != []:
             received_message = backend.recv()
             received_messages.append(received_message)

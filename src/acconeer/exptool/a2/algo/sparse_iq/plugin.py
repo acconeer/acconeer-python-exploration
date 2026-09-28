@@ -52,7 +52,7 @@ LEGEND_LABEL_FORMAT = "Subsweep {ss_idx}, Channel #{ch_nbr} (Tx{tx_idx}, Rx{rx_i
 @attrs.mutable
 class SharedState:
     session_config: a2.SessionConfig
-    metadata: t.Optional[Metadata]
+    metadata: Metadata | None
 
     def _collect_validation_results(self) -> list[ValidationResult]:
         return self.session_config._collect_validation_results()
@@ -65,7 +65,7 @@ class BackendPlugin(A2BackendPluginBase[SharedState]):
         self.steering_vector_cache: dict[tuple[int, int], npt.NDArray[np.complex128]] = {}
         self.broadcast()
 
-    def _start_session(self, recorder: t.Optional[a2.H5Recorder]) -> None:
+    def _start_session(self, recorder: a2.H5Recorder | None) -> None:
         assert self.client is not None
 
         if recorder:
@@ -110,8 +110,8 @@ class BackendPlugin(A2BackendPluginBase[SharedState]):
         self,
         *,
         record: a2.H5Record,
-        config_override: t.Optional[t.Any] = None,
-        context_override: t.Optional[t.Any] = None,
+        config_override: t.Any | None = None,
+        context_override: t.Any | None = None,
     ) -> None:
         if config_override is not None:
             self._logger.warning(f"Ignoring config override of type: {type(config_override)}")
@@ -190,7 +190,7 @@ class ViewPlugin(A2ViewPluginBase):
             )
         )
 
-    def on_backend_state_update(self, state: t.Optional[SharedState]) -> None:
+    def on_backend_state_update(self, state: SharedState | None) -> None:
         if state is None:
             self.session_config_editor.set_data(None)
             self._update_config_validity([])
@@ -216,10 +216,10 @@ class _PlotBlob:
 class PlotPlugin(PlotPluginBase):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model)
-        self._plot_job: t.Optional[
-            tuple[a2.GroupResult, dict[tuple[int, int], npt.NDArray[np.float64]]]
-        ] = None
-        self._config: t.Optional[a2.SessionConfig] = None
+        self._plot_job: (
+            tuple[a2.GroupResult, dict[tuple[int, int], npt.NDArray[np.float64]]] | None
+        ) = None
+        self._config: a2.SessionConfig | None = None
 
         self.tab_widget = TabPGWidget()
 
@@ -250,7 +250,7 @@ class PlotPlugin(PlotPluginBase):
         layout.addWidget(self.tab_widget)
         self.setLayout(layout)
 
-    def on_backend_state_update(self, state: t.Optional[SharedState]) -> None:
+    def on_backend_state_update(self, state: SharedState | None) -> None:
         if state is None:
             return
 

@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import json
-from typing import Any, Optional, Tuple
+from typing import Any
 
 import attrs
 import numpy as np
@@ -28,7 +28,7 @@ class Metadata:
     _tick_period: int = attrs.field()
     _base_step_length_m: float = attrs.field()
     _max_sweep_rate: float = attrs.field()
-    _high_speed_mode: Optional[bool] = attrs.field(default=None)
+    _high_speed_mode: bool | None = attrs.field(default=None)
 
     @property
     def frame_data_length(self) -> int:
@@ -71,7 +71,7 @@ class Metadata:
         return self._max_sweep_rate
 
     @property
-    def high_speed_mode(self) -> Optional[bool]:
+    def high_speed_mode(self) -> bool | None:
         """Flag indicating if high speed mode is used.
         If true, it means that the sensor has been configured in a way where it
         can optimize its measurements and obtain a high max sweep rate.
@@ -87,7 +87,7 @@ class Metadata:
         return self._high_speed_mode
 
     @property
-    def frame_shape(self) -> Tuple[int, int]:
+    def frame_shape(self) -> tuple[int, int]:
         """The frame shape this Metadata defines"""
 
         num_sweeps = self.frame_data_length // self.sweep_data_length

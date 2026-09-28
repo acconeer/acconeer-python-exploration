@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -26,8 +26,8 @@ from acconeer.exptool.a121._core.utils import unextend
 class Client(
     BaseClient[
         SessionConfig,  # Config type
-        t.List[t.Dict[int, Metadata]],  # Metadata type
-        t.List[t.Dict[int, Result]],  # Result type
+        list[dict[int, Metadata]],  # Metadata type
+        list[dict[int, Result]],  # Result type
         ServerInfo,  # Server info type
         Recorder,  # Recorder type
     ],
@@ -36,14 +36,14 @@ class Client(
     @classmethod
     def open(
         cls,
-        ip_address: t.Optional[str] = None,
-        tcp_port: t.Optional[int] = None,
-        serial_port: t.Optional[str] = None,
-        usb_device: t.Optional[t.Union[str, bool]] = None,
-        mock: t.Optional[bool] = None,
-        override_baudrate: t.Optional[int] = None,
+        ip_address: str | None = None,
+        tcp_port: int | None = None,
+        serial_port: str | None = None,
+        usb_device: str | bool | None = None,
+        mock: bool | None = None,
+        override_baudrate: int | None = None,
         flow_control: bool = True,
-        generation: t.Optional[str] = "a121",
+        generation: str | None = "a121",
     ) -> te.Self:
         if generation != "a121":
             raise ClientCreationError
@@ -61,13 +61,13 @@ class Client(
 
     def __init__(self, client_info: ClientInfo) -> None:
         super().__init__(client_info)
-        self._sensor_calibrations: t.Optional[dict[int, SensorCalibration]] = None
+        self._sensor_calibrations: dict[int, SensorCalibration] | None = None
         self._calibrations_provided: dict[int, bool] = {}
-        self._session_config: t.Optional[SessionConfig] = None
+        self._session_config: SessionConfig | None = None
 
     def _return_results(
         self, extended_results: list[dict[int, Result]]
-    ) -> t.Union[Result, list[dict[int, Result]]]:
+    ) -> Result | list[dict[int, Result]]:
         if self.session_config.extended:
             return extended_results
         else:
@@ -131,9 +131,9 @@ class Client(
     @abc.abstractmethod
     def setup_session(  # type: ignore[override]
         self,
-        config: t.Union[SensorConfig, SessionConfig],
-        calibrations: t.Optional[dict[int, SensorCalibration]] = None,
-    ) -> t.Union[Metadata, list[dict[int, Metadata]]]:
+        config: SensorConfig | SessionConfig,
+        calibrations: dict[int, SensorCalibration] | None = None,
+    ) -> Metadata | list[dict[int, Metadata]]:
         """Sets up the session specified by ``config``.
 
         :param config: The session to set up.
@@ -148,7 +148,7 @@ class Client(
         ...
 
     @abc.abstractmethod
-    def get_next(self) -> t.Union[Result, list[dict[int, Result]]]:  # type: ignore[override]
+    def get_next(self) -> Result | list[dict[int, Result]]:  # type: ignore[override]
         """Gets results from the server.
 
         :returns:
@@ -167,7 +167,7 @@ class Client(
 
     def _recorder_start_session(self) -> None:
         if self._recorder is not None:
-            calibrations_provided: t.Optional[dict[int, bool]] = self.calibrations_provided
+            calibrations_provided: dict[int, bool] | None = self.calibrations_provided
             try:
                 calibrations = self.calibrations
             except ClientError:

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -9,7 +9,6 @@ import json
 import time
 import warnings
 from pathlib import Path
-from typing import Optional, Union
 
 import attr
 import h5py
@@ -30,18 +29,18 @@ class Record:
     data_info = attr.ib(type=list, factory=list)  # [[{...}]], save/restore with json.dumps/loads
 
     # Processing related (optional):
-    module_key = attr.ib(type=Optional[str], default=None)
-    processing_config_dump = attr.ib(type=Optional[str], default=None)  # ProcessingConfig._dumps
+    module_key = attr.ib(type=str | None, default=None)
+    processing_config_dump = attr.ib(type=str | None, default=None)  # ProcessingConfig._dumps
 
     # Other (optional):
-    rss_version = attr.ib(type=Optional[str], default=None)
-    lib_version = attr.ib(type=Optional[str], default=None)
-    timestamp = attr.ib(type=Optional[str], default=None)
+    rss_version = attr.ib(type=str | None, default=None)
+    lib_version = attr.ib(type=str | None, default=None)
+    timestamp = attr.ib(type=str | None, default=None)
     sample_times = attr.ib(default=None)
-    note = attr.ib(type=Optional[str], default=None)  # not to be used internally
+    note = attr.ib(type=str | None, default=None)  # not to be used internally
 
     # Legacy (optional):
-    legacy_processing_config_dump = attr.ib(type=Optional[str], default=None)
+    legacy_processing_config_dump = attr.ib(type=str | None, default=None)
 
     def __attrs_post_init__(self):
         self._iter_index = None
@@ -131,7 +130,7 @@ class Recorder:
         return self.record
 
 
-def save(filename: Union[str, Path], record: Record):
+def save(filename: str | Path, record: Record):
     filename = str(filename)
 
     if filename.lower().endswith(".h5"):
@@ -147,7 +146,7 @@ def save(filename: Union[str, Path], record: Record):
 
 
 def pack(record: Record) -> dict:
-    packed = attr.asdict(record, filter=lambda attr, v: attr.type in (str, Optional[str]))
+    packed = attr.asdict(record, filter=lambda attr, v: attr.type in (str, str | None))
     packed["mode"] = record.mode.name.lower()
     packed["session_info"] = json.dumps(record.session_info)
     packed["data_info"] = json.dumps(record.data_info)
@@ -168,7 +167,7 @@ def pack(record: Record) -> dict:
     return packed
 
 
-def save_npz(filename: Union[str, Path], record: Record):
+def save_npz(filename: str | Path, record: Record):
     filename = str(filename)
 
     if not filename.lower().endswith(".npz"):
@@ -178,7 +177,7 @@ def save_npz(filename: Union[str, Path], record: Record):
     np.savez_compressed(filename, **packed)
 
 
-def save_h5(filename: Union[str, Path], record: Record):
+def save_h5(filename: str | Path, record: Record):
     filename = str(filename)
 
     if not filename.lower().endswith(".h5"):
@@ -200,7 +199,7 @@ def save_h5(filename: Union[str, Path], record: Record):
             f.create_dataset(k, data=v, dtype=dtype, compression=compression)
 
 
-def load(filename: Union[str, Path]) -> Record:
+def load(filename: str | Path) -> Record:
     filename = str(filename)
 
     if filename.lower().endswith(".h5"):
@@ -225,7 +224,7 @@ def unpack(packed: dict) -> Record:
         k = a.name
         if a.type is str:
             kwargs[k] = packed[k]
-        elif a.type == Optional[str]:
+        elif a.type == str | None:
             kwargs[k] = packed.get(k)
 
     try:
@@ -246,7 +245,7 @@ def unpack(packed: dict) -> Record:
     return Record(**kwargs)
 
 
-def load_npz(filename: Union[str, Path]) -> Record:
+def load_npz(filename: str | Path) -> Record:
     filename = str(filename)
 
     packed = {}
@@ -260,7 +259,7 @@ def load_npz(filename: Union[str, Path]) -> Record:
     return unpack(packed)
 
 
-def load_h5(filename: Union[str, Path]) -> Record:
+def load_h5(filename: str | Path) -> Record:
     filename = str(filename)
 
     with h5py.File(filename, "r") as f:

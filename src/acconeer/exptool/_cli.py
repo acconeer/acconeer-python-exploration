@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 from argparse import ArgumentParser, Namespace
-from typing import Any, Dict
+from typing import Any
 
 
 class ExampleArgumentParser(ArgumentParser):
@@ -54,7 +54,7 @@ class ExampleArgumentParser(ArgumentParser):
         )
 
 
-def get_client_args(namespace: Namespace) -> Dict[str, Any]:
+def get_client_args(namespace: Namespace) -> dict[str, Any]:
     """
     Filters a passed Namespace to extract client-creation related args.
 

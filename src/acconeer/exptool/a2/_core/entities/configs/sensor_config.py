@@ -35,7 +35,7 @@ _TOO_MANY_SUBSWEEPS_ERROR_FORMAT = (
 
 
 def subsweep_delegate_field(
-    descriptor: t.Union[_T, Descriptor[_T]],
+    descriptor: _T | Descriptor[_T],
     type_: type[_T],
 ) -> Descriptor[_T]:
     return delegate_field(
@@ -82,7 +82,7 @@ class SensorConfig(AttrsMappingTransformsMixin):
     Can be set to 0 if e.g. only temperature measurement is wanted.
     """
 
-    sweep_rate: t.Optional[float] = attrs.field(
+    sweep_rate: float | None = attrs.field(
         converter=ac.optional(float), validator=av.optional(av.gt(MIN_SWEEP_RATE))
     )
     """The rate for sweeps in a frame (measurement) in Hz.
@@ -90,7 +90,7 @@ class SensorConfig(AttrsMappingTransformsMixin):
     Must be > 0 or ``None``, where ``None`` is interpreted as max sweep rate.
     """
 
-    frame_rate: t.Optional[float] = attrs.field(
+    frame_rate: float | None = attrs.field(
         converter=ac.optional(float), validator=av.optional(av.gt(MIN_FRAME_RATE))
     )
     """The frame rate in Hz.
@@ -125,8 +125,8 @@ class SensorConfig(AttrsMappingTransformsMixin):
         cls,
         *,
         sweeps_per_frame: int = _DEFAULT_SPF,
-        sweep_rate: t.Optional[float] = _DEFAULT_SWEEP_RATE,
-        frame_rate: t.Optional[float] = _DEFAULT_FRAME_RATE,
+        sweep_rate: float | None = _DEFAULT_SWEEP_RATE,
+        frame_rate: float | None = _DEFAULT_FRAME_RATE,
         inter_frame_idle_state: IdleState = _DEFAULT_IDLE_STATE,
         inter_sweep_idle_state: IdleState = _DEFAULT_IDLE_STATE,
         jitter_compensation: bool = _DEFAULT_JITTER_COMPENSATION,
@@ -162,8 +162,8 @@ class SensorConfig(AttrsMappingTransformsMixin):
         *,
         num_subsweeps: int,
         sweeps_per_frame: int = _DEFAULT_SPF,
-        sweep_rate: t.Optional[float] = _DEFAULT_SWEEP_RATE,
-        frame_rate: t.Optional[float] = _DEFAULT_FRAME_RATE,
+        sweep_rate: float | None = _DEFAULT_SWEEP_RATE,
+        frame_rate: float | None = _DEFAULT_FRAME_RATE,
         inter_frame_idle_state: IdleState = _DEFAULT_IDLE_STATE,
         inter_sweep_idle_state: IdleState = _DEFAULT_IDLE_STATE,
         jitter_compensation: bool = _DEFAULT_JITTER_COMPENSATION,
@@ -323,10 +323,10 @@ class _SensorConfig_v2(AttrsMappingTransformsMixin):
         validator=[av.deep_iterable(av.instance_of(SubsweepConfig)), av.min_len(1)]
     )
     sweeps_per_frame: int = attrs.field(validator=av.ge(0))
-    sweep_rate: t.Optional[float] = attrs.field(
+    sweep_rate: float | None = attrs.field(
         converter=ac.optional(float), validator=av.optional(av.gt(0))
     )
-    frame_rate: t.Optional[float] = attrs.field(
+    frame_rate: float | None = attrs.field(
         converter=ac.optional(float), validator=av.optional(av.gt(0))
     )
     inter_frame_idle_state: IdleState = attrs.field(converter=IdleState)
@@ -351,7 +351,7 @@ class _SensorConfig_v1(AttrsMappingTransformsMixin):
         validator=[av.deep_iterable(av.instance_of(SubsweepConfig)), av.min_len(1)]
     )
     sweeps_per_frame: int = attrs.field(validator=av.ge(0))
-    sweep_rate: t.Optional[float] = attrs.field(
+    sweep_rate: float | None = attrs.field(
         converter=ac.optional(float), validator=av.optional(av.gt(0))
     )
 

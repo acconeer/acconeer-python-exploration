@@ -2,7 +2,6 @@
 # All rights reserved
 from __future__ import annotations
 
-import sys
 import typing as t
 from pathlib import Path
 from random import choice, random
@@ -592,16 +591,7 @@ class AnnotatedWithBuiltinCollection:
     ints: list[int]
 
 
-@pytest.mark.skipif(
-    sys.version_info >= (3, 9), reason="It's fine to annotate with builtins on Python >=3.9"
-)
-def test_raises_error_if_type_is_annotated_with_builtins() -> None:
-    with pytest.raises(TypeError):
-        opser.core.create_type_tree(AnnotatedWithBuiltinCollection)
-
-
-@pytest.mark.skipif(sys.version_info < (3, 9), reason="Should raise error on Python < 3.9")
-def test_ok_to_annotated_with_builtins() -> None:
+def test_ok_to_annotate_with_builtins() -> None:
     _ = opser.core.create_type_tree(AnnotatedWithBuiltinCollection)
 
 

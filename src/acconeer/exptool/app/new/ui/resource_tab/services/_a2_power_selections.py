@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-import typing as t
-
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
@@ -12,9 +10,9 @@ from acconeer.exptool.a2.model import power
 from acconeer.exptool.app.new.ui.components import GroupBox, pidgets
 
 
-ApsSleepState = t.Union[power.SensorConstants.ApsSleepState, power.SensorConstants.ApsIdleState]
+ApsSleepState = power.SensorConstants.ApsSleepState | power.SensorConstants.ApsIdleState
 
-PowerSelections = t.Tuple[
+PowerSelections = tuple[
     ApsSleepState,
     power.SensorConstants.ApsIdleState,
     int,

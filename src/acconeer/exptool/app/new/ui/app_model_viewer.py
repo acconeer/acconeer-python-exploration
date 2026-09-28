@@ -1,11 +1,11 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import re
 import time
-from typing import Any, Optional
+from typing import Any
 
 from PySide6.QtCharts import QChartView, QLineSeries
 from PySide6.QtCore import Qt, SignalInstance
@@ -32,7 +32,7 @@ class _CurrentStateView(QTextEdit):
         self.update_count = 0
 
     @staticmethod
-    def _stringify_backend_state(backend_state: Optional[Any]) -> list[str]:
+    def _stringify_backend_state(backend_state: Any | None) -> list[str]:
         if backend_state is None:
             return ["None"]
 

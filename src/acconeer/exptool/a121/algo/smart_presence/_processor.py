@@ -2,8 +2,6 @@
 # All rights reserved
 from __future__ import annotations
 
-from typing import Optional
-
 import attrs
 import numpy as np
 import numpy.typing as npt
@@ -18,12 +16,12 @@ class ProcessorResult:
     """Processor result"""
 
     zone_limits: npt.NDArray[np.float64] = attrs.field()
-    max_presence_zone: Optional[int] = attrs.field()
+    max_presence_zone: int | None = attrs.field()
     total_zone_detections: npt.NDArray[np.int_] = attrs.field()
     inter_zone_detections: npt.NDArray[np.int_] = attrs.field()
-    max_inter_zone: Optional[int] = attrs.field()
+    max_inter_zone: int | None = attrs.field()
     intra_zone_detections: npt.NDArray[np.int_] = attrs.field()
-    max_intra_zone: Optional[int] = attrs.field()
+    max_intra_zone: int | None = attrs.field()
 
 
 @attrs.mutable(kw_only=True)
@@ -41,8 +39,8 @@ class Processor:
     :param processor_config: Processor configuration.
     """
 
-    max_inter_zone: Optional[int]
-    max_intra_zone: Optional[int]
+    max_inter_zone: int | None
+    max_intra_zone: int | None
 
     def __init__(
         self,
@@ -116,7 +114,7 @@ class Processor:
         return max_zone
 
     def process(self, result: DetectorResult) -> ProcessorResult:
-        max_presence_zone: Optional[int]
+        max_presence_zone: int | None
 
         if result.presence_detected:
             # Update zone detections for each detection type.

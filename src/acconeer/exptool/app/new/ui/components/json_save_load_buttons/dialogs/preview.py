@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ class PresentationType(enum.Enum):
         return self.value
 
 
-PresenterFunc = t.Callable[[t.Any, PresentationType], t.Optional[str]]
+PresenterFunc = t.Callable[[t.Any, PresentationType], str | None]
 
 
 class PresentationWindow(QWidget):
@@ -40,7 +40,7 @@ class PresentationWindow(QWidget):
     }
 
     def __init__(
-        self, presentations: dict[PresentationType, str], parent: t.Optional[QWidget] = None
+        self, presentations: dict[PresentationType, str], parent: QWidget | None = None
     ) -> None:
         super().__init__(parent=parent)
 

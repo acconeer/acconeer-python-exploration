@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Callable, Mapping, Optional
+from typing import Callable, Mapping
 
 import attrs
 import h5py
@@ -97,8 +97,8 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
     ) -> None:
         super().__init__(callback=callback, generation=generation, key=key)
 
-        self._recorder: Optional[a121.H5Recorder] = None
-        self._ref_app_instance: Optional[RefApp] = None
+        self._recorder: a121.H5Recorder | None = None
+        self._ref_app_instance: RefApp | None = None
         self._log = BackendLogger.getLogger(__name__)
 
         self.restore_defaults()
@@ -154,7 +154,7 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
         self.shared_state.sensor_id = sensor_id
         self.shared_state.context = context
 
-    def _start_session(self, recorder: Optional[a121.H5Recorder]) -> None:
+    def _start_session(self, recorder: a121.H5Recorder | None) -> None:
         assert self.client
         self._ref_app_instance = RefApp(
             client=self.client,
@@ -221,7 +221,7 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
 class PlotPlugin(PgPlotPlugin):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model=app_model)
-        self._plot_job: Optional[RefAppResult] = None
+        self._plot_job: RefAppResult | None = None
         self._is_setup = False
         self.obstruction_text_timeout = 0
 
@@ -721,7 +721,7 @@ class ViewPlugin(A121ViewPluginBase):
             }
         }
 
-    def on_backend_state_update(self, state: Optional[SharedState]) -> None:
+    def on_backend_state_update(self, state: SharedState | None) -> None:
         if state is None:
             self.sensor_config_editor.set_data(None)
             self.parking_config_editor.set_data(None)

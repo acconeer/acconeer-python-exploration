@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-import typing as t
-
 import attrs
 import numpy as np
 import numpy.typing as npt
@@ -126,7 +124,7 @@ class RigidTransformNode:
     def __init__(
         self,
         rotation: RotationMatrix,
-        translation: t.Tuple[float, float, float] = (0.0, 0.0, 0.0),
+        translation: tuple[float, float, float] = (0.0, 0.0, 0.0),
     ) -> None:
         """
         :param rotation: :class:`RotationMatrix`.

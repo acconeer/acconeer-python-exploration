@@ -227,7 +227,7 @@ class TestPeak3DSphericalToCartesianNode:
 
 
 def _cart_at(
-    x: float, y: float, z: float, *, index: t.Tuple[int, int, int] = (0, 0, 0)
+    x: float, y: float, z: float, *, index: tuple[int, int, int] = (0, 0, 0)
 ) -> Peak3DCart:
     """Build a Peak3DCart at a given Cartesian position."""
     return Peak3DCart(

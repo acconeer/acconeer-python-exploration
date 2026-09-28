@@ -1,9 +1,7 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
-
-from typing import Dict, Optional
 
 import attrs
 from numpy import nan
@@ -13,7 +11,7 @@ from acconeer.exptool.a121._core.utils import zip_extended_structures
 from ._core.entities import PRF, IdleState, Metadata, Profile, SensorConfig, SessionConfig
 
 
-_POINT_OVERHEAD_DURATIONS_NS: Dict[PRF, Dict[Profile, float]] = {
+_POINT_OVERHEAD_DURATIONS_NS: dict[PRF, dict[Profile, float]] = {
     PRF.PRF_19_5_MHz: {
         Profile.PROFILE_1: 1744,
         Profile.PROFILE_2: nan,
@@ -58,7 +56,7 @@ _POINT_OVERHEAD_DURATIONS_NS: Dict[PRF, Dict[Profile, float]] = {
     },
 }
 
-_SAMPLE_DURATIONS_NS: Dict[PRF, Dict[Profile, float]] = {
+_SAMPLE_DURATIONS_NS: dict[PRF, dict[Profile, float]] = {
     PRF.PRF_19_5_MHz: {
         Profile.PROFILE_1: 1487,
         Profile.PROFILE_2: nan,
@@ -127,7 +125,7 @@ def get_sample_duration(prf: PRF, profile: Profile) -> float:
 @attrs.frozen
 class _SessionPerformanceCalc:
     session_config: SessionConfig = attrs.field()
-    extended_metadata: Optional[list[dict[int, Metadata]]] = attrs.field()
+    extended_metadata: list[dict[int, Metadata]] | None = attrs.field()
 
     @property
     def update_duration(self) -> float:
@@ -173,8 +171,8 @@ class _SensorPerformanceCalc:
     """
 
     sensor_config: SensorConfig = attrs.field()
-    metadata: Optional[Metadata] = attrs.field()
-    update_rate: Optional[float] = attrs.field()
+    metadata: Metadata | None = attrs.field()
+    update_rate: float | None = attrs.field()
 
     @property
     def spf(self) -> int:

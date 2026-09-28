@@ -135,7 +135,7 @@ class ViewPlugin(A2ViewPluginBase):
         self.start_button.setEnabled(start_enabled)
 
     def on_backend_state_update(
-        self, state: t.Optional[SharedState[HeatmapConfig, CoherentHeatmapPlotConfig]]
+        self, state: SharedState[HeatmapConfig, CoherentHeatmapPlotConfig] | None
     ) -> None:
         if state is None:
             self.session_config_editor.set_data(None)
@@ -157,7 +157,7 @@ class ViewPlugin(A2ViewPluginBase):
 
 class PlotPlugin(plot_plugin_common.PlotPlugin[HeatmapConfig, CoherentHeatmapPlotConfig]):
     def on_backend_state_update(
-        self, state: t.Optional[SharedState[HeatmapConfig, CoherentHeatmapPlotConfig]]
+        self, state: SharedState[HeatmapConfig, CoherentHeatmapPlotConfig] | None
     ) -> None:
         super().on_backend_state_update(state)
         if state is None:

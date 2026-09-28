@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import typing as t
-from typing import Callable, Optional
+from typing import Callable
 
 import attrs
 import numpy as np
@@ -30,8 +30,8 @@ def _dict_wrapper(f: Callable[[_S, _T], bool]) -> Callable[[dict[_U, _S], dict[_
     return wrapper
 
 
-def _optional_wrapper(f: Callable[[_S, _T], bool]) -> Callable[[Optional[_S], Optional[_T]], bool]:
-    def wrapper(a: Optional[_S], b: Optional[_T]) -> bool:
+def _optional_wrapper(f: Callable[[_S, _T], bool]) -> Callable[[_S | None, _T | None], bool]:
+    def wrapper(a: _S | None, b: _T | None) -> bool:
         if a is None or b is None:
             return a is b
         else:

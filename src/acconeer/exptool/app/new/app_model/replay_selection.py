@@ -55,8 +55,8 @@ class SelectPluginToReplayInDialog(QDialog, t.Generic[_PluginOptionT]):
         self,
         plugin_options: t.Iterable[_PluginOptionT],
         default_selected: str,
-        current_plugin_key: t.Optional[str],
-        record_key: t.Optional[str],
+        current_plugin_key: str | None,
+        record_key: str | None,
     ) -> None:
         super().__init__()
         self.setWindowTitle("File Load Plugin Selection")

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2024
+# Copyright (c) Acconeer AB, 2024-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -62,7 +62,7 @@ class ProcessorConfig(AlgoProcessorConfigBase):
 
     def _collect_validation_results(
         self, config: a121.SessionConfig
-    ) -> t.List[a121.ValidationResult]:
+    ) -> list[a121.ValidationResult]:
         return []
 
 
@@ -117,7 +117,7 @@ class BackendPlugin(ProcessorBackendPluginBase):
         )
 
     @classmethod
-    def get_processor_config_cls(cls) -> t.Type[ProcessorConfig]:
+    def get_processor_config_cls(cls) -> type[ProcessorConfig]:
         return ProcessorConfig
 
     @classmethod
@@ -150,14 +150,14 @@ class ViewPlugin(ProcessorViewPluginBase):
         }
 
     @classmethod
-    def get_processor_config_cls(cls) -> t.Type[ProcessorConfig]:
+    def get_processor_config_cls(cls) -> type[ProcessorConfig]:
         return ProcessorConfig
 
 
 class PlotPlugin(PgPlotPlugin):
     def __init__(self, app_model: AppModel) -> None:
         super().__init__(app_model=app_model)
-        self._plot_job: t.Optional[ProcessorResult] = None
+        self._plot_job: ProcessorResult | None = None
         self._is_setup = False
 
     def handle_message(self, message: backend.GeneralMessage) -> None:

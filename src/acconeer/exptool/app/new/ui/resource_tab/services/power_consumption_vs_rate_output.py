@@ -79,11 +79,11 @@ class _A121PowerConsumptionVsRatePlot(pg.PlotWidget):
         self._hibernate_plotter: t.Iterator[tuple[list[float], list[float]]] = iter([])
         self._off_plotter: t.Iterator[tuple[list[float], list[float]]] = iter([])
 
-        self._ready_curve: t.Optional[pg.PlotDataItem] = None
-        self._sleep_curve: t.Optional[pg.PlotDataItem] = None
-        self._deep_sleep_curve: t.Optional[pg.PlotDataItem] = None
-        self._hibernate_curve: t.Optional[pg.PlotDataItem] = None
-        self._off_curve: t.Optional[pg.PlotDataItem] = None
+        self._ready_curve: pg.PlotDataItem | None = None
+        self._sleep_curve: pg.PlotDataItem | None = None
+        self._deep_sleep_curve: pg.PlotDataItem | None = None
+        self._hibernate_curve: pg.PlotDataItem | None = None
+        self._off_curve: pg.PlotDataItem | None = None
 
         self._plot_increment_timer = QTimer()
         self._plot_increment_timer.timeout.connect(self._increment_plots)
@@ -105,8 +105,8 @@ class _A121PowerConsumptionVsRatePlot(pg.PlotWidget):
     def _evolve_config(
         config: a121.SessionConfig,
         *,
-        update_rate: t.Optional[float] = None,
-        inter_frame_idle_state: t.Optional[a121.IdleState] = None,
+        update_rate: float | None = None,
+        inter_frame_idle_state: a121.IdleState | None = None,
     ) -> a121.SessionConfig:
         config_copy = copy.deepcopy(config)
 
@@ -144,7 +144,7 @@ class _A121PowerConsumptionVsRatePlot(pg.PlotWidget):
         name: str,
         pen: t.Any,
         incremental_plotter: t.Iterator[tuple[list[float], list[float]]],
-        reused_curve: t.Optional[pg.PlotDataItem],
+        reused_curve: pg.PlotDataItem | None,
     ) -> tuple[pg.PlotDataItem, bool]:
         """
         Plots the next increment of incremental_plotter.
@@ -170,7 +170,7 @@ class _A121PowerConsumptionVsRatePlot(pg.PlotWidget):
     @staticmethod
     def _will_keep_rate(
         config: a121.SessionConfig,
-        lower_idle_state: t.Optional[a121_power.Sensor.LowerIdleState],
+        lower_idle_state: a121_power.Sensor.LowerIdleState | None,
         algorithm: a121_power.algo.Algorithm,
     ) -> bool:
         rate = a121_power.configured_rate(config)
@@ -184,7 +184,7 @@ class _A121PowerConsumptionVsRatePlot(pg.PlotWidget):
     def update_power_curves(
         self,
         config: a121.SessionConfig,
-        lower_idle_state: t.Optional[a121_power.Sensor.LowerIdleState],
+        lower_idle_state: a121_power.Sensor.LowerIdleState | None,
     ) -> None:
         self._plot_increment_timer.stop()
         self.clear()
@@ -368,7 +368,7 @@ class _A2PowerConsumptionVsRatePlot(pg.PlotWidget):
         self.getPlotItem().addLegend()
         self.getViewBox().setMouseMode(pg.ViewBox.PanMode)
 
-        self._curves: dict[str, t.Optional[pg.PlotDataItem]] = {}
+        self._curves: dict[str, pg.PlotDataItem | None] = {}
         self._curve_pens: dict[str, t.Any] = {}
         self._active_plotters: collections.deque[
             tuple[str, t.Iterator[tuple[list[float], list[float]]]]
@@ -394,9 +394,9 @@ class _A2PowerConsumptionVsRatePlot(pg.PlotWidget):
     def _evolve_config(
         config: a2.SessionConfig,
         *,
-        update_rate: t.Optional[float] = None,
-        frame_rate: t.Optional[float] = None,
-        inter_frame_idle_state: t.Optional[a2.IdleState] = None,
+        update_rate: float | None = None,
+        frame_rate: float | None = None,
+        inter_frame_idle_state: a2.IdleState | None = None,
     ) -> a2.SessionConfig:
         config_copy = copy.deepcopy(config)
 
@@ -435,9 +435,8 @@ class _A2PowerConsumptionVsRatePlot(pg.PlotWidget):
     @staticmethod
     def _will_keep_rate(
         config: a2.SessionConfig,
-        aps_sleep_state: t.Union[
-            a2_power.SensorConstants.ApsIdleState, a2_power.SensorConstants.ApsSleepState
-        ],
+        aps_sleep_state: a2_power.SensorConstants.ApsIdleState
+        | a2_power.SensorConstants.ApsSleepState,
         aps_idle_state: a2_power.SensorConstants.ApsIdleState,
         algorithm: a2_power.algo.Algorithm,
     ) -> bool:
@@ -456,9 +455,8 @@ class _A2PowerConsumptionVsRatePlot(pg.PlotWidget):
     def update_power_curves(
         self,
         config: a2.SessionConfig,
-        aps_sleep_state: t.Union[
-            a2_power.SensorConstants.ApsIdleState, a2_power.SensorConstants.ApsSleepState
-        ],
+        aps_sleep_state: a2_power.SensorConstants.ApsIdleState
+        | a2_power.SensorConstants.ApsSleepState,
         aps_idle_state: a2_power.SensorConstants.ApsIdleState,
         algorithm: a2_power.algo.Algorithm,
     ) -> None:
@@ -515,10 +513,7 @@ class _A2PowerConsumptionVsRatePlot(pg.PlotWidget):
             _sleep_specs: list[
                 tuple[
                     str,
-                    t.Union[
-                        a2_power.SensorConstants.ApsIdleState,
-                        a2_power.SensorConstants.ApsSleepState,
-                    ],
+                    a2_power.SensorConstants.ApsIdleState | a2_power.SensorConstants.ApsSleepState,
                     int,
                 ]
             ] = [
@@ -554,10 +549,8 @@ class _A2PowerConsumptionVsRatePlot(pg.PlotWidget):
                     curves_that_wont_keep_rate.append(curve_name)
 
                 def _make_f(
-                    _sleep_st: t.Union[
-                        a2_power.SensorConstants.ApsIdleState,
-                        a2_power.SensorConstants.ApsSleepState,
-                    ] = sleep_st,
+                    _sleep_st: a2_power.SensorConstants.ApsIdleState
+                    | a2_power.SensorConstants.ApsSleepState = sleep_st,
                 ) -> t.Callable[[float], float]:
                     cfg = copy.deepcopy(config)
 
@@ -715,9 +708,7 @@ class PowerConsumptionVsRateOutput(QWidget):
 
         self.setStyleSheet("QTabBar { font: bold 14px; font-family: monospace; }")
         self._tab_widget = QTabWidget()
-        self._tabs: dict[
-            str, t.Union[_A121PowerConsumptionVsRatePlot, _A2PowerConsumptionVsRatePlot]
-        ] = {}
+        self._tabs: dict[str, _A121PowerConsumptionVsRatePlot | _A2PowerConsumptionVsRatePlot] = {}
 
         layout.addWidget(self._tab_widget)
         self.setLayout(layout)

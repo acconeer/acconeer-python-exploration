@@ -629,7 +629,7 @@ class FlashWizard(QWizard):
 
         self.setWindowTitle("Flash Wizard")
 
-        self.comm_device: t.Optional[CommDevice] = None
+        self.comm_device: CommDevice | None = None
         self.artifact_repository = create_artifact_repository()
 
         self.setPage(_Page.MODULE_SELECTION, ModuleSelectionPage())
@@ -700,7 +700,7 @@ class _AnimationState:
 class _ThreeDotAnimatedQPushButton(QPushButton):
     def __init__(self, text: str) -> None:
         super().__init__(text)
-        self._state: t.Optional[_AnimationState] = None
+        self._state: _AnimationState | None = None
 
     def setText(self, text: str) -> None:
         self._internal_set_text(text)

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -7,7 +7,7 @@ import abc
 import logging
 import re
 from pathlib import Path
-from typing import Any, Callable, Generic, Optional, TypeVar
+from typing import Any, Callable, Generic, TypeVar
 
 import h5py
 from packaging.version import Version
@@ -36,11 +36,11 @@ T = TypeVar("T")
 
 
 class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
-    _live_client: Optional[a121.Client]
-    _replaying_client: Optional[a121.Client]
-    _opened_record: Optional[a121.H5Record]
+    _live_client: a121.Client | None
+    _replaying_client: a121.Client | None
+    _opened_record: a121.H5Record | None
     _started: bool = False
-    _recorder: Optional[a121.H5Recorder] = None
+    _recorder: a121.H5Recorder | None = None
 
     def __init__(
         self,
@@ -61,8 +61,8 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
         self,
         *,
         path: Path,
-        config_override: Optional[Any] = None,
-        context_override: Optional[Any] = None,
+        config_override: Any | None = None,
+        context_override: Any | None = None,
     ) -> None:
         if config_override is not None:
             self._logger.warning(f"Ignoring config override of type: {type(config_override)}")
@@ -167,7 +167,7 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
             return False
 
     @property
-    def client(self) -> Optional[a121.Client]:
+    def client(self) -> a121.Client | None:
         if self._replaying_client is not None:
             return self._replaying_client
 
@@ -189,7 +189,7 @@ class A121BackendPluginBase(Generic[T], BackendPlugin[T]):
         self._live_client = None
 
     @abc.abstractmethod
-    def _start_session(self, recorder: Optional[a121.H5Recorder]) -> None:
+    def _start_session(self, recorder: a121.H5Recorder | None) -> None:
         pass
 
     @abc.abstractmethod

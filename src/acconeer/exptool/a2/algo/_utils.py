@@ -109,7 +109,7 @@ def estimate_max_update_rate(client: a2.Client, session_config: a2.SessionConfig
 
 def get_effective_frame_rate(
     session_config: a2.SessionConfig, sensor_config_ind: int = 0
-) -> t.Optional[float]:
+) -> float | None:
     """The rate frames arrive at: the sensor's ``frame_rate``, or the
     session's ``update_rate`` for sessions timed by the host. ``None`` if
     neither is set."""
@@ -397,7 +397,7 @@ def get_max_step_length(profile: a2.Profile, max_snr_drop_db: float) -> int:
 
 def get_point_grid_bounds(
     start_m: float, end_m: float, profile: a2.Profile, max_snr_drop_db: float
-) -> t.Tuple[int, int]:
+) -> tuple[int, int]:
     """``(start_point, num_points)`` covering ``[start_m, end_m]`` at the step
     length ``get_max_step_length`` would choose for ``profile``/``max_snr_drop_db``.
 
@@ -435,13 +435,13 @@ def get_prf_for_end_m(end_m: float, *, profile: a2.Profile) -> a2.PRF:
 
 
 def hwaas_required(
-    pos_m: t.Union[float, npt.NDArray[np.float64]],
+    pos_m: float | npt.NDArray[np.float64],
     signal_quality_db: float,
     profile: a2.Profile,
     *,
-    rlg_correction_db: t.Union[float, npt.NDArray[np.float64]] = 0.0,
+    rlg_correction_db: float | npt.NDArray[np.float64] = 0.0,
     processing_gain_db: float = 0.0,
-) -> t.Union[int, npt.NDArray[np.int_]]:
+) -> int | npt.NDArray[np.int_]:
     """HWAAS per point needed to reach ``signal_quality_db`` at ``pos_m``.
 
     ``signal_quality_db`` is the approximate SNR for a 0 dBsm reflector, in

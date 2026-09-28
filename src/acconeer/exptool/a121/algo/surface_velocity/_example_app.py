@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import warnings
-from typing import Any, Optional, Tuple
+from typing import Any
 
 import attrs
 import h5py
@@ -29,7 +29,7 @@ from ._processor import Processor, ProcessorConfig, ProcessorExtraResult
 SPARSE_IQ_PPC = 24
 
 
-def optional_profile_converter(profile: Optional[Profile]) -> Optional[Profile]:
+def optional_profile_converter(profile: Profile | None) -> Profile | None:
     if profile is None:
         return None
 
@@ -56,13 +56,11 @@ class ExampleAppConfig(AlgoConfigBase):
     step_length: int = attrs.field(default=12)
     """Step length in points."""
 
-    profile: Optional[a121.Profile] = attrs.field(
-        default=None, converter=optional_profile_converter
-    )
+    profile: a121.Profile | None = attrs.field(default=None, converter=optional_profile_converter)
     """Sets the profile. If no argument is provided, the highest possible
     profile without interference of direct leakage is used to maximize SNR."""
 
-    frame_rate: Optional[float] = attrs.field(default=None)
+    frame_rate: float | None = attrs.field(default=None)
     """Frame rate in Hz."""
 
     sweep_rate: float = attrs.field(default=3000)
@@ -226,7 +224,7 @@ class ExampleApp(Controller[ExampleAppConfig, ExampleAppResult]):
         self.started = False
 
     def start(
-        self, recorder: Optional[a121.Recorder] = None, _algo_group: Optional[h5py.Group] = None
+        self, recorder: a121.Recorder | None = None, _algo_group: h5py.Group | None = None
     ) -> None:
         if self.started:
             msg = "Already started"
@@ -370,7 +368,7 @@ def _record_algo_data(
     _create_h5_string_dataset(algo_group, "example_app_config", config.to_json())
 
 
-def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, ExampleAppConfig]:
+def _load_algo_data(algo_group: h5py.Group) -> tuple[int, ExampleAppConfig]:
     sensor_id = algo_group["sensor_id"][()]
     config = ExampleAppConfig.from_json(algo_group["example_app_config"][()])
     return sensor_id, config

@@ -6,7 +6,7 @@ from __future__ import annotations
 import copy
 import warnings
 from enum import Enum
-from typing import Any, Optional, Tuple
+from typing import Any
 
 import attrs
 import h5py
@@ -36,7 +36,7 @@ from ._processor import Processor, ProcessorConfig, ProcessorResult
 SPARSE_IQ_PPC = 24
 
 
-def optional_profile_converter(profile: Optional[Profile]) -> Optional[Profile]:
+def optional_profile_converter(profile: Profile | None) -> Profile | None:
     if profile is None:
         return None
 
@@ -84,7 +84,7 @@ class RefAppConfig(AlgoConfigBase):
     nominal_config: PresenceZoneConfig = attrs.field(factory=PresenceZoneConfig)
     """Configuration used to keep detection."""
 
-    wake_up_config: Optional[PresenceWakeUpConfig] = attrs.field(factory=PresenceWakeUpConfig)
+    wake_up_config: PresenceWakeUpConfig | None = attrs.field(factory=PresenceWakeUpConfig)
     """Configuration used for wake up."""
 
     wake_up_mode: bool = attrs.field(default=True)
@@ -116,8 +116,8 @@ class RefAppConfig(AlgoConfigBase):
 
 @attrs.mutable(kw_only=True)
 class RefAppContext(AlgoBase):
-    nominal_detector_context: Optional[DetectorContext] = attrs.field(default=None)
-    wake_up_detector_context: Optional[DetectorContext] = attrs.field(default=None)
+    nominal_detector_context: DetectorContext | None = attrs.field(default=None)
+    wake_up_detector_context: DetectorContext | None = attrs.field(default=None)
 
     @classmethod
     def from_dict(cls: type[AlgoBaseT], d: dict[str, Any]) -> AlgoBaseT:
@@ -141,7 +141,7 @@ class RefAppResult:
     presence_detected: bool = attrs.field()
     """True if presence was detected, False otherwise."""
 
-    max_presence_zone: Optional[int] = attrs.field()
+    max_presence_zone: int | None = attrs.field()
     """The zone for maximum presence score if presence detected, else None."""
 
     total_zone_detections: npt.NDArray[np.int_] = attrs.field(eq=attrs_ndarray_isclose)
@@ -153,7 +153,7 @@ class RefAppResult:
     inter_zone_detections: npt.NDArray[np.int_] = attrs.field(eq=attrs_ndarray_isclose)
     """Slow motion presence detection result for all zones."""
 
-    max_inter_zone: Optional[int] = attrs.field()
+    max_inter_zone: int | None = attrs.field()
     """The zone for maximum slow motion presence score if slow presence detected, else None."""
 
     intra_presence_score: float = attrs.field()
@@ -162,13 +162,13 @@ class RefAppResult:
     intra_zone_detections: npt.NDArray[np.int_] = attrs.field(eq=attrs_ndarray_isclose)
     """Fast motion presence detection result for all zones."""
 
-    max_intra_zone: Optional[int] = attrs.field()
+    max_intra_zone: int | None = attrs.field()
     """The zone for maximum fast motion presence score if fast presence detected, else None."""
 
     used_config: _Mode = attrs.field()
     """The configuration used for the measurement."""
 
-    wake_up_detections: Optional[npt.NDArray[np.int_]] = attrs.field()
+    wake_up_detections: npt.NDArray[np.int_] | None = attrs.field()
     """Wake up detection result."""
 
     switch_delay: bool = attrs.field()
@@ -183,7 +183,7 @@ class _Mode(Enum):
 
 
 class RefApp(Controller[RefAppConfig, RefAppResult]):
-    wake_up_detections: Optional[npt.NDArray[np.int_]]
+    wake_up_detections: npt.NDArray[np.int_] | None
     ref_app_context: RefAppContext
 
     def __init__(
@@ -192,7 +192,7 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         client: a121.Client,
         sensor_id: int,
         ref_app_config: RefAppConfig,
-        ref_app_context: Optional[RefAppContext] = None,
+        ref_app_context: RefAppContext | None = None,
     ) -> None:
         super().__init__(client=client, config=ref_app_config)
         self.sensor_id = sensor_id
@@ -211,7 +211,7 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
             self.wake_up_detections = None
 
     def start(
-        self, recorder: Optional[a121.Recorder] = None, algo_group: Optional[h5py.Group] = None
+        self, recorder: a121.Recorder | None = None, algo_group: h5py.Group | None = None
     ) -> None:
         if self.started:
             msg = "Already started"
@@ -465,7 +465,7 @@ def _record_algo_data(
     _create_h5_string_dataset(algo_group, "ref_app_context", ref_app_context.to_json())
 
 
-def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, RefAppConfig, RefAppContext]:
+def _load_algo_data(algo_group: h5py.Group) -> tuple[int, RefAppConfig, RefAppContext]:
     sensor_id = int(algo_group["ref_app_sensor_id"][()])
     config = RefAppConfig.from_json(algo_group["ref_app_config"][()])
     ref_app_context = RefAppContext.from_json(algo_group["ref_app_context"][()])
@@ -477,10 +477,8 @@ class _PresenceZoneConfig_v0(AlgoConfigBase):
     num_zones: int = attrs.field(default=7)
     start_m: float = attrs.field(default=0.3)
     end_m: float = attrs.field(default=2.5)
-    profile: Optional[a121.Profile] = attrs.field(
-        default=None, converter=optional_profile_converter
-    )
-    step_length: Optional[int] = attrs.field(default=None)
+    profile: a121.Profile | None = attrs.field(default=None, converter=optional_profile_converter)
+    step_length: int | None = attrs.field(default=None)
     frame_rate: float = attrs.field(default=12.0)
     sweeps_per_frame: int = attrs.field(default=16)
     automatic_subsweeps: bool = attrs.field(default=False)
@@ -499,7 +497,7 @@ class _PresenceZoneConfig_v0(AlgoConfigBase):
     inter_frame_slow_cutoff: float = attrs.field(default=0.2)
     inter_frame_deviation_time_const: float = attrs.field(default=0.5)
     inter_output_time_const: float = attrs.field(default=2)
-    inter_frame_presence_timeout: Optional[int] = attrs.field(default=3)
+    inter_frame_presence_timeout: int | None = attrs.field(default=3)
     inter_phase_boost: bool = attrs.field(default=False)
 
     def _collect_validation_results(self) -> list[a121.ValidationResult]:
@@ -539,10 +537,8 @@ class _PresenceWakeUpConfig_v0(AlgoConfigBase):
     num_zones: int = attrs.field(default=7)
     start_m: float = attrs.field(default=0.3)
     end_m: float = attrs.field(default=2.5)
-    profile: Optional[a121.Profile] = attrs.field(
-        default=None, converter=optional_profile_converter
-    )
-    step_length: Optional[int] = attrs.field(default=None)
+    profile: a121.Profile | None = attrs.field(default=None, converter=optional_profile_converter)
+    step_length: int | None = attrs.field(default=None)
     frame_rate: float = attrs.field(default=12.0)
     sweeps_per_frame: int = attrs.field(default=16)
     automatic_subsweeps: bool = attrs.field(default=False)
@@ -561,7 +557,7 @@ class _PresenceWakeUpConfig_v0(AlgoConfigBase):
     inter_frame_slow_cutoff: float = attrs.field(default=0.2)
     inter_frame_deviation_time_const: float = attrs.field(default=0.5)
     inter_output_time_const: float = attrs.field(default=2)
-    inter_frame_presence_timeout: Optional[int] = attrs.field(default=3)
+    inter_frame_presence_timeout: int | None = attrs.field(default=3)
     inter_phase_boost: bool = attrs.field(default=False)
 
     def _collect_validation_results(self) -> list[a121.ValidationResult]:

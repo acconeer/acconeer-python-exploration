@@ -59,15 +59,14 @@ class H5Recorder(h5_record.H5Recorder[SessionConfig, Metadata, GroupResult, Serv
     def __init__(
         self,
         path_or_file: PathOrH5File,
-        attachable: t.Optional[
-            RecorderAttachable[Recorder[SessionConfig, Metadata, GroupResult, ServerInfo]]
-        ] = None,
+        attachable: RecorderAttachable[Recorder[SessionConfig, Metadata, GroupResult, ServerInfo]]
+        | None = None,
         mode: str = "x",
         *,
-        _chunk_size: t.Optional[int] = None,
-        _lib_version: t.Optional[str] = None,
-        _timestamp: t.Optional[str] = None,
-        _uuid: t.Optional[str] = None,
+        _chunk_size: int | None = None,
+        _lib_version: str | None = None,
+        _timestamp: str | None = None,
+        _uuid: str | None = None,
     ) -> None:
         super().__init__(
             path_or_file,

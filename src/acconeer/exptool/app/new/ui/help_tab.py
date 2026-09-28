@@ -2,8 +2,6 @@
 # All rights reserved
 from __future__ import annotations
 
-import typing as t
-
 from PySide6.QtWidgets import QTextBrowser, QWidget
 
 
@@ -49,7 +47,7 @@ User guides and C SDKs.
 
 
 class HelpMainWidget(QTextBrowser):
-    def __init__(self, parent: t.Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__()
 
         self.setReadOnly(True)

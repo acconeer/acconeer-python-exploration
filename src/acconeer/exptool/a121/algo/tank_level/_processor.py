@@ -1,10 +1,9 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
 import enum
 import time
-from typing import Dict, List, Optional
 
 import attrs
 import numpy as np
@@ -36,7 +35,7 @@ class ProcessorExtraResult:
     Contains information for visualization in ET.
     """
 
-    level_and_time_for_plotting: Dict[str, npt.NDArray[np.float64]] = attrs.field(
+    level_and_time_for_plotting: dict[str, npt.NDArray[np.float64]] = attrs.field(
         eq=attrs_dict_ndarray_isclose
     )
 
@@ -45,9 +44,9 @@ class ProcessorExtraResult:
 class ProcessorResult:
     """Processor results"""
 
-    peak_detected: Optional[bool]
-    peak_status: Optional[ProcessorLevelStatus]
-    filtered_level: Optional[float]
+    peak_detected: bool | None
+    peak_status: ProcessorLevelStatus | None
+    filtered_level: float | None
     extra_result: ProcessorExtraResult
 
 
@@ -90,8 +89,8 @@ class Processor:
         self.level_history = np.full(self.median_filter_length, np.nan)
         self.median_vector = np.full(self.num_medians_to_average, np.nan)
 
-        self.near_edge_status_list: List[Optional[bool]] = []
-        self.peak_status_list: List[bool] = []
+        self.near_edge_status_list: list[bool | None] = []
+        self.peak_status_list: list[bool] = []
 
         self.level_and_time_for_plotting = {
             "time": np.full((TIME_HISTORY_S * UPDATES_PER_SECOND,), np.nan),
@@ -127,7 +126,7 @@ class Processor:
             self.mean_counter += 1
 
     def _update_level_and_time_for_plotting(
-        self, filtered_level: Optional[float], rel_time: float
+        self, filtered_level: float | None, rel_time: float
     ) -> None:
         if filtered_level is not None:
             self.level_and_time_for_plotting["time"] = (
@@ -138,7 +137,7 @@ class Processor:
             )[1:]
 
     def process(
-        self, detector_result: Dict[int, DetectorResult], detector_start_m: float
+        self, detector_result: dict[int, DetectorResult], detector_start_m: float
     ) -> ProcessorResult:
         # Get the first detector result (single sensor operation).
         (result,) = list(detector_result.values())

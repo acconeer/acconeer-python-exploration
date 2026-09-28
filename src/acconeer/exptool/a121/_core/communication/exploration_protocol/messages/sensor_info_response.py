@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -13,17 +13,17 @@ from acconeer.exptool.a121._core.entities import SensorInfo
 
 class SensorInfoHeader(te.TypedDict):
     connected: bool
-    serial: t.Optional[str]
+    serial: str | None
 
 
 @attrs.frozen
 class SensorInfoResponse(Message):
-    sensor_infos: t.Dict[int, SensorInfo]
+    sensor_infos: dict[int, SensorInfo]
 
     @classmethod
-    def parse(cls, header: t.Dict[str, t.Any], payload: bytes) -> SensorInfoResponse:
+    def parse(cls, header: dict[str, t.Any], payload: bytes) -> SensorInfoResponse:
         try:
-            sensor_infos: t.List[SensorInfoHeader] = header["sensor_info"]
+            sensor_infos: list[SensorInfoHeader] = header["sensor_info"]
 
             return cls(
                 {

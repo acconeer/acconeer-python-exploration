@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import copy
-import typing as t
 
 import attrs
 import numpy as np
@@ -32,7 +31,7 @@ from .config import HeatmapConfig
 
 @attrs.frozen(kw_only=True)
 class ProcessorResult(ProcessorResultCommon):
-    heatmap_coherent: t.Optional[npt.NDArray[np.complex128]]
+    heatmap_coherent: npt.NDArray[np.complex128] | None
     """Complex heatmap data."""
 
 

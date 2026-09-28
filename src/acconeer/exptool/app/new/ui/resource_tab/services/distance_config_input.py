@@ -26,7 +26,7 @@ from ._preset_selection import create_plugin_selection_widget
 class DistanceConfigEvent:
     service_id: str
     config: DetectorConfig
-    lower_idle_state: t.Optional[power.Sensor.LowerIdleState]
+    lower_idle_state: power.Sensor.LowerIdleState | None
 
     @property
     def translated_session_config(self) -> a121.SessionConfig:
@@ -50,7 +50,7 @@ class DistanceConfigInput(ScrollAreaDecorator):
         self._broker = broker
 
         self.power_state_selection = pidgets.ComboboxPidgetFactory[
-            t.Optional[power.Sensor.LowerIdleState]
+            power.Sensor.LowerIdleState | None
         ](
             name_label_text="Lower idle state:",
             name_label_tooltip="The lowest idle states of the sensor are set by the host",

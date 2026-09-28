@@ -1,10 +1,9 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 from enum import Enum
-from typing import Union
 
 
 class _StrEnum(str, Enum):
@@ -25,5 +24,5 @@ class Link(_StrEnum):
     SPI = "spi"
 
 
-ProtocolArg = Union[str, Protocol]
-LinkArg = Union[str, Link]
+ProtocolArg = str | Protocol
+LinkArg = str | Link

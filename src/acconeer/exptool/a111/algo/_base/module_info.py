@@ -1,11 +1,11 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Optional, Type
+from typing import Any
 
 import acconeer.exptool as et
 
@@ -29,7 +29,7 @@ class ModuleInfo:
     sensor_config_class: Any
     processor: Any
     multi_sensor: Any
-    docs_url: Optional[str]
-    calibration_class: Optional[Type[Calibration]] = None
-    calibration_config_class: Optional[Type[et.configbase.Config]] = None
-    calibration_mapper: Optional[Type[CalibrationMapper]] = None
+    docs_url: str | None
+    calibration_class: type[Calibration] | None = None
+    calibration_config_class: type[et.configbase.Config] | None = None
+    calibration_mapper: type[CalibrationMapper] | None = None

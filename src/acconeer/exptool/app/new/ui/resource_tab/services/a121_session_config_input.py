@@ -21,7 +21,7 @@ from acconeer.exptool.app.new.ui.utils import LayoutWrapper, ScrollAreaDecorator
 class SessionConfigEvent:
     service_id: str
     session_config: a121.SessionConfig
-    lower_idle_state: t.Optional[power.Sensor.LowerIdleState]
+    lower_idle_state: power.Sensor.LowerIdleState | None
 
 
 class SessionConfigInput(ScrollAreaDecorator):
@@ -39,7 +39,7 @@ class SessionConfigInput(ScrollAreaDecorator):
 
         self._broker = broker
         self.power_state_selection = pidgets.ComboboxPidgetFactory[
-            t.Optional[power.Sensor.LowerIdleState]
+            power.Sensor.LowerIdleState | None
         ](
             name_label_text="Lower idle state:",
             name_label_tooltip="The lowest idle states of the sensor are set by the host",

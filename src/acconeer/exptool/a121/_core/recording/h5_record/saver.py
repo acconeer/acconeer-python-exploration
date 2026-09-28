@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -30,8 +30,8 @@ _H5PY_STR_DTYPE = get_h5py_str_dtype()
 class H5Saver(
     h5_record.H5Saver[
         SessionConfig,  # Config type
-        t.List[t.Dict[int, Metadata]],  # Metadata type
-        t.List[t.Dict[int, Result]],  # Result type
+        list[dict[int, Metadata]],  # Metadata type
+        list[dict[int, Result]],  # Result type
         ServerInfo,  # Server info type
     ]
 ):
@@ -57,9 +57,9 @@ class H5Saver(
         self,
         group: h5py.Group,
         config: SessionConfig,
-        metadata: t.List[t.Dict[int, Metadata]],
-        calibrations: t.Optional[t.Dict[int, SensorCalibration]] = None,
-        calibrations_provided: t.Optional[t.Dict[int, bool]] = None,
+        metadata: list[dict[int, Metadata]],
+        calibrations: dict[int, SensorCalibration] | None = None,
+        calibrations_provided: dict[int, bool] | None = None,
         **kwargs: t.Any,
     ) -> None:
         group.create_dataset(
@@ -101,7 +101,7 @@ class H5Saver(
                     "provided", data=calibrations_provided[sensor_id], track_times=False
                 )
 
-    def _sample(self, group: h5py.Group, results: t.Iterable[t.List[t.Dict[int, Result]]]) -> None:
+    def _sample(self, group: h5py.Group, results: t.Iterable[list[dict[int, Result]]]) -> None:
         self._num_frames_current_session += self._write_results_to_file(
             group=group,
             start_idx=self._num_frames_current_session,
@@ -162,7 +162,7 @@ class H5Saver(
         )
 
     def _write_results_to_file(
-        self, group: h5py.Group, start_idx: int, results: t.List[t.List[t.Dict[int, Result]]]
+        self, group: h5py.Group, start_idx: int, results: list[list[dict[int, Result]]]
     ) -> int:
         """Saves the results to file.
 
@@ -171,7 +171,7 @@ class H5Saver(
         if len(results) == 0:
             return 0
 
-        res: t.List[Result]
+        res: list[Result]
         for group_idx, entry_idx, res in utils.iterate_extended_structure_as_entry_list(
             utils.transpose_extended_structures(results)
         ):

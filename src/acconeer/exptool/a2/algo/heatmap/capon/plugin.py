@@ -148,7 +148,7 @@ class ViewPlugin(A2ViewPluginBase):
         self.start_button.setEnabled(start_enabled)
 
     def on_backend_state_update(
-        self, state: t.Optional[SharedState[HeatmapConfig, HeatmapPlotConfig]]
+        self, state: SharedState[HeatmapConfig, HeatmapPlotConfig] | None
     ) -> None:
         if state is None:
             self.session_config_editor.set_data(None)

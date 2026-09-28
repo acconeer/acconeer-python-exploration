@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -18,15 +18,15 @@ from acconeer.exptool.a121.algo.smart_presence import _ref_app as smart_presence
 
 @attrs.frozen
 class RefAppResultSlice:
-    max_inter_zone: t.Optional[int]
-    max_intra_zone: t.Optional[int]
-    max_presence_zone: t.Optional[int]
+    max_inter_zone: int | None
+    max_intra_zone: int | None
+    max_presence_zone: int | None
 
     zone_limits: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
     total_zone_detections: npt.NDArray[np.int_] = attrs.field(eq=attrs_ndarray_eq)
     inter_zone_detections: npt.NDArray[np.int_] = attrs.field(eq=attrs_ndarray_eq)
     intra_zone_detections: npt.NDArray[np.int_] = attrs.field(eq=attrs_ndarray_eq)
-    wake_up_detections: t.Optional[npt.NDArray[np.int_]] = attrs.field(eq=attrs_ndarray_eq)
+    wake_up_detections: npt.NDArray[np.int_] | None = attrs.field(eq=attrs_ndarray_eq)
 
     used_config: smart_presence_ref_app._Mode
     switch_delay: bool

@@ -61,7 +61,7 @@ class TabState(Enum):
     ANGULAR = auto()
 
     @classmethod
-    def _missing_(cls, value: object) -> t.Optional[te.Self]:
+    def _missing_(cls, value: object) -> te.Self | None:
         if isinstance(value, str):
             return find_by_name(cls, value)
         else:
@@ -72,10 +72,10 @@ class TabState(Enum):
 class SharedState(t.Generic[_HeatmapConfigT, _PlotConfigT]):
     session_config: a2.SessionConfig
     heatmap_config: _HeatmapConfigT
-    metadata: t.Optional[Metadata]
-    noise_normalization_recording: t.Optional[NoiseNormalizationRecording]
+    metadata: Metadata | None
+    noise_normalization_recording: NoiseNormalizationRecording | None
     heatmap_plot_orientation: HeatmapPlotOrientation
-    max_update_rate: t.Optional[float]
+    max_update_rate: float | None
     tab_state: TabState
     replaying_record: bool
     plot_config: _PlotConfigT
@@ -100,7 +100,7 @@ class BackendPlugin(
         algo_group_name: str,
         heatmap_config_class: type[_HeatmapConfigT],
         heatmap_config_timeline: tm.Node[_HeatmapConfigT, te.Never, t.Any],
-        heatmap_processor_class: t.Type[HeatmapProcessorCommon[_HeatmapConfigT]],
+        heatmap_processor_class: type[HeatmapProcessorCommon[_HeatmapConfigT]],
         plot_config_class: type[_PlotConfigT],
     ) -> None:
         super().__init__(callback, generation, key)
@@ -116,8 +116,8 @@ class BackendPlugin(
             replaying_record=False,
             plot_config=plot_config_class.default(),
         )
-        self.processor: t.Optional[HeatmapProcessorCommon[_HeatmapConfigT]] = None
-        self.noise_normalization_processor: t.Optional[NoiseNormalizationResultProcessor] = None
+        self.processor: HeatmapProcessorCommon[_HeatmapConfigT] | None = None
+        self.noise_normalization_processor: NoiseNormalizationResultProcessor | None = None
         self.steering_vector_cache: dict[tuple[int, int], npt.NDArray[np.complex128]] = {}
         self.algo_group_name = algo_group_name
         self.heatmap_config_dataset_name = heatmap_config_dataset_name
@@ -126,7 +126,7 @@ class BackendPlugin(
         self.heatmap_config_class = heatmap_config_class
         self.broadcast()
 
-    def _start_session(self, recorder: t.Optional[a2.H5Recorder]) -> None:
+    def _start_session(self, recorder: a2.H5Recorder | None) -> None:
         assert self.client is not None
         if (
             self.shared_state.noise_normalization_recording is None
@@ -285,8 +285,8 @@ class BackendPlugin(
         self,
         *,
         record: a2.H5Record,
-        config_override: t.Optional[t.Any] = None,
-        context_override: t.Optional[t.Any] = None,
+        config_override: t.Any | None = None,
+        context_override: t.Any | None = None,
     ) -> None:
         if context_override is not None:
             self._logger.warning(f"Ignoring context override of type: {type(context_override)}")

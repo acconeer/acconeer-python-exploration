@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-import typing as t
-
 import attrs
 import numpy as np
 import numpy.typing as npt
@@ -45,8 +43,8 @@ class SubsweepProcessorResult:
     distance_velocity_map: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
 
 
-EntryResult = t.List[SubsweepProcessorResult]
-ProcessorResult = t.List[t.Dict[int, EntryResult]]
+EntryResult = list[SubsweepProcessorResult]
+ProcessorResult = list[dict[int, EntryResult]]
 
 
 class Processor(ExtendedProcessorBase[ProcessorResult]):
@@ -70,7 +68,7 @@ class Processor(ExtendedProcessorBase[ProcessorResult]):
         return window / np.sum(window)
 
     def _process_entry(
-        self, result_hanning_window: t.Tuple[a121.Result, npt.NDArray[np.float64]]
+        self, result_hanning_window: tuple[a121.Result, npt.NDArray[np.float64]]
     ) -> EntryResult:
         (result, hanning_window) = result_hanning_window
 

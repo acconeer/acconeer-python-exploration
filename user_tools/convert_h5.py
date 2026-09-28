@@ -11,7 +11,7 @@ import sys
 import typing as t
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, Tuple, Union, cast
+from typing import cast
 
 import numpy as np
 import numpy.typing as npt
@@ -162,9 +162,7 @@ class TableConverter:
             return str(v)
 
     @classmethod
-    def record_from_path(
-        cls, input_path: Union[Path, str]
-    ) -> Union[et.a111.recording.Record, a121.H5Record]:
+    def record_from_path(cls, input_path: Path | str) -> et.a111.recording.Record | a121.H5Record:
         try:
             x = a121.open_record(input_path)
             assert isinstance(x, H5Record)
@@ -181,11 +179,11 @@ class TableConverter:
         raise Exception(msg)
 
     @classmethod
-    def from_path(cls, input_path: Union[Path, str]) -> TableConverter:
+    def from_path(cls, input_path: Path | str) -> TableConverter:
         return cls.from_record(cls.record_from_path(input_path))
 
     @classmethod
-    def from_record(cls, record: Union[et.a111.recording.Record, a121.H5Record]) -> TableConverter:
+    def from_record(cls, record: et.a111.recording.Record | a121.H5Record) -> TableConverter:
         if isinstance(record, et.a111.recording.Record):
             return A111RecordTableConverter(record)
         elif isinstance(record, a121.H5Record):
@@ -368,18 +366,18 @@ class A111RecordTableConverter(TableConverter):
 
 class A121RecordTableConverter(TableConverter):
     sesid_grid_sid_combinations: list[
-        Tuple[int, int, int]
+        tuple[int, int, int]
     ]  # Combination for session, group, and sensor id
 
     def __init__(self, record: a121.H5Record) -> None:
         self._record = record
         self.sesid_grid_sid_combinations = self._generate_session_group_sensor_id_combination()
         _, group_ids, sensor_ids = zip(*self.sesid_grid_sid_combinations)
-        self.group_ids: Tuple[int, ...] = tuple(sorted(set(group_ids)))
-        self.sensor_ids: Tuple[int, ...] = tuple(sorted(set(sensor_ids)))
+        self.group_ids: tuple[int, ...] = tuple(sorted(set(group_ids)))
+        self.sensor_ids: tuple[int, ...] = tuple(sorted(set(sensor_ids)))
 
-    def _generate_session_group_sensor_id_combination(self) -> list[Tuple[int, int, int]]:
-        sesid_grid_sid_combinations: list[Tuple[int, int, int]] = []
+    def _generate_session_group_sensor_id_combination(self) -> list[tuple[int, int, int]]:
+        sesid_grid_sid_combinations: list[tuple[int, int, int]] = []
         for session_index in list(range(self._record.num_sessions)):
             session_config = self._record.session(session_index).session_config
             # Create DataFrames from configurations
@@ -480,8 +478,8 @@ class A121RecordTableConverter(TableConverter):
 
     def get_configs(self, session_index: int = 0) -> dict[str, t.Any]:
         group_configs = {}
-        subsweep_config_with_index: Dict[str, t.Any] = {}
-        sensor_config_with_index: Dict[str, t.Any] = {}
+        subsweep_config_with_index: dict[str, t.Any] = {}
+        sensor_config_with_index: dict[str, t.Any] = {}
         session_config = self._record.session(session_index).session_config
         # Create DataFrames from configurations
         for group_id, sensor_id, sensor_config in _core.utils.iterate_extended_structure(
@@ -760,7 +758,7 @@ class A121ProcessedData:
     _record: a121.H5Record
     num_frames: int
 
-    def __init__(self, input_record_or_path: Union[a121.H5Record, Path, str]) -> None:
+    def __init__(self, input_record_or_path: a121.H5Record | Path | str) -> None:
         if isinstance(input_record_or_path, str):
             input_path = Path(input_record_or_path)
             self._record = self.load_file(input_path)
@@ -771,8 +769,8 @@ class A121ProcessedData:
             self._record = input_record_or_path
         self.h5_file = self._record.file
         self.num_frames: int = 0
-        self.processed_data: Dict[str, list[t.Any]] = {}
-        self.algo_data_as_dict: Dict[str, t.Any] = {}
+        self.processed_data: dict[str, list[t.Any]] = {}
+        self.algo_data_as_dict: dict[str, t.Any] = {}
         for session_index in range(self._record.num_sessions):
             self.num_frames = self.num_frames + self._record.session(session_index).num_frames
         self.client = _ReplayingClient(self._record, realtime_replay=False)
@@ -795,11 +793,11 @@ class A121ProcessedData:
         if frame_value % interval == 0:
             print(f"... {(frame_value / self.num_frames):.0%}")
 
-    def get_processed_data(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    def get_processed_data(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         df_app_config = pd.DataFrame()
         df_processed_data = pd.DataFrame()
 
-        load_algo_and_client: Dict[str, t.Callable[[], None]] = {
+        load_algo_and_client: dict[str, t.Callable[[], None]] = {
             "breathing": self.get_processed_data_breathing,
             "bilateration": self.get_processed_data_bilateration,
             "distance_detector": self.get_processed_data_distance,
@@ -825,7 +823,7 @@ class A121ProcessedData:
             no_proc_data = ["Sparse iq only contains sparse iq data and no application config"]
             self.algo_data_as_dict = {"Config": no_proc_data}
 
-        flattened_config: Dict[t.Any, t.Any] = {}
+        flattened_config: dict[t.Any, t.Any] = {}
 
         # Iterate over each key-value pair in the original dictionary
         for key, value in self.algo_data_as_dict.items():
@@ -1493,7 +1491,7 @@ class A121ProcessedData:
         self.processed_data.setdefault("far_result", []).append(far_result)
 
     def distance_result_as_row(
-        self, processed_data: Dict[int, distance._detector.DetectorResult], sensor_ids: list[int]
+        self, processed_data: dict[int, distance._detector.DetectorResult], sensor_ids: list[int]
     ) -> None:
         distances = []
         strengths = []
@@ -1542,7 +1540,7 @@ class A121ProcessedData:
 
 
 class DataConverter:
-    def __init__(self, dict_excel_file: Dict[str, t.Any]):
+    def __init__(self, dict_excel_file: dict[str, t.Any]):
         """
         Initializes the Excel, Csv, and Tsv-Saver class.
 
@@ -1553,7 +1551,7 @@ class DataConverter:
         """
         self.dict_excel_file = dict_excel_file
 
-    def save_to_file(self, filepath: Union[Path, str]) -> None:
+    def save_to_file(self, filepath: Path | str) -> None:
         """
         Saves the DataFrames in the dictionary to an Excel file with multiple sheets.
 

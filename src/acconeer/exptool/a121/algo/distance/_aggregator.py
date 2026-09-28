@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 import attrs
 import numpy as np
 import numpy.typing as npt
@@ -25,8 +23,8 @@ from ._views import SensorResultsView, SubsweepReference
 @attrs.frozen(kw_only=True)
 class ProcessorSpec:
     processor_config: ProcessorConfig = attrs.field()
-    subsweep_references: Optional[list[SubsweepReference]] = attrs.field(default=None)
-    processor_context: Optional[ProcessorContext] = attrs.field(default=None)
+    subsweep_references: list[SubsweepReference] | None = attrs.field(default=None)
+    processor_context: ProcessorContext | None = attrs.field(default=None)
 
 
 @attrs.mutable(kw_only=True)
@@ -39,7 +37,7 @@ class AggregatorResult:
     processor_results: list[ProcessorResult] = attrs.field()
     estimated_distances: npt.NDArray[np.float64] = attrs.field()
     estimated_strengths: npt.NDArray[np.float64] = attrs.field()
-    near_edge_status: Optional[bool] = attrs.field(default=None)
+    near_edge_status: bool | None = attrs.field(default=None)
     service_extended_result: list[dict[int, a121.Result]] = attrs.field()
 
 

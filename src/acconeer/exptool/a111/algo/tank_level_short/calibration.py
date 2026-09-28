@@ -1,10 +1,9 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 import numpy as np
 
@@ -45,7 +44,7 @@ class EnvelopeCalibrationMapper(CalibrationMapper):
     def get_updated_calibration_from_configuration(
         cls,
         configuration: EnvelopeCalibrationConfiguration,
-        calibration: Optional[EnvelopeCalibration],
+        calibration: EnvelopeCalibration | None,
     ) -> EnvelopeCalibration:
         if calibration is None:
             msg = "Calibration cannot be None in this context."

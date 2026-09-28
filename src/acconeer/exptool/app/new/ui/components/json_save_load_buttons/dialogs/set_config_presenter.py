@@ -31,7 +31,7 @@ def _sensor_config_parameters(config: a121.SensorConfig) -> str:
     )
 
 
-def _subsweep_parameters(config: a121.SubsweepConfig, *, index: t.Optional[int]) -> str:
+def _subsweep_parameters(config: a121.SubsweepConfig, *, index: int | None) -> str:
     return "\n".join(
         [
             (
@@ -72,7 +72,7 @@ def _uint(number: int) -> str:
     return f"{number}U"
 
 
-def _rate(number: t.Optional[float]) -> str:
+def _rate(number: float | None) -> str:
     return "0.0f" if number is None else f"{number:.3f}f"
 
 
@@ -97,7 +97,7 @@ def _frame_it(function_body: str) -> str:
     )
 
 
-def set_config_presenter(instance: t.Any, t: PresentationType) -> t.Optional[str]:
+def set_config_presenter(instance: t.Any, t: PresentationType) -> str | None:
     if t is not PresentationType.C_SET_CONFIG:
         return None
 

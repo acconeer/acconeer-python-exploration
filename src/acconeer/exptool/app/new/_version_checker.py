@@ -3,15 +3,13 @@
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
-
 import requests
 
 
 _REQUEST_TIMEOUT_S = 10
 
 
-def check_package_outdated(name: str, current_version: str) -> Tuple[bool, Optional[str]]:
+def check_package_outdated(name: str, current_version: str) -> tuple[bool, str | None]:
     try:
         response = requests.get(
             f"https://pypi.python.org/pypi/{name}/json", timeout=_REQUEST_TIMEOUT_S

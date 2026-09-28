@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ _T = t.TypeVar("_T")
 
 @te.runtime_checkable
 class Descriptor(te.Protocol[_T]):
-    def __get__(self, obj: t.Any, objtype: t.Optional[type] = None) -> _T: ...
+    def __get__(self, obj: t.Any, objtype: type | None = None) -> _T: ...
 
     def __set__(self, obj: t.Any, value: _T) -> None: ...
 
@@ -26,8 +26,8 @@ def delegate_field(
     descriptor: t.Any,
     type_: type[_T],
     *,
-    doc: t.Union[str, type, None] = None,
-    error_format: t.Optional[str] = None,
+    doc: str | type | None = None,
+    error_format: str | None = None,
 ) -> Descriptor[_T]:
     """
     Generate a property of the outer class that modifies an inner class's fields.
@@ -110,7 +110,7 @@ def delegate_field(
     )
 
 
-def _descriptor_given_name(descriptor: t.Any) -> t.Optional[str]:
+def _descriptor_given_name(descriptor: t.Any) -> str | None:
     if isinstance(descriptor, property):
         return getattr(descriptor.fget, "__name__", None)
 
@@ -119,7 +119,7 @@ def _descriptor_given_name(descriptor: t.Any) -> t.Optional[str]:
 
 @contextlib.contextmanager
 def _more_helpful_attribute_error(
-    error_format: t.Optional[str],
+    error_format: str | None,
     delegate_name: str,
     descriptor: t.Any,
 ) -> t.Iterator[None]:
@@ -149,9 +149,7 @@ def _with_return_type_annotation(
     return f
 
 
-def _determine_docstring(
-    doc: t.Union[str, type, None], descriptor: Descriptor[t.Any]
-) -> t.Optional[str]:
+def _determine_docstring(doc: str | type | None, descriptor: Descriptor[t.Any]) -> str | None:
     """See behaviour of "doc" parameter in delegate_field."""
     if isinstance(doc, str):
         return None if doc == "" else doc

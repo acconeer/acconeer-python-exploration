@@ -5,7 +5,6 @@ from __future__ import annotations
 
 from copy import copy
 from enum import Enum
-from typing import Optional
 
 import numpy as np
 
@@ -42,7 +41,7 @@ class Processor:
         self.sc_sum_bg_sweeps = np.zeros(self.num_depths)
         self.sc_sum_squared_bg_sweeps = np.zeros(self.num_depths)
         self.sc_used_threshold = np.full(self.num_depths, np.nan)
-        self.calibration: Optional[DistanceDetectorCalibration] = None
+        self.calibration: DistanceDetectorCalibration | None = None
 
         self.sc_bg_calculated = False
 
@@ -109,7 +108,7 @@ class Processor:
             self.sc_used_mean + (1.0 / (self.sc_sensitivity + 1e-10) - 1.0) * self.sc_used_std
         )
 
-    def get_sc_threshold(self, sweep) -> Optional[DistanceDetectorCalibration]:
+    def get_sc_threshold(self, sweep) -> DistanceDetectorCalibration | None:
         # Collect first sweeps to construct a stationary clutter threshold
         # Accumulate sweeps instead of saving each for lower memory footprint
         calibration = None

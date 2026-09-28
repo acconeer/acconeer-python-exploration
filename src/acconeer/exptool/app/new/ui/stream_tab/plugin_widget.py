@@ -7,7 +7,7 @@ import logging
 from enum import Enum
 from functools import partial
 from importlib.resources import as_file, files
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 import qtawesome as qta
 
@@ -102,7 +102,7 @@ class PluginPresetButton(QPushButton):
 
 
 class PluginPresetPlaceholder(QWidget):
-    def __init__(self, app_model: AppModel, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, app_model: AppModel, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
         self.app_model = app_model
@@ -116,7 +116,7 @@ class PluginPresetPlaceholder(QWidget):
         layout.setSpacing(11)
         self.group_box = GroupBox.vertical("Preset Configurations", parent=self)
         layout.addWidget(self.group_box)
-        self.preset_buttons_widget: Optional[QWidget] = None
+        self.preset_buttons_widget: QWidget | None = None
 
         self.setLayout(layout)
 
@@ -128,7 +128,7 @@ class PluginPresetPlaceholder(QWidget):
     def _on_preset_click(self, preset_id: Enum) -> None:
         self.app_model.set_plugin_preset(preset_id)
 
-    def _on_load_plugin(self, plugin_spec: Optional[PluginSpecBase]) -> None:
+    def _on_load_plugin(self, plugin_spec: PluginSpecBase | None) -> None:
         self._clear()
         if plugin_spec is not None and plugin_spec.presets is not None:
             self.preset_buttons_widget = QWidget(self.group_box)
@@ -328,7 +328,7 @@ class PluginSelection(QWidget):
         self.app_model.load_plugin(plugin)
 
     def _on_app_model_update(self, app_model: AppModel) -> None:
-        plugin: Optional[PluginSpec] = app_model.plugin
+        plugin: PluginSpec | None = app_model.plugin
 
         if plugin is None:
             self.button_group.setExclusive(False)
@@ -356,7 +356,7 @@ class PluginSelection(QWidget):
 class PluginSelectionArea(QWidget):
     _PREFERRED_MAX_WIDTH = 350
 
-    def __init__(self, app_model: AppModel, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, app_model: AppModel, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
         layout = QVBoxLayout(self)
@@ -520,7 +520,7 @@ class PluginPlotArea(QFrame):
         with self.app_model.report_timing(f"{plugin_class_name}.draw()"):
             self.plot_plugin.draw()
 
-    def _on_app_model_load_plugin(self, plugin: Optional[PluginSpecBase]) -> None:
+    def _on_app_model_load_plugin(self, plugin: PluginSpecBase | None) -> None:
         log.debug(
             f"{self.__class__.__name__} is going to replace its plot_plugin "
             + f"({self.plot_plugin.__class__.__name__}) in favour of {plugin}"
@@ -538,7 +538,7 @@ class PluginPlotArea(QFrame):
 
 
 class ControlPlaceholder(QWidget):
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
 
         layout = QGridLayout(self)
@@ -564,7 +564,7 @@ class PluginControlArea(QWidget):
         self.app_model.sig_load_plugin.connect(self._on_app_model_load_plugin)
 
         self.child_widget: QWidget = ControlPlaceholder()
-        self.view_plugin: Optional[Any] = None
+        self.view_plugin: Any | None = None
         self._child_container: QWidget = ScrollAreaDecorator(self.child_widget)
 
         layout = QVBoxLayout(self)
@@ -579,7 +579,7 @@ class PluginControlArea(QWidget):
             raise RuntimeError(msg)
         self.setLayout(layout)
 
-    def _on_app_model_load_plugin(self, plugin_spec: Optional[PluginSpecBase]) -> None:
+    def _on_app_model_load_plugin(self, plugin_spec: PluginSpecBase | None) -> None:
         log.debug(
             f"{self.__class__.__name__} is going to replace its view_plugin"
             + f"({self.view_plugin.__class__.__name__}) in favour of {plugin_spec}"

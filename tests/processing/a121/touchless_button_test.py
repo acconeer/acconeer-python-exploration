@@ -1,8 +1,8 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 import attrs
 import typing_extensions as te
@@ -14,14 +14,14 @@ from acconeer.exptool.a121.algo import touchless_button
 
 @attrs.frozen
 class ResultSlice:
-    detection_close: Optional[bool] = attrs.field()
-    detection_far: Optional[bool] = attrs.field()
+    detection_close: bool | None = attrs.field()
+    detection_far: bool | None = attrs.field()
 
     @classmethod
     def from_processor_result(cls, result: touchless_button.ProcessorResult) -> te.Self:
         def is_none_or_detection(
-            x: Optional[touchless_button.RangeResult],
-        ) -> Optional[bool]:
+            x: touchless_button.RangeResult | None,
+        ) -> bool | None:
             return x.detection if x is not None else None
 
         return cls(

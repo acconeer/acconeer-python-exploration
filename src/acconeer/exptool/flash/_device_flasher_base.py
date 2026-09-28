@@ -1,9 +1,7 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
-
-from typing import Optional
 
 
 class DeviceFlasherBase:
@@ -11,9 +9,9 @@ class DeviceFlasherBase:
         pass
 
     @staticmethod
-    def get_boot_description(device_name: str) -> Optional[str]:
+    def get_boot_description(device_name: str) -> str | None:
         return None
 
     @staticmethod
-    def get_post_dfu_description(device_name: str) -> Optional[str]:
+    def get_post_dfu_description(device_name: str) -> str | None:
         return None

@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Optional
 
 import attrs
 import numpy as np
@@ -76,7 +75,7 @@ class PeakData:
             color_ids=self.color_ids,
         )
 
-    def limit(self, limit: Optional[int]) -> PeakData:
+    def limit(self, limit: int | None) -> PeakData:
         if limit is None:
             return self
         return PeakData(
@@ -116,7 +115,7 @@ class VibrationPlot:
 
         self.peak_list_display_type = PeakListDisplayType.PEAK
         self.peak_list_sorting_method = ReportedPeaksSortingMethod.DISPLACEMENT
-        self.peak_limit: Optional[int] = None
+        self.peak_limit: int | None = None
 
         self.setup_done = False
 
@@ -124,7 +123,7 @@ class VibrationPlot:
         self,
         pg_widget: pg.GraphicsLayoutWidget,
         meas_dist_m: float,
-        q_layout: Optional[QLayout] = None,
+        q_layout: QLayout | None = None,
     ) -> None:
         self.peak_data = PeakData()
         self.meas_dist_m = meas_dist_m

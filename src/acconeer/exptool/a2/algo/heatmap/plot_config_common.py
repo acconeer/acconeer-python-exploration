@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-import typing as t
-
 import attrs
 import attrs.validators as av
 import typing_extensions as te
@@ -19,7 +17,7 @@ class HeatmapPlotConfig(AttrsMappingTransformsMixin):
     normalized_heat_cutoff: float = attrs.field(default=0.75)
     """Cutoff for 'heat points'. A value of 0.5 will discard points that have less than 50% of the max heat"""
 
-    max_2d_heat: t.Optional[int] = attrs.field(default=None, validator=av.optional(av.gt(0)))
+    max_2d_heat: int | None = attrs.field(default=None, validator=av.optional(av.gt(0)))
     """Max magnitude to display. Magnitudes above this value will be white in the heatmap"""
 
     log_scale_output: bool = attrs.field(default=False)

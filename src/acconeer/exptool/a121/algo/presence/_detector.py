@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any, Optional, Tuple
+from typing import Any
 
 import attrs
 import h5py
@@ -39,7 +39,7 @@ from ._subsweep_utils import get_subsweep_configs
 SPARSE_IQ_PPC = 24
 
 
-def optional_profile_converter(profile: Optional[Profile]) -> Optional[Profile]:
+def optional_profile_converter(profile: Profile | None) -> Profile | None:
     if profile is None:
         return None
 
@@ -59,13 +59,11 @@ class DetectorConfig(AlgoConfigBase):
     end_m: float = attrs.field(default=2.5)
     """End point of measurement interval in meters."""
 
-    profile: Optional[a121.Profile] = attrs.field(
-        default=None, converter=optional_profile_converter
-    )
+    profile: a121.Profile | None = attrs.field(default=None, converter=optional_profile_converter)
     """Sets the profile. If no argument is provided, the highest possible
     profile without interference of direct leakage is used to maximize SNR."""
 
-    step_length: Optional[int] = attrs.field(default=None)
+    step_length: int | None = attrs.field(default=None)
     """Step length in points. If no argument is provided, the step length is automatically
     calculated based on the profile."""
 
@@ -122,7 +120,7 @@ class DetectorConfig(AlgoConfigBase):
     inter_output_time_const: float = attrs.field(default=2)
     """Time constant for the output in the inter-frame part."""
 
-    inter_frame_presence_timeout: Optional[int] = attrs.field(default=3)
+    inter_frame_presence_timeout: int | None = attrs.field(default=3)
     """Number of seconds the inter-frame presence score needs to decrease before exponential
     scaling starts for faster decline."""
 
@@ -281,13 +279,13 @@ class DetectorMetadata:
     end_m: float = attrs.field()
     """Actual end point of measurement in meters"""
 
-    step_length_m: Optional[float] = attrs.field()
+    step_length_m: float | None = attrs.field()
     """Actual step length between each data point of the measurement in meters. (Only valid if automatic_subsweeps is False)"""
 
     num_points: int = attrs.field()
     """The number of data points in the measurement"""
 
-    profile: Optional[a121.Profile] = attrs.field()
+    profile: a121.Profile | None = attrs.field()
     """Profile used for measurement. (Only valid if automatic_subsweeps is False)"""
 
 
@@ -330,19 +328,19 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
         client: a121.Client,
         sensor_id: int,
         detector_config: DetectorConfig,
-        detector_context: Optional[DetectorContext] = None,
+        detector_context: DetectorContext | None = None,
     ) -> None:
         super().__init__(client=client, config=detector_config)
         self.sensor_id = sensor_id
-        self.detector_metadata: Optional[DetectorMetadata] = None
+        self.detector_metadata: DetectorMetadata | None = None
         self.detector_context = detector_context
 
         self.started = False
 
     def start(
         self,
-        recorder: Optional[a121.Recorder] = None,
-        _algo_group: Optional[h5py.Group] = None,
+        recorder: a121.Recorder | None = None,
+        _algo_group: h5py.Group | None = None,
     ) -> None:
         if self.started:
             msg = "Already started"
@@ -488,7 +486,7 @@ def _record_algo_data(
 
 def _load_algo_data(
     algo_group: h5py.Group,
-) -> Tuple[int, DetectorConfig, Optional[DetectorContext]]:
+) -> tuple[int, DetectorConfig, DetectorContext | None]:
     sensor_id = algo_group["sensor_id"][()]
     try:
         config = detector_config_timeline.migrate(algo_group["detector_config"][()].decode())
@@ -508,10 +506,8 @@ def _load_algo_data(
 class _DetectorConfig_v0(AlgoConfigBase):
     start_m: float = attrs.field(default=0.3)
     end_m: float = attrs.field(default=2.5)
-    profile: Optional[a121.Profile] = attrs.field(
-        default=None, converter=optional_profile_converter
-    )
-    step_length: Optional[int] = attrs.field(default=None)
+    profile: a121.Profile | None = attrs.field(default=None, converter=optional_profile_converter)
+    step_length: int | None = attrs.field(default=None)
     frame_rate: float = attrs.field(default=12.0)
     sweeps_per_frame: int = attrs.field(default=16)
     automatic_subsweeps: bool = attrs.field(default=False)
@@ -530,7 +526,7 @@ class _DetectorConfig_v0(AlgoConfigBase):
     inter_frame_slow_cutoff: float = attrs.field(default=0.2)
     inter_frame_deviation_time_const: float = attrs.field(default=0.5)
     inter_output_time_const: float = attrs.field(default=2)
-    inter_frame_presence_timeout: Optional[int] = attrs.field(default=3)
+    inter_frame_presence_timeout: int | None = attrs.field(default=3)
     inter_phase_boost: bool = attrs.field(default=False)
 
     def _collect_validation_results(self) -> list[a121.ValidationResult]:

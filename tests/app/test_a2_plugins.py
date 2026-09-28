@@ -80,9 +80,7 @@ def _stretch_range(subsweep: t.Any) -> None:
     subsweep.num_points = 400
 
 
-def _create_backend_plugin(
-    plugin: PluginSpec, messages: t.Optional[list[Message]] = None
-) -> t.Any:
+def _create_backend_plugin(plugin: PluginSpec, messages: list[Message] | None = None) -> t.Any:
     callback = (lambda _: None) if messages is None else messages.append
     return plugin.create_backend_plugin(callback=callback, key=plugin.key)
 
@@ -111,7 +109,7 @@ def _connected_app_model(backend_plugin_state: object) -> Mock:
 
 
 @pytest.mark.parametrize(("plugin", "preset"), A2_PLUGIN_PRESETS)
-def test_configuration_is_valid(plugin: PluginSpec, preset: t.Optional[PluginPresetBase]) -> None:
+def test_configuration_is_valid(plugin: PluginSpec, preset: PluginPresetBase | None) -> None:
     backend_plugin = plugin.create_backend_plugin(callback=lambda _: None, key=plugin.key)
     if preset is not None:
         backend_plugin.set_preset(preset_id=preset.preset_id.value)

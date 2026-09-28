@@ -55,20 +55,20 @@ class Client(
 
         self._session_is_started = False
 
-        self._recorder: t.Optional[_RecorderT] = None
-        self._metadata: t.Optional[_MetadataT] = None
+        self._recorder: _RecorderT | None = None
+        self._metadata: _MetadataT | None = None
 
     @classmethod
     def open(
         cls,
-        ip_address: t.Optional[str] = None,
-        tcp_port: t.Optional[int] = None,
-        serial_port: t.Optional[str] = None,
-        usb_device: t.Optional[t.Union[str, bool]] = None,
-        mock: t.Optional[bool] = None,
-        override_baudrate: t.Optional[int] = None,
+        ip_address: str | None = None,
+        tcp_port: int | None = None,
+        serial_port: str | None = None,
+        usb_device: str | bool | None = None,
+        mock: bool | None = None,
+        override_baudrate: int | None = None,
         flow_control: bool = True,
-        generation: t.Optional[str] = None,
+        generation: str | None = None,
     ) -> te.Self:
         """
         Open a new client
@@ -149,7 +149,7 @@ class Client(
     @abc.abstractmethod
     def _recorder_stop_session(self) -> None: ...
 
-    def detach_recorder(self) -> t.Optional[_RecorderT]:
+    def detach_recorder(self) -> _RecorderT | None:
         if self.session_is_started:
             msg = "Cannot detach a recorder when session is started."
             raise ClientError(msg)

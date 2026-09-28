@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from typing import Any, Optional
+from typing import Any
 
 import attrs
 import numpy as np
@@ -26,9 +26,9 @@ class ResultSlice:
     peak_displacements: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
     peak_frequencies: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
     max_sweep_amplitude: float
-    lp_displacements: Optional[npt.NDArray[np.float64]] = attrs.field(eq=attrs_ndarray_isclose)
+    lp_displacements: npt.NDArray[np.float64] | None = attrs.field(eq=attrs_ndarray_isclose)
     lp_displacements_freqs: npt.NDArray[np.float64] = attrs.field(eq=attrs_ndarray_isclose)
-    time_series_std: Optional[float] = attrs.field()
+    time_series_std: float | None = attrs.field()
 
     @classmethod
     def from_processor_result(cls, result: vibration.ExampleAppResult) -> te.Self:

@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import warnings
-from typing import Any, Optional, Tuple
+from typing import Any
 
 import attrs
 import h5py
@@ -33,7 +33,7 @@ SPARSE_IQ_PPC = 24
 NUM_SEGMENTS = 4  # should be a power of 2
 
 
-def optional_profile_converter(profile: Optional[Profile]) -> Optional[Profile]:
+def optional_profile_converter(profile: Profile | None) -> Profile | None:
     if profile is None:
         return None
 
@@ -53,29 +53,27 @@ class DetectorConfig(AlgoConfigBase):
     num_points: int = attrs.field(default=1)
     """Number of points to measure."""
 
-    step_length: Optional[int] = attrs.field(
+    step_length: int | None = attrs.field(
         default=None,
         validator=attrs.validators.optional(a121.SubsweepConfig.step_length_validator),
     )
     """Step length between points."""
 
-    profile: Optional[a121.Profile] = attrs.field(
-        default=None, converter=optional_profile_converter
-    )
+    profile: a121.Profile | None = attrs.field(default=None, converter=optional_profile_converter)
     """
     Sets the profile. If no argument is provided, the highest possible
     profile without interference of direct leakage is used to maximize SNR.
     """
-    frame_rate: Optional[float] = attrs.field(default=None)
+    frame_rate: float | None = attrs.field(default=None)
     """Frame rate in Hz."""
 
     num_bins: int = attrs.field(default=50)
     """Determines the resolution in m/s by max_speed/num_bins."""
 
-    sweep_rate: Optional[int] = attrs.field(default=None)
+    sweep_rate: int | None = attrs.field(default=None)
     """Sweep rate in Hz."""
 
-    hwaas: Optional[int] = attrs.field(default=None)
+    hwaas: int | None = attrs.field(default=None)
     """Number of HWAAS."""
 
     max_speed: float = attrs.field(default=10.0)
@@ -260,7 +258,7 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
     ) -> None:
         super().__init__(client=client, config=detector_config)
         self.sensor_id = sensor_id
-        self.detector_metadata: Optional[DetectorMetadata] = None
+        self.detector_metadata: DetectorMetadata | None = None
 
         self.started = False
         self.config = detector_config
@@ -268,8 +266,8 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
 
     def start(
         self,
-        recorder: Optional[a121.Recorder] = None,
-        _algo_group: Optional[h5py.Group] = None,
+        recorder: a121.Recorder | None = None,
+        _algo_group: h5py.Group | None = None,
     ) -> None:
         if self.started:
             msg = "Already started"
@@ -449,7 +447,7 @@ def _record_algo_data(
     _create_h5_string_dataset(algo_group, "detector_config", config.to_json())
 
 
-def _load_algo_data(algo_group: h5py.Group) -> Tuple[int, DetectorConfig]:
+def _load_algo_data(algo_group: h5py.Group) -> tuple[int, DetectorConfig]:
     sensor_id = algo_group["sensor_id"][()]
     config = DetectorConfig.from_json(algo_group["detector_config"][()])
     return sensor_id, config

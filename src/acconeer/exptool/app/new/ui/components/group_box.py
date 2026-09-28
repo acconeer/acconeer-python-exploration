@@ -32,12 +32,12 @@ class GroupBox(QWidget, t.Generic[_T]):
 
     def __init__(
         self,
-        left_header: t.Union[QWidget, str],
-        layout_type: t.Type[_T],
-        right_header: t.Optional[QWidget] = None,
+        left_header: QWidget | str,
+        layout_type: type[_T],
+        right_header: QWidget | None = None,
         *,
         min_top_padding: int = 0,
-        parent: t.Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self._own_layout = QVBoxLayout()
@@ -66,11 +66,11 @@ class GroupBox(QWidget, t.Generic[_T]):
     @classmethod
     def vertical(
         cls,
-        left_header: t.Union[QWidget, str],
-        right_header: t.Optional[QWidget] = None,
+        left_header: QWidget | str,
+        right_header: QWidget | None = None,
         *,
         min_top_padding: int = 0,
-        parent: t.Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ) -> GroupBox[QVBoxLayout]:
         return cls(
             left_header,
@@ -83,11 +83,11 @@ class GroupBox(QWidget, t.Generic[_T]):
     @classmethod
     def grid(
         cls,
-        left_header: t.Union[QWidget, str],
-        right_header: t.Optional[QWidget] = None,
+        left_header: QWidget | str,
+        right_header: QWidget | None = None,
         *,
         min_top_padding: int = 0,
-        parent: t.Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ) -> GroupBox[QGridLayout]:
         return cls(
             left_header,
@@ -100,11 +100,11 @@ class GroupBox(QWidget, t.Generic[_T]):
     @classmethod
     def horizontal(
         cls,
-        left_header: t.Union[QWidget, str],
-        right_header: t.Optional[QWidget] = None,
+        left_header: QWidget | str,
+        right_header: QWidget | None = None,
         *,
         min_top_padding: int = 0,
-        parent: t.Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ) -> GroupBox[QHBoxLayout]:
         return cls(
             left_header,

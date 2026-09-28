@@ -3,8 +3,6 @@
 
 from __future__ import annotations
 
-from typing import List
-
 from textual import events
 from textual.app import App, Driver
 from textual.geometry import Spacing
@@ -33,7 +31,7 @@ class DevLicenseTuiDialog(App):
 
         self.license = license
 
-        self.tab_order: List[Button] = []
+        self.tab_order: list[Button] = []
         self.tab_index = -1
 
     @classmethod

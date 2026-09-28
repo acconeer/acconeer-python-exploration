@@ -45,11 +45,11 @@ class CartesianHeatmapPlot(pg.GraphicsObject):
         super().__init__()
         self._levels = (0.0, 1.0)
         self._bounding_rect = QRectF()
-        self._x_corners: t.Optional[npt.NDArray[np.float64]] = None
-        self._y_corners: t.Optional[npt.NDArray[np.float64]] = None
+        self._x_corners: npt.NDArray[np.float64] | None = None
+        self._y_corners: npt.NDArray[np.float64] | None = None
         self.az_angles: list[float] = []
         self.distances_m: list[float] = []
-        self.session_config: t.Optional[a2.SessionConfig] = None
+        self.session_config: a2.SessionConfig | None = None
         self._az_angle_range: tuple[float, float] = (0.0, 0.0)
         self._mesh = pg.PColorMeshItem(enableAutoLevels=False)
         self._mesh.setParentItem(self)

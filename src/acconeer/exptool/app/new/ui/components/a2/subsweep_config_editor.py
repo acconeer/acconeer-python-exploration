@@ -55,7 +55,7 @@ def range_factory_mapping() -> PidgetFactoryMapping:
 
 
 def hwaas_factory_mapping(
-    extra_widget_factory: t.Callable[[], t.Optional[QWidget]] = lambda: None,
+    extra_widget_factory: t.Callable[[], QWidget | None] = lambda: None,
 ) -> PidgetFactoryMapping:
     return {
         "hwaas_max": pidgets.IntPidgetFactory(
@@ -87,7 +87,7 @@ class _QDialogThatIgnoresReturn(QDialog):
         super().keyPressEvent(arg__1)
 
 
-class SubsweepConfigEditor(DataEditor[t.Optional[a2.SubsweepConfig]]):
+class SubsweepConfigEditor(DataEditor[a2.SubsweepConfig | None]):
     def __init__(self) -> None:
         super().__init__()
         self._range_help_view = RangeHelpView()
@@ -105,11 +105,11 @@ class SubsweepConfigEditor(DataEditor[t.Optional[a2.SubsweepConfig]]):
 
         self.setLayout(layout)
 
-    def set_data(self, data: t.Optional[a2.SubsweepConfig]) -> None:
+    def set_data(self, data: a2.SubsweepConfig | None) -> None:
         self._range_help_view.set_data(data)
         self._attrs_config_editor.set_data(data)
 
-    def get_data(self) -> t.Optional[a2.SubsweepConfig]:
+    def get_data(self) -> a2.SubsweepConfig | None:
         return self._attrs_config_editor.get_data()
 
     def handle_validation_results(
@@ -194,7 +194,7 @@ class _SubsweepAttrsConfigEditor(AttrsConfigEditor[a2.SubsweepConfig]):
         button.clicked.connect(lambda: self._hwaas_popup(self.get_data()))
         return button
 
-    def _hwaas_popup(self, config: t.Optional[a2.SubsweepConfig]) -> None:
+    def _hwaas_popup(self, config: a2.SubsweepConfig | None) -> None:
         if config is None:
             return
 

@@ -69,7 +69,7 @@ class Result:
     if this indication is set.
     """
 
-    measured_sweep_rate: t.Optional[float]
+    measured_sweep_rate: float | None
     """
     Sweep rate measured by RSS. This value might differ from the configured sweep rate since the
     configured sweep rate represents the maximum requested sweep rate, whereas the measured sweep
@@ -177,7 +177,7 @@ class Result:
         )
 
 
-def result_delegate_field(descriptor: t.Union[Descriptor[_T], _T], type_: t.Any) -> Descriptor[_T]:
+def result_delegate_field(descriptor: Descriptor[_T] | _T, type_: t.Any) -> Descriptor[_T]:
     # type_ is only used to annotate the generated property, so it accepts
     # type expressions that are not classes, such as npt.NDArray[...].
     return delegate_field(
@@ -220,7 +220,7 @@ class _Result_v1:
             av.max_len(SensorConfig.MAX_NUM_SUBSWEEPS),
         ],
     )
-    measured_sweep_rate: t.Optional[float]
+    measured_sweep_rate: float | None
 
 
 @attrs.frozen
@@ -241,7 +241,7 @@ class _Result_v2:
             av.max_len(SensorConfig.MAX_NUM_SUBSWEEPS),
         ],
     )
-    measured_sweep_rate: t.Optional[float]
+    measured_sweep_rate: float | None
 
 
 @attrs.frozen

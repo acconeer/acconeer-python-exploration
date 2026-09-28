@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import enum
-from typing import List, Optional, TypeVar
+from typing import TypeVar
 
 import attrs
 import h5py
@@ -130,10 +130,10 @@ class ProcessorConfig(AlgoProcessorConfigBase):
 
 @attrs.frozen(kw_only=True)
 class ProcessorResult:
-    close: Optional[RangeResult] = attrs.field(default=None)
+    close: RangeResult | None = attrs.field(default=None)
     """Returns the ``RangeResult`` for close range. ``None`` if range is not activated."""
 
-    far: Optional[RangeResult] = attrs.field(default=None)
+    far: RangeResult | None = attrs.field(default=None)
     """Returns the ``RangeResult`` for far range. ``None`` if range is not activated."""
 
 
@@ -384,7 +384,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         frame: npt.NDArray[np.complex128],
         detection_depth: npt.NDArray[np.int_],
         counts: npt.NDArray[np.int_],
-    ) -> List[bool]:
+    ) -> list[bool]:
         if detection_depth[counts > 1].size > 0:
             if (
                 np.where(

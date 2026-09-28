@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -13,12 +13,8 @@ from typing import (
     Iterable,
     Iterator,
     Mapping,
-    Optional,
     Sequence,
-    Tuple,
-    Type,
     TypeVar,
-    Union,
 )
 
 import packaging.version
@@ -33,7 +29,7 @@ U = TypeVar("U")
 KeyT = TypeVar("KeyT")
 ValueT = TypeVar("ValueT")
 
-Number = Union[int, float]
+Number = int | float
 
 
 def unextend(structure: list[dict[int, T]]) -> T:
@@ -64,8 +60,8 @@ def convert_value(value: Number, *, factory: Callable[[Number], T]) -> T:
 
 def _check_bounds(
     value: Number,
-    lower_bound: Optional[Number] = None,
-    upper_bound: Optional[Number] = None,
+    lower_bound: Number | None = None,
+    upper_bound: Number | None = None,
     inclusive: bool = True,
 ) -> None:
     """Raises a ValueError if:
@@ -90,7 +86,7 @@ def _check_bounds(
 
 
 def convert_validate_int(
-    value: Union[float, int], max_value: Optional[int] = None, min_value: Optional[int] = None
+    value: float | int, max_value: int | None = None, min_value: int | None = None
 ) -> int:
     """Converts an argument to an int.
 
@@ -108,8 +104,8 @@ def convert_validate_int(
 
 def validate_float(
     value: float,
-    max_value: Optional[float] = None,
-    min_value: Optional[float] = None,
+    max_value: float | None = None,
+    min_value: float | None = None,
     inclusive: bool = True,
 ) -> float:
     """Converts an argument to a float.
@@ -165,7 +161,7 @@ def map_over_extended_structure(
 def zip_extended_structures(
     structure_a: list[dict[int, S]],
     structure_b: list[dict[int, T]],
-) -> list[dict[int, Tuple[S, T]]]:
+) -> list[dict[int, tuple[S, T]]]:
     """Zip structures according to group id and sensor id.
 
     Typical use case is reordering extended structures before iterating.
@@ -198,7 +194,7 @@ def zip3_extended_structures(
     structure_a: list[dict[int, S]],
     structure_b: list[dict[int, T]],
     structure_c: list[dict[int, U]],
-) -> list[dict[int, Tuple[S, T, U]]]:
+) -> list[dict[int, tuple[S, T, U]]]:
     """Zip structures according to group id and sensor id.
 
     Typical use case is reordering extended structures before iterating.
@@ -230,7 +226,7 @@ def zip3_extended_structures(
 
 def iterate_extended_structure(
     structure: Sequence[Mapping[int, ValueT]],
-) -> Iterator[Tuple[int, int, ValueT]]:
+) -> Iterator[tuple[int, int, ValueT]]:
     """Iterates over the elements of the extended structure.
 
     :returns: Iterator of (<group id>, <sensor id>, <element>)
@@ -243,7 +239,7 @@ def iterate_extended_structure(
 
 def iterate_extended_structure_as_entry_list(
     structure: list[dict[int, ValueT]],
-) -> Iterator[Tuple[int, int, ValueT]]:
+) -> Iterator[tuple[int, int, ValueT]]:
     """Iterates over the elements of the extended structure.
 
     Note: this differs from ``iterate_extended_structure`` as it returns the
@@ -304,10 +300,10 @@ def transpose_extended_structures(
     return product
 
 
-def create_extended_structure(items: Iterable[Tuple[int, int, ValueT]]) -> list[dict[int, ValueT]]:
+def create_extended_structure(items: Iterable[tuple[int, int, ValueT]]) -> list[dict[int, ValueT]]:
     structure: list[dict[int, ValueT]] = []
-    current_group_index: Optional[int] = None
-    current_group: Optional[dict[int, ValueT]] = None
+    current_group_index: int | None = None
+    current_group: dict[int, ValueT] | None = None
 
     for group_index, sensor_id, value in items:
         if current_group_index is None:
@@ -362,7 +358,7 @@ def indent_strs(strs: list[str], level: int) -> list[str]:
     return ["  " * level + s for s in strs]
 
 
-def no_dynamic_member_creation(cls: Type[T]) -> Type[T]:
+def no_dynamic_member_creation(cls: type[T]) -> type[T]:
     """
     Class annotation that prevents setting any attributes that does not exist
     after the object have been created (the __init__ function have executed).

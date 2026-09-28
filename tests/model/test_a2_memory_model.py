@@ -216,7 +216,7 @@ def test_heatmap_memory_model(
 def test_heap_matches_sdk_example_allocations(
     sweeps_per_frame: int,
     heap_memory: HeapMemoryFunction,
-    heatmap_config: t.Optional[HeatmapConfigCommon],
+    heatmap_config: HeatmapConfigCommon | None,
     expected_heap: int,
 ) -> None:
     """Traced from the Linux build of the SDK examples, less the 64-bit pointer slack"""

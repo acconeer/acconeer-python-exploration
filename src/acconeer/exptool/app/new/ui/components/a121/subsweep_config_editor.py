@@ -6,7 +6,7 @@ from __future__ import annotations
 import copy
 import logging
 from functools import partial
-from typing import Any, Optional
+from typing import Any
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QVBoxLayout, QWidget
@@ -25,10 +25,10 @@ from acconeer.exptool.app.new.ui.components.types import PidgetFactoryMapping
 log = logging.getLogger(__name__)
 
 
-class SubsweepConfigEditor(DataEditor[Optional[a121.SubsweepConfig]]):
+class SubsweepConfigEditor(DataEditor[a121.SubsweepConfig | None]):
     sig_update = Signal(object)
 
-    _subsweep_config: Optional[a121.SubsweepConfig]
+    _subsweep_config: a121.SubsweepConfig | None
 
     _subsweep_config_pidgets: dict[str, pidgets.Pidget]
     _erroneous_aspects: set[str]
@@ -114,7 +114,7 @@ class SubsweepConfigEditor(DataEditor[Optional[a121.SubsweepConfig]]):
         "iq_imbalance_compensation",
     }
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent=parent)
 
         self._subsweep_config_pidgets = {}
@@ -156,7 +156,7 @@ class SubsweepConfigEditor(DataEditor[Optional[a121.SubsweepConfig]]):
         for pidget in self._subsweep_config_pidgets.values():
             pidget.setEnabled(not read_only)
 
-    def set_data(self, subsweep_config: Optional[a121.SubsweepConfig]) -> None:
+    def set_data(self, subsweep_config: a121.SubsweepConfig | None) -> None:
         if self._subsweep_config == subsweep_config:
             return
 
@@ -173,7 +173,7 @@ class SubsweepConfigEditor(DataEditor[Optional[a121.SubsweepConfig]]):
                 continue
             pidget.set_data(getattr(self._subsweep_config, aspect))
 
-    def get_data(self) -> Optional[a121.SubsweepConfig]:
+    def get_data(self) -> a121.SubsweepConfig | None:
         return copy.deepcopy(self._subsweep_config)
 
     def handle_validation_results(

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2024
+# Copyright (c) Acconeer AB, 2024-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from acconeer.exptool.a121.algo.hand_motion._mode_handler import (
 @attrs.frozen
 class ResultSlice:
     app_mode: AppMode
-    detection_state: t.Optional[DetectionState]
+    detection_state: DetectionState | None
     # omits extra_result
 
     @classmethod

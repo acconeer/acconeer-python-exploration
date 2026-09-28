@@ -1,9 +1,9 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
-from typing import Any, Optional, Tuple, Union
+from typing import Any
 
 import numpy as np
 
@@ -20,8 +20,8 @@ class Client:
     def __init__(
         self,
         *,
-        protocol: Optional[ProtocolArg] = None,
-        link: Optional[LinkArg] = None,
+        protocol: ProtocolArg | None = None,
+        link: LinkArg | None = None,
         mock: bool = False,
         **kwargs: Any,
     ):
@@ -58,7 +58,7 @@ class Client:
         else:
             self.subclient = ClientFactory.from_kwargs(protocol=protocol, link=link, **kwargs)
 
-    def get_link_type(self) -> Union[Link, str]:
+    def get_link_type(self) -> Link | str:
         if isinstance(self.subclient, MockClient):
             return "mock"
         elif isinstance(self.subclient, UARTClient):
@@ -95,9 +95,9 @@ class Client:
 
     def start_session(
         self,
-        config: Optional[et.a111._configs.BaseSessionConfig] = None,
+        config: et.a111._configs.BaseSessionConfig | None = None,
         check_config: bool = True,
-    ) -> Optional[dict]:
+    ) -> dict | None:
         """
         Starts the session if previously set up with ``setup_session()``.
         If `config` is provided, ``setup_session()`` will be called.
@@ -111,7 +111,7 @@ class Client:
         """
         return self.subclient.start_session(config, check_config)
 
-    def get_next(self) -> Tuple[Union[list, dict], np.ndarray]:
+    def get_next(self) -> tuple[list | dict, np.ndarray]:
         """
         Retrieves the next result. Will block until the result is received.
 

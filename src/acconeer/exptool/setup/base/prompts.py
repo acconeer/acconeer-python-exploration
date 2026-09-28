@@ -1,9 +1,9 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
-from typing import Optional, Sequence
+from typing import Sequence
 
 
 def yn_prompt(message: str) -> bool:
@@ -25,7 +25,7 @@ def number_prompt(message: str) -> int:
     return int(inp)
 
 
-def get_selection_from_user(message: str, choices: Sequence[str]) -> Optional[str]:
+def get_selection_from_user(message: str, choices: Sequence[str]) -> str | None:
     print(message)
     for i, choice in enumerate(choices):
         print(f"{i:<10}{choice}")

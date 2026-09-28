@@ -368,7 +368,7 @@ def _send_startup_tasks(app_model: AppModel, tasks: tuple[str, ...], deadline: f
 
     (task_to_send, *rest_of_tasks) = tasks
 
-    def _on_error(exception: Exception, traceback_format_exc: t.Optional[str] = None) -> None:
+    def _on_error(exception: Exception, traceback_format_exc: str | None = None) -> None:
         _LOG.warning(
             f"Startup tasks that won't execute due to the failure of {task_to_send!r}: {rest_of_tasks}"
         )

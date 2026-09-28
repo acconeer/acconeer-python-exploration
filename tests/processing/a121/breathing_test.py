@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ from acconeer.exptool.a121.algo.breathing._ref_app import _load_algo_data
 
 @attrs.frozen
 class ProcessorResultSlice:
-    breathing_rate: t.Optional[float]
+    breathing_rate: float | None
 
 
 @attrs.frozen
@@ -33,7 +33,7 @@ class RefAppResultSlice:
     None             |-> np.array([])
     Tuple[int, int]  |-> np.array([x, y])
     """
-    breathing_rate: t.Optional[float] = attrs.field(eq=attrs_optional_ndarray_isclose)
+    breathing_rate: float | None = attrs.field(eq=attrs_optional_ndarray_isclose)
     """
     <float> |-> ProcessorResult(breathing_rate=<float>)
     NaN     |-> ProcessorResult(breathing_rate=None)

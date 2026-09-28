@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2024-2025
+# Copyright (c) Acconeer AB, 2024-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -60,8 +60,8 @@ class Float2:
     b: float
 
 
-_SG: te.TypeAlias = tm.Node[Float, te.Never, t.Union[str, Str, Int, float]]
-_NC: te.TypeAlias = tm.Node[Float2, float, t.Union[str, Str, Int, Float, float]]
+_SG: te.TypeAlias = tm.Node[Float, te.Never, str | Str | Int | float]
+_NC: te.TypeAlias = tm.Node[Float2, float, str | Str | Int | Float | float]
 
 
 @pytest.fixture

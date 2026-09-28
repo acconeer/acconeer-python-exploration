@@ -1,9 +1,7 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
-
-import typing as t
 
 import typing_extensions as te
 
@@ -20,8 +18,8 @@ from acconeer.exptool.a121._core.entities import (
 class Recorder(
     recording.Recorder[
         SessionConfig,  # Config type
-        t.List[t.Dict[int, Metadata]],  # Metadata type
-        t.List[t.Dict[int, Result]],  # Result type
+        list[dict[int, Metadata]],  # Metadata type
+        list[dict[int, Result]],  # Result type
         ServerInfo,  # Server info type
     ],
     te.Protocol,
@@ -30,9 +28,9 @@ class Recorder(
         self,
         *,
         config: SessionConfig,
-        metadata: t.List[t.Dict[int, Metadata]],
-        calibrations: t.Optional[t.Dict[int, SensorCalibration]] = None,
-        calibrations_provided: t.Optional[t.Dict[int, bool]] = None,
+        metadata: list[dict[int, Metadata]],
+        calibrations: dict[int, SensorCalibration] | None = None,
+        calibrations_provided: dict[int, bool] | None = None,
     ) -> None: ...
 
 

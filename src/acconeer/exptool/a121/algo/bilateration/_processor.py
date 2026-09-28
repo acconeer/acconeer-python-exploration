@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import copy
 import typing as t
-from typing import Tuple
 
 import attrs
 import h5py
@@ -47,8 +46,8 @@ class _KalmanFilterResult:
 class ProcessorResult:
     """Processor result"""
 
-    points: t.List[Point]
-    objects_without_counterpart: t.List[ObjectWithoutCounterpart]
+    points: list[Point]
+    objects_without_counterpart: list[ObjectWithoutCounterpart]
 
 
 @attributes_doc
@@ -99,7 +98,7 @@ class Processor:
         self,
         session_config: a121.SessionConfig,
         processor_config: ProcessorConfig,
-        sensor_ids: t.List[int],
+        sensor_ids: list[int],
     ):
         if len(sensor_ids) != 2:
             msg = "Number of sensor ids must equal two."
@@ -126,7 +125,7 @@ class Processor:
         self.left_sensor_kfs: list[_KalmanFilter] = []
         self.right_sensor_kfs: list[_KalmanFilter] = []
 
-    def process(self, result: t.Dict[int, DetectorResult]) -> ProcessorResult:
+    def process(self, result: dict[int, DetectorResult]) -> ProcessorResult:
         distances_left = result[self.sensor_position_to_ids[self._SENSOR_POSITION_LEFT]].distances
         rcs_left = result[self.sensor_position_to_ids[self._SENSOR_POSITION_LEFT]].strengths
         distances_right = result[
@@ -183,10 +182,10 @@ class Processor:
 
     def _pair_distances(
         self,
-        kf_result_left_sensor: t.List[_KalmanFilterResult],
-        kf_result_right_sensor: t.List[_KalmanFilterResult],
+        kf_result_left_sensor: list[_KalmanFilterResult],
+        kf_result_right_sensor: list[_KalmanFilterResult],
         sensor_spacing: float,
-    ) -> t.Tuple[t.List[Point], t.List[ObjectWithoutCounterpart]]:
+    ) -> tuple[list[Point], list[ObjectWithoutCounterpart]]:
         """Pair distance from each sensor to form points.
         The sensor with the least number of results is identified and looped over. In each loop,
         the distance is matched to a distance from the other sensor. The condition for a match is
@@ -258,7 +257,7 @@ class Processor:
     @staticmethod
     def _remove_closely_spaced_distances(
         distances: npt.NDArray[np.float64], rcs: npt.NDArray[np.float64], min_dist: float
-    ) -> t.List[float]:
+    ) -> list[float]:
         """Remove closely spaced distances to avoid ambiguity in later filtering and distance
         pairing stages.
         If two distance are closely spaced, keep the one with highest RCS.
@@ -283,10 +282,10 @@ class Processor:
 
     def _update_kalman_filters(
         self,
-        kfs: t.List[_KalmanFilter],
-        distances: t.List[float],
+        kfs: list[_KalmanFilter],
+        distances: list[float],
         sensor_position: str,
-    ) -> t.List[_KalmanFilter]:
+    ) -> list[_KalmanFilter]:
         """Update Kalman filters for a sensor, using new distance estimates.
         Identifying the distance closest to the current state of the filter. If the distance is
         sufficiently close to the current state, it is used to update the filter. Once a distance
@@ -420,7 +419,7 @@ class _KalmanFilter:
 
 def _load_algo_data(
     algo_group: h5py.Group,
-) -> Tuple[list[int], DetectorConfig, ProcessorConfig, DetectorContext]:
+) -> tuple[list[int], DetectorConfig, ProcessorConfig, DetectorContext]:
     sensor_ids = algo_group["sensor_ids"][()].tolist()
     detector_config = DetectorConfig.from_json(algo_group["detector_config"][()])
     bilateration_config = ProcessorConfig()

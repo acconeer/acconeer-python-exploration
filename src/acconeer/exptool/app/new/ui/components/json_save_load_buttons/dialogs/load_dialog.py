@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -40,11 +40,11 @@ class LoadDialogWithJsonEditor(QDialog):
     def __init__(
         self,
         dialog: QFileDialog,
-        parent: t.Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent=parent)
 
-        self._contents: t.Optional[str] = None
+        self._contents: str | None = None
 
         self._dialog = dialog
         self._dialog.accepted.connect(self._set_selected_file_contents)
@@ -75,8 +75,8 @@ class LoadDialogWithJsonEditor(QDialog):
         caption: str = "",
         filter: str = "All (*)",
         options: QFileDialog.Option = QFileDialog.Option.DontUseNativeDialog,
-        parent: t.Optional[QWidget] = None,
-    ) -> t.Optional[str]:
+        parent: QWidget | None = None,
+    ) -> str | None:
         dialog = QFileDialog(caption=caption)
         dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptOpen)
         dialog.setNameFilter(filter)

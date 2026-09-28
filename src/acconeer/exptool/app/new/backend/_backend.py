@@ -11,7 +11,7 @@ import traceback
 import uuid
 from multiprocessing.synchronize import Event as mp_EventType  # NOTE! this is not mp.Event.
 from pathlib import Path
-from typing import Generator, Optional, Tuple, Union
+from typing import Generator
 
 import attrs
 import psutil
@@ -32,15 +32,12 @@ log = logging.getLogger(__name__)
 @attrs.frozen
 class ClosedTask:
     key: uuid.UUID = attrs.field()
-    exception: Optional[Exception] = attrs.field(default=None)
-    traceback_format_exc: Optional[str] = attrs.field(default=None)
+    exception: Exception | None = attrs.field(default=None)
+    traceback_format_exc: str | None = attrs.field(default=None)
 
 
-ToBackendQueueItem = Union[
-    Tuple[Literal["stop"], None],
-    Tuple[Literal["task"], Tuple[uuid.UUID, Task]],
-]
-FromBackendQueueItem = Union[Message, ClosedTask]
+ToBackendQueueItem = tuple[Literal["stop"], None] | tuple[Literal["task"], tuple[uuid.UUID, Task]]
+FromBackendQueueItem = Message | ClosedTask
 
 
 class MpBackend:
@@ -98,7 +95,7 @@ class MpBackend:
     def _send(self, item: ToBackendQueueItem) -> None:
         self._send_queue.put(item)
 
-    def recv(self, timeout: Optional[float] = None) -> FromBackendQueueItem:
+    def recv(self, timeout: float | None = None) -> FromBackendQueueItem:
         return self._recv_queue.get(timeout=timeout)
 
 
@@ -134,11 +131,11 @@ class GenBackend:
     def _send(self, item: ToBackendQueueItem) -> None:
         self._send_queue.put(item)
 
-    def recv(self, timeout: Optional[float] = None) -> FromBackendQueueItem:
+    def recv(self, timeout: float | None = None) -> FromBackendQueueItem:
         _ = next(self._generator, None)
         return self._recv_queue.get(timeout=timeout)
 
-    def recv_nowait(self) -> Optional[FromBackendQueueItem]:
+    def recv_nowait(self) -> FromBackendQueueItem | None:
         _ = next(self._generator, None)
         try:
             return self._recv_queue.get_nowait()
@@ -146,7 +143,7 @@ class GenBackend:
             return None
 
 
-Backend = Union[MpBackend, GenBackend]
+Backend = MpBackend | GenBackend
 
 
 def process_program(
@@ -175,7 +172,7 @@ def process_generator(
     stop_event: mp_EventType,
     cpu_msg_interval_s: float,
     recv_queue_block: bool,
-    recv_queue_timeout_s: Optional[float] = None,
+    recv_queue_timeout_s: float | None = None,
 ) -> Generator[None, None, None]:
     process = psutil.Process()
     process.cpu_percent()

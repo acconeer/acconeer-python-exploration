@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import enum
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import attrs
 import h5py
@@ -53,8 +53,8 @@ SPARSE_IQ_PPC = 24
 
 @attrs.mutable(kw_only=True)
 class DetectorContext(AlgoBase):
-    single_sensor_contexts: Dict[int, SingleSensorContext] = attrs.field(factory=dict)
-    calibration_session_config: Optional[a121.SessionConfig] = attrs.field(default=None)
+    single_sensor_contexts: dict[int, SingleSensorContext] = attrs.field(factory=dict)
+    calibration_session_config: a121.SessionConfig | None = attrs.field(default=None)
 
     @property
     def sensor_ids(self) -> list[int]:
@@ -69,9 +69,9 @@ class SingleSubsweepContext(AlgoBase):
 
 @attrs.mutable(kw_only=True)
 class SingleSensorContext(AlgoBase):
-    subsweep_contexts: List[SingleSubsweepContext] = attrs.field(factory=list)
-    reference_temperature: Optional[float] = attrs.field(default=None)
-    loopback_peak_location_m: Optional[float] = attrs.field(default=None)
+    subsweep_contexts: list[SingleSubsweepContext] = attrs.field(factory=list)
+    reference_temperature: float | None = attrs.field(default=None)
+    loopback_peak_location_m: float | None = attrs.field(default=None)
 
 
 @attributes_doc
@@ -112,7 +112,7 @@ class DetectorConfig(AlgoConfigBase):
     update_rate: float = attrs.field(default=50.0)
     """Sets the detector update rate."""
 
-    subsweep_configurations: Optional[List[a121.SubsweepConfig]] = attrs.field(default=None)
+    subsweep_configurations: list[a121.SubsweepConfig] | None = attrs.field(default=None)
     """Optional list of subsweep configurations that over-writes the sensor configuration."""
 
     peak_sorting_method: PeakSortingMethod = attrs.field(
@@ -186,8 +186,8 @@ class DetectorConfig(AlgoConfigBase):
 @attrs.frozen(kw_only=True)
 class DetectorResult:
     current_velocity: float = attrs.field(default=None)
-    processor_results: Dict[int, ProcessorResult] = attrs.field(default=None)
-    close_proximity_trig: Optional[Dict[int, bool]] = attrs.field(default=None)
+    processor_results: dict[int, ProcessorResult] = attrs.field(default=None)
+    close_proximity_trig: dict[int, bool] | None = attrs.field(default=None)
 
 
 @attrs.mutable(kw_only=True)
@@ -214,7 +214,7 @@ class Detector:
     """
 
     session_config: a121.SessionConfig
-    processor_specs: List[ProcessorConfig]
+    processor_specs: list[ProcessorConfig]
     context: DetectorContext
 
     def __init__(
@@ -223,7 +223,7 @@ class Detector:
         client: a121.Client,
         sensor_ids: list[int],
         detector_config: DetectorConfig,
-        context: Optional[DetectorContext] = None,
+        context: DetectorContext | None = None,
     ) -> None:
         self.client = client
         self.sensor_ids = sensor_ids
@@ -278,8 +278,8 @@ class Detector:
 
     def start(
         self,
-        recorder: Optional[a121.Recorder] = None,
-        _algo_group: Optional[h5py.Group] = None,
+        recorder: a121.Recorder | None = None,
+        _algo_group: h5py.Group | None = None,
     ) -> None:
         if self.started:
             msg = "Already started"
@@ -291,7 +291,7 @@ class Detector:
 
         sensor_config = self._get_sensor_config(self.detector_config)
 
-        self.processors: Dict[int, Processor] = {}
+        self.processors: dict[int, Processor] = {}
         group = []
         for s_id in self.sensor_ids:
             group.append({s_id: sensor_config})
@@ -305,7 +305,7 @@ class Detector:
         self.metadata = self.client.setup_session(self.session_config)
 
         if self.detector_config.enable_close_proximity_detection is True:
-            self.close_proximity_processors: Dict[int, TouchlessbuttonProcessor] = {}
+            self.close_proximity_processors: dict[int, TouchlessbuttonProcessor] = {}
             assert isinstance(self.metadata, list)
             (
                 self.metadata_first_subsweep,
@@ -414,7 +414,7 @@ class Detector:
             rest_subsweep_results = results
             close_proximity_results = None
 
-        obstacle_proc_results: Dict[int, ProcessorResult] = {}
+        obstacle_proc_results: dict[int, ProcessorResult] = {}
 
         for r in rest_subsweep_results:
             sens_id = list(r.keys())[0]  # get the only sensor-id in that dict.
@@ -427,8 +427,8 @@ class Detector:
         )
 
     def split_metadata(
-        self, metadata: List[Dict[int, a121.Metadata]]
-    ) -> Tuple[List[Dict[int, a121.Metadata]], List[Dict[int, a121.Metadata]]]:
+        self, metadata: list[dict[int, a121.Metadata]]
+    ) -> tuple[list[dict[int, a121.Metadata]], list[dict[int, a121.Metadata]]]:
         first_subsweep_metadata_list = map_over_extended_structure(
             self.first_subsweep_metadata,
             metadata,
@@ -475,7 +475,7 @@ class Detector:
 
     def split_sensor_config(
         self, sensor_config: a121.SensorConfig
-    ) -> Tuple[a121.SensorConfig, a121.SensorConfig]:
+    ) -> tuple[a121.SensorConfig, a121.SensorConfig]:
         first_subsweep_sensor_config = a121.SensorConfig(
             subsweeps=[sensor_config.subsweeps[0]],
             sweeps_per_frame=sensor_config.sweeps_per_frame,
@@ -494,8 +494,8 @@ class Detector:
         return first_subsweep_sensor_config, rest_subsweep_sensor_config
 
     def split_result(
-        self, results: List[Dict[int, a121.Result]]
-    ) -> Tuple[List[Dict[int, a121.Result]], List[Dict[int, a121.Result]]]:
+        self, results: list[dict[int, a121.Result]]
+    ) -> tuple[list[dict[int, a121.Result]], list[dict[int, a121.Result]]]:
         first_subsweep_results = map_over_extended_structure(
             self.first_subsweep_result,
             results,
@@ -630,7 +630,7 @@ class Detector:
         for subsweep in subsweeps:
             subsweep.phase_enhancement = True
 
-        sweep_rate: Optional[float] = detector_config.max_robot_speed / (PERCEIVED_WAVELENGTH / 2)
+        sweep_rate: float | None = detector_config.max_robot_speed / (PERCEIVED_WAVELENGTH / 2)
         if detector_config.max_robot_speed / (PERCEIVED_WAVELENGTH / 2) <= 0.0:
             sweep_rate = None
 
@@ -645,7 +645,7 @@ class Detector:
     @classmethod
     def _detector_to_session_config_and_processor_specs(
         cls, config: DetectorConfig, sensor_ids: list[int]
-    ) -> Tuple[a121.SessionConfig, list[ProcessorConfig]]:
+    ) -> tuple[a121.SessionConfig, list[ProcessorConfig]]:
         processor_spec = ProcessorConfig(
             num_std_treshold=config.num_std_threshold,
             num_mean_treshold=config.num_mean_threshold,
@@ -825,7 +825,7 @@ def _record_algo_data(
 
 def _load_algo_data(
     algo_group: h5py.Group,
-) -> Tuple[list[int], DetectorConfig, DetectorContext]:
+) -> tuple[list[int], DetectorConfig, DetectorContext]:
     sensor_id = algo_group["sensor_ids"][()].tolist()
     config = DetectorConfig.from_json(algo_group["detector_config"][()])
 

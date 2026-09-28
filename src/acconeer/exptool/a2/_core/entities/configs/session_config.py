@@ -31,7 +31,7 @@ class SessionConfig(AttrsMappingTransformsMixin):
     )
     """The list of sensor configs"""
 
-    update_rate: t.Optional[float] = attrs.field(validator=av.optional(av.gt(MIN_UPDATE_RATE)))
+    update_rate: float | None = attrs.field(validator=av.optional(av.gt(MIN_UPDATE_RATE)))
     """
     The update rate of the server.
 

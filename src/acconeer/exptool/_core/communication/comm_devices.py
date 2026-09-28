@@ -6,7 +6,7 @@ from __future__ import annotations
 import abc
 import json
 import re
-from typing import Any, Iterator, List, Literal, Optional
+from typing import Any, Iterator, Literal
 
 import attrs
 import serial.tools
@@ -52,8 +52,8 @@ _USB_IDS: list[_UsbId] = [
 
 @attrs.frozen(kw_only=True)
 class CommDevice(abc.ABC):
-    name: Optional[str] = None
-    serial: Optional[str] = None
+    name: str | None = None
+    serial: str | None = None
     unflashed: bool = False
     recognized: bool = False
 
@@ -190,7 +190,7 @@ def _serial_port_originates_from_usb_device(port_object: ListPortInfo) -> bool:
     return False
 
 
-def get_serial_devices() -> List[SerialDevice]:
+def get_serial_devices() -> list[SerialDevice]:
     NATIVE_SERIAL_PORT_FILTER = re.compile(r"^/dev/ttyS\d{1,2}$")
     serial_devices = []
 
@@ -212,7 +212,7 @@ class _UsbDeviceFinder:
     def __init__(self) -> None:
         self._backend = get_libusb_backend()
 
-    def iterate_devices(self) -> Iterator[tuple[int, int, Optional[str]]]:
+    def iterate_devices(self) -> Iterator[tuple[int, int, str | None]]:
         devices = usb.core.find(find_all=True, backend=self._backend)
         for dev in devices:
             try:
@@ -257,9 +257,9 @@ class _UsbDeviceFinder:
 
 def get_usb_devices(
     only_accessible: bool = False, generation: SensorGeneration | None = None
-) -> List[USBDevice]:
+) -> list[USBDevice]:
     """Lists the recognized USB devices, only those serving sensors of generation if given"""
-    usb_devices: List[USBDevice] = []
+    usb_devices: list[USBDevice] = []
 
     usb_device_finder = _UsbDeviceFinder()
     for device_vid, device_pid, serial_number in usb_device_finder.iterate_devices():
@@ -313,7 +313,7 @@ def get_one_usb_device(
 
 
 def get_one_serial_device() -> SerialDevice:
-    acconeer_serial_devices: List[SerialDevice] = [
+    acconeer_serial_devices: list[SerialDevice] = [
         device for device in get_serial_devices() if device.name is not None
     ]
 
@@ -331,10 +331,10 @@ def get_one_serial_device() -> SerialDevice:
 
 def tag_serial_ports_objects(
     port_infos: list[serial.Serial],
-) -> list[tuple[serial.Serial, Optional[str]]]:
+) -> list[tuple[serial.Serial, str | None]]:
     PRODUCT_REGEX = r"[X][A-Z]\d{3}"
 
-    port_tag_tuples: list[tuple[serial.Serial, Optional[str]]] = []
+    port_tag_tuples: list[tuple[serial.Serial, str | None]] = []
 
     for port_object in port_infos:
         desc = port_object.product or port_object.description

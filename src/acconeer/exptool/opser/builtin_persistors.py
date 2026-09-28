@@ -197,7 +197,7 @@ class ListPersistor(core.Persistor):
         for i, element in enumerate(data):
             RegistryPersistor(element_group, str(i), element_type_tree).save(element)
 
-    def _load(self) -> t.List[_T]:
+    def _load(self) -> list[_T]:
         (element_type_tree,) = self.type_tree.children.values()
 
         return [
@@ -236,7 +236,7 @@ class DictPersistor(core.Persistor):
             RegistryPersistor(entry_group, self.VALUE_GROUP_KEY, value_type_tree).save(value)
             RegistryPersistor(entry_group, self.KEY_GROUP_KEY, key_type_tree).save(key)
 
-    def _load(self) -> t.Dict[_S, _T]:
+    def _load(self) -> dict[_S, _T]:
         (key_type_tree, value_type_tree) = self.type_tree.children.values()
 
         return {
@@ -254,8 +254,8 @@ class TuplePersistor(core.Persistor):
     """
     Persists non-variadic tuples with arbitrary types
 
-    I.e. Tuple[str, int, SomeClass] is persisted like expected
-    but Tulpe[int, ...] is not supported
+    I.e. tuple[str, int, SomeClass] is persisted like expected
+    but tuple[int, ...] is not supported
     """
 
     @classmethod
@@ -274,7 +274,7 @@ class TuplePersistor(core.Persistor):
         ):
             RegistryPersistor(element_group, str(i), element_subtree).save(element)
 
-    def _load(self) -> t.Tuple[t.Any, ...]:
+    def _load(self) -> tuple[t.Any, ...]:
         return tuple(
             RegistryPersistor(self.group, key, element_type_tree).load()
             for key, element_type_tree in zip(self.group.keys(), self.type_tree.children.values())

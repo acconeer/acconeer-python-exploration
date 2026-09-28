@@ -1,10 +1,10 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import json
-from typing import Any, Optional
+from typing import Any
 
 from acconeer.exptool._core.communication import CommunicationProtocol, Message
 from acconeer.exptool._core.communication.communication_protocol import messages
@@ -63,7 +63,7 @@ class ExplorationProtocol(CommunicationProtocol[SessionConfig]):
     def setup_command(
         cls,
         session_config: SessionConfig,
-        calibrations: Optional[dict[int, SensorCalibration]] = None,
+        calibrations: dict[int, SensorCalibration] | None = None,
     ) -> bytes:
         result = cls._setup_command_preprocessing(session_config)
         result["groups"] = cls._translate_groups_representation(result["groups"])

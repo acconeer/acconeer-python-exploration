@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -6,7 +6,6 @@ from __future__ import annotations
 import abc
 import subprocess
 from pathlib import Path
-from typing import List
 
 from . import prompts
 
@@ -33,7 +32,7 @@ class SetupStep(abc.ABC):
 class ShellCommandStep(SetupStep):
     """Runs a shell command as a step"""
 
-    def __init__(self, command: List[str]) -> None:
+    def __init__(self, command: list[str]) -> None:
         self.command = command
 
     def __str__(self) -> str:

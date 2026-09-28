@@ -27,13 +27,13 @@ _NDf64 = npt.NDArray[np.float64]
 class Peak3D:
     """Detected and interpolated peak in a 3D (D, AZ, EL) heatmap."""
 
-    index: t.Tuple[int, int, int]
+    index: tuple[int, int, int]
     """(D, AZ, EL) peak index."""
 
     amplitude: float
     """The heatmap amplitude/power at the peak index."""
 
-    position: t.Tuple[float, float, float]
+    position: tuple[float, float, float]
     """(dist_m, az_deg, el_deg) interpolated peak position."""
 
 
@@ -41,16 +41,16 @@ class Peak3D:
 class Peak3DCart:
     """Detected and interpolated peak in a 3D heatmap with Cartesian position appended."""
 
-    index: t.Tuple[int, int, int]
+    index: tuple[int, int, int]
     """(D, AZ, EL) peak index."""
 
     amplitude: float
     """The heatmap amplitude/power at the peak index."""
 
-    spherical_position: t.Tuple[float, float, float]
+    spherical_position: tuple[float, float, float]
     """(dist_m, az_deg, el_deg) interpolated peak position."""
 
-    cartesian_position: t.Tuple[float, float, float]
+    cartesian_position: tuple[float, float, float]
     """(x, y, z) interpolated peak position in metres."""
 
 
@@ -68,7 +68,7 @@ class PeakToListNode:
     def __init__(self, field: _PeakField) -> None:
         self.field = field
 
-    def execute(self, peaks: t.Sequence[t.Any]) -> t.List[t.Any]:
+    def execute(self, peaks: t.Sequence[t.Any]) -> list[t.Any]:
         return [getattr(p, self.field) for p in peaks]
 
 
@@ -87,7 +87,7 @@ class PeakFuseNode:
         self,
         peaks_1d: t.Sequence[Peak1D],
         peaks_2d: t.Sequence[Peak2D],
-    ) -> t.List[Peak3D]:
+    ) -> list[Peak3D]:
         if len(peaks_1d) != len(peaks_2d):
             msg = (
                 f"peaks_1d and peaks_2d must have the same length, "
@@ -116,7 +116,7 @@ class Peak3DSphericalToCartesianNode:
     Intended as a post-processing step after :class:`PeakFuseNode`.
     """
 
-    def __init__(self, rotation: t.Optional[RotationMatrix] = None) -> None:
+    def __init__(self, rotation: RotationMatrix | None = None) -> None:
         """
         :param rotation: Mount :class:`RotationMatrix`, typically from
             :func:`build_mount_rotation_matrix`; maps sensor-frame positions
@@ -127,7 +127,7 @@ class Peak3DSphericalToCartesianNode:
             rotation=RotationMatrix() if rotation is None else rotation,
         )
 
-    def execute(self, peaks: t.List[Peak3D]) -> t.List[Peak3DCart]:
+    def execute(self, peaks: list[Peak3D]) -> list[Peak3DCart]:
         """Convert polar peak positions to Cartesian.
 
         :param peaks: List of :class:`Peak3D` objects, typically from
@@ -167,9 +167,9 @@ class Peak3DCartBoxFilterNode:
 
     def __init__(
         self,
-        x_bounds_m: t.Optional[t.Tuple[float, float]] = None,
-        y_bounds_m: t.Optional[t.Tuple[float, float]] = None,
-        z_bounds_m: t.Optional[t.Tuple[float, float]] = None,
+        x_bounds_m: tuple[float, float] | None = None,
+        y_bounds_m: tuple[float, float] | None = None,
+        z_bounds_m: tuple[float, float] | None = None,
     ) -> None:
         """
         :param x_bounds_m: ``(lo, hi)`` for the x-axis in metres, or ``None`` to
@@ -197,7 +197,7 @@ class Peak3DCartBoxFilterNode:
         self._y_bounds_m = y_bounds_m
         self._z_bounds_m = z_bounds_m
 
-    def execute(self, peaks: t.List[Peak3DCart]) -> t.List[Peak3DCart]:
+    def execute(self, peaks: list[Peak3DCart]) -> list[Peak3DCart]:
         """Drop peaks whose Cartesian position lies outside the box.
 
         :param peaks: List of :class:`Peak3DCart` objects, typically from
@@ -236,7 +236,7 @@ class ExclusionZone:
     zone's radius.
     """
 
-    center: t.Tuple[float, float]
+    center: tuple[float, float]
     radius_m: float = attrs.field(validator=attrs.validators.gt(0.0))
 
 
@@ -251,7 +251,7 @@ class Peak3DCartExclusionZoneNode:
     """
 
     def __init__(self, zones: t.Sequence[ExclusionZone] = ()) -> None:
-        self._zones: t.Tuple[ExclusionZone, ...] = tuple(zones)
+        self._zones: tuple[ExclusionZone, ...] = tuple(zones)
         self._centers: npt.NDArray[np.float64] = np.array(
             [zone.center for zone in self._zones], dtype=np.float64
         ).reshape(-1, 2)
@@ -260,10 +260,10 @@ class Peak3DCartExclusionZoneNode:
         )
 
     @property
-    def zones(self) -> t.Tuple[ExclusionZone, ...]:
+    def zones(self) -> tuple[ExclusionZone, ...]:
         return self._zones
 
-    def execute(self, peaks: t.List[Peak3DCart]) -> t.List[Peak3DCart]:
+    def execute(self, peaks: list[Peak3DCart]) -> list[Peak3DCart]:
         if not peaks or not self._zones:
             return peaks
 
@@ -298,7 +298,7 @@ class Peak3DCartXYNMSNode:
             raise ValueError(msg)
         self._min_dist_separation_m = min_dist_separation_m
 
-    def execute(self, peaks: t.List[Peak3DCart]) -> t.List[Peak3DCart]:
+    def execute(self, peaks: list[Peak3DCart]) -> list[Peak3DCart]:
         """Apply greedy NMS to a list of peaks.
 
         :param peaks: Peaks to filter. Input order does not matter — the node
@@ -306,13 +306,13 @@ class Peak3DCartXYNMSNode:
         :returns: Accepted peaks after suppression, in amplitude-descending order.
         """
         sorted_peaks = sorted(peaks, key=lambda p: p.amplitude, reverse=True)
-        selected: t.List[Peak3DCart] = []
+        selected: list[Peak3DCart] = []
         for peak in sorted_peaks:
             if not self._is_suppressed(peak, selected):
                 selected.append(peak)
         return selected
 
-    def _is_suppressed(self, candidate: Peak3DCart, selected: t.List[Peak3DCart]) -> bool:
+    def _is_suppressed(self, candidate: Peak3DCart, selected: list[Peak3DCart]) -> bool:
         x_c, y_c, _ = candidate.cartesian_position
         for sel in selected:
             x_s, y_s, _ = sel.cartesian_position

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ _LOG = logging.getLogger(__name__)
 
 
 def serialize(
-    instance: t.Any, group: h5py.Group, *, override_type: t.Optional[core.TypeLike] = None
+    instance: t.Any, group: h5py.Group, *, override_type: core.TypeLike | None = None
 ) -> None:
     """
     Serialize and save an arbitrary object to the specified group
@@ -26,7 +26,7 @@ def serialize(
     RegistryPersistor(group, "./", type_tree).save(instance)
 
 
-def deserialize(group: h5py.Group, typ: t.Type[_T]) -> _T:
+def deserialize(group: h5py.Group, typ: type[_T]) -> _T:
     """
     Load and deserialize an object of type 'typ' from the specified group
 
@@ -39,7 +39,7 @@ def deserialize(group: h5py.Group, typ: t.Type[_T]) -> _T:
     return loaded  # type: ignore[no-any-return]
 
 
-def try_deserialize(group: h5py.Group, typ: t.Type[_T]) -> t.Optional[_T]:
+def try_deserialize(group: h5py.Group, typ: type[_T]) -> _T | None:
     """
     Like deserialize, but returns None instead of an raising an exception when an error occurs.
     """
@@ -57,7 +57,7 @@ def try_deserialize(group: h5py.Group, typ: t.Type[_T]) -> t.Optional[_T]:
 register_persistor = RegistryPersistor.register_persistor
 
 
-def register_json_presentable(__class: t.Type[core.JsonPresentable]) -> None:
+def register_json_presentable(__class: type[core.JsonPresentable]) -> None:
     """
     Register a JSON presentable class (class with 'to_json' & 'from_json')
 

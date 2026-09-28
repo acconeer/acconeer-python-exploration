@@ -1,10 +1,9 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from PySide6.QtGui import QTextCursor
 from PySide6.QtWidgets import (
@@ -25,9 +24,9 @@ class UserMessageDialog(QDialog):
     def __init__(
         self,
         title: str,
-        message: Optional[str],
+        message: str | None,
         confirmation: str,
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
 

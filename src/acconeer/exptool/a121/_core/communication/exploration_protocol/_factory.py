@@ -1,9 +1,7 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
-
-from typing import Optional, Type
 
 from packaging.version import Version
 
@@ -14,7 +12,7 @@ from ._no_calibration_reuse import ExplorationProtocol_NoCalibrationReuse
 from ._no_iq_imb_comp import ExplorationProtocol_No_IQ_Imb_Comp
 
 
-def get_exploration_protocol(rss_version: Optional[Version] = None) -> Type[ExplorationProtocol]:
+def get_exploration_protocol(rss_version: Version | None = None) -> type[ExplorationProtocol]:
     if rss_version is None:
         return ExplorationProtocol
 
