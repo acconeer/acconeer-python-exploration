@@ -266,7 +266,7 @@ class SensorSelection(QFrame):
                 self.selected = [self.selected[0]]
 
     def get_sensors(self):
-        return list(sorted(self.selected))
+        return sorted(self.selected)
 
     def set_sensors(self, sensors):
         self.selected = sensors

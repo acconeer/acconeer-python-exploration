@@ -326,7 +326,7 @@ class FloatParameter(NumberParameter):
         optional = kwargs.get("optional", False)
 
         limits = kwargs.get("limits")
-        if limits is not None and not any([lim is None for lim in limits]) and not optional:
+        if limits is not None and not any(lim is None for lim in limits) and not optional:
             kwargs.setdefault("_pidget_class", "FloatSpinBoxAndSliderPidget")
         else:
             kwargs.setdefault("_pidget_class", "FloatSpinBoxPidget")
@@ -396,7 +396,7 @@ class SensorParameter(ValueParameter):
     def _sanitize(self, arg):
         if isinstance(arg, int):
             arg = [arg]
-        elif isinstance(arg, list) and all([isinstance(e, int) for e in arg]):
+        elif isinstance(arg, list) and all(isinstance(e, int) for e in arg):
             arg = copy(arg)
         else:
             msg = "sensor(s) must be an int or a list of ints"

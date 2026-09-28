@@ -15,7 +15,7 @@ BO = regmap.BYTEORDER
 
 
 def test_full_names_unique():
-    unique_names = set([r.full_name for r in regmap.REGISTERS])
+    unique_names = {r.full_name for r in regmap.REGISTERS}
     assert len(regmap.REGISTERS) == len(unique_names)
 
 

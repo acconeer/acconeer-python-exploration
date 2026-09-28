@@ -50,7 +50,7 @@ class Processor:
         detector_metadata: DetectorMetadata,
     ):
         num_points = sum(
-            [subsweep.num_points for subsweep in session_config.sensor_config.subsweeps]
+            subsweep.num_points for subsweep in session_config.sensor_config.subsweeps
         )
         self.num_zones = np.minimum(processor_config.num_zones, num_points)
         self.distances = np.linspace(

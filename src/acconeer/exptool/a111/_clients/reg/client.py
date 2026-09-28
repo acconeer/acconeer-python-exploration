@@ -192,7 +192,7 @@ class UARTClient(RegBaseClient):
         if self.override_baudrate is not None:
             baudrates.append(self.override_baudrate)
         baudrates.append(self.DEFAULT_BASE_BAUDRATE)
-        baudrates = sorted(list(set(baudrates)))
+        baudrates = sorted(set(baudrates))
 
         self._link.baudrate = baudrates[0]
         self._link.connect()

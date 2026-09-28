@@ -54,7 +54,7 @@ class HeatmapConfigInput(ScrollAreaDecorator, t.Generic[_HeatmapConfigT, _EventT
     outputs dispatch on.
     """
 
-    INTERESTS: t.ClassVar[set[type]] = set([ChangeIdEvent])
+    INTERESTS: t.ClassVar[set[type]] = {ChangeIdEvent}
     description: t.ClassVar[str] = "Specify sensor configuration as in the Stream tab."
     id_: str = ""
 

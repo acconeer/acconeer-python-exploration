@@ -25,7 +25,7 @@ class SessionConfigEvent:
 
 
 class SessionConfigInput(ScrollAreaDecorator):
-    INTERESTS: t.ClassVar[set[type]] = set([ChangeIdEvent])
+    INTERESTS: t.ClassVar[set[type]] = {ChangeIdEvent}
     description: t.ClassVar[str] = (
         "Specify sensor configuration as in the Stream tab.\n\n"
         + "Additionally, you can specify a lower idle state."

@@ -19,7 +19,7 @@ def main():
     overrides = [s for s in overrides if s]
     overrides = [s.split(":") for s in overrides]
 
-    if not all([len(s) == 2 for s in overrides]):
+    if not all(len(s) == 2 for s in overrides):
         raise Exception
 
     overrides = dict(overrides)

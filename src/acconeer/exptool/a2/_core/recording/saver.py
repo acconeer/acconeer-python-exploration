@@ -161,7 +161,7 @@ class H5Saver(h5_record.H5Saver[SessionConfig, Metadata, GroupResult, ServerInfo
             return 0
 
         lol = [result.results for result in results]
-        (length,) = set(len(l) for l in lol)
+        (length,) = {len(l) for l in lol}
 
         for group_idx in range(length):
             try:

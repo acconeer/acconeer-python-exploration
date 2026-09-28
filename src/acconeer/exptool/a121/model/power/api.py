@@ -73,11 +73,11 @@ def configured_rate(config: a121.SessionConfig) -> float | None:
     if config.update_rate is not None:
         return config.update_rate
 
-    frame_rates = set(
+    frame_rates = {
         sensor_config.frame_rate
         for sensor_config in core_utils.iterate_extended_structure_values(config.groups)
         if sensor_config.frame_rate is not None
-    )
+    }
 
     if len(frame_rates) == 1:
         (frame_rate,) = frame_rates

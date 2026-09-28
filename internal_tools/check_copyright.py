@@ -80,7 +80,7 @@ def match_copyright_pattern(file_content, patterns):
     if not all(isinstance(p, list) for p in patterns):
         patterns = [patterns]
 
-    if any([len(file_content) >= len(p) for p in patterns]):
+    if any(len(file_content) >= len(p) for p in patterns):
         for row, line in enumerate(file_content):
             for pattern in patterns:
                 if re.match(pattern[0], line):

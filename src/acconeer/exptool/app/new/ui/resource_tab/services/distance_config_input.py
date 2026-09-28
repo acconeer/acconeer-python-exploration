@@ -34,7 +34,7 @@ class DistanceConfigEvent:
 
 
 class DistanceConfigInput(ScrollAreaDecorator):
-    INTERESTS: t.ClassVar[set[type]] = set([ChangeIdEvent])
+    INTERESTS: t.ClassVar[set[type]] = {ChangeIdEvent}
     description: t.ClassVar[str] = (
         "Specify distance configuration as in the Stream tab.\n\n"
         + "Additionally, you can specify a lower idle state."

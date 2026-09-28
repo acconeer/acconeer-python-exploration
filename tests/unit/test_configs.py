@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import multiprocessing as mp
@@ -9,9 +9,9 @@ from acconeer.exptool import a111
 
 
 def test_mode_to_config_map():
-    assert set(a111.Mode.__members__) == set(
+    assert set(a111.Mode.__members__) == {
         member.name for member in a111._configs.MODE_TO_CONFIG_CLASS_MAP
-    )
+    }
 
 
 def test_value_get_set():

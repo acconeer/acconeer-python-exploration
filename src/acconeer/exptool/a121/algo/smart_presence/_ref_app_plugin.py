@@ -173,7 +173,7 @@ class BackendPlugin(A121BackendPluginBase[SharedState]):
         distances = np.linspace(
             self.shared_state.config.nominal_config.start_m,
             self.shared_state.config.nominal_config.end_m,
-            sum([subsweep.num_points for subsweep in nominal_sensor_config.subsweeps]),
+            sum(subsweep.num_points for subsweep in nominal_sensor_config.subsweeps),
         )
         nominal_zone_limits = self._ref_app_instance.ref_app_processor.create_zones(
             distances, self.shared_state.config.nominal_config.num_zones

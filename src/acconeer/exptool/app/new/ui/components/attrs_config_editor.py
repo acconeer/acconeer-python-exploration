@@ -396,4 +396,4 @@ class JoinedPartialAttrsConfigEditors(DataEditor[T | None]):
 
     @property
     def is_ready(self) -> bool:
-        return all([editor.is_ready for editor in self._editors])
+        return all(editor.is_ready for editor in self._editors)

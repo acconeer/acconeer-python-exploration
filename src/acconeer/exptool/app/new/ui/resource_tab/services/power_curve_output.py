@@ -627,7 +627,7 @@ class _A121EnergyRegionPlot(QWidget):
         session_bar_item = PowerCurveBarGraphItem(fifty_first_active_and_idle_profiles)
         self._plot_widget.addItem(session_bar_item)
 
-        power_tag_set = set([p.tag for p in fifty_first_active_and_idle_profiles.flat_iter()])
+        power_tag_set = {p.tag for p in fifty_first_active_and_idle_profiles.flat_iter()}
 
         self._bar_legend.clear()
         for tag in power_tag_set:
@@ -832,7 +832,7 @@ class _A2EnergyRegionPlot(QWidget):
             session_bar_item = PowerCurveBarGraphItem(fifty_first_active_and_idle_profiles)
             self._plot_widget.addItem(session_bar_item)
 
-        power_tag_set = set(p.tag for p in fifty_first_active_and_idle_profiles.flat_iter())
+        power_tag_set = {p.tag for p in fifty_first_active_and_idle_profiles.flat_iter()}
 
         tag_to_tag_name = {
             a2_power.domain.EnergyRegion.Tag.MEASURE: "Measure",

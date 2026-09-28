@@ -188,7 +188,7 @@ class Node(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
             yield from ancestor._node_flatiter()
 
     def _get_epoch_node_head_types(self) -> set[type]:
-        return set(node.head for node in self._node_flatiter() if node.is_epoch)
+        return {node.head for node in self._node_flatiter() if node.is_epoch}
 
     def _get_epoch_node_with_head_type(self, head_type: type[_T]) -> Node[_T, t.Any, t.Any] | None:
         for node in self._node_flatiter():

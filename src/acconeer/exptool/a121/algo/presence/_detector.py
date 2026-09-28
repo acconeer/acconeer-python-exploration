@@ -380,7 +380,7 @@ class Detector(Controller[DetectorConfig, DetectorResult]):
             * sensor_config.subsweeps[-1].step_length
         ) * APPROX_BASE_STEP_LENGTH_M
         step_length_m = metadata.base_step_length_m * sensor_config.subsweeps[0].step_length
-        num_points = sum([subsweep.num_points for subsweep in sensor_config.subsweeps])
+        num_points = sum(subsweep.num_points for subsweep in sensor_config.subsweeps)
         profile = sensor_config.subsweeps[0].profile
 
         self.detector_metadata = DetectorMetadata(

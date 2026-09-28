@@ -239,7 +239,7 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         distances = np.linspace(
             self.config.nominal_config.start_m,
             self.config.nominal_config.end_m,
-            sum([subsweep.num_points for subsweep in sensor_config.subsweeps]),
+            sum(subsweep.num_points for subsweep in sensor_config.subsweeps),
         )
         self.config.nominal_config.num_zones = min(
             self.config.nominal_config.num_zones, distances.size
@@ -272,7 +272,7 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
             distances = np.linspace(
                 self.config.wake_up_config.start_m,
                 self.config.wake_up_config.end_m,
-                sum([subsweep.num_points for subsweep in sensor_config.subsweeps]),
+                sum(subsweep.num_points for subsweep in sensor_config.subsweeps),
             )
             self.config.wake_up_config.num_zones = min(
                 self.config.wake_up_config.num_zones, distances.size

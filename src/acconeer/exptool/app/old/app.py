@@ -553,7 +553,7 @@ class GUI(QMainWindow):
             alerts = calibration_config._update_pidgets()
             all_alerts.extend(alerts)
 
-        has_error = any([a.severity == et.configbase.Severity.ERROR for a in all_alerts])
+        has_error = any(a.severity == et.configbase.Severity.ERROR for a in all_alerts)
         self.set_gui_state("has_config_error", has_error)
 
     def init_dropdowns(self):
@@ -1904,9 +1904,9 @@ class GUI(QMainWindow):
         if not isinstance(infos, list):  # If squeezed
             infos = [infos]
 
-        missed = any([e.get("missed_data", False) for e in infos])
-        saturated = any([e.get("data_saturated", False) for e in infos])
-        data_quality_warning = any([e.get("data_quality_warning", False) for e in infos])
+        missed = any(e.get("missed_data", False) for e in infos)
+        saturated = any(e.get("data_saturated", False) for e in infos)
+        data_quality_warning = any(e.get("data_quality_warning", False) for e in infos)
 
         if missed:
             self.num_missed_frames += 1

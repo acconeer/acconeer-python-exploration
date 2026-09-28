@@ -35,7 +35,7 @@ def assert_client_types(obj, attribute_path, types: list[type] | type):
     obj = resolve_attribute_path(obj, attribute_path)
 
     if isinstance(types, list):
-        assert any([type(obj) is t for t in list(types)])
+        assert type(obj) in types
     else:
         type_ = types
         assert type(obj) is type_
