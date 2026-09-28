@@ -32,7 +32,7 @@ class ClientCreationError(Exception):
     pass
 
 
-class ClientABCWithGoodError(abc.ABC):
+class ClientABCWithGoodError(abc.ABC):  # noqa: B024 (only customizes the instantiation error)
     def __new__(cls, *args: t.Any, **kwargs: t.Any) -> t.Self:
         try:
             return super().__new__(cls)

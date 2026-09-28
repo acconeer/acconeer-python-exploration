@@ -76,7 +76,7 @@ def test_start_can_only_be_called_once(
     r = a121.H5Recorder(tmp_file_path)
     r._start(client_info=ref_client_info, server_info=ref_server_info)
 
-    with pytest.raises(Exception):
+    with pytest.raises(RuntimeError):
         r._start(client_info=ref_client_info, server_info=ref_server_info)
 
 

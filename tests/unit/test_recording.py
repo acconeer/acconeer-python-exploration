@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import warnings
@@ -125,5 +125,5 @@ def ref_record_file_a121(tmp_path):
 
 
 def test_open_record_a121(ref_record_file_a121):
-    with pytest.raises(Exception):
+    with pytest.raises(Exception, match="is not an A111"):
         a111.recording.load(ref_record_file_a121)

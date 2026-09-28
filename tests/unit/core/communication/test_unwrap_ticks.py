@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 import pytest
@@ -30,8 +30,8 @@ def test_unwrap_ticks_normal_cases(ticks, minimum_tick, expected_ticks):
 def test_unwrap_ticks_special_cases():
     assert unwrap_ticks([], None) == ([], None)
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         unwrap_ticks([-1], None, limit=100)
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         unwrap_ticks([100], None, limit=100)

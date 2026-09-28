@@ -147,12 +147,12 @@ def test_subsweep_accessor():
     assert sensor_config.subsweep is subsweep_config is sensor_config.subsweeps[0]
 
     # ... and not settable.
-    with pytest.raises(Exception):
+    with pytest.raises(AttributeError):
         sensor_config.subsweep = a121.SubsweepConfig()
 
     # When we have more than 1, an error should be raised.
     sensor_config = a121.SensorConfig(num_subsweeps=2)
-    with pytest.raises(Exception):
+    with pytest.raises(AttributeError):
         _ = sensor_config.subsweep
 
     # A docstring is nessecary to infrom the user of the raising
@@ -205,10 +205,10 @@ def test_multiple_subsweeps_param():
     # With multiple subsweeps, we should not be able to get/set subsweep parameters through the
     # sensor config
 
-    with pytest.raises(Exception):
+    with pytest.raises(AttributeError):
         _ = sensor_config.hwaas
 
-    with pytest.raises(Exception):
+    with pytest.raises(AttributeError):
         sensor_config.hwaas = 1
 
 

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -16,14 +16,13 @@ from acconeer.exptool.app.new.ui.icons import WARNING_YELLOW
 def run_blink_animation(
     widget: QWidget,
     *,
-    color: QColor = QColor(WARNING_YELLOW),
     num_blinks: int = 3,
     peak_strength: float = 0.8,
     rising_edge_ms: int = 100,
     falling_edge_ms: int = 300,
 ) -> None:
     c_effect = QGraphicsColorizeEffect(widget)
-    c_effect.setColor(color)
+    c_effect.setColor(QColor(WARNING_YELLOW))
     c_effect.setStrength(1.0)
     widget.setGraphicsEffect(c_effect)
 

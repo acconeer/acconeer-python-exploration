@@ -15,6 +15,7 @@ from acconeer.exptool.a121._core.communication.exploration_protocol import (
     ExplorationProtocol_No_15_6MHz_PRF,
     ExplorationProtocol_No_IQ_Imb_Comp,
     ExplorationProtocol_NoCalibrationReuse,
+    ExplorationProtocolError,
     get_exploration_protocol,
 )
 from acconeer.exptool.a121._core.utils import parse_rss_version
@@ -162,5 +163,5 @@ class TestExplorationProtocolFactory:
     def test_get_exploration_protocol_incompatible_versions(self, rss_version: str) -> None:
         assert get_exploration_protocol() == ExplorationProtocol
 
-        with pytest.raises(Exception):
+        with pytest.raises(ExplorationProtocolError):
             get_exploration_protocol(parse_rss_version(rss_version))

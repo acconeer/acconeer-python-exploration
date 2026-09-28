@@ -331,6 +331,7 @@ extend-select = [
     "PYI032", "PYI036",
     "PYI019", "PYI034",
     "PYI059",
+    "B006", "B008", "B009", "B010", "B017", "B024",
     "G010",
 ]
 # E741 = Ambiguous variable names, e.g. I vs l
@@ -344,6 +345,14 @@ extend-ignore = ["E741", "SIM108", "SIM105"]
 "src/acconeer/exptool/app/old/*" = ["S11", "SIM"]
 "src/acconeer/exptool/a111/*" = ["S11", "SIM"]
 "examples/a121/algo/cargo/example_app.py" = ["F401"]
+
+[tool.ruff.lint.flake8-bugbear]
+# Frozen or enum values, safe as shared argument defaults while they stay immutable.
+extend-immutable-calls = [
+    "acconeer.exptool._core.entities.ClientInfo",
+    "acconeer.exptool._core.entities.MockInfo",
+    "acconeer.exptool.app.new.ui.components.json_save_load_buttons.JsonButtonOperations",
+]
 
 [tool.ruff.lint.flake8-tidy-imports]
 ban-relative-imports = "parents"

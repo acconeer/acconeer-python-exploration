@@ -97,10 +97,10 @@ def test_sensor_id():
 
     session_config = a121.SessionConfig(a121.SensorConfig(), extended=True)
 
-    with pytest.raises(Exception):
+    with pytest.raises(RuntimeError):
         _ = session_config.sensor_id
 
-    with pytest.raises(Exception):
+    with pytest.raises(RuntimeError):
         session_config.sensor_id = 2
 
 
@@ -112,7 +112,7 @@ def test_sensor_config_property():
 
     session_config = a121.SessionConfig({1: a_sensor_config, 2: a121.SensorConfig()})
 
-    with pytest.raises(Exception):
+    with pytest.raises(RuntimeError):
         _ = session_config.sensor_config
 
 

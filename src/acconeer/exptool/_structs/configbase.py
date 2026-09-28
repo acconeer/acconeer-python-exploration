@@ -543,7 +543,7 @@ class Config(metaclass=ConfigMeta):
         pidgets = [param.create_pidget(self) for param in params]
         return pidgets
 
-    def _update_pidgets(self, additional_alerts=[]):
+    def _update_pidgets(self, additional_alerts=()):
         alerts = self.check()
         if alerts is None:
             alerts = []

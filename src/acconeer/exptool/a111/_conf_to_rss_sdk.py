@@ -74,7 +74,7 @@ def config_to_rss_usage(self, config):
     # the update rate and we know that we are in streaming mode
 
     # Find out which service that is selected in the GUI
-    service = str(getattr(config, "mode"))  # Yields "Mode.ENVELOPE"
+    service = str(config.mode)  # Yields "Mode.ENVELOPE"
     service = service.split(".")[1].lower()  # Yields "envelope"
 
     resultString = "// The following lines can be used in the update_configuration()"

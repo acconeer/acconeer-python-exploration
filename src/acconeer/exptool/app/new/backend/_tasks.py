@@ -22,7 +22,7 @@ class _TaskDescriptor(t.Generic[_P, _R]):
     def __init__(self, method: t.Callable[C[t.Any, _P], _R]) -> None:
         self._method = method
         self._task_name: str | None = None
-        setattr(self._method, "is_task", True)
+        self._method.is_task = True  # type: ignore[attr-defined]
 
     def __set_name__(self, owner: type[t.Any], name: str) -> None:
         self._task_name = name
