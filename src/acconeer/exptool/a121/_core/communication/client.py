@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import abc
-import typing as t
 
 import typing_extensions as te
 
@@ -192,5 +191,5 @@ class Client(
     def __enter__(self) -> Client:
         return self
 
-    def __exit__(self, *_: t.Any) -> None:
+    def __exit__(self, *_: object) -> None:
         self.close()

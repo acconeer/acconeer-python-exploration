@@ -35,7 +35,7 @@ class ImageFlasher:
     def __enter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, *_: object) -> None:
         self.reset_and_close()
 
     def reset_and_close(self):

@@ -1,11 +1,11 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import abc
 import functools
-from typing import Any, Callable, Iterator, TypeVar
+from typing import Callable, Iterator, TypeVar
 
 import numpy as np
 import numpy.typing as npt
@@ -276,5 +276,5 @@ class PersistentRecord(Record):
     def __enter__(self) -> Record:
         return self
 
-    def __exit__(self, *_: Any) -> None:
+    def __exit__(self, *_: object) -> None:
         self.close()

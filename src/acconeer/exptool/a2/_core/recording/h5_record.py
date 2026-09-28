@@ -199,7 +199,7 @@ class H5SessionRecord:
         tick_period = self.tick_period
         return Metadata(tick_period=tick_period, sensor_calibration=None, update_period=None)
 
-    def __eq__(self, other: t.Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, H5SessionRecord):
             return False
 
@@ -305,7 +305,7 @@ class H5Record:
     def session_config(self) -> SessionConfig:
         return self._sole_session.session_config
 
-    def __eq__(self, other: t.Any) -> bool:
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, H5Record):
             return False
 
@@ -327,5 +327,5 @@ class H5Record:
     def __enter__(self) -> te.Self:
         return self
 
-    def __exit__(self, *_: t.Any) -> None:
+    def __exit__(self, *_: object) -> None:
         self.close()

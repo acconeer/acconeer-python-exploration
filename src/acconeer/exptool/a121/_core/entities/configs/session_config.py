@@ -242,8 +242,12 @@ class SessionConfig:
         (sensor_config,) = group.values()
         return sensor_config
 
-    def __eq__(self, other: Any) -> bool:
-        return type(self) is type(other) and self.to_dict() == other.to_dict()
+    def __eq__(self, other: object) -> bool:
+        return (
+            isinstance(other, SessionConfig)
+            and type(self) is type(other)
+            and self.to_dict() == other.to_dict()
+        )
 
     def __repr__(self) -> str:
         return (

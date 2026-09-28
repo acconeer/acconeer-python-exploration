@@ -242,5 +242,5 @@ class Client(
     def __enter__(self) -> te.Self:
         return self
 
-    def __exit__(self, *_: t.Any) -> None:
+    def __exit__(self, *_: object) -> None:
         self.close()

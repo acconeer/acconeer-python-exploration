@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 
@@ -26,7 +26,7 @@ class ResultSlice:
             distance_m=result.distance_m,
         )
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, self.__class__):
             return math.isclose(
                 self.estimated_v, other.estimated_v, rel_tol=1e-9

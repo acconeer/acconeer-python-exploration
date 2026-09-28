@@ -41,7 +41,7 @@ class ResultSlice:
             time_series_std=result.time_series_std,
         )
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
             return False
 

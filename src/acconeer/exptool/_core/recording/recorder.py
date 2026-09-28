@@ -47,5 +47,5 @@ class Recorder(te.Protocol[_ConfigT, _MetadataT, _ResultT, _ServerInfoT]):
     def __enter__(self) -> te.Self:
         return self
 
-    def __exit__(self, *args: t.Any, **kwargs: t.Any) -> None:
+    def __exit__(self, *_: object) -> None:
         self.close()
