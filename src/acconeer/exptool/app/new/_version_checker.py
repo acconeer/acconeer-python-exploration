@@ -37,4 +37,4 @@ def get_latest_changelog() -> str:
         )
         return str(cl.content.decode())
     except Exception:
-        return str("### No changelog available at this time")
+        return "### No changelog available at this time"

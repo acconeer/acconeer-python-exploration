@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import inspect
@@ -94,7 +94,7 @@ def test_encode_bitset():
     assert reg.encode("ACTIVATED") == truth
     assert reg.encode(["activated"]) == truth
 
-    truth = int(0).to_bytes(4, BO)
+    truth = (0).to_bytes(4, BO)
     assert reg.encode([]) == truth
     assert reg.encode(0) == truth
 
@@ -143,11 +143,11 @@ def test_encode_bool():
     reg = regmap.get_reg("tx_disable")
     assert reg.data_type == regmap.DataType.BOOL
 
-    assert reg.encode(False) == int(0).to_bytes(4, BO)
-    assert reg.encode(True) == int(1).to_bytes(4, BO)
-    assert reg.encode(0) == int(0).to_bytes(4, BO)
-    assert reg.encode(1) == int(1).to_bytes(4, BO)
-    assert reg.encode(123) == int(1).to_bytes(4, BO)
+    assert reg.encode(False) == (0).to_bytes(4, BO)
+    assert reg.encode(True) == (1).to_bytes(4, BO)
+    assert reg.encode(0) == (0).to_bytes(4, BO)
+    assert reg.encode(1) == (1).to_bytes(4, BO)
+    assert reg.encode(123) == (1).to_bytes(4, BO)
 
 
 def test_decode_bool():
@@ -168,8 +168,8 @@ def test_encode_uint():
     reg = regmap.get_reg("downsampling_factor")
     assert reg.data_type == regmap.DataType.UINT32
 
-    assert reg.encode(0) == int(0).to_bytes(4, BO, signed=True)
-    assert reg.encode(1234) == int(1234).to_bytes(4, BO, signed=True)
+    assert reg.encode(0) == (0).to_bytes(4, BO, signed=True)
+    assert reg.encode(1234) == (1234).to_bytes(4, BO, signed=True)
 
     with pytest.raises(ValueError):
         reg.encode(-123)
@@ -187,9 +187,9 @@ def test_encode_float():
     assert reg.float_scale == pytest.approx(1000)
     assert reg.data_type == regmap.DataType.INT32
 
-    assert reg.encode(0) == int(0).to_bytes(4, BO, signed=True)
-    assert reg.encode(0.123) == int(123).to_bytes(4, BO, signed=True)
-    assert reg.encode(-0.123) == int(-123).to_bytes(4, BO, signed=True)
+    assert reg.encode(0) == (0).to_bytes(4, BO, signed=True)
+    assert reg.encode(0.123) == (123).to_bytes(4, BO, signed=True)
+    assert reg.encode(-0.123) == (-123).to_bytes(4, BO, signed=True)
 
 
 def test_decode_float():

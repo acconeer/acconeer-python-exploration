@@ -1302,7 +1302,7 @@ class GUI(QMainWindow):
             sweep_buffer = int(self.textboxes["sweep_buffer"].text())
             assert sweep_buffer > 0
         except (ValueError, AssertionError):
-            self.textboxes["sweep_buffer"].setText(str("1000"))
+            self.textboxes["sweep_buffer"].setText("1000")
             self.error_message("Sweep buffer needs to be a positive integer")
             return
 

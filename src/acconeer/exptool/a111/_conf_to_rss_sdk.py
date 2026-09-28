@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 
@@ -126,7 +126,7 @@ def config_to_rss_usage(self, config):
             resultString += rss_func + "(" + update_config_arg + ", true, " + str(rss_arg) + ");\n"
         # Sweep rate can contain "None" instead of a number. Special case
         elif et_func == "sweep_rate":
-            if rss_arg != str("None"):
+            if rss_arg != "None":
                 resultString += rss_func + "(" + update_config_arg + ", " + str(rss_arg) + ");\n"
         elif rss_func is not None:
             # General case

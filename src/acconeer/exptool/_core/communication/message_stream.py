@@ -102,7 +102,7 @@ class MessageStream:
             try:
                 payload_size = header["payload_size"]
             except KeyError:
-                payload = bytes()
+                payload = b""
             else:
                 try:
                     payload = self._link.recv(payload_size)

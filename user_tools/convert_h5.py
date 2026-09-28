@@ -727,12 +727,12 @@ class ArgumentsChecker:
         print(f"Reading from {self.input_path!r} ... \n")
 
         if not Path.exists(self.input_path):
-            self.exit_text = str(f'The input file ("{self.input_path}") can not be found.')
+            self.exit_text = f'The input file ("{self.input_path}") can not be found.'
             self.files_ok = False
 
         if Path.exists(self.output_path) and not args.force:
-            exit_text_0 = str(f'The output file ("{self.output_path}") already exists.')
-            exit_text_1 = str(
+            exit_text_0 = f'The output file ("{self.output_path}") already exists.'
+            exit_text_1 = (
                 'Overwrite existing file with "-f" or give different name for output file.'
             )
             self.exit_text = exit_text_0 + "\n" + exit_text_1
@@ -741,12 +741,8 @@ class ArgumentsChecker:
 
     def get_default_sensor_id_or_index(self) -> int:
         try:
-            note_text_0 = str(
-                "The file from the A121 results includes results from multiple sessions."
-            )
-            note_text_1 = str(
-                "Specifying the sensor/session id in the arguments does not provide extra information."
-            )
+            note_text_0 = "The file from the A121 results includes results from multiple sessions."
+            note_text_1 = "Specifying the sensor/session id in the arguments does not provide extra information."
             note_text = note_text_0 + "\n" + note_text_1
             print(note_text)
             return int(self.args.sensor)
