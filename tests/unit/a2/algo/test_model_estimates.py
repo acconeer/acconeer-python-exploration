@@ -6,7 +6,7 @@ from __future__ import annotations
 import ast
 from pathlib import Path
 
-import acconeer.exptool.a2.algo as algo
+from acconeer.exptool.a2 import algo
 
 
 _MODEL_PACKAGE = "acconeer.exptool.a2.model"

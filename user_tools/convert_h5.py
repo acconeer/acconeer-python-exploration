@@ -18,24 +18,26 @@ import numpy.typing as npt
 import pandas as pd
 
 import acconeer.exptool as et
-import acconeer.exptool.a121.algo.bilateration as bilateration
-import acconeer.exptool.a121.algo.breathing as breathing
-import acconeer.exptool.a121.algo.distance as distance
-import acconeer.exptool.a121.algo.hand_motion as hand_motion
-import acconeer.exptool.a121.algo.obstacle as obstacle
-import acconeer.exptool.a121.algo.parking as parking
-import acconeer.exptool.a121.algo.phase_tracking as phase_tracking
-import acconeer.exptool.a121.algo.presence as presence
-import acconeer.exptool.a121.algo.smart_presence as smart_presence
-import acconeer.exptool.a121.algo.speed as speed
-import acconeer.exptool.a121.algo.surface_velocity as surface_velocity
-import acconeer.exptool.a121.algo.tank_level as tank_level
-import acconeer.exptool.a121.algo.touchless_button as touchless_button
-import acconeer.exptool.a121.algo.vibration as vibration
-import acconeer.exptool.a121.algo.waste_level as waste_level
 from acconeer.exptool import a121
 from acconeer.exptool.a121 import H5Record, _core, algo
 from acconeer.exptool.a121._core_ext._replaying_client import _ReplayingClient
+from acconeer.exptool.a121.algo import (
+    bilateration,
+    breathing,
+    distance,
+    hand_motion,
+    obstacle,
+    parking,
+    phase_tracking,
+    presence,
+    smart_presence,
+    speed,
+    surface_velocity,
+    tank_level,
+    touchless_button,
+    vibration,
+    waste_level,
+)
 
 
 try:

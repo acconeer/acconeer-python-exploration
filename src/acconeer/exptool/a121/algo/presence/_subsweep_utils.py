@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import numpy as np
 
-import acconeer.exptool.a121 as a121
+from acconeer.exptool import a121
 from acconeer.exptool.a121.algo import (
     APPROX_BASE_STEP_LENGTH_M,
     ENVELOPE_FWHM_M,
