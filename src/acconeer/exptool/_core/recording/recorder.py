@@ -10,35 +10,27 @@ import typing_extensions as te
 from acconeer.exptool._core.entities import ClientInfo
 
 
-_ConfigT = t.TypeVar("_ConfigT", contravariant=True)
-_MetadataT = t.TypeVar("_MetadataT", contravariant=True)
-_ResultT = t.TypeVar("_ResultT", contravariant=True)
-_ServerInfoT = t.TypeVar("_ServerInfoT", contravariant=True)
-
-_RecorderT = t.TypeVar("_RecorderT")
-
-
-class RecorderAttachable(te.Protocol[_RecorderT]):
+class RecorderAttachable[RecorderT](t.Protocol):
     """Dependecy Inversion interface for clients"""
 
-    def attach_recorder(self, recorder: _RecorderT) -> None: ...
+    def attach_recorder(self, recorder: RecorderT) -> None: ...
 
-    def detach_recorder(self) -> _RecorderT | None: ...
+    def detach_recorder(self) -> RecorderT | None: ...
 
 
-class Recorder(te.Protocol[_ConfigT, _MetadataT, _ResultT, _ServerInfoT]):
+class Recorder[ConfigT, MetadataT, ResultT, ServerInfoT](t.Protocol):
     """The interface a Recorder needs to follow"""
 
     def _start(
         self,
         *,
         client_info: ClientInfo,
-        server_info: _ServerInfoT,
+        server_info: ServerInfoT,
     ) -> None: ...
 
-    def _start_session(self, *, config: _ConfigT, metadata: _MetadataT) -> None: ...
+    def _start_session(self, *, config: ConfigT, metadata: MetadataT) -> None: ...
 
-    def _sample(self, result: _ResultT) -> None: ...
+    def _sample(self, result: ResultT) -> None: ...
 
     def _stop_session(self) -> None: ...
 

@@ -7,32 +7,27 @@ import typing as t
 from time import time
 
 import h5py
-import typing_extensions as te
 
 
-_ConfigT = t.TypeVar("_ConfigT", contravariant=True)
-_MetadataT = t.TypeVar("_MetadataT", contravariant=True)
-_ResultT = t.TypeVar("_ResultT", contravariant=True)
-_ServerInfoT = t.TypeVar("_ServerInfoT", contravariant=True)
-
-
-class H5Saver(te.Protocol[_ConfigT, _MetadataT, _ResultT, _ServerInfoT]):
+class H5Saver[ConfigT, MetadataT, ResultT, ServerInfoT](t.Protocol):
     """Interface for savers handling writing results to file"""
 
     def _start(self) -> None: ...
 
-    def _write_server_info(self, group: h5py.Group, server_info: _ServerInfoT) -> None: ...
+    def _write_server_info(self, group: h5py.Group, server_info: ServerInfoT) -> None: ...
 
     def _start_session(
-        self, group: h5py.Group, *, config: _ConfigT, metadata: _MetadataT, **kwargs: t.Any
+        self, group: h5py.Group, *, config: ConfigT, metadata: MetadataT, **kwargs: t.Any
     ) -> None: ...
 
-    def _sample(self, group: h5py.Group, results: t.Iterable[_ResultT]) -> None: ...
+    def _sample(self, group: h5py.Group, results: t.Iterable[ResultT]) -> None: ...
 
     def _stop_session(self, group: h5py.Group) -> None: ...
 
 
-class ChunkedH5Saver(H5Saver[_ConfigT, _MetadataT, _ResultT, _ServerInfoT]):
+class ChunkedH5Saver[ConfigT, MetadataT, ResultT, ServerInfoT](
+    H5Saver[ConfigT, MetadataT, ResultT, ServerInfoT]
+):
     """Chunks result before writing to file to decrease file system access
 
     :param saver:
@@ -51,14 +46,14 @@ class ChunkedH5Saver(H5Saver[_ConfigT, _MetadataT, _ResultT, _ServerInfoT]):
     _AUTO_CHUNK_MAX_SIZE = 512
     _AUTO_CHUNK_MAX_TIME = 1.0
 
-    _saver: H5Saver[_ConfigT, _MetadataT, _ResultT, _ServerInfoT]
+    _saver: H5Saver[ConfigT, MetadataT, ResultT, ServerInfoT]
     _chunk_size: int | None
-    _chunk_buffer: list[_ResultT]
+    _chunk_buffer: list[ResultT]
     _last_write_time: float
 
     def __init__(
         self,
-        saver: H5Saver[_ConfigT, _MetadataT, _ResultT, _ServerInfoT],
+        saver: H5Saver[ConfigT, MetadataT, ResultT, ServerInfoT],
         _chunk_size: int | None = None,
     ) -> None:
         self._saver = saver
@@ -70,16 +65,16 @@ class ChunkedH5Saver(H5Saver[_ConfigT, _MetadataT, _ResultT, _ServerInfoT]):
         self._saver._start()
         self._last_write_time = time()
 
-    def _write_server_info(self, group: h5py.Group, server_info: _ServerInfoT) -> None:
+    def _write_server_info(self, group: h5py.Group, server_info: ServerInfoT) -> None:
         self._saver._write_server_info(group, server_info)
 
     def _start_session(
-        self, group: h5py.Group, *, config: _ConfigT, metadata: _MetadataT, **kwargs: t.Any
+        self, group: h5py.Group, *, config: ConfigT, metadata: MetadataT, **kwargs: t.Any
     ) -> None:
         self._saver._start_session(group, config=config, metadata=metadata, **kwargs)
         self._last_write_time = time()
 
-    def _sample(self, group: h5py.Group, results: t.Iterable[_ResultT]) -> None:
+    def _sample(self, group: h5py.Group, results: t.Iterable[ResultT]) -> None:
         for result in results:
             self._chunk_buffer.append(result)
 

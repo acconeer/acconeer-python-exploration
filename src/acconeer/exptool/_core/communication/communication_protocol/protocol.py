@@ -9,15 +9,12 @@ import typing as t
 from .messages import Message
 
 
-_ConfigT = t.TypeVar("_ConfigT", contravariant=True)
-
-
-class CommunicationProtocol(abc.ABC, t.Generic[_ConfigT]):
+class CommunicationProtocol[ConfigT](abc.ABC):
     end_sequence: t.ClassVar[bytes] = b"\n"
 
     @classmethod
     @abc.abstractmethod
-    def setup_command(cls, config: _ConfigT) -> bytes:
+    def setup_command(cls, config: ConfigT) -> bytes:
         """The `setup` command."""
 
     @classmethod

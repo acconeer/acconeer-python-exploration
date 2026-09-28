@@ -21,12 +21,6 @@ from .saver import H5Saver
 from .utils import PathOrH5File, h5_file_factory
 
 
-_ConfigT = t.TypeVar("_ConfigT", contravariant=True)
-_MetadataT = t.TypeVar("_MetadataT", contravariant=True)
-_ResultT = t.TypeVar("_ResultT", contravariant=True)
-_ServerInfoT = t.TypeVar("_ServerInfoT", contravariant=True)
-
-
 def get_h5py_str_dtype() -> t.Any:
     return h5py.special_dtype(vlen=str)
 
@@ -42,7 +36,9 @@ def get_uuid() -> str:
     return str(uuid4())
 
 
-class H5Recorder(recorder.Recorder[_ConfigT, _MetadataT, _ResultT, _ServerInfoT]):
+class H5Recorder[ConfigT, MetadataT, ResultT, ServerInfoT](
+    recorder.Recorder[ConfigT, MetadataT, ResultT, ServerInfoT]
+):
     """Recorder writing directly to an HDF5 file
 
     :param path_or_file:
@@ -73,16 +69,16 @@ class H5Recorder(recorder.Recorder[_ConfigT, _MetadataT, _ResultT, _ServerInfoT]
     """Whether :class:`H5Recorder` opened and owns the file, i.e., if a path-like object was given
     for ``path_or_file``. If it does, the file is closed when stopping.
     """
-    _saver: H5Saver[_ConfigT, _MetadataT, _ResultT, _ServerInfoT]
+    _saver: H5Saver[ConfigT, MetadataT, ResultT, ServerInfoT]
     """Defining how session data should be stored in H5 session groups"""
 
     def __init__(
         self,
         path_or_file: PathOrH5File,
         generation: str,
-        saver: H5Saver[_ConfigT, _MetadataT, _ResultT, _ServerInfoT],
+        saver: H5Saver[ConfigT, MetadataT, ResultT, ServerInfoT],
         attachable: recorder.RecorderAttachable[
-            recorder.Recorder[_ConfigT, _MetadataT, _ResultT, _ServerInfoT]
+            recorder.Recorder[ConfigT, MetadataT, ResultT, ServerInfoT]
         ]
         | None = None,
         mode: str = "x",
@@ -140,7 +136,7 @@ class H5Recorder(recorder.Recorder[_ConfigT, _MetadataT, _ResultT, _ServerInfoT]
         self,
         *,
         client_info: ClientInfo,
-        server_info: _ServerInfoT,
+        server_info: ServerInfoT,
     ) -> None:
         if "client_info" in self.file or "server_info" in self.file:
             msg = "It's not allowed to call '_start' once."
@@ -157,14 +153,14 @@ class H5Recorder(recorder.Recorder[_ConfigT, _MetadataT, _ResultT, _ServerInfoT]
 
         self._saver._start()
 
-    def _start_session(self, *, config: _ConfigT, metadata: _MetadataT, **kwargs: t.Any) -> None:
+    def _start_session(self, *, config: ConfigT, metadata: MetadataT, **kwargs: t.Any) -> None:
         self._current_session_group = self._schema.create_next_session_group(self.file)
 
         self._saver._start_session(
             self._current_session_group, config=config, metadata=metadata, **kwargs
         )
 
-    def _sample(self, result: _ResultT) -> None:
+    def _sample(self, result: ResultT) -> None:
         if self._current_session_group is None:
             msg = "No session group selected yet. This should not happen."
             raise RuntimeError(msg)
