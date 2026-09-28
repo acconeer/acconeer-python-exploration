@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import warnings
 from enum import Enum
-from typing import Any
+from typing import Any, Self
 
 import attrs
 import h5py
@@ -18,7 +18,7 @@ from acconeer.exptool.a121.algo import (
     AlgoParamEnum,
     Controller,
 )
-from acconeer.exptool.a121.algo._base import AlgoBase, AlgoBaseT
+from acconeer.exptool.a121.algo._base import AlgoBase
 from acconeer.exptool.a121.algo._utils import estimate_frame_rate
 from acconeer.exptool.a121.algo.distance._detector import Detector as DistanceDetector
 from acconeer.exptool.a121.algo.distance._detector import DetectorConfig as DistanceConfig
@@ -180,7 +180,7 @@ class ExAppConfig(AlgoConfigBase):
         return validation_results
 
     @classmethod
-    def from_dict(cls: type[AlgoBaseT], d: dict[str, Any]) -> AlgoBaseT:
+    def from_dict(cls, d: dict[str, Any]) -> Self:
         d["cargo_presence_config"] = CargoPresenceConfig.from_dict(d["cargo_presence_config"])
         d["utilization_level_config"] = UtilizationLevelConfig.from_dict(
             d["utilization_level_config"]
@@ -195,7 +195,7 @@ class ExAppContext(AlgoBase):
     distance_context: DistanceContext | None = attrs.field(default=None)
 
     @classmethod
-    def from_dict(cls: type[AlgoBaseT], d: dict[str, Any]) -> AlgoBaseT:
+    def from_dict(cls, d: dict[str, Any]) -> Self:
         if d["presence_context"] is not None:
             d["presence_context"] = PresenceContext.from_dict(d["presence_context"])
         if d["distance_context"] is not None:

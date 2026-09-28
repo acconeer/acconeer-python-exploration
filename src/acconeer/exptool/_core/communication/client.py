@@ -33,7 +33,7 @@ class ClientCreationError(Exception):
 
 
 class ClientABCWithGoodError(abc.ABC):
-    def __new__(cls, *args: t.Any, **kwargs: t.Any) -> ClientABCWithGoodError:
+    def __new__(cls, *args: t.Any, **kwargs: t.Any) -> t.Self:
         try:
             return super().__new__(cls)
         except TypeError:  # te here is the "Can't instantiate ..."-error
@@ -69,7 +69,7 @@ class Client(
         override_baudrate: int | None = None,
         flow_control: bool = True,
         generation: str | None = None,
-    ) -> te.Self:
+    ) -> t.Self:
         """
         Open a new client
         """
@@ -239,7 +239,7 @@ class Client(
             msg = "Session is not started."
             raise ClientError(msg)
 
-    def __enter__(self) -> te.Self:
+    def __enter__(self) -> t.Self:
         return self
 
     def __exit__(self, *_: object) -> None:

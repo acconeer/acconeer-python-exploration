@@ -6,7 +6,7 @@ from __future__ import annotations
 import copy
 import warnings
 from enum import Enum
-from typing import Any
+from typing import Any, Self
 
 import attrs
 import h5py
@@ -19,7 +19,7 @@ from acconeer.exptool import type_migration as tm
 from acconeer.exptool._core.class_creation.attrs import attrs_ndarray_isclose
 from acconeer.exptool.a121._core.entities.configs.config_enums import IdleState, Profile
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
-from acconeer.exptool.a121.algo._base import AlgoBase, AlgoBaseT
+from acconeer.exptool.a121.algo._base import AlgoBase
 from acconeer.exptool.a121.algo._utils import estimate_frame_rate
 from acconeer.exptool.a121.algo.presence._detector import (
     AlgoConfigBase,
@@ -104,7 +104,7 @@ class RefAppConfig(AlgoConfigBase):
         return validation_results
 
     @classmethod
-    def from_dict(cls: type[AlgoBaseT], d: dict[str, Any]) -> AlgoBaseT:
+    def from_dict(cls, d: dict[str, Any]) -> Self:
         try:
             d["nominal_config"] = presence_zone_config_timeline.migrate(d["nominal_config"])
             d["wake_up_config"] = presence_wake_up_config_timeline.migrate(d["wake_up_config"])
@@ -120,7 +120,7 @@ class RefAppContext(AlgoBase):
     wake_up_detector_context: DetectorContext | None = attrs.field(default=None)
 
     @classmethod
-    def from_dict(cls: type[AlgoBaseT], d: dict[str, Any]) -> AlgoBaseT:
+    def from_dict(cls, d: dict[str, Any]) -> Self:
         if d["nominal_detector_context"] is not None:
             d["nominal_detector_context"] = DetectorContext.from_dict(
                 d["nominal_detector_context"]

@@ -7,7 +7,7 @@ import abc
 import enum
 import json
 import warnings
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, Self, TypeVar
 
 import attrs
 
@@ -15,12 +15,10 @@ from acconeer.exptool import a121
 from acconeer.exptool.a121._core.utils import EntityJSONEncoder
 
 
-AlgoBaseT = TypeVar("AlgoBaseT", bound="AlgoBase")
 InputT = TypeVar("InputT", a121.Result, list[dict[int, a121.Result]])
 MetadataT = TypeVar("MetadataT", a121.Metadata, list[dict[int, a121.Metadata]])
 ConfigT = TypeVar("ConfigT", bound="AlgoConfigBase")
 ProcessorConfigT = TypeVar("ProcessorConfigT", bound="AlgoProcessorConfigBase")
-ParamEnumT = TypeVar("ParamEnumT", bound="AlgoParamEnum")
 ResultT = TypeVar("ResultT")
 
 
@@ -54,14 +52,14 @@ class AlgoBase:
         return attrs.asdict(self)
 
     @classmethod
-    def from_dict(cls: type[AlgoBaseT], d: dict[str, Any]) -> AlgoBaseT:
+    def from_dict(cls, d: dict[str, Any]) -> Self:
         return cls(**d)
 
     def to_json(self) -> str:
         return json.dumps(self.to_dict(), cls=EntityJSONEncoder)
 
     @classmethod
-    def from_json(cls: type[AlgoBaseT], json_str: str) -> AlgoBaseT:
+    def from_json(cls, json_str: str) -> Self:
         return cls.from_dict(json.loads(json_str))
 
 
@@ -110,7 +108,7 @@ class AlgoParamEnum(enum.Enum):
     # TODO: Share with config_enums.py (?)
 
     @classmethod
-    def _missing_(cls: type[ParamEnumT], value: object) -> ParamEnumT | None:
+    def _missing_(cls, value: object) -> Self | None:
         for member in cls:
             if member.name == value:
                 return member

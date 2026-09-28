@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import abc
 import functools
-from typing import Callable, Iterator, TypeVar
+from typing import Callable, Iterator, Self, TypeVar
 
 import numpy as np
 import numpy.typing as npt
@@ -273,7 +273,7 @@ class PersistentRecord(Record):
     def close(self) -> None:
         """Close the underlying file"""
 
-    def __enter__(self) -> Record:
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *_: object) -> None:

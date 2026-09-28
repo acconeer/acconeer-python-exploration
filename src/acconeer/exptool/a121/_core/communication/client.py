@@ -4,8 +4,7 @@
 from __future__ import annotations
 
 import abc
-
-import typing_extensions as te
+from typing import Self
 
 from acconeer.exptool._core.communication import Client as BaseClient
 from acconeer.exptool._core.communication import ClientCreationError, ClientError
@@ -43,7 +42,7 @@ class Client(
         override_baudrate: int | None = None,
         flow_control: bool = True,
         generation: str | None = "a121",
-    ) -> te.Self:
+    ) -> Self:
         if generation != "a121":
             raise ClientCreationError
 
@@ -188,7 +187,7 @@ class Client(
         if self._recorder is not None:
             self._recorder._stop_session()
 
-    def __enter__(self) -> Client:
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *_: object) -> None:

@@ -322,6 +322,7 @@ extend-select = [
     "B020", "PLR1704", "PLR1730", "PLW0127", "PLW0245", "PLW0406", "PLW1510",
     "PYI018", "PYI030", "PYI041",
     "PYI032", "PYI036",
+    "PYI019", "PYI034",
 ]
 # E741 = Ambiguous variable names, e.g. I vs l
 # SIM108 = Has a tendancy to create ternary one-liners.
