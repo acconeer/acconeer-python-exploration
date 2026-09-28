@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from collections import namedtuple
@@ -132,7 +132,7 @@ def unpack_stream_data_segment(segment):
 
 def pack_reg_val(reg_val):
     if len(reg_val.val) != REG_SIZE:
-        msg = "register value must be {} bytes".format(REG_SIZE)
+        msg = f"register value must be {REG_SIZE} bytes"
         raise ProtocolError(msg)
     packed = bytearray()
     packed.extend(reg_val.addr.to_bytes(ADDR_SIZE, BO))

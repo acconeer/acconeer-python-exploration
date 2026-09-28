@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import numpy as np
@@ -99,7 +99,7 @@ class PGUpdater:
 
             f_est = data["f_est"]
             if f_est > 0:
-                s = "Latest frequency estimate: {:.2f} Hz | {:.0f} BPM".format(f_est, f_est * 60)
+                s = f"Latest frequency estimate: {f_est:.2f} Hz | {f_est * 60:.0f} BPM"
                 self.fest_text_item.setText(s)
 
             self.fest_plot.enableAutoRange(x=True)

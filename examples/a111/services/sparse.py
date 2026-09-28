@@ -61,7 +61,7 @@ class PGUpdater:
         self.smooth_lims = []
         for sensor_id in self.sensor_config.sensor:
             if len(self.sensor_config.sensor) > 1:
-                plot = win.addPlot(title="Sensor {}".format(sensor_id))
+                plot = win.addPlot(title=f"Sensor {sensor_id}")
             else:
                 plot = win.addPlot()
             plot.setMenuEnabled(False)

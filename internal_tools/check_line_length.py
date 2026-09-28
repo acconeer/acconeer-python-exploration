@@ -34,7 +34,7 @@ def main():
             pass
         except Exception as e:
             failed = True
-            print("{}: {}".format(filename, e))
+            print(f"{filename}: {e}")
 
     return failed
 

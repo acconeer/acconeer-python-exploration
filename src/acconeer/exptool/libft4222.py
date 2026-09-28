@@ -237,7 +237,7 @@ def check_status(status):
             msg = status.name
             err = status.value
 
-        msg = "Error {}: {}".format(err, msg)
+        msg = f"Error {err}: {msg}"
         raise LibFT4222Error(msg)
 
 
@@ -377,7 +377,7 @@ def print_devices():
     check_status(status)
 
     for i, v in enumerate(_dev_info):
-        print("{}:".format(i))
+        print(f"{i}:")
         print("  ", v.Type)
         print("  ", v.Description.decode() or "-")
         print("  ", v.LocId)

@@ -60,7 +60,8 @@ def _query_yes_no(question: str, default: str = "yes") -> bool:
     elif default == "no":
         prompt = " [y/N] "
     else:
-        raise FlashException("invalid default answer: '%s'" % default)
+        msg = f"invalid default answer: '{default}'"
+        raise FlashException(msg)
 
     while True:
         print(question + prompt, end="", flush=True)

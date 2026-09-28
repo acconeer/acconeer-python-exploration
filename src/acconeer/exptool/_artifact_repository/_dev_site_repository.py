@@ -204,7 +204,7 @@ class DevSiteRepository(ArtifactRepository):
             zip_url = zip_url_tags[0]["href"]
             assert isinstance(zip_url, str), "Expected a single href, not a multi-valued attribute"
 
-            log.debug("File to download: {}".format(zip_url))
+            log.debug(f"File to download: {zip_url}")
 
             tc = "tc_accepted=1&tc_submit=Download"
             headers = {"Content-Type": "application/x-www-form-urlencoded"}
@@ -226,7 +226,7 @@ class DevSiteRepository(ArtifactRepository):
 
         with open(filepath, "wb") as output_file:
             output_file.write(r.content)
-            log.debug("Download completed at {}".format(filepath))
+            log.debug(f"Download completed at {filepath}")
 
         log.debug("Extracting files..")
 

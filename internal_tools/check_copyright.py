@@ -274,7 +274,7 @@ def check_copyright(file_path, ignore_year, update_year, current_year, docs=Fals
         except ValueError:
             return (
                 Status.NOT_SUPPORTED,
-                "{}: encoding seems to be something else than utf-8".format(file_path),
+                f"{file_path}: encoding seems to be something else than utf-8",
             )
 
         # Empty files without copyright is accepted
@@ -285,9 +285,7 @@ def check_copyright(file_path, ignore_year, update_year, current_year, docs=Fals
             if copyright_line_nbr is None and not update_year:
                 return (
                     Status.MISSING,
-                    "{}: copyright statement is missing or has incorrect format.".format(
-                        file_path
-                    ),
+                    f"{file_path}: copyright statement is missing or has incorrect format.",
                 )
 
             if not current_year:
@@ -305,12 +303,13 @@ def check_copyright(file_path, ignore_year, update_year, current_year, docs=Fals
                     content, copyright_line_nbr, current_year, copyright_pattern(current_year)
                 )
                 write_file(file_path, content)
-                print("{}: updated copyright year.".format(file_path))
+                print(f"{file_path}: updated copyright year.")
 
             # Check that the copyright year is up to date
             elif not ignore_year and not year_up_to_date:
-                return Status.YEAR_NOT_UP_TO_DATE, "{}: copyright year is not up-to-date.".format(
-                    file_path
+                return (
+                    Status.YEAR_NOT_UP_TO_DATE,
+                    f"{file_path}: copyright year is not up-to-date.",
                 )
 
         return Status.OK, None

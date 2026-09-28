@@ -63,7 +63,7 @@ class Parameter:
 
         if kwargs:
             a_key = next(iter(kwargs.keys()))
-            msg = "Got unexpected keyword argument ({})".format(a_key)
+            msg = f"Got unexpected keyword argument ({a_key})"
             raise TypeError(msg)
 
         if not self.visible:
@@ -204,13 +204,13 @@ class ValueParameter(Parameter):
 
         type_str = getattr(self, "type_str", None)
         if type_str:
-            s += "| Type: {}\n".format(type_str)
+            s += f"| Type: {type_str}\n"
 
         unit = getattr(self, "unit", None)
         if unit:
-            s += "| Unit: {}\n".format(unit)
+            s += f"| Unit: {unit}\n"
 
-        s += "| Default value: {}\n".format(self.default_value)
+        s += f"| Default value: {self.default_value}\n"
 
         return s
 
@@ -240,13 +240,13 @@ class EnumParameter(ValueParameter):
             return value
 
         if not isinstance(value, str):
-            msg = "Must be a {} or str (member name)".format(self.enum.__name__)
+            msg = f"Must be a {self.enum.__name__} or str (member name)"
             raise ValueError(msg)
 
         try:
             return self.enum[value.upper()]
         except KeyError as e:
-            msg = "{} is not a valid {} member name".format(value, self.enum.__name__)
+            msg = f"{value} is not a valid {self.enum.__name__} member name"
             raise ValueError(msg) from e
 
     def dump(self, obj):
@@ -303,14 +303,14 @@ class IntParameter(NumberParameter):
             lower, upper = self.limits
 
             if lower is not None and value < lower:
-                msg = "Given value is too low ({} < {})".format(value, lower)
+                msg = f"Given value is too low ({value} < {lower})"
                 raise ValueError(msg)
             if upper is not None and value > upper:
-                msg = "Given value is too high ({} > {})".format(value, upper)
+                msg = f"Given value is too high ({value} > {upper})"
                 raise ValueError(msg)
 
         if self.valid_values is not None and value not in self.valid_values:
-            msg = "Given value ({}) is not a valid value".format(value)
+            msg = f"Given value ({value}) is not a valid value"
             raise ValueError(msg)
 
         return value
@@ -350,10 +350,10 @@ class FloatParameter(NumberParameter):
             lower, upper = self.limits
 
             if lower is not None and value < lower:
-                msg = "Given value is too low ({} < {})".format(value, lower)
+                msg = f"Given value is too low ({value} < {lower})"
                 raise ValueError(msg)
             if upper is not None and value > upper:
-                msg = "Given value is too high ({} > {})".format(value, upper)
+                msg = f"Given value is too high ({value} > {upper})"
                 raise ValueError(msg)
 
         return value
@@ -515,7 +515,7 @@ class Config(metaclass=ConfigMeta):
         params = dict(self._get_keys_and_params())
         for k, v in d.items():
             if k not in params:
-                log.warning("Skipping unknown parameter {} when loading dump".format(k))
+                log.warning(f"Skipping unknown parameter {k} when loading dump")
                 continue
 
             params[k].load(self, v)

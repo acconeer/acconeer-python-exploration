@@ -327,9 +327,9 @@ class PGUpdater:
             elif processor_result.level_percent > 0:  # In bin detection
                 assert processor_result.level_m is not None
                 assert processor_result.level_percent is not None
-                level_text = "Level: {:.2f} m, {:.0f} %".format(
-                    processor_result.level_m,
-                    processor_result.level_percent,
+                level_text = (
+                    f"Level: {processor_result.level_m:.2f} m, "
+                    f"{processor_result.level_percent:.0f} %"
                 )
                 level_html = self.level_html_format.format(level_text)
                 self.level_text_item.setHtml(level_html)
@@ -369,9 +369,9 @@ class PGUpdater:
 
                 assert processor_result.level_m is not None
                 assert processor_result.level_percent is not None
-                level_text = "Level: {:.2f} m, {:.0f} %".format(
-                    processor_result.level_m,
-                    processor_result.level_percent,
+                level_text = (
+                    f"Level: {processor_result.level_m:.2f} m, "
+                    f"{processor_result.level_percent:.0f} %"
                 )
                 level_html = self.level_html_format.format(level_text)
                 self.level_text_item.setHtml(level_html)

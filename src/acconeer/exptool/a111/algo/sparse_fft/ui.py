@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import numpy as np
@@ -41,7 +41,7 @@ class PGUpdater:
         self.layout.setVerticalSpacing(50)
 
         for i in range(self.depths.size):
-            title = "{:.0f} cm".format(100 * self.depths[i])
+            title = f"{100 * self.depths[i]:.0f} cm"
             plot = win.addPlot(row=0, col=i, title=title)
             plot.setMenuEnabled(False)
             plot.setMouseEnabled(x=False, y=False)

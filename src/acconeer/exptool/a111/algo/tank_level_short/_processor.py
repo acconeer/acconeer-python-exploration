@@ -181,7 +181,7 @@ class Processor:
         elif profile == sensor_config.Profile.PROFILE_2:
             width = 40
         else:
-            msg = "Illegal profile ({}) for this detector".format(profile)
+            msg = f"Illegal profile ({profile}) for this detector"
             raise ValueError(msg)
         return width
 

@@ -171,9 +171,7 @@ class PidgetStub(Pidget):
             bg = "FFFFEE"
 
         self.setStyleSheet(
-            (
-                "#frame {{background-color: #{};border: 1px solid lightgrey;border-radius: 3px;}}"
-            ).format(bg)
+            f"#frame {{background-color: #{bg};border: 1px solid lightgrey;border-radius: 3px;}}"
         )
         self.alert_label.setText(alert.msg)
         self.alert_frame.show()
@@ -267,7 +265,7 @@ class IntSpinBoxPidget(PidgetStub):
         self.grid.setColumnStretch(1, 3)
 
         label = QLabel(self)
-        suffix = " [{}]".format(param.unit) if param.unit else ""
+        suffix = f" [{param.unit}]" if param.unit else ""
         label.setText(param.label + suffix)
         self.grid.addWidget(label, 0, 0, 1, 1)
 
@@ -334,7 +332,7 @@ class FloatRangeSpinBoxesPidget(PidgetStub):
         self.grid.setColumnStretch(1, 1)
 
         label = QLabel(self)
-        suffix = " [{}]".format(param.unit) if param.unit else ""
+        suffix = f" [{param.unit}]" if param.unit else ""
         label.setText(param.label + suffix)
         self.grid.addWidget(label, 0, 0, 1, 1)
 
@@ -374,7 +372,7 @@ class FloatSpinBoxPidget(PidgetStub):
         self.grid.setColumnStretch(1, 3)
 
         label = QLabel(self)
-        suffix = " [{}]".format(param.unit) if param.unit else ""
+        suffix = f" [{param.unit}]" if param.unit else ""
         label.setText(param.label + suffix)
         self.grid.addWidget(label, 0, 0, 1, 1)
 
@@ -444,7 +442,7 @@ class FloatSpinBoxAndSliderPidget(PidgetStub):
         self.grid.setColumnStretch(1, 3)
 
         label = QLabel(self)
-        suffix = " [{}]".format(param.unit) if param.unit else ""
+        suffix = f" [{param.unit}]" if param.unit else ""
         label.setText(param.label + suffix)
         self.grid.addWidget(label, 0, 0, 1, 1)
 

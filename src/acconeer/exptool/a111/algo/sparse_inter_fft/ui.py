@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import numpy as np
@@ -34,7 +34,7 @@ class PGUpdater:
         self.td_plot.addLegend()
         self.td_curves = []
         for i, depth in enumerate(self.depths):
-            name = "{:.0f} cm".format(depth * 100)
+            name = f"{depth * 100:.0f} cm"
             curve = self.td_plot.plot(pen=et.utils.pg_pen_cycler(i), name=name)
             self.td_curves.append(curve)
 
@@ -135,9 +135,9 @@ class PGUpdater:
         self.collapsed_vline.show()
 
         if self.f:
-            s = "Peak: {:5.1f} Hz".format(f_max)
+            s = f"Peak: {f_max:5.1f} Hz"
         else:
-            s = "Peak: {:3.0f}".format(f_max)
+            s = f"Peak: {f_max:3.0f}"
         self.collapsed_text.setText(s)
 
         im = self.collapsed_history_im

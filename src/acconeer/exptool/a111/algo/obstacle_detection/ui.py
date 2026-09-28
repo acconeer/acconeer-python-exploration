@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import logging
@@ -204,26 +204,20 @@ class PGUpdater:
         for i in range(self.nr_locals):
             if self.hist_plots["velocity"][1]:
                 self.hist_plots["velocity"][0].append(
-                    self.peak_hist_ax_c.plot(
-                        pen=et.utils.pg_pen_cycler(i), name="Veloctiy {:d}".format(i)
-                    )
+                    self.peak_hist_ax_c.plot(pen=et.utils.pg_pen_cycler(i), name=f"Veloctiy {i:d}")
                 )
             if self.hist_plots["angle"][1]:
                 self.hist_plots["angle"][0].append(
-                    self.peak_hist_ax_r.plot(
-                        pen=et.utils.pg_pen_cycler(i), name="Angle {:d}".format(i)
-                    )
+                    self.peak_hist_ax_r.plot(pen=et.utils.pg_pen_cycler(i), name=f"Angle {i:d}")
                 )
             if self.hist_plots["distance"][1]:
                 self.hist_plots["distance"][0].append(
-                    self.peak_hist_ax_l.plot(
-                        pen=et.utils.pg_pen_cycler(i), name="Distance {:d}".format(i)
-                    )
+                    self.peak_hist_ax_l.plot(pen=et.utils.pg_pen_cycler(i), name=f"Distance {i:d}")
                 )
             if self.hist_plots["amplitude"][1]:
                 self.hist_plots["amplitude"][0].append(
                     self.peak_hist_ax_r1.plot(
-                        pen=et.utils.pg_pen_cycler(i), name="Amplitude {:d}".format(i)
+                        pen=et.utils.pg_pen_cycler(i), name=f"Amplitude {i:d}"
                     )
                 )
 
@@ -269,7 +263,7 @@ class PGUpdater:
         else:
             self.peak_x = self.peak_x * 0.7 + 0.3 * self.env_xs[data["peak_idx"]]
 
-        peak_dist_text = "Peak: {:.1f} cm".format(self.peak_x)
+        peak_dist_text = f"Peak: {self.peak_x:.1f} cm"
         peak_fft_text = "No peaks found"
 
         if data["fft_peaks"] is not None:
@@ -360,9 +354,9 @@ class PGUpdater:
             fft_data = fft_data - self.fft_bg_data.T
             fft_data[fft_data < 0] = 0
             map_max = np.max(fft_data)
-            self.peak_val_text.setText("FFT max: {:.3f} ({:.3f})".format(map_max, max_wo_bg))
+            self.peak_val_text.setText(f"FFT max: {map_max:.3f} ({max_wo_bg:.3f})")
         else:
-            self.peak_val_text.setText("FFT max: {:.3f}".format(map_max))
+            self.peak_val_text.setText(f"FFT max: {map_max:.3f}")
 
         g = 1 / 2.2
         fft_data = 254 / (map_max + 1.0e-9) ** g * fft_data**g

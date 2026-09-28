@@ -267,9 +267,9 @@ class PGUpdater:
             peak_status = result.peak_status
             level_text = self.STATUS_MSG_MAP[peak_status]
             if peak_detected:
-                level_text = "Level: {:.1f} cm, {:.0f} %".format(
-                    current_level * 100,
-                    current_level / (self.end_m - self.start_m) * 100,
+                level_text = (
+                    f"Level: {current_level * 100:.1f} cm, "
+                    f"{current_level / (self.end_m - self.start_m) * 100:.0f} %"
                 )
 
                 level_html = self.level_html_format.format(level_text)

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import enum
@@ -65,7 +65,7 @@ class JsonProtocolBase:
         msg = None
         if header["status"] == "ok":
             msg = header["message"].lower()
-            log.info("version msg: {}".format(msg))
+            log.info(f"version msg: {msg}")
         else:
             log.info("No get_version cmd, try get_system_info")
 

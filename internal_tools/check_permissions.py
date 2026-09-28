@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import configparser
@@ -47,7 +47,7 @@ def main():
 
         mask = 0o111  # only check execute bit
         if (int(mode, 8) & mask) != (int(expected_mode, 8) & mask):
-            print("{}: has mode {}, expected {}".format(filename, mode, expected_mode))
+            print(f"{filename}: has mode {mode}, expected {expected_mode}")
             failed = True
 
     if failed:

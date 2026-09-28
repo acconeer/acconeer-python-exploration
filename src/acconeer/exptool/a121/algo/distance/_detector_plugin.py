@@ -389,7 +389,7 @@ class PlotPlugin(PgPlotPlugin):
                 + self.sweep_plot.getAxis("bottom").range[0]
             ) / 2.0
             self.sweep_text_item.setPos(text_x_pos, text_y_pos)
-            self.sweep_text_item.setHtml("Main peak distance: {:.3f} m".format(distances[0]))
+            self.sweep_text_item.setHtml(f"Main peak distance: {distances[0]:.3f} m")
             self.sweep_text_item.show()
 
             self.sweep_main_peak_line.setPos(distances[0])
@@ -407,7 +407,7 @@ class PlotPlugin(PgPlotPlugin):
             self.main_peak_history_curve.setData([0])
 
         if strengths.size > 0:
-            string_to_display = "Main peak strength : {:.1f} dB".format(strengths[0])
+            string_to_display = f"Main peak strength : {strengths[0]:.1f} dB"
             self.history_plot_legend.addItem(self.main_peak_history_curve, string_to_display)
 
         for sec_peak_idx, curve in enumerate(self.minor_peaks_history_curves):
@@ -417,9 +417,7 @@ class PlotPlugin(PgPlotPlugin):
                 curve.setData([0])
 
             if sec_peak_idx + 1 <= num_minor_peaks:
-                string_to_display = "Minor peak strength : {:.1f} dB".format(
-                    strengths[sec_peak_idx + 1]
-                )
+                string_to_display = f"Minor peak strength : {strengths[sec_peak_idx + 1]:.1f} dB"
                 self.history_plot_legend.addItem(curve, string_to_display)
 
         # Update limits of the history plot

@@ -16,7 +16,7 @@ def main():
     et.utils.config_logging(args)
 
     if os.path.exists(args.output_dir):
-        print("Directory '{}' already exists, won't overwrite".format(args.output_dir))
+        print(f"Directory '{args.output_dir}' already exists, won't overwrite")
         sys.exit(1)
 
     file_format = args.file_format.lower()
@@ -24,7 +24,7 @@ def main():
         file_format = "npz"
 
     if file_format not in ["h5", "npz"]:
-        print("Unknown format '{}'".format(args.file_format))
+        print(f"Unknown format '{args.file_format}'")
         sys.exit(1)
 
     if args.frames_per_file < 10:
@@ -55,14 +55,12 @@ def main():
 
         if num_frames_in_record + 1 == args.frames_per_file:
             record = recorder.close()
-            filename = os.path.join(
-                args.output_dir, "{:04}.{}".format(record_count + 1, file_format)
-            )
+            filename = os.path.join(args.output_dir, f"{record_count + 1:04}.{file_format}")
             print("Saved", filename)
             et.a111.recording.save(filename, record)
 
         total_num_frames += 1
-        print("Sampled {:>5}".format(total_num_frames), end="\r", flush=True)
+        print(f"Sampled {total_num_frames:>5}", end="\r", flush=True)
 
     try:
         client.disconnect()
@@ -72,7 +70,7 @@ def main():
     record_count, num_frames_in_record = divmod(total_num_frames, args.frames_per_file)
     if num_frames_in_record > 0:
         record = recorder.close()
-        filename = os.path.join(args.output_dir, "{:04}.{}".format(record_count + 1, file_format))
+        filename = os.path.join(args.output_dir, f"{record_count + 1:04}.{file_format}")
         print("Saved", filename)
         et.a111.recording.save(filename, record)
 

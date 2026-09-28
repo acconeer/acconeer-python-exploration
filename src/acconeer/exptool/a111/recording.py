@@ -78,7 +78,7 @@ class Recorder:
 
         if kwargs:
             key = next(iter(kwargs.keys()))
-            msg = "Recorder got an unexpected keyword argument '{}'".format(key)
+            msg = f"Recorder got an unexpected keyword argument '{key}'"
             raise TypeError(msg)
 
         if not isinstance(sensor_config, configbase.SensorConfig):

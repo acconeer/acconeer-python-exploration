@@ -409,7 +409,7 @@ class PlotPlugin(PgPlotPlugin):
                 self.breathing_rate_curves[1].setData(time_vector, breathing_rate_history)
 
             if not np.isnan(breathing_rate_history[-1]):
-                self.displayed_breathing_rate = "{:.1f}".format(breathing_rate_history[-1])
+                self.displayed_breathing_rate = f"{breathing_rate_history[-1]:.1f}"
                 self.breathing_rate_text_item.show()
 
         else:
@@ -430,8 +430,8 @@ class PlotPlugin(PgPlotPlugin):
         elif app_state == AppState.DETERMINE_DISTANCE_ESTIMATE:
             presence_text = "Determining distance with presence"
         elif app_state == AppState.ESTIMATE_BREATHING_RATE:
-            start_m = "{:.2f}".format(distance_slice[0])
-            end_m = "{:.2f}".format(distance_slice[-1])
+            start_m = f"{distance_slice[0]:.2f}"
+            end_m = f"{distance_slice[-1]:.2f}"
             if self.use_presence_processor:
                 presence_text = (
                     "Presence detected in the range " + start_m + " - " + end_m + " (m)"

@@ -107,9 +107,7 @@ class PGUpdater:
 
         n_ticks_to_display = 10
         x_labels = np.linspace(-self.history_length_s, 0, self.history_length)
-        all_ticks = [
-            (t, "{:.0f}".format(label)) for t, label in zip(self.speed_history_xs, x_labels)
-        ]
+        all_ticks = [(t, f"{label:.0f}") for t, label in zip(self.speed_history_xs, x_labels)]
         subsample_step = self.history_length // n_ticks_to_display
         self.display_ticks = [all_ticks[::subsample_step]]
 
@@ -214,7 +212,7 @@ class PGUpdater:
             max_display_ind = -1
 
         if max_display_speed != 0.0:
-            speed_text = "Max speed estimate {:.4f} m/s".format(max_display_speed)
+            speed_text = f"Max speed estimate {max_display_speed:.4f} m/s"
             speed_html = self.speed_html_format.format(speed_text)
 
             self.speed_text_item.setHtml(speed_html)

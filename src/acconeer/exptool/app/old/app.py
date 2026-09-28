@@ -640,7 +640,7 @@ class GUI(QMainWindow):
                 tag_string = ""
                 if tag:
                     select = i
-                    tag_string = " ({})".format(tag)
+                    tag_string = f" ({tag})"
                 ports.append(port + tag_string)
         else:
             ports = [port for port, *_ in port_tag_tuples]
@@ -1117,8 +1117,8 @@ class GUI(QMainWindow):
                 self.radar.external.update_calibration(self.calibration)
             except Exception as e:
                 traceback.print_exc()
-                msg = "Failed to apply calibration!\n{}".format(self.format_error(e))
-                self.error_message("{}".format(msg))
+                msg = f"Failed to apply calibration!\n{self.format_error(e)}"
+                self.error_message(msg)
             else:
                 self.calibration_ui_state.calibration_status = CalibrationStatus.IN_PROCESSOR
 
@@ -1239,7 +1239,7 @@ class GUI(QMainWindow):
     def format_error(self, e):
         exc_type, _, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        err = "{}\n{}\n{}\n{}".format(exc_type, fname, exc_tb.tb_lineno, e)
+        err = f"{exc_type}\n{fname}\n{exc_tb.tb_lineno}\n{e}"
         return err
 
     def error_message(self, text, info_text=None):
@@ -1367,7 +1367,7 @@ class GUI(QMainWindow):
         elif state is None:
             pass
         else:
-            print("{} is an unknown state!".format(state))
+            print(f"{state} is an unknown state!")
             return
 
         states = self.gui_states
@@ -1464,7 +1464,7 @@ class GUI(QMainWindow):
             text = "RSS v" + str(strict_ver)
 
             if ver_mismatch:
-                text += " ({} upgrade recommended)".format(ver_mismatch)
+                text += f" ({ver_mismatch} upgrade recommended)"
                 lbl.setStyleSheet("QLabel {color: red}")
             else:
                 lbl.setStyleSheet("")
@@ -1545,7 +1545,7 @@ class GUI(QMainWindow):
         if state in self.gui_states:
             return self.gui_states[state]
         else:
-            print("{} is an unknown state!".format(state))
+            print(f"{state} is an unknown state!")
             return
 
     def stop_scan(self):
@@ -1661,7 +1661,7 @@ class GUI(QMainWindow):
             self.set_gui_state("server_connected", True)
             self.set_gui_state("load_state", LoadState.UNLOADED)
             self.set_gui_state("connection_info", info)
-            self.statusBar().showMessage("Connected via {}".format(statusbar_connection_info))
+            self.statusBar().showMessage(f"Connected via {statusbar_connection_info}")
             if self.current_module_info is None:
                 self.module_dd.setCurrentIndex(1)
         else:
@@ -1828,7 +1828,7 @@ class GUI(QMainWindow):
                 et.a111.recording.save_npz(filename, record)
         except Exception as e:
             traceback.print_exc()
-            self.error_message("Failed to save file:\n {:s}".format(e))
+            self.error_message(f"Failed to save file:\n {e:s}")
 
     def thread_receive(self, message_type, message, data=None):
         if "error" in message_type:
@@ -1844,7 +1844,7 @@ class GUI(QMainWindow):
                     self.connect_to_server()
             elif "proccessing" in message_type:
                 self.stop_scan()
-            self.error_message("{}".format(message))
+            self.error_message(f"{message}")
         elif message_type == "scan_data":
             if self.get_gui_state("load_state") != LoadState.LOADED:
                 self.data = data
@@ -1919,12 +1919,7 @@ class GUI(QMainWindow):
         num_recv_show = min(self.num_recv_frames, show_lim)
         recv_sym = ">" if num_recv_show >= show_lim else ""
 
-        text = "Frames: {:s}{:d} (missed {:s}{:d})".format(
-            recv_sym,
-            num_recv_show,
-            missed_sym,
-            num_missed_show,
-        )
+        text = f"Frames: {recv_sym:s}{num_recv_show:d} (missed {missed_sym:s}{num_missed_show:d})"
         self.labels["sweep_info"].setText(text)
 
         tick_info = self.measured_update_rate_fc.tick_values()
@@ -1966,7 +1961,7 @@ class GUI(QMainWindow):
                 self.load_last_config(last.item())
                 log.info(f"Loaded configuration from last session: {LAST_CONF_FILENAME}")
             except Exception as e:
-                print("Could not load settings from last session\n{}".format(e))
+                print(f"Could not load settings from last session\n{e}")
 
     def load_last_config(self, last_config):
         # Restore sensor configs (configbase)
@@ -1977,7 +1972,7 @@ class GUI(QMainWindow):
                 try:
                     conf._loads(dump)
                 except Exception:
-                    print("Could not load sensor config for '{}'".format(key))
+                    print(f"Could not load sensor config for '{key}'")
                     conf._reset()  # TODO: load module defaults
 
         # Restore processing configs (configbase)
@@ -1988,7 +1983,7 @@ class GUI(QMainWindow):
                 try:
                     conf._loads(dump)
                 except Exception:
-                    print("Could not load processing config for '{}'".format(key))
+                    print(f"Could not load processing config for '{key}'")
                     conf._reset()
 
         # Restore misc. settings
@@ -2134,7 +2129,7 @@ class Threaded_Scan(QtCore.QThread):
                 traceback.print_exc()
                 self._emit(
                     "client_error",
-                    "Failed to setup streaming!\n{}".format(self.format_error(e)),
+                    f"Failed to setup streaming!\n{self.format_error(e)}",
                 )
                 self.running = False
 
@@ -2148,7 +2143,7 @@ class Threaded_Scan(QtCore.QThread):
                         self._emit("new_calibration", "", process_results["new_calibration"])
             except Exception as e:
                 traceback.print_exc()
-                msg = "Failed to communicate with server!\n{}".format(self.format_error(e))
+                msg = f"Failed to communicate with server!\n{self.format_error(e)}"
                 self._emit("client_error", msg)
 
             try:
@@ -2169,7 +2164,7 @@ class Threaded_Scan(QtCore.QThread):
                 error = self.format_error(e)
                 self._emit("processing_error", "Error while replaying data:<br>" + error)
         else:
-            self._emit("error", "Unknown mode %s!" % self.mode)
+            self._emit("error", f"Unknown mode {self.mode}!")
         self._emit("scan_done", "", "")
 
     def receive(self, message_type, message, data=None):
@@ -2184,7 +2179,7 @@ class Threaded_Scan(QtCore.QThread):
         elif message_type == "start":
             pass
         else:
-            print("Scan thread received unknown signal: {}".format(message_type))
+            print(f"Scan thread received unknown signal: {message_type}")
 
     def _emit(self, message_type, message, data=None):
         self.sig_scan.emit(message_type, message, data)
@@ -2192,7 +2187,7 @@ class Threaded_Scan(QtCore.QThread):
     def format_error(self, e):
         exc_type, _, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        err = "{}\n{}\n{}\n{}".format(exc_type, fname, exc_tb.tb_lineno, e)
+        err = f"{exc_type}\n{fname}\n{exc_tb.tb_lineno}\n{e}"
         return err
 
 

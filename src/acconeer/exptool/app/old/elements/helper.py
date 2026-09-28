@@ -25,7 +25,7 @@ class ErrorFormater:
     def error_to_text(self, error):
         _, _, exc_tb = sys.exc_info()
         fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        err_text = "File: {}<br>Line: {}<br>Error: {}".format(fname, exc_tb.tb_lineno, error)
+        err_text = f"File: {fname}<br>Line: {exc_tb.tb_lineno}<br>Error: {error}"
 
         return err_text
 

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import pyqtgraph as pg
@@ -77,7 +77,7 @@ class PGUpdater:
         guess_history = plot_data["guess_hist"]
         guess_hist_indexes = plot_data["guess_hist_idx"]
 
-        guess_str = "Best guess: {:.4f}".format(best_guess)
+        guess_str = f"Best guess: {best_guess:.4f}"
         self.smooth_data.setData(self.depths, smooth_data)
         x_indexes = (guess_hist_indexes - plot_data["index"]) / self.fs
         self.main_peak.setData(x_indexes, 1000 * guess_history)

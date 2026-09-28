@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 """Stub for loading and processing recorded data"""
@@ -76,7 +76,7 @@ def print_record(record):
         print()
         mean_dt = (ts[-1] - ts[0]) / (ts.size - 1)
         mean_f = 1 / mean_dt
-        print("Mean sample rate (client side): {:.2f} Hz".format(mean_f))
+        print(f"Mean sample rate (client side): {mean_f:.2f} Hz")
 
     print("\n")
 

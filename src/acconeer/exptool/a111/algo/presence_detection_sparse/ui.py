@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import numpy as np
@@ -253,7 +253,7 @@ class PGUpdater:
             self.set_present_text_y_pos(m_hist)
 
         if data["presence_detected"]:
-            present_text = "Presence detected at {:.0f} cm".format(movement_x * 100)
+            present_text = f"Presence detected at {movement_x * 100:.0f} cm"
             present_html = self.present_html_format.format(present_text)
             self.present_text_item.setHtml(present_html)
 

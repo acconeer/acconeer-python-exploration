@@ -144,26 +144,26 @@ def autodetect_serial_port():
 
     if len(acconeer_port_infos) == 1:
         port, tag = acconeer_port_infos[0]
-        print("Autodetected {} on {}\n".format(tag, port))
+        print(f"Autodetected {tag} on {port}\n")
         return port
 
     for port_info in port_infos:
         port, desc, _ = port_info
         if desc == "FT230X Basic UART":
-            print("Autodetected FT230X Basic UART on {}\n".format(port))
+            print(f"Autodetected FT230X Basic UART on {port}\n")
             return port
 
     if len(port_infos) == 0:
         print("Could not autodetect serial port, no ports available")
         sys.exit()
     elif len(port_infos) == 1:
-        print("Autodetected single available serial port on {}\n".format(port))
+        print(f"Autodetected single available serial port on {port}\n")
         return port_infos[0][0]
     else:
         print("Multiple serial ports are available:")
         for port_info in port_infos:
             port, desc, _ = port_info
-            print("  {:<13}  ({})".format(port, desc))
+            print(f"  {port:<13}  ({desc})")
         print("\nRe-run the script with a given port")
         sys.exit()
 
@@ -588,9 +588,9 @@ class FreqCounter:
         data_rate_mbps = data_rate * 1e-6
 
         if data_rate is None:
-            print(" {:5.1f} ms, {:5.1f} Hz".format(dt_ms, f), end="\r")
+            print(f" {dt_ms:5.1f} ms, {f:5.1f} Hz", end="\r")
         else:
-            s = " {:5.1f} ms, {:5.1f} Hz, {:5.2f} Mbit/s".format(dt_ms, f, data_rate_mbps)
+            s = f" {dt_ms:5.1f} ms, {f:5.1f} Hz, {data_rate_mbps:5.2f} Mbit/s"
             print(s, end="\r")
 
 

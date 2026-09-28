@@ -540,9 +540,9 @@ class PlotPlugin(PgPlotPlugin):
                     for rect in self.rects[self.bar_loc :]:
                         rect.setBrush(et.utils.pg_brush_cycler(1))
 
-                    level_text = "Level: {:.1f} cm, {:.0f} %".format(
-                        current_level * 100,
-                        current_level / (self.end_m - self.start_m) * 100,
+                    level_text = (
+                        f"Level: {current_level * 100:.1f} cm, "
+                        f"{current_level / (self.end_m - self.start_m) * 100:.0f} %"
                     )
                     self.counter = 0
                 elif peak_detected and (peak_status == ProcessorLevelStatus.OUT_OF_RANGE):
@@ -570,9 +570,9 @@ class PlotPlugin(PgPlotPlugin):
             else:
                 level_text = self.STATUS_MSG_MAP[peak_status]
                 if peak_detected and (peak_status == ProcessorLevelStatus.IN_RANGE):
-                    level_text = "Level: {:.1f} cm, {:.0f} %".format(
-                        current_level * 100,
-                        current_level / (self.end_m - self.start_m) * 100,
+                    level_text = (
+                        f"Level: {current_level * 100:.1f} cm, "
+                        f"{current_level / (self.end_m - self.start_m) * 100:.0f} %"
                     )
                     self.counter = 0
                 level_html = self.level_html_format.format(level_text)

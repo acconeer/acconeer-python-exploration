@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import numpy as np
@@ -46,7 +46,7 @@ class PGUpdater:
         self.ampl_curves = []
         self.phase_curves = []
         for i, sensor_id in enumerate(self.sensor_config.sensor):
-            legend = "Sensor {}".format(sensor_id)
+            legend = f"Sensor {sensor_id}"
             pen = et.utils.pg_pen_cycler(i)
             ampl_curve = self.ampl_plot.plot(pen=pen, name=legend)
             phase_curve = self.phase_plot.plot(pen=pen)
@@ -64,7 +64,7 @@ class PGUpdater:
         self.history_plots = []
         self.history_ims = []
         for i, sensor_id in enumerate(self.sensor_config.sensor):
-            title = None if is_single_sensor else "Sensor {}".format(sensor_id)
+            title = None if is_single_sensor else f"Sensor {sensor_id}"
             plot = win.addPlot(row=2, col=i, title=title)
             plot.setMenuEnabled(False)
             plot.setMouseEnabled(x=False, y=False)

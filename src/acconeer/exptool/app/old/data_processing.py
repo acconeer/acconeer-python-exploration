@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import json
@@ -118,8 +118,8 @@ class DataProcessing:
                 matching_sensors.append(sensor_idx)
 
         if not len(sensor_list) or len(matching_sensors) != len(selected_sensors):
-            error = "Data is not available for all selected sensors {}.\n".format(selected_sensors)
-            error += "I have data for sensors {} ".format(stored_sensors)
+            error = f"Data is not available for all selected sensors {selected_sensors}.\n"
+            error += f"I have data for sensors {stored_sensors} "
             self.parent._emit("set_sensors", "", stored_sensors)
             self.parent._emit("sensor_selection_error", error)
             return

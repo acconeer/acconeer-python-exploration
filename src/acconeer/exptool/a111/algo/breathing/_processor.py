@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import numpy as np
@@ -150,7 +150,7 @@ class Processor:
 
             if breathing:
                 bstr = "Exhaling" if exhale else "Inhaling"
-                bpm_text = "{}, BPM {:0.1f}, depth {:0.1f} mm".format(bstr, bpm, inhale_dist)
+                bpm_text = f"{bstr}, BPM {bpm:0.1f}, depth {inhale_dist:0.1f} mm"
             else:
                 bpm_text = None
 

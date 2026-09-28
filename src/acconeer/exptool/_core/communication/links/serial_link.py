@@ -317,7 +317,7 @@ class SerialProcessLink(BaseSerialLink):
         self._baudrate = new_baudrate
 
         if self._process is not None and self._process.exitcode is None:
-            log.debug("Changing baudrate to {}".format(new_baudrate))
+            log.debug(f"Changing baudrate to {new_baudrate}")
             self._send_queue.put(("baudrate", new_baudrate))
 
 

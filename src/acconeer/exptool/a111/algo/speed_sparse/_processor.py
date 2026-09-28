@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from enum import Enum
@@ -186,7 +186,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
                     "sweeps_per_frame",
                     (
                         "Must have a value that is a power of 2."
-                        "\nClosest values are {} and {}".format(lower, upper)
+                        f"\nClosest values are {lower} and {upper}"
                     ),
                 )
             )

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 
@@ -294,19 +294,19 @@ class PGUpdater:
         self.move_hist_fast_curve.setData(move_hist_xs, move_hist_fast_ys)
         self.set_present_text_y_pos(2)
         if self.latest_fneg == data["fls_neg_s"] and self.latest_fneg > 0:
-            fneg_text = "False negative is > {:.2f} s".format(self.latest_fneg)
+            fneg_text = f"False negative is > {self.latest_fneg:.2f} s"
         else:
-            fneg_text = "False negative is {:.2f} s".format(self.latest_fneg)
+            fneg_text = f"False negative is {self.latest_fneg:.2f} s"
         if self.latest_fpos == data["fls_pos_s"] and self.latest_fpos > 0:
-            fpos_text = "False positive is > {:.2f} s".format(self.latest_fpos)
+            fpos_text = f"False positive is > {self.latest_fpos:.2f} s"
         else:
-            fpos_text = "False positive is {:.2f} s".format(self.latest_fpos)
+            fpos_text = f"False positive is {self.latest_fpos:.2f} s"
         self.latest_fneg = data["fls_neg_s"]
         self.latest_fpos = data["fls_pos_s"]
         self.fpos_text_item.setText(fpos_text)
         self.fneg_text_item.setText(fneg_text)
         if data["presence_detected"] and index_array_based:
-            present_text = "Presence detected at {:.0f} cm".format(movement_x * 100)
+            present_text = f"Presence detected at {movement_x * 100:.0f} cm"
             present_html = self.present_html_format.format(present_text)
             self.present_text_item.setHtml(present_html)
             self.present_text_item.show()

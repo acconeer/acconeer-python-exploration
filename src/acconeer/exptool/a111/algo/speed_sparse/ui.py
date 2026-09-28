@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import numpy as np
@@ -45,7 +45,7 @@ class PGUpdater:
         self.data_plots = []
         self.data_curves = []
         for i in range(self.num_depths):
-            title = "{:.0f} cm".format(100 * self.depths[i])
+            title = f"{100 * self.depths[i]:.0f} cm"
             plot = win.addPlot(row=0, col=i, title=title)
             plot.setMenuEnabled(False)
             plot.setMouseEnabled(x=False, y=False)
@@ -142,7 +142,7 @@ class PGUpdater:
         self.vel_plot.setVisible(processing_config.show_vel_history_plot)
 
         self.unit = processing_config.shown_speed_unit
-        speed_label = "Speed ({})".format(self.unit.label)
+        speed_label = f"Speed ({self.unit.label})"
         self.sd_plot.setLabel("bottom", speed_label)
         self.vel_plot.setLabel("left", speed_label)
         self.sequences_plot.setLabel("left", speed_label)

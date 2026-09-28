@@ -15,12 +15,12 @@ def main():
     et.utils.config_logging(args)
 
     if os.path.exists(args.output_file):
-        print("File '{}' already exists, won't overwrite".format(args.output_file))
+        print(f"File '{args.output_file}' already exists, won't overwrite")
         sys.exit(1)
 
     _, ext = os.path.splitext(args.output_file)
     if ext.lower() not in [".h5", ".npz"]:
-        print("Unknown format '{}'".format(ext))
+        print(f"Unknown format '{ext}'")
         sys.exit(1)
 
     if args.limit_frames is not None and args.limit_frames < 1:
@@ -49,12 +49,12 @@ def main():
         i += 1
 
         if args.limit_frames:
-            print("Sampled {:>4}/{}".format(i, args.limit_frames), end="\r", flush=True)
+            print(f"Sampled {i:>4}/{args.limit_frames}", end="\r", flush=True)
 
             if i >= args.limit_frames:
                 break
         else:
-            print("Sampled {:>4}".format(i), end="\r", flush=True)
+            print(f"Sampled {i:>4}", end="\r", flush=True)
 
     print()
 
@@ -63,7 +63,7 @@ def main():
     record = recorder.close()
     os.makedirs(os.path.dirname(os.path.abspath(args.output_file)), exist_ok=True)
     et.a111.recording.save(args.output_file, record)
-    print("Saved to '{}'".format(args.output_file))
+    print(f"Saved to '{args.output_file}'")
 
 
 if __name__ == "__main__":

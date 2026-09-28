@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import contextlib
@@ -198,11 +198,11 @@ def get_reg(value, mode=None):
             matches.append(reg)
 
     if len(matches) < 1:
-        msg = "unknown reg: {}".format(value)
+        msg = f"unknown reg: {value}"
         raise ValueError(msg)
 
     if len(matches) > 1:
-        msg = "ambiguous reg: {}".format(value)
+        msg = f"ambiguous reg: {value}"
         raise ValueError(msg)
 
     return matches[0]

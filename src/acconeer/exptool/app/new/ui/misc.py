@@ -161,9 +161,9 @@ class ExceptionWidget(QDialog):
             type(self).num_exception_popups += 1
             return True
         else:
-            msg = "!!! {cls_name} has displayed the maximum of {n_err} errors. Dumping traceback: !!!".format(
-                cls_name=type(self).__name__,
-                n_err=type(self).MAX_NUM_EXCEPTION_POPUPS,
+            msg = (
+                f"!!! {type(self).__name__} has displayed the maximum of "
+                f"{type(self).MAX_NUM_EXCEPTION_POPUPS} errors. Dumping traceback: !!!"
             )
             print()
             print(msg)

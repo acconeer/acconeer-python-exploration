@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import abc
@@ -94,13 +94,13 @@ class RegBaseClient(BaseClient):
         if MODE_INFOS[mode].fixed_buffer_size:
             self._data_length = info.get("data_length")
 
-            log.info("data length: {}".format(self._data_length))
-            log.info("buffer size: {} B".format(self._buffer_size))
+            log.info(f"data length: {self._data_length}")
+            log.info(f"buffer size: {self._buffer_size} B")
         else:
             self._data_length = None
 
         if self._data_rate is not None:
-            log.info("requested data rate: {:.2f} Mbit/s".format(self._data_rate * 1e-6))
+            log.info(f"requested data rate: {self._data_rate * 1e-6:.2f} Mbit/s")
 
         return info
 
@@ -205,9 +205,9 @@ class UARTClient(RegBaseClient):
             try:
                 self._handshake()
             except links.LinkError:
-                log.debug("handshake failed at {} baud".format(baudrate))
+                log.debug(f"handshake failed at {baudrate} baud")
             else:
-                log.debug("handshake succeeded at {} baud".format(baudrate))
+                log.debug(f"handshake succeeded at {baudrate} baud")
                 break
         else:
             msg = "could not connect, no response"
@@ -220,12 +220,12 @@ class UARTClient(RegBaseClient):
         )
 
         if baudrate != use_baudrate:
-            log.debug("switching to {} baud...".format(use_baudrate))
+            log.debug(f"switching to {use_baudrate} baud...")
             self._write_reg("uart_baudrate", use_baudrate)
             self._link.baudrate = use_baudrate
             sleep(0.2)
             self._handshake()
-            log.debug("handshake succeeded at {} baud".format(use_baudrate))
+            log.debug(f"handshake succeeded at {use_baudrate} baud")
 
         self._link.timeout = self._link.DEFAULT_TIMEOUT
 
@@ -269,7 +269,7 @@ class UARTClient(RegBaseClient):
                 val = reg.decode(enc_val)
             except (protocol.ProtocolError, ValueError):
                 log.info("got unknown reg val in result info")
-                log.info("addr: {}, value: {}".format(addr, fmt_enc_val(enc_val)))
+                log.info(f"addr: {addr}, value: {fmt_enc_val(enc_val)}")
             else:
                 k = reg.stripped_name
                 k = regmap.STRIPPED_NAME_TO_INFO_REMAP.get(k, k)
@@ -316,14 +316,14 @@ class UARTClient(RegBaseClient):
         req = protocol.BufferReadRequest(addr)
         self._send_packet(req)
 
-        log.debug("sent buf r req: addr: 0x{:02x}".format(addr))
+        log.debug(f"sent buf r req: addr: 0x{addr:02x}")
 
         res = self._recv_packet()
         if not isinstance(res, protocol.BufferReadResponse):
             msg = "got unexpected type of frame"
             raise ClientError(msg)
 
-        log.debug("recv buf r res: addr: 0x{:02x} len: {}".format(addr, len(res.buffer)))
+        log.debug(f"recv buf r res: addr: 0x{addr:02x} len: {len(res.buffer)}")
 
         return res.buffer
 
@@ -338,7 +338,7 @@ class UARTClient(RegBaseClient):
         req = protocol.RegReadRequest(addr)
         self._send_packet(req)
 
-        log.debug("sent reg r req: addr: 0x{:02x}".format(addr))
+        log.debug(f"sent reg r req: addr: 0x{addr:02x}")
 
         res = self._recv_packet()
         if not isinstance(res, protocol.RegReadResponse):
@@ -347,7 +347,7 @@ class UARTClient(RegBaseClient):
 
         enc_val = res.reg_val.val
 
-        log.debug("recv reg r res: addr: 0x{:02x} val: {}".format(addr, fmt_enc_val(enc_val)))
+        log.debug(f"recv reg r res: addr: 0x{addr:02x} val: {fmt_enc_val(enc_val)}")
 
         return enc_val
 
@@ -362,7 +362,7 @@ class UARTClient(RegBaseClient):
         req = protocol.RegWriteRequest(rrv)
         self._send_packet(req)
 
-        log.debug("sent reg w req: addr: 0x{:02x} val: {}".format(addr, fmt_enc_val(enc_val)))
+        log.debug(f"sent reg w req: addr: 0x{addr:02x} val: {fmt_enc_val(enc_val)}")
 
         if expect_response:
             res = self._recv_packet()
@@ -610,7 +610,7 @@ class SPIClient(RegBaseClient):
         return buffer
 
     def __cmd_proc(self, cmd, *args):
-        log.debug("sending cmd to proc: {}".format(cmd))
+        log.debug(f"sending cmd to proc: {cmd}")
         self._cmd_queue.put((cmd, args))
         if cmd == "stop_session":
             while True:
@@ -676,7 +676,7 @@ class SPICommProcess(mp.Process):
                 elif cmd == "disconnect":
                     break
             else:
-                msg = "unknown cmd {}".format(cmd)
+                msg = f"unknown cmd {cmd}"
                 raise ClientError(msg)
 
     def poll(self):
@@ -762,7 +762,7 @@ class SPICommProcess(mp.Process):
         self.dev.spi_master_single_write(b)
         enc_val = self.dev.spi_master_single_read(4)
         if do_log:
-            log.debug("reg r res: addr: 0x{:02x} val: {}".format(addr, fmt_enc_val(enc_val)))
+            log.debug(f"reg r res: addr: 0x{addr:02x} val: {fmt_enc_val(enc_val)}")
         return enc_val
 
     def write_reg(self, reg, val, do_log=True):
@@ -775,7 +775,7 @@ class SPICommProcess(mp.Process):
         b = bytearray([protocol.REG_WRITE_REQUEST, addr, 0, 0])
         self.dev.spi_master_single_write(b)
         if do_log:
-            log.debug("reg w req: addr: 0x{:02x} val: {}".format(addr, fmt_enc_val(enc_val)))
+            log.debug(f"reg w req: addr: 0x{addr:02x} val: {fmt_enc_val(enc_val)}")
         self.dev.spi_master_single_write(enc_val)
 
     def read_buf_raw(self, addr, size):
@@ -785,7 +785,7 @@ class SPICommProcess(mp.Process):
 
 
 def fmt_enc_val(enc_val):
-    return " ".join(["{:02x}".format(x) for x in enc_val])
+    return " ".join([f"{x:02x}" for x in enc_val])
 
 
 def decode_version_buffer(version: bytearray) -> dict:

@@ -315,7 +315,7 @@ class VibrationPlot:
 
             if show_time_series_std and time_series_std is not None:
                 self.text_item_time_series.setPos(time_series.size / 2, lim[1] * 0.95)
-                time_series_std_str = "{:.0f}".format(time_series_std)
+                time_series_std_str = f"{time_series_std:.0f}"
                 html_format = (
                     '<div style="text-align: center">'
                     '<span style="color: #FFFFFF;font-size:15pt;">'

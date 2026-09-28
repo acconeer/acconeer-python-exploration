@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import numpy as np
@@ -78,7 +78,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
     def check(self):
         alerts = super().check()
 
-        msg = "{}".format(self._window_size)
+        msg = f"{self._window_size}"
         alerts.append(et.configbase.Info("window_size_pow_of_2", msg))
 
         return alerts

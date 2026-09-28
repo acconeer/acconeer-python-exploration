@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import os
@@ -13,7 +13,7 @@ def main():
 
     filename = "data.h5"
     if os.path.exists(filename):
-        print("File '{}' already exists, won't overwrite".format(filename))
+        print(f"File '{filename}' already exists, won't overwrite")
         sys.exit(1)
 
     client = et.a111.Client(**et.a111.get_client_args(args))
@@ -32,7 +32,7 @@ def main():
     for i in range(n):
         data_info, data = client.get_next()
         recorder.sample(data_info, data)
-        print("Sampled {:>4}/{}".format(i + 1, n), end="\r", flush=True)
+        print(f"Sampled {i + 1:>4}/{n}", end="\r", flush=True)
 
     print()
 
@@ -41,7 +41,7 @@ def main():
     record = recorder.close()
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     et.a111.recording.save(filename, record)
-    print("Saved to '{}'".format(filename))
+    print(f"Saved to '{filename}'")
 
 
 if __name__ == "__main__":

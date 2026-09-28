@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import abc
@@ -20,7 +20,7 @@ class BaseClient(abc.ABC):
 
         if kwargs:
             a_key = next(iter(kwargs.keys()))
-            msg = "Got unexpected keyword argument ({})".format(a_key)
+            msg = f"Got unexpected keyword argument ({a_key})"
             raise TypeError(msg)
 
         self._connected = False
@@ -204,7 +204,7 @@ class BaseClient(abc.ABC):
         except StopIteration:
             return
 
-        msg = "error in config: {}: {}".format(error_alert.param, error_alert.msg)
+        msg = f"error in config: {error_alert.param}: {error_alert.msg}"
         raise IllegalConfigError(msg)
 
     @property

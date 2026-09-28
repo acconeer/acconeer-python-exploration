@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from PySide6 import QtGui
@@ -39,7 +39,7 @@ class PGUpdater:
         self.bg_curves = []
         self.peak_lines = []
         for i, sensor_id in enumerate(self.sensor_config.sensor):
-            legend = "Sensor {}".format(sensor_id)
+            legend = f"Sensor {sensor_id}"
             ampl_curve = self.ampl_plot.plot(pen=et.utils.pg_pen_cycler(i), name=legend)
             bg_curve = self.ampl_plot.plot(pen=et.utils.pg_pen_cycler(i, style="--"))
             color_tuple = et.utils.hex_to_rgb_tuple(et.utils.color_cycler(i))
@@ -66,7 +66,7 @@ class PGUpdater:
         self.history_plots = []
         self.history_ims = []
         for i, sensor_id in enumerate(self.sensor_config.sensor):
-            title = None if is_single_sensor else "Sensor {}".format(sensor_id)
+            title = None if is_single_sensor else f"Sensor {sensor_id}"
             plot = win.addPlot(row=1, col=i, title=title)
             plot.setMenuEnabled(False)
             plot.setMouseEnabled(x=False, y=False)
@@ -132,7 +132,7 @@ class PGUpdater:
         self.ampl_plot.setYRange(0, m)
 
         # Update peak text item
-        val_strs = ["-" if p is None else "{:5.3f} m".format(p) for p in d["peak_depths"]]
+        val_strs = ["-" if p is None else f"{p:5.3f} m" for p in d["peak_depths"]]
         z = zip(self.sensor_config.sensor, val_strs)
-        t = "\n".join(["Sensor {}: {}".format(sid, v) for sid, v in z])
+        t = "\n".join([f"Sensor {sid}: {v}" for sid, v in z])
         self.peak_text.setText(t)

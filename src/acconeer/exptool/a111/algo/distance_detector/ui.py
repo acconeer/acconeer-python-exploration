@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import numpy as np
@@ -173,7 +173,7 @@ class PGUpdater:
 
             if data["found_peaks"]:
                 amplitude = data["sweep"][data["found_peaks"][0]]
-                text = "{:.2f} mm, {:.1f}".format(peaks[0], amplitude)
+                text = f"{peaks[0]:.2f} mm, {amplitude:.1f}"
             else:
                 text = "-"
 

@@ -499,7 +499,7 @@ class PlotPlugin(PgPlotPlugin):
                     + self.sweep_plot.getAxis("bottom").range[0]
                 ) / 2.0
                 self.sweep_text_item.setPos(text_x_pos, text_y_pos)
-                self.sweep_text_item.setHtml("Main peak distance: {:.3f} m".format(distance))
+                self.sweep_text_item.setHtml(f"Main peak distance: {distance:.3f} m")
                 self.sweep_text_item.show()
 
                 self.sweep_main_peak_line.setPos(distance)
@@ -519,9 +519,8 @@ class PlotPlugin(PgPlotPlugin):
                 elif result.level_percent > 0:
                     assert result.level_m is not None
                     assert result.level_percent is not None
-                    level_text = "Utilization level: {:.1f} m, {:.0f} %".format(
-                        result.level_m,
-                        result.level_percent,
+                    level_text = (
+                        f"Utilization level: {result.level_m:.1f} m, {result.level_percent:.0f} %"
                     )
                     level_html = self.level_html_format.format(level_text)
                     self.level_text_item.setHtml(level_html)
@@ -551,9 +550,8 @@ class PlotPlugin(PgPlotPlugin):
 
                     assert result.level_m is not None
                     assert result.level_percent is not None
-                    level_text = "Utilization level: {:.2f} m, {:.0f} %".format(
-                        result.level_m,
-                        result.level_percent,
+                    level_text = (
+                        f"Utilization level: {result.level_m:.2f} m, {result.level_percent:.0f} %"
                     )
                     level_html = self.level_html_format.format(level_text)
                     self.level_text_item.setHtml(level_html)
