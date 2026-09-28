@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -292,7 +292,7 @@ class UnionPersistor(core.Persistor):
     @classmethod
     def is_applicable(cls, __type: core.TypeLike) -> bool:
         should_be_union, *_ = core.unwrap_generic(__type)
-        return should_be_union is t.Union
+        return should_be_union in core.UNION_ORIGINS
 
     def _save(self, data: t.Any) -> None:
         errors = []

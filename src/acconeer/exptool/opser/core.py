@@ -7,6 +7,7 @@ import abc
 import collections.abc
 import json
 import numbers
+import types
 import typing as t
 
 import attrs
@@ -24,6 +25,8 @@ TypeLike = t.Union[
     type,
     t._GenericAlias,  # type: ignore[name-defined]
 ]
+# "Union[A, B]" has origin t.Union, "A | B" has types.UnionType.
+UNION_ORIGINS = (t.Union, types.UnionType)
 
 
 class LoadError(Exception):
@@ -265,7 +268,7 @@ def is_optional(__type: TypeLike) -> bool:
     """Return True if '__type' is an optional type"""
     origin, *type_args = unwrap_generic(__type)
 
-    return origin is t.Union and type(None) in type_args and len(type_args) > 1
+    return origin in UNION_ORIGINS and type(None) in type_args and len(type_args) > 1
 
 
 def optional_args(__type: TypeLike) -> t.Tuple[TypeLike, ...]:
@@ -358,7 +361,7 @@ def create_type_tree(__type: TypeLike, attr_path: str = "") -> Node:
 
             hints = {sequence_index(i): arg for i, arg in enumerate(type_args)}
 
-        elif origin is t.Union:
+        elif origin in UNION_ORIGINS:
             hints = {union_index(i): arg for i, arg in enumerate(type_args)}
 
         else:
@@ -392,7 +395,7 @@ def sanitize_instance(instance: t.Any, type_tree: Node, attr_path: str = "") -> 
     elif is_generic(current_type):
         origin, *type_args = unwrap_generic(current_type)
 
-        if origin is t.Union:
+        if origin in UNION_ORIGINS:
             children = type_tree.children.items()
             errors = []
             for _, child in children:

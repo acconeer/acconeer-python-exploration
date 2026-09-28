@@ -78,6 +78,12 @@ class OptionalParent:
 
 
 @attrs.define
+class PipeOptionalParent:
+    child: Simple | None
+    a: float
+
+
+@attrs.define
 class ExoticKeyDictParent:
     children: t.Dict[Simple, Simple]
 
@@ -108,6 +114,11 @@ class UnionParent:
 
 
 @attrs.define
+class PipeUnionParent:
+    child: Simple | Parent
+
+
+@attrs.define
 class ListOfListParent:
     children: t.List[t.List[Simple]]
 
@@ -123,6 +134,8 @@ TEST = [
     Parent(Simple(42, "hello"), 0.999),
     OptionalParent(Simple(42, "hello"), 0.999),
     OptionalParent(None, 0.999),
+    PipeOptionalParent(Simple(42, "hello"), 0.999),
+    PipeOptionalParent(None, 0.999),
     ExoticKeyDictParent({Simple(42, "hello"): Simple(42, "hello")}),
     ListOfInts([1, 2, 3]),
     ListOfInts(list(range(50))),
@@ -131,6 +144,8 @@ TEST = [
     TupleParent((1, Simple(42, "hello"), "hi")),
     UnionParent(Simple(42, "hello")),
     UnionParent(Parent(Simple(42, "hello"), 0.999)),
+    PipeUnionParent(Simple(42, "hello")),
+    PipeUnionParent(Parent(Simple(42, "hello"), 0.999)),
     ListOfListParent([[Simple(42, "hello")]]),
 ]
 
@@ -679,6 +694,7 @@ def test_unwrap_generic() -> None:
 def test_is_optional() -> None:
     assert opser.core.is_optional(t.Optional[int])
     assert opser.core.is_optional(t.Union[float, None])
+    assert opser.core.is_optional(float | None)
     assert not opser.core.is_optional(t.Union[None])
     assert not opser.core.is_optional(t.List[int])
 
