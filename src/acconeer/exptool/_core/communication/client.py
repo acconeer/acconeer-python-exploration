@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -115,7 +115,7 @@ class Client(
         Subclasses specifies whether they should be registered in the
         "inherintance list"; class ClientSubclass(Client, register=True)
         """
-        super.__init_subclass__(**kwargs)
+        super().__init_subclass__(**kwargs)
         if register:
             cls.__registry.append(cls)
 
