@@ -59,8 +59,6 @@ from . import dependency_injection as di
 from .lookup import Module, Sensor
 
 
-_T = t.TypeVar("_T")
-
 _ms = _mA = 1e-3
 _us = _uA = 1e-6
 

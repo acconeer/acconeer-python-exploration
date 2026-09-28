@@ -47,8 +47,6 @@ from .domain import CurrentBreakdown
 from .lookup import Sensor, SensorConstants
 
 
-_T = t.TypeVar("_T")
-
 _ms = _mA = 1e-3
 _us = _uA = 1e-6
 

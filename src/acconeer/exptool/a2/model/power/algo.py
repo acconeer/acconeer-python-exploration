@@ -27,9 +27,6 @@ from .common import get_idle_rs_current
 from .lookup import SensorConstants
 
 
-_S = t.TypeVar("_S")
-_T = t.TypeVar("_T")
-_U = t.TypeVar("_U")
 _ms = _mA = 1e-3
 _us = _uA = 1e-6
 

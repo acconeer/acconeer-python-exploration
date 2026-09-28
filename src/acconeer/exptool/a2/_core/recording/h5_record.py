@@ -28,8 +28,6 @@ from acconeer.exptool.a2._core.rx_major_frame_translation import translate_rx_ma
 from acconeer.exptool.utils import get_module_version
 
 
-_T = t.TypeVar("_T")
-
 _TOO_MANY_SESSIONS_ERROR_FORMAT = (
     "This Record contains too many sessions to use accessor "
     '"{0}". Access a specific "{0}" with ".session(x).{0}"'

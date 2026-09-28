@@ -10,13 +10,7 @@ import typing_extensions as te
 from .message import Message, ParseError
 
 
-LogLevelStr = (
-    te.Literal["ERROR"]
-    | te.Literal["WARNING"]
-    | te.Literal["INFO"]
-    | te.Literal["VERBOSE"]
-    | te.Literal["DEBUG"]
-)
+LogLevelStr = te.Literal["ERROR", "WARNING", "INFO", "VERBOSE", "DEBUG"]
 
 
 class LogMessageHeader(te.TypedDict):

@@ -15,7 +15,6 @@ Task = tuple[str, dict[str, t.Any]]
 
 _TaskSender = t.Callable[[Task], t.Any]
 _R = t.TypeVar("_R")
-_T = t.TypeVar("_T")
 _P = te.ParamSpec("_P")
 
 

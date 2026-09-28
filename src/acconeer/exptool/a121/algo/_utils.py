@@ -79,7 +79,7 @@ class PeakSortingMethod(AlgoParamEnum):
 
 
 def get_distance_offset(
-    peak_location: float | None, profile: a121.Profile, temperature: float | int | None
+    peak_location: float | None, profile: a121.Profile, temperature: float | None
 ) -> float:
     """
     Returns the distance offset in meters based on a loopback measurement.

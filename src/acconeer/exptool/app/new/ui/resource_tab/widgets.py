@@ -71,9 +71,6 @@ from .services import (
 )
 
 
-_QWidgetT = t.TypeVar("_QWidgetT", bound=type[QWidget])
-
-
 log = logging.getLogger(__name__)
 
 _ALLOWED_DOCK_AREA = Qt.DockWidgetArea.BottomDockWidgetArea

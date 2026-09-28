@@ -86,7 +86,6 @@ import typing_extensions as te
 _T = t.TypeVar("_T")
 _R = t.TypeVar("_R")
 _S = t.TypeVar("_S")
-_P = te.ParamSpec("_P")
 
 _ReqCtxT = t.TypeVar("_ReqCtxT")
 _NewCtxT = t.TypeVar("_NewCtxT")

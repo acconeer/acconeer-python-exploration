@@ -22,7 +22,6 @@ from acconeer.exptool.app.new.ui import DataEditor, MiscErrorView
 from acconeer.exptool.app.new.ui.utils import ScrollAreaDecorator
 
 
-_T = t.TypeVar("_T")
 _PluginOptionT = t.TypeVar("_PluginOptionT", bound="_PluginOption")
 
 _BODY_TEXT = """

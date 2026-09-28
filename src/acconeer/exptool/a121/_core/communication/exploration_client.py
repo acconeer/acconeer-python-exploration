@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import NoReturn, TypeVar
+from typing import NoReturn
 
 import attrs
 import typing_extensions as te
@@ -56,7 +56,6 @@ from .utils import get_calibrations_provided
 
 MAX_RESULT_DRIFT_S = 1.0
 
-_MessageT = TypeVar("_MessageT", bound=Message)
 log = logging.getLogger(__name__)
 
 

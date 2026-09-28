@@ -18,7 +18,6 @@ import numpy.typing as npt
 import typing_extensions as te
 
 
-_T = t.TypeVar("_T")
 TypeLike: te.TypeAlias = type | t._GenericAlias  # type: ignore[name-defined]
 # "Union[A, B]" has origin t.Union, "A | B" has types.UnionType.
 UNION_ORIGINS = (t.Union, types.UnionType)

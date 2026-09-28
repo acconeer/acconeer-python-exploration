@@ -56,7 +56,7 @@ class TestLatestExplorationProtocolCommands:
         )
 
     @pytest.mark.parametrize("update_rate", [20, None])
-    def test_setup_command(self, update_rate: float | int | None) -> None:
+    def test_setup_command(self, update_rate: float | None) -> None:
         # This explicitly sets all fields in order to guard against changes of defaults.
         config = a121.SessionConfig(
             [

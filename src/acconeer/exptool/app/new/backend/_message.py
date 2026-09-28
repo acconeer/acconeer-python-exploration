@@ -14,7 +14,7 @@ from acconeer.exptool.app.new._enums import ConnectionState, PluginGeneration, P
 
 _ResultT = t.TypeVar("_ResultT")
 
-RecipientLiteral = Literal["plot_plugin"] | Literal["view_plugin"]
+RecipientLiteral = Literal["plot_plugin", "view_plugin"]
 
 
 @attrs.frozen(kw_only=True, slots=False)

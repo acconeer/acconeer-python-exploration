@@ -39,9 +39,6 @@ from .distance_config_input import DistanceConfigEvent
 from .presence_config_input import PresenceConfigEvent
 
 
-_T = t.TypeVar("_T")
-
-
 def incremental_plot(
     xs: list[float],
     f: t.Callable[[float], float],

@@ -29,8 +29,6 @@ U = TypeVar("U")
 KeyT = TypeVar("KeyT")
 ValueT = TypeVar("ValueT")
 
-Number = int | float
-
 
 def unextend(structure: list[dict[int, T]]) -> T:
     """'Unexpands' a structure and returns the single element in the structure."""
@@ -43,7 +41,7 @@ def unextend(structure: list[dict[int, T]]) -> T:
         raise ValueError(msg) from e
 
 
-def convert_value(value: Number, *, factory: Callable[[Number], T]) -> T:
+def convert_value(value: float, *, factory: Callable[[float], T]) -> T:
     try:
         # May raise ValueError if e.g. "value" is a non-int string
         converted_value = factory(value)
@@ -59,9 +57,9 @@ def convert_value(value: Number, *, factory: Callable[[Number], T]) -> T:
 
 
 def _check_bounds(
-    value: Number,
-    lower_bound: Number | None = None,
-    upper_bound: Number | None = None,
+    value: float,
+    lower_bound: float | None = None,
+    upper_bound: float | None = None,
     inclusive: bool = True,
 ) -> None:
     """Raises a ValueError if:
@@ -86,7 +84,7 @@ def _check_bounds(
 
 
 def convert_validate_int(
-    value: float | int, max_value: int | None = None, min_value: int | None = None
+    value: float, max_value: int | None = None, min_value: int | None = None
 ) -> int:
     """Converts an argument to an int.
 
