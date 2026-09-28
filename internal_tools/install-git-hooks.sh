@@ -1,6 +1,13 @@
 #!/bin/sh
-GIT_TOP_DIR=$(git rev-parse --show-toplevel)
+# A stub rather than a copy, so the hook can't go stale.
+HOOKS_DIR=$(git rev-parse --path-format=absolute --git-path hooks)
 
 echo "Installing pre-push hook"
-cp $GIT_TOP_DIR/internal_tools/hooks/pre-push $GIT_TOP_DIR/.git/hooks/
-chmod +x $GIT_TOP_DIR/.git/hooks/pre-push
+cat > "$HOOKS_DIR/pre-push" <<'EOF'
+#!/bin/sh
+hook="$(git rev-parse --show-toplevel)/internal_tools/hooks/pre-push"
+# A checkout from before the hook was tracked has none.
+[ -f "$hook" ] || { echo "No $hook, skipping pre-push checks" >&2; exit 0; }
+exec sh "$hook" "$@"
+EOF
+chmod +x "$HOOKS_DIR/pre-push"
