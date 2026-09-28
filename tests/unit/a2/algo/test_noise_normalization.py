@@ -24,9 +24,7 @@ def get_circular_noise_vector(std, num_samples):
 
 
 # fmt: off
-@pytest.mark.parametrize(
-    "noise_frames, num_points, expected_noise_values, tx_antenna_mask, rx_antenna_mask",
-    [
+_CALC_NOISE_CASES = [
         pytest.param(
             [
                 200.0 + 166.0j, 196.0 + 160.0j, 121.0 + 228.0j, 120.0 + 174.0j, 427.0 + 69.0j, 276.0 + 273.0j, 17.0 + 410.0j, 264.0 + 478.0j,
@@ -270,9 +268,14 @@ def get_circular_noise_vector(std, num_samples):
             0b111,
             0b1010,
         ),
-    ],
-)
+]
 # fmt: on
+
+
+@pytest.mark.parametrize(
+    "noise_frames, num_points, expected_noise_values, tx_antenna_mask, rx_antenna_mask",
+    _CALC_NOISE_CASES,
+)
 def test_calc_noise(
     noise_frames, num_points, expected_noise_values, tx_antenna_mask, rx_antenna_mask
 ):
@@ -409,7 +412,11 @@ def _make_subsweep(
 def test_create_multi_subsweep() -> None:
     rng = np.random.default_rng(42)
     subsweep_config_0 = _make_subsweep(
-        num_points=5, hwaas_exponent=4, hwaas_max=110, tx_antenna_mask=0b111, rx_antenna_mask=0b0001
+        num_points=5,
+        hwaas_exponent=4,
+        hwaas_max=110,
+        tx_antenna_mask=0b111,
+        rx_antenna_mask=0b0001,
     )
     subsweep_config_1 = _make_subsweep(
         num_points=3, hwaas_exponent=4, hwaas_max=50, tx_antenna_mask=0b001, rx_antenna_mask=0b0011
@@ -440,12 +447,16 @@ def test_create_multi_subsweep() -> None:
 
     np.testing.assert_allclose(
         recording.noise_values[0][:ss0_len],
-        np.repeat(noise_stds[0] / np.sqrt(subsweep_config_0.hwaas_points), subsweep_config_0.num_channels),
+        np.repeat(
+            noise_stds[0] / np.sqrt(subsweep_config_0.hwaas_points), subsweep_config_0.num_channels
+        ),
         rtol=0.05,
     )
     np.testing.assert_allclose(
         recording.noise_values[0][ss0_len:],
-        np.repeat(noise_stds[1] / np.sqrt(subsweep_config_1.hwaas_points), subsweep_config_1.num_channels),
+        np.repeat(
+            noise_stds[1] / np.sqrt(subsweep_config_1.hwaas_points), subsweep_config_1.num_channels
+        ),
         rtol=0.05,
     )
 
@@ -459,7 +470,11 @@ def test_create_multi_sensor_config_multi_subsweep() -> None:
         num_points=3, hwaas_exponent=4, hwaas_max=10, tx_antenna_mask=0b001, rx_antenna_mask=0b0011
     )
     subsweep_config_2 = _make_subsweep(
-        num_points=4, hwaas_exponent=4, hwaas_max=100, tx_antenna_mask=0b011, rx_antenna_mask=0b1111
+        num_points=4,
+        hwaas_exponent=4,
+        hwaas_max=100,
+        tx_antenna_mask=0b011,
+        rx_antenna_mask=0b1111,
     )
     subsweep_config_3 = _make_subsweep(
         num_points=6, hwaas_exponent=4, hwaas_max=5, tx_antenna_mask=0b111, rx_antenna_mask=0b0001
@@ -501,12 +516,16 @@ def test_create_multi_sensor_config_multi_subsweep() -> None:
     assert len(recording.noise_values[0]) == ss0_len + ss1_len
     np.testing.assert_allclose(
         recording.noise_values[0][:ss0_len],
-        np.repeat(noise_stds[0] / np.sqrt(subsweep_config_0.hwaas_points), subsweep_config_0.num_channels),
+        np.repeat(
+            noise_stds[0] / np.sqrt(subsweep_config_0.hwaas_points), subsweep_config_0.num_channels
+        ),
         rtol=0.05,
     )
     np.testing.assert_allclose(
         recording.noise_values[0][ss0_len:],
-        np.repeat(noise_stds[1] / np.sqrt(subsweep_config_1.hwaas_points), subsweep_config_1.num_channels),
+        np.repeat(
+            noise_stds[1] / np.sqrt(subsweep_config_1.hwaas_points), subsweep_config_1.num_channels
+        ),
         rtol=0.05,
     )
 
@@ -515,11 +534,15 @@ def test_create_multi_sensor_config_multi_subsweep() -> None:
     assert len(recording.noise_values[1]) == ss2_len + ss3_len
     np.testing.assert_allclose(
         recording.noise_values[1][:ss2_len],
-        np.repeat(noise_stds[2] / np.sqrt(subsweep_config_2.hwaas_points), subsweep_config_2.num_channels),
+        np.repeat(
+            noise_stds[2] / np.sqrt(subsweep_config_2.hwaas_points), subsweep_config_2.num_channels
+        ),
         rtol=0.05,
     )
     np.testing.assert_allclose(
         recording.noise_values[1][ss2_len:],
-        np.repeat(noise_stds[3] / np.sqrt(subsweep_config_3.hwaas_points), subsweep_config_3.num_channels),
+        np.repeat(
+            noise_stds[3] / np.sqrt(subsweep_config_3.hwaas_points), subsweep_config_3.num_channels
+        ),
         rtol=0.05,
     )

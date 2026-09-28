@@ -83,7 +83,7 @@ def autodetermine_client_info(
         )
 
     except CommDeviceError as exc:
-        error_message += f"\nUSB: {str(exc)}"
+        error_message += f"\nUSB: {exc}"
 
     try:
         serial_info = client_info.serial
@@ -91,7 +91,7 @@ def autodetermine_client_info(
             serial_info = SerialInfo(port=str(get_one_serial_device().port))
         return attrs.evolve(client_info, serial=serial_info)
     except CommDeviceError as exc:
-        error_message += f"\nSerial: {str(exc)}"
+        error_message += f"\nSerial: {exc}"
 
     msg = f"Cannot auto detect:{error_message}"
     raise LinkError(msg)

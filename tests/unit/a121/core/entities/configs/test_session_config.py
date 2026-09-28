@@ -213,7 +213,7 @@ def test_invalid_attribute():
     config = a121.SessionConfig()
     config.update_rate = 10
 
-    with pytest.raises(AttributeError, match="Invalid attribute*"):
+    with pytest.raises(AttributeError, match="Invalid attribute"):
         config.update_ratee = 10
 
 

@@ -364,17 +364,10 @@ class TestRecording:
         assert record.num_sessions == self.NUM_SESSIONS
         assert record.session(0).num_frames == record.session(1).num_frames == self.NUM_SAMPLES
 
-        assert (
-            list(record.session(0).group_results)[0].results[0].frame.shape
-            == list(record.session(1).group_results)[0].results[0].frame.shape
-            == (2, 5)
-        )
-
-        assert (
-            list(record.session(0).group_results)[0].results[1].frame.shape
-            == list(record.session(1).group_results)[0].results[1].frame.shape
-            == (1, 10)
-        )
+        first_0 = next(record.session(0).group_results)
+        first_1 = next(record.session(1).group_results)
+        assert first_0.results[0].frame.shape == first_1.results[0].frame.shape == (2, 5)
+        assert first_0.results[1].frame.shape == first_1.results[1].frame.shape == (1, 10)
 
     def test_record_io(self, recorded_file: h5py.File, tmp_path: pathlib.Path) -> None:
         record = a2.open_record(recorded_file)

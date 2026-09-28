@@ -233,5 +233,5 @@ class BootloaderTool(DeviceFlasherBase):
                     f"ERROR: The selected file does not contain a valid image for {device_name}"
                 )
             else:
-                error_string = f"ERROR: {str(exc)}"
+                error_string = f"ERROR: {exc}"
             raise FlashException(error_string)

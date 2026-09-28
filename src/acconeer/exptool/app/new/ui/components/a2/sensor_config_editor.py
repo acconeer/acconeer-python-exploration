@@ -197,7 +197,8 @@ class SensorConfigEditor(DataEditor[a2.SensorConfig | None]):
 
         subsweep_configs = []
         for editor in self._subsweep_config_editors:
-            assert (subsweep_config := editor.get_data()) is not None
+            subsweep_config = editor.get_data()
+            assert subsweep_config is not None
             subsweep_configs.append(subsweep_config)
 
         return a2.SensorConfig(

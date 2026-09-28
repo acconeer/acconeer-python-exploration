@@ -2,6 +2,7 @@
 # All rights reserved
 from __future__ import annotations
 
+import itertools
 import typing as t
 from collections.abc import Iterator
 from enum import Flag, auto
@@ -211,7 +212,7 @@ def _max_profile_layout(
     breakpoints: list[int], margins: tuple[int, int], step_length: int
 ) -> list[tuple[int, int]]:
     """Start point and number of points of each max profile subsweep, margins included."""
-    spans = [[start, end] for start, end in zip(breakpoints[:-1], breakpoints[1:])]
+    spans = [[start, end] for start, end in itertools.pairwise(breakpoints)]
 
     if spans:
         spans[0][0] -= margins[0]

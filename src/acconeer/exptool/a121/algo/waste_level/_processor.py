@@ -166,7 +166,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         assert self.bin_start_m < self.bin_end_m
 
         self.distance_history: collections.deque[float] = collections.deque(
-            [], maxlen=self.median_filter_length
+            maxlen=self.median_filter_length
         )
 
         self.distances_m = get_distances_m(sensor_config, metadata)

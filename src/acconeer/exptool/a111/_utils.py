@@ -108,7 +108,7 @@ def get_client_args(namespace: Namespace) -> dict[str, Any]:
         result["link"] = et.a111.Link.SOCKET
         return result
 
-    if "spi" in ns_dict and ns_dict["spi"]:
+    if ns_dict.get("spi"):
         result["link"] = et.a111.Link.SPI
         return result
 

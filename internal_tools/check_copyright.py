@@ -97,19 +97,12 @@ def year_string_to_range(s):
     '2022' -> [2022]
     '2020-2022' -> [2020, 2021, 2022]
     """
-    year_range = sum(
-        (
-            (
-                list(range(*[int(j) + k for k, j in enumerate(i.split("-"))]))
-                if "-" in i
-                else [int(i)]
-            )
-            for i in s.split(",")
-        ),
-        [],
-    )
+    years = set()
+    for part in s.split(","):
+        start, _, end = part.partition("-")
+        years.update(range(int(start), int(end or start) + 1))
 
-    return sorted(set(year_range))
+    return sorted(years)
 
 
 def match_copyright_year(line, year_pattern, year):

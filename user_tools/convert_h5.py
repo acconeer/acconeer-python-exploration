@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import abc
 import argparse
+import itertools
 import json
 import sys
 import typing as t
@@ -646,7 +647,7 @@ class A121RecordTableConverter(TableConverter):
         if len(self.sensor_ids) > 1 or len(self.group_ids) > 1:
             df_processed_data.index = pd.Index(time[0])
         else:
-            df_processed_data.index = pd.Index(sum(time, []))
+            df_processed_data.index = pd.Index(list(itertools.chain.from_iterable(time)))
         dict_excel_file["Application configurations"] = df_app_config
         dict_excel_file["Processed data"] = df_processed_data
         record_environtment = self.get_environment()

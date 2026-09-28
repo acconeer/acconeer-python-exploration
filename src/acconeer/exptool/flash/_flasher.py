@@ -109,7 +109,7 @@ def flash_image(
             bootloader = PRODUCT_NAME_TO_FLASH_MAP[serial_device_name]()
             bootloader.flash(flash_device, serial_device_name, image_path, progress_callback)
         else:
-            msg = f"No flash support device {str(flash_device)}"
+            msg = f"No flash support device {flash_device}"
             raise FlashException(msg)
     else:
         msg = "No devices found, try connecting a device before flashing."

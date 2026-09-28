@@ -62,7 +62,7 @@ class _RateCalculator:
     ticks_per_second: int
     tick_period: int
 
-    ticks: deque[int] = attrs.field(factory=lambda: deque([], maxlen=200), init=False)
+    ticks: deque[int] = attrs.field(factory=lambda: deque(maxlen=200), init=False)
 
     @property
     def tick_period_upper_bound(self) -> float:

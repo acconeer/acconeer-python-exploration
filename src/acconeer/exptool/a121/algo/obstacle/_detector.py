@@ -417,7 +417,7 @@ class Detector:
         obstacle_proc_results: dict[int, ProcessorResult] = {}
 
         for r in rest_subsweep_results:
-            sens_id = list(r.keys())[0]  # get the only sensor-id in that dict.
+            sens_id = next(iter(r))  # get the only sensor-id in that dict.
             obstacle_proc_results[sens_id] = self.processors[sens_id].process(r[sens_id])
 
         return DetectorResult(
