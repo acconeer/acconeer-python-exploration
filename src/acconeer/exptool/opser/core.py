@@ -186,8 +186,8 @@ class Persistor(abc.ABC):
     def save(self, data: t.Any) -> None:
         try:
             self._save(data)
-        except SaveError as se:
-            raise se
+        except SaveError:
+            raise
         except Exception as e:
             raise SaveError from e
 
@@ -195,8 +195,8 @@ class Persistor(abc.ABC):
     def load(self) -> t.Any:
         try:
             res = self._load()
-        except LoadError as le:
-            raise le
+        except LoadError:
+            raise
         except Exception as e:
             raise LoadError from e
         else:

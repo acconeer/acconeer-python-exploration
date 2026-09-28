@@ -1059,8 +1059,8 @@ class AppModel(QObject):
 
         try:
             get_config_result = plugin.replay_dialog_get_config(path)
-        except Exception as e:
-            log.exception(e)
+        except Exception:
+            log.exception("Failed to load the config from the replay file")
             get_config_result = None
             data_editor = None
         else:

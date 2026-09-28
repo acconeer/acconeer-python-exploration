@@ -125,9 +125,9 @@ def _more_helpful_attribute_error(
 ) -> t.Iterator[None]:
     try:
         yield
-    except AttributeError as e:
+    except AttributeError:
         if error_format is None:
-            raise e
+            raise
 
         raise AttributeError(
             error_format.format(

@@ -108,8 +108,8 @@ def _bs_thread_program(q, exit_event, updater):
     if stick is not None:
         try:
             stick.turn_off()
-        except Exception as e:
-            _LOG.exception(e)
+        except Exception:
+            _LOG.exception("Failed to turn off the BlinkStick")
 
     try:
         while True:

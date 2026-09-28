@@ -166,10 +166,10 @@ class H5Saver(h5_record.H5Saver[SessionConfig, Metadata, GroupResult, ServerInfo
         for group_idx in range(length):
             try:
                 result_group = group[f"group_{group_idx}/result"]
-            except Exception as e:
+            except Exception:
                 print(f"group_{group_idx}")
                 group.visititems(print)
-                raise e
+                raise
 
             if not isinstance(result_group, h5py.Group):
                 raise RuntimeError

@@ -201,8 +201,6 @@ class ExplorationClient(A2Client, register=True):
                     self._recorder_stop_session()
                 else:
                     self.stop_session()
-        except Exception:
-            raise
         finally:
             self._tick_unwrapper.reset()
             self._server_info = None
