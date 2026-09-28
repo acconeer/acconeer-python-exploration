@@ -31,10 +31,6 @@ _ms = _mA = 1e-3
 _us = _uA = 1e-6
 
 
-def _count_bits(number: int) -> int:
-    return bin(number).count("1")
-
-
 class Algorithm(collections.abc.Hashable, te.Protocol):
     def processing(
         self,
@@ -58,10 +54,7 @@ class SparseIq(Algorithm):
         points_measured = 0
         for subsweep in sensor_config.subsweeps:
             points_measured += (
-                subsweep.num_points
-                * sensor_config.sweeps_per_frame
-                * _count_bits(subsweep.rx_antenna_mask)
-                * _count_bits(subsweep.tx_antenna_mask)
+                subsweep.num_points * sensor_config.sweeps_per_frame * subsweep.num_channels
             )
 
         process_duration = sensor.iq_processing_fixed

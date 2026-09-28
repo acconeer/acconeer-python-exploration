@@ -90,7 +90,7 @@ class NoiseNormalizationRecording:
             raise RuntimeError
 
         min_tx_count = min(
-            bin(subsweep_config.tx_antenna_mask).count("1")
+            subsweep_config.tx_antenna_mask.bit_count()
             for sensor_config in session_config.sensor_configs
             for subsweep_config in sensor_config.subsweeps
         )

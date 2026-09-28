@@ -27,6 +27,11 @@ def test_select_prf() -> None:
     assert actual_PRF == a121.PRF.PRF_15_6_MHz
 
 
+def test_select_prf_raises_past_the_longest_range() -> None:
+    with pytest.raises(ValueError, match="No PRF covers"):
+        select_prf(breakpoint=100_000, profile=a121.Profile.PROFILE_3)
+
+
 def test_limit_step_length() -> None:
     profile = a121.Profile.PROFILE_3
     user_limit = 2

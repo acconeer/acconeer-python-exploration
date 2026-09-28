@@ -212,7 +212,7 @@ class MotionDetectionProcessor:
         tx_mask = self._concat_subsweep_config.tx_antenna_mask
         rx_mask = self._concat_subsweep_config.rx_antenna_mask
         az_rx_mask = rx_mask & ~_AZ_RX_DROP_MASK
-        az_virtual_channels = bin(tx_mask).count("1") * bin(az_rx_mask).count("1")
+        az_virtual_channels = tx_mask.bit_count() * az_rx_mask.bit_count()
         if az_virtual_channels < 1:
             msg = "Az sub-array has no virtual channels: at least one of Rx1, Rx2, Rx3 needs to be selected."
             raise ValueError(msg)

@@ -261,11 +261,7 @@ class SessionSetupError(ClientError):
 
 
 def decode_version_str(version_str: str) -> dict:
-    if version_str.startswith("a111-"):
-        version_str = version_str[5:]
-
-    if version_str.startswith("v"):
-        version_str = version_str[1:]
+    version_str = version_str.removeprefix("a111-").removeprefix("v")
 
     if "-" in version_str:
         strict_version = version.parse(version_str.split("-")[0])

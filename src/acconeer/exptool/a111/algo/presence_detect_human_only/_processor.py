@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 import numpy as np
@@ -269,11 +269,7 @@ class Processor:
             # Detect fast motion using outlier, based on lower boundary and upper boundary
             Quar1 = np.percentile(self.fast_outliers, self.percentage_quar1)
             Quar3 = np.percentile(self.fast_outliers, self.percentage_quar3)
-            InterQuar = (
-                self.InterQuar_no_human
-                if Quar3 - Quar1 >= self.InterQuar_no_human
-                else Quar3 - Quar1
-            )
+            InterQuar = min(Quar3 - Quar1, self.InterQuar_no_human)
             Lower_boundary = Quar1 - self.Qfactor * InterQuar
             Upper_boundary = Quar3 + self.Qfactor * InterQuar
             self.fast_outlier_detected = max_fast <= Lower_boundary or max_fast >= Upper_boundary

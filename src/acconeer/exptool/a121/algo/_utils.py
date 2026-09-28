@@ -454,7 +454,10 @@ def select_prf_m(distance_m: float, profile: a121.Profile) -> a121.PRF:
         del max_meas_dist_m[a121.PRF.PRF_19_5_MHz]
 
     viable_prfs = [prf for prf, max_dist_m in max_meas_dist_m.items() if distance_m < max_dist_m]
-    return sorted(viable_prfs, key=lambda prf: prf.frequency)[-1]
+    if not viable_prfs:
+        msg = f"No PRF covers distance_m={distance_m} m."
+        raise ValueError(msg)
+    return max(viable_prfs, key=lambda prf: prf.frequency)
 
 
 def select_prf(breakpoint: int, profile: a121.Profile) -> a121.PRF:

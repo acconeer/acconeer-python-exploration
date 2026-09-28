@@ -298,7 +298,7 @@ def build_main_window(
     model.start()
 
     if args.dump_exceptions:
-        model.sig_error.connect(lambda _, traceback_str: print(traceback_str, sep="\n"))
+        model.sig_error.connect(lambda _, traceback_str: print(traceback_str))
 
     pg.setConfigOption("background", "w")
     pg.setConfigOption("foreground", "k")

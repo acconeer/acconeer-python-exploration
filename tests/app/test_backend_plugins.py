@@ -178,7 +178,7 @@ class TestBackendPlugins:
             f = a2.open_record(saved_file)
             f.close()
 
-        if plugin in [SPEED_DETECTOR_PLUGIN]:
+        if plugin == SPEED_DETECTOR_PLUGIN:
             pytest.xfail(
                 "Presence- & presence-based algorithms have an "
                 + "untestable 'load_from_file' task because of 'estimated_frame_rate'. "

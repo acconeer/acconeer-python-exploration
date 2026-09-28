@@ -138,8 +138,8 @@ def subsweep_active(
 
     sample_duration = sensor_data.sample_durations[config.profile][config.prf]
 
-    num_tx_antennas = bin(config.tx_antenna_mask).count("1")
-    num_rx_antennas = bin(config.rx_antenna_mask).count("1")
+    num_tx_antennas = config.tx_antenna_mask.bit_count()
+    num_rx_antennas = config.rx_antenna_mask.bit_count()
 
     rx_current_saved = CurrentBreakdown.zero()
 

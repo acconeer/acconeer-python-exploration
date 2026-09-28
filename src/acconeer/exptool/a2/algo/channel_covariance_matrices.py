@@ -116,9 +116,7 @@ class ChannelCovarianceMatrices:
                [[1.+0.j, 0.+0.j],
                 [0.+0.j, 1.+0.j]]])
         """
-        tx_antenna_count = bin(tx_mask).count("1")
-        rx_antenna_count = bin(rx_mask).count("1")
-        num_channels = tx_antenna_count * rx_antenna_count
+        num_channels = tx_mask.bit_count() * rx_mask.bit_count()
 
         single_matrix = np.eye(num_channels, dtype=np.complex128)
         initial_matrices = np.broadcast_to(

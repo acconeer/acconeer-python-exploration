@@ -240,7 +240,7 @@ class _AntennaArrayData:
 
         Returns an array of shape (num_az, num_el, num_channels).
         """
-        num_channels = bin(tx_antenna_mask).count("1") * bin(rx_antenna_mask).count("1")
+        num_channels = tx_antenna_mask.bit_count() * rx_antenna_mask.bit_count()
         steering_vectors = np.zeros(
             shape=(len(az_angles), len(el_angles), num_channels), dtype=np.complex128
         )

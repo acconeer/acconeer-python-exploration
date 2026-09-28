@@ -337,6 +337,7 @@ extend-select = [
     "RUF028", "RUF037", "RUF043",
     "TRY201", "TRY203", "TRY401",
     "G010",
+    "FURB105", "FURB136", "FURB161", "FURB171", "FURB188", "FURB192",
 ]
 # E741 = Ambiguous variable names, e.g. I vs l
 # SIM108 = Has a tendancy to create ternary one-liners.

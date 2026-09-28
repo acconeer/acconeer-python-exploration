@@ -218,7 +218,7 @@ class SubsweepConfig(AttrsMappingTransformsMixin):
     @property
     def num_channels(self) -> int:
         """The number of channels based tx_antenna_mask and rx_antenna_mask"""
-        return bin(self.tx_antenna_mask).count("1") * bin(self.rx_antenna_mask).count("1")
+        return self.tx_antenna_mask.bit_count() * self.rx_antenna_mask.bit_count()
 
     @property
     def end_point(self) -> int:

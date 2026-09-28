@@ -98,7 +98,7 @@ class Metadata:
         if self.high_speed_mode is None:
             raw_dict.pop("_high_speed_mode")
         # Remove preceding underscores to be able to recreate the class in from_dict
-        return {k[1:] if k.startswith("_") else k: v for k, v in raw_dict.items()}
+        return {k.removeprefix("_"): v for k, v in raw_dict.items()}
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> Metadata:

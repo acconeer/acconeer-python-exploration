@@ -57,10 +57,6 @@ def _align(size: int, alignment: int) -> int:
     return (size + alignment - 1) // alignment * alignment
 
 
-def _count_bits(mask: int) -> int:
-    return bin(mask).count("1")
-
-
 def _frame_buffer_size(
     subsweep_sizes: list[int], sweeps_per_frame: int, jitter_compensation: bool
 ) -> int:
@@ -126,13 +122,13 @@ def _noise_normalization_buffer_size(
         denominator = sweeps_per_frame
 
         if pool_noise_per_rx:
-            denominator *= _count_bits(subsweep.tx_antenna_mask)
+            denominator *= subsweep.tx_antenna_mask.bit_count()
 
         num_points = (n_wanted_samples + denominator - 1) // denominator
         subsweep_sizes.append(num_points * subsweep.num_channels * BYTES_PER_POINT)
 
         if pool_noise_per_rx:
-            num_noise_estimates += _count_bits(subsweep.rx_antenna_mask)
+            num_noise_estimates += subsweep.rx_antenna_mask.bit_count()
         else:
             num_noise_estimates += subsweep.num_channels
 
