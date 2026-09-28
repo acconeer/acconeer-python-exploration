@@ -258,8 +258,8 @@ def test_examples(example_script: str, tmp_path: Path, start_example: StartExamp
     p, ready = start_example(command)
 
     startup_timeout_s = 60
-    interrupt_timeout_s = 3
-    kill_timeout_s = 1
+    # Generous, as a loaded machine can take seconds to shut an example down.
+    interrupt_timeout_s = 30
 
     # A SIGINT during imports can be lost or crash the example, and a slow machine can
     # spend seconds on them.
@@ -277,23 +277,11 @@ def test_examples(example_script: str, tmp_path: Path, start_example: StartExamp
             )
 
     # The example runs until Ctrl-C, which a terminal sends to its whole process group.
+    os.killpg(p.pid, signal.SIGINT)
     try:
-        os.killpg(p.pid, signal.SIGINT)
         returncode = p.wait(timeout=interrupt_timeout_s)
     except subprocess.TimeoutExpired:
-        pass
-    else:
-        assert returncode in [0, -signal.SIGINT]
-        return
-
-    # The example didn't clean-up properly. Kill it.
-    try:
-        p.send_signal(signal.SIGKILL)
-        returncode = p.wait(timeout=kill_timeout_s)
-    except subprocess.TimeoutExpired:
         pytest.fail(
-            f"{example_script!r} did not exit within {kill_timeout_s} seconds after kill signal."
+            f"{example_script!r} did not exit within {interrupt_timeout_s} seconds of Ctrl-C."
         )
-    else:
-        assert returncode in [0, 1, -signal.SIGKILL]
-        return
+    assert returncode in [0, -signal.SIGINT]
