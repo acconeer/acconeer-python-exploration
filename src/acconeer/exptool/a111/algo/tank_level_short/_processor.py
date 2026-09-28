@@ -1,8 +1,7 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import numpy as np
-import scipy.signal
 import scipy.stats
 
 import acconeer.exptool as et

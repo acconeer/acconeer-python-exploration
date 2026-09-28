@@ -1,8 +1,7 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import ctypes
-import ctypes.util
 import enum
 import os
 import platform
