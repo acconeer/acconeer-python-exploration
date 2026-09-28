@@ -176,7 +176,7 @@ class PlotPlugin(PgPlotPlugin):
             self.setup(mode_handler_config=message.mode_handler_config)
             self._is_setup = True
         else:
-            log.warn(f"{self.__class__.__name__} got an unsupported command: {message.name!r}.")
+            log.warning(f"{self.__class__.__name__} got an unsupported command: {message.name!r}.")
 
     def draw(self) -> None:
         if not self._is_setup or self._plot_job is None:

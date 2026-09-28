@@ -35,7 +35,7 @@ class DevLicense:
             response.raise_for_status()
             self.html = bs4.BeautifulSoup(response.text, "html.parser")
         except Exception as e:
-            log.warn(str(e))
+            log.warning(e)
             self.html = None
 
     def get_header(self) -> str:

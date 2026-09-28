@@ -74,7 +74,7 @@ class PlotPluginBase(UiPluginBase):
 #     elif message.name == "plot":
 #         self._plot_job = message.kwargs
 #     else:
-#         log.warn(f"{self.__class__.__name__} got an unsupported command: {message.name!r}.")
+#         log.warning(f"{self.__class__.__name__} got an unsupported command: {message.name!r}.")
 
 # def draw(self) -> None:
 #     if not self._is_setup or self._plot_job is None:
