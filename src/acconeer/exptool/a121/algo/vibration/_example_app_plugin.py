@@ -71,8 +71,8 @@ class SetupMessage(GeneralMessage):
 
 class BackendPlugin(A121BackendPluginBase[SharedState]):
     PLUGIN_PRESETS: Mapping[int, Callable[[], ExampleAppConfig]] = {
-        PluginPresetId.LOW_FREQ.value: lambda: get_low_frequency_config(),
-        PluginPresetId.HIGH_FREQ.value: lambda: get_high_frequency_config(),
+        PluginPresetId.LOW_FREQ.value: get_low_frequency_config,
+        PluginPresetId.HIGH_FREQ.value: get_high_frequency_config,
     }
 
     def __init__(

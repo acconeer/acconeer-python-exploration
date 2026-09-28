@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import pytest
@@ -77,7 +77,7 @@ def test_run_a_session(qtbot, gui):
     expected_status = "Connected via simulated interface"
     qtbot.waitUntil(lambda: gui.statusBar().currentMessage() == expected_status)
     qtbot.waitUntil(lambda: gui.buttons["connect"].text() == "Disconnect")
-    qtbot.waitUntil(lambda: gui.buttons["start"].isEnabled())
+    qtbot.waitUntil(gui.buttons["start"].isEnabled)
     qtbot.waitUntil(lambda: not gui.buttons["stop"].isEnabled())
 
     qtbot.mouseClick(gui.buttons["start"], LB)
@@ -91,7 +91,7 @@ def test_run_a_session(qtbot, gui):
 
     assert sig.args[0] == "stop"
 
-    qtbot.waitUntil(lambda: gui.buttons["start"].isEnabled())
+    qtbot.waitUntil(gui.buttons["start"].isEnabled)
     qtbot.waitUntil(lambda: not gui.buttons["stop"].isEnabled())
 
     qtbot.mouseClick(gui.buttons["connect"], LB)

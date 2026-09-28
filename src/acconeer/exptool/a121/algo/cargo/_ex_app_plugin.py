@@ -88,10 +88,10 @@ class SetupMessage(GeneralMessage):
 
 class BackendPlugin(A121BackendPluginBase[SharedState]):
     PLUGIN_PRESETS: Mapping[int, Callable[[], ExAppConfig]] = {
-        PluginPresetId.CONTAINER_10_FT.value: lambda: get_10_ft_container_config(),
-        PluginPresetId.CONTAINER_20_FT.value: lambda: get_20_ft_container_config(),
-        PluginPresetId.CONTAINER_40_FT.value: lambda: get_40_ft_container_config(),
-        PluginPresetId.NO_LENS.value: lambda: get_no_lens_config(),
+        PluginPresetId.CONTAINER_10_FT.value: get_10_ft_container_config,
+        PluginPresetId.CONTAINER_20_FT.value: get_20_ft_container_config,
+        PluginPresetId.CONTAINER_40_FT.value: get_40_ft_container_config,
+        PluginPresetId.NO_LENS.value: get_no_lens_config,
     }
 
     def __init__(

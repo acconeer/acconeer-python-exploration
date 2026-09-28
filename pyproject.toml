@@ -318,6 +318,7 @@ extend-select = [
     "PIE790", "PIE794", "PIE800", "PIE808",
     "PERF102", "PERF402",
     "PLR0402",
+    "PLW0108",
 ]
 # E741 = Ambiguous variable names, e.g. I vs l
 # SIM108 = Has a tendancy to create ternary one-liners.

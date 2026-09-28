@@ -591,7 +591,7 @@ class ResourceMainWidget(QMainWindow):
             self._create_action(
                 INFO(),
                 button_label="Info",
-                on_trigger=lambda: self._show_info_popup(),
+                on_trigger=self._show_info_popup,
             )
         )
 

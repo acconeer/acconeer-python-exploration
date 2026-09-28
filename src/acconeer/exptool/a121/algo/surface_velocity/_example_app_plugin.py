@@ -63,7 +63,7 @@ class SetupMessage(GeneralMessage):
 
 class BackendPlugin(A121BackendPluginBase[SharedState]):
     PLUGIN_PRESETS: Mapping[int, Callable[[], ExampleAppConfig]] = {
-        PluginPresetId.DEFAULT.value: lambda: ExampleAppConfig()
+        PluginPresetId.DEFAULT.value: ExampleAppConfig
     }
 
     def __init__(

@@ -89,8 +89,8 @@ class SetupMessage(GeneralMessage):
 
 class BackendPlugin(A121BackendPluginBase[SharedState]):
     PLUGIN_PRESETS: Mapping[int, Callable[[], DetectorConfig]] = {
-        PluginPresetId.BALANCED.value: lambda: DetectorConfig(),
-        PluginPresetId.HIGH_ACCURACY.value: lambda: get_high_accuracy_detector_config(),
+        PluginPresetId.BALANCED.value: DetectorConfig,
+        PluginPresetId.HIGH_ACCURACY.value: get_high_accuracy_detector_config,
     }
 
     def __init__(

@@ -21,7 +21,7 @@ def _fail() -> None:
 @pytest.fixture
 def paints(monkeypatch: pytest.MonkeyPatch) -> list[GuardedGLViewWidget]:
     painted: list[GuardedGLViewWidget] = []
-    monkeypatch.setattr(gl.GLViewWidget, "paintGL", lambda self: painted.append(self))
+    monkeypatch.setattr(gl.GLViewWidget, "paintGL", lambda self: painted.append(self))  # noqa: PLW0108 (append would not get the instance)
     return painted
 
 

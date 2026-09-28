@@ -89,11 +89,11 @@ class SetupMessage(GeneralMessage):
 
 class BackendPlugin(A121BackendPluginBase[SharedState]):
     PLUGIN_PRESETS: Mapping[int, Callable[[], RefAppConfig]] = {
-        PluginPresetId.SHORT_RANGE.value: lambda: get_short_range_config(),
-        PluginPresetId.MEDIUM_RANGE.value: lambda: get_medium_range_config(),
-        PluginPresetId.LONG_RANGE.value: lambda: get_long_range_config(),
-        PluginPresetId.CEILING.value: lambda: get_ceiling_config(),
-        PluginPresetId.LOW_POWER.value: lambda: get_low_power_config(),
+        PluginPresetId.SHORT_RANGE.value: get_short_range_config,
+        PluginPresetId.MEDIUM_RANGE.value: get_medium_range_config,
+        PluginPresetId.LONG_RANGE.value: get_long_range_config,
+        PluginPresetId.CEILING.value: get_ceiling_config,
+        PluginPresetId.LOW_POWER.value: get_low_power_config,
     }
 
     def __init__(

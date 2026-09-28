@@ -78,8 +78,8 @@ class SetupMessage(GeneralMessage):
 
 class BackendPlugin(A121BackendPluginBase[SharedState]):
     PLUGIN_PRESETS: Mapping[int, Callable[[], DetectorConfig]] = {
-        PluginPresetId.DEFAULT.value: lambda: get_default_config(),
-        PluginPresetId.TRAFFIC.value: lambda: get_traffic_config(),
+        PluginPresetId.DEFAULT.value: get_default_config,
+        PluginPresetId.TRAFFIC.value: get_traffic_config,
     }
 
     def __init__(

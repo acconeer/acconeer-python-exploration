@@ -84,8 +84,8 @@ class SetupMessage(GeneralMessage):
 
 class BackendPlugin(A121BackendPluginBase[SharedState]):
     PLUGIN_PRESETS: Mapping[int, Callable[[], RefAppConfig]] = {
-        PluginPresetId.SITTING.value: lambda: get_sitting_config(),
-        PluginPresetId.INFANT.value: lambda: get_infant_config(),
+        PluginPresetId.SITTING.value: get_sitting_config,
+        PluginPresetId.INFANT.value: get_infant_config,
     }
 
     def __init__(

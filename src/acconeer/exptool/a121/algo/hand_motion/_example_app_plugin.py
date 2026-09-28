@@ -78,7 +78,7 @@ class SetupMessage(GeneralMessage):
 
 class BackendPlugin(A121BackendPluginBase[SharedState]):
     PLUGIN_PRESETS: Mapping[int, Callable[[], ModeHandlerConfig]] = {
-        PluginPresetId.DEFAULT.value: lambda: get_default_config()
+        PluginPresetId.DEFAULT.value: get_default_config
     }
 
     def __init__(

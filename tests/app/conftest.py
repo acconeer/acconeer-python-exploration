@@ -64,7 +64,7 @@ def fake_devsite(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> FakeDevSite
     monkeypatch.setattr(
         DevSiteRepository,
         "login",
-        lambda repository, *args, **kwargs: fake.login(repository, *args, **kwargs),
+        lambda repository, *args, **kwargs: fake.login(repository, *args, **kwargs),  # noqa: PLW0108 (a bound method would not get the instance)
     )
     return fake
 

@@ -217,8 +217,8 @@ class _SensorIdsEditor(DataEditor[list[int]]):
         remove_button.clicked.connect(lambda: self._rows.remove((combobox, remove_button)))
         remove_button.clicked.connect(self._update_visuals)
         remove_button.clicked.connect(self._emit_current_data)
-        remove_button.clicked.connect(lambda: combobox.deleteLater())
-        remove_button.clicked.connect(lambda: remove_button.deleteLater())
+        remove_button.clicked.connect(combobox.deleteLater)
+        remove_button.clicked.connect(remove_button.deleteLater)
 
         self._grid_layout.addWidget(combobox, row_to_append, self._COMBOBOX_COLUMN)
         self._grid_layout.addWidget(remove_button, row_to_append, self._REMOVE_COLUMN)

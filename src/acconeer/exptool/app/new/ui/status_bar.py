@@ -233,7 +233,7 @@ class StatusBar(QStatusBar):
         self._status_messages: list[str] = []
 
         app_model.sig_status_file_path.connect(self._update_file_path)
-        app_model.sig_status_message.connect(lambda m: self._status_messages.append(m))
+        app_model.sig_status_message.connect(self._status_messages.append)
         app_model.sig_status_message.connect(self._trigger_display)
 
         self.message_timer = QtCore.QTimer(self)
@@ -278,7 +278,7 @@ class StatusBar(QStatusBar):
             else:
                 self.message_widget.setText(message)
 
-            self._status_messages = self._status_messages[occurances:]
+            del self._status_messages[:occurances]
             self.message_timer.start(self._message_display_time)
         else:
             self.message_widget.clear()
