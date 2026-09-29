@@ -46,10 +46,6 @@ _KNOWN_ISSUES = {
     ("a121", "bilateration"): pytest.mark.skip(
         reason="Bilateration requires unique sensor IDs. Needs to be revisited."
     ),
-    ("a121", "parking"): pytest.mark.xfail(
-        strict=True,
-        reason="Raises an error: Could not start, 'NoneType' object has no attribute 'noise_level'",
-    ),
 }
 
 

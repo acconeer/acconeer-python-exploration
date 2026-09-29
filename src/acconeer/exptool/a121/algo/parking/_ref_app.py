@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -216,7 +216,7 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         client: a121.Client,
         sensor_id: int,
         ref_app_config: RefAppConfig,
-        context: RefAppContext = RefAppContext(),
+        context: RefAppContext | None = None,
     ) -> None:
         super().__init__(client=client, config=ref_app_config)
 
@@ -248,7 +248,7 @@ class RefApp(Controller[RefAppConfig, RefAppResult]):
         self.ref_app_config = ref_app_config
         self.sensor_id = sensor_id
 
-        self.context = context
+        self.context = context if context is not None else RefAppContext()
 
         self.noise_level = self.context.noise_level  # noise level estimated at calibration
         self.calibration_temperature = self.context.calibration_temperature
