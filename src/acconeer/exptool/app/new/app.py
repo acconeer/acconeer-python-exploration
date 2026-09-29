@@ -37,7 +37,7 @@ except ImportError:
 
 from ._enums import ConnectionState, PluginGeneration
 from ._sigint import _InterruptCounter
-from .app_model import AppModel
+from .app_model import AppModel, PluginSpec
 from .backend import Backend, GenBackend, MpBackend
 from .plugin_loader import import_and_register_plugin_module, load_plugins
 from .storage import DEFAULT_ET_DIR, remove_config_dir, remove_temp_dir, set_et_dir
@@ -131,60 +131,17 @@ def main() -> None:
         backend = GenBackend()
     else:
         backend = MpBackend()
-    backend.start()
 
-    model = AppModel(
-        backend,
-        plugins,
-        args.use_port_updater,
-        args.usb_or_serial_autoconnect,
-        args.socket_autoconnect,
-        args.simulated_autoconnect,
-    )
-    model.start()
-
-    if args.dump_exceptions:
-        model.sig_error.connect(lambda _, traceback_str: print(traceback_str, sep="\n"))
+    model, mw = build_main_window(args, plugins, backend)
     app.aboutToQuit.connect(model.stop)
     app.aboutToQuit.connect(backend.stop)
-
-    pg.setConfigOption("background", "w")
-    pg.setConfigOption("foreground", "k")
-    pg.setConfigOption("leftButtonPan", False)
-    pg.setConfigOptions(antialias=True)
-
-    ensure_wayland_integration(app)
-
-    mw = MainWindow(model)
-    mw.show()
 
     if args.amv:
         app_model_viewer = AppModelViewer(model)
         app_model_viewer.show()
         mw.sig_closing.connect(app_model_viewer.close)
 
-    specified_generation = PluginGeneration[args.generation_str.upper()]
-    model.set_plugin_generation(specified_generation)
-
-    if args.plugin_key is not None:
-        found_plugin = model.find_plugin(args.plugin_key, specified_generation)
-
-        if found_plugin is None:
-            _LOG.warning(f"Could not find plugin with key {args.plugin_key!r}")
-        else:
-            if args.tasks:
-                tasks = tuple(str(t) for t in args.tasks)
-
-                model.sig_notify.connect(
-                    functools.partial(
-                        _send_startup_tasks,
-                        tasks=tasks,
-                        deadline=time.monotonic() + _STARTUP_TASKS_TIMEOUT_S,
-                    ),
-                    QtCore.Qt.ConnectionType.SingleShotConnection,
-                )
-
-            model.load_plugin(found_plugin)
+    load_startup_plugin(args, model)
 
     py_ver = sys.version_info[:2]
     if args.portable and py_ver < (3, 12):
@@ -250,6 +207,71 @@ def main() -> None:
     exit_code = app.exec()
     shutdown_complete.set()
     sys.exit(exit_code)
+
+
+def build_main_window(
+    args: argparse.Namespace, plugins: list[PluginSpec], backend: Backend
+) -> tuple[AppModel, MainWindow]:
+    """Starts ``backend`` and shows a main window on a new model of it.
+
+    Unlike main(), leaves the process's signal handling, exception hook and exit
+    alone, so that the app can also be built inside a test.
+    """
+    backend.start()
+
+    model = AppModel(
+        backend,
+        plugins,
+        args.use_port_updater,
+        args.usb_or_serial_autoconnect,
+        args.socket_autoconnect,
+        args.simulated_autoconnect,
+    )
+    model.start()
+
+    if args.dump_exceptions:
+        model.sig_error.connect(lambda _, traceback_str: print(traceback_str, sep="\n"))
+
+    pg.setConfigOption("background", "w")
+    pg.setConfigOption("foreground", "k")
+    pg.setConfigOption("leftButtonPan", False)
+    pg.setConfigOptions(antialias=True)
+
+    app = QApplication.instance()
+    assert isinstance(app, QApplication)
+    ensure_wayland_integration(app)
+
+    mw = MainWindow(model)
+    mw.show()
+    return model, mw
+
+
+def load_startup_plugin(args: argparse.Namespace, model: AppModel) -> None:
+    """Loads the plugin given by '--plugin-key', running '--tasks' once it can."""
+    specified_generation = PluginGeneration[args.generation_str.upper()]
+    model.set_plugin_generation(specified_generation)
+
+    if args.plugin_key is None:
+        return
+
+    found_plugin = model.find_plugin(args.plugin_key, specified_generation)
+    if found_plugin is None:
+        _LOG.warning(f"Could not find plugin with key {args.plugin_key!r}")
+        return
+
+    if args.tasks:
+        tasks = tuple(str(t) for t in args.tasks)
+
+        model.sig_notify.connect(
+            functools.partial(
+                _send_startup_tasks,
+                tasks=tasks,
+                deadline=time.monotonic() + _STARTUP_TASKS_TIMEOUT_S,
+            ),
+            QtCore.Qt.ConnectionType.SingleShotConnection,
+        )
+
+    model.load_plugin(found_plugin)
 
 
 def _send_startup_tasks(app_model: AppModel, tasks: tuple[str, ...], deadline: float) -> None:
