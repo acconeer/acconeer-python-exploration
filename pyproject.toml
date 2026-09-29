@@ -406,6 +406,10 @@ markers = [
     "devsite: Tests related to devsite"
 ]
 
+[tool.coverage.run]
+# Naming any value replaces the default, thread, so thread is named too.
+concurrency = ["multiprocessing", "thread"]
+
 [tool.coverage.report]
 include = [ "src/*", "user_tools/*", "examples/*" ]
 skip_covered = true
