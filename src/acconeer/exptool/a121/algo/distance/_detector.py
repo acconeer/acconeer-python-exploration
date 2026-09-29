@@ -80,6 +80,7 @@ PRF_REMOVED_ET_VERSION = Version("v7.13.2")
 _NOISE_CALIBRATION_SUBSWEEP_PARAMS = (
     "profile",
     "receiver_gain",
+    "hwaas",
 )
 
 
