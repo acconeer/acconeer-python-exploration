@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -595,7 +595,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
             alerts["sensor"].append(
                 et.configbase.Warning(
                     "noise_level_normalization",
-                    ("Enabling noise level normalization is\n" "recommended with Fixed threshold"),
+                    ("Enabling noise level normalization is\nrecommended with Fixed threshold"),
                 )
             )
 

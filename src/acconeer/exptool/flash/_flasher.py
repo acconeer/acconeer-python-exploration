@@ -70,7 +70,7 @@ def _query_yes_no(question: str, default: str = "yes") -> bool:
         elif choice in valid:
             return valid[choice]
         else:
-            print("Please respond with 'yes' or 'no' " "(or 'y' or 'n').\n")
+            print("Please respond with 'yes' or 'no' (or 'y' or 'n').\n")
 
 
 def _flasher_progress_callback(progress: int, end: bool = False) -> None:

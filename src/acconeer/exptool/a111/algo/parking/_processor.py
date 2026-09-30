@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import numpy as np
@@ -193,8 +193,7 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         updateable=True,
         order=4,
         help=(
-            "Car detection criterion parameter: "
-            "Minimal value of the weights in the detector queue"
+            "Car detection criterion parameter: Minimal value of the weights in the detector queue"
         ),
     )
 

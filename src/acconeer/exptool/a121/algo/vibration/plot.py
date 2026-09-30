@@ -418,8 +418,7 @@ class VibrationPlot:
         def cell_style(highlight: bool, extra: str = "") -> str:
             bg = f" background-color: {HIGHLIGHT_BG_COLOR};" if highlight else ""
             return (
-                f"border: 1px solid {BORDER_COLOR}; padding: 5px;"
-                f" white-space: nowrap;{extra}{bg}"
+                f"border: 1px solid {BORDER_COLOR}; padding: 5px; white-space: nowrap;{extra}{bg}"
             )
 
         # Header row

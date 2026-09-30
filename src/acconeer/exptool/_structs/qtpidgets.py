@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import contextlib
@@ -172,11 +172,7 @@ class PidgetStub(Pidget):
 
         self.setStyleSheet(
             (
-                "#frame {{"
-                "background-color: #{};"
-                "border: 1px solid lightgrey;"
-                "border-radius: 3px;"
-                "}}"
+                "#frame {{background-color: #{};border: 1px solid lightgrey;border-radius: 3px;}}"
             ).format(bg)
         )
         self.alert_label.setText(alert.msg)

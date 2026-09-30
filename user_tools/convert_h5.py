@@ -1451,9 +1451,9 @@ class A121ProcessedData:
         self,
         processed_data: surface_velocity.ExampleAppResult,
     ) -> None:
-        self.processed_data.setdefault("velocity", []).append(f"{processed_data.velocity :.3f}")
+        self.processed_data.setdefault("velocity", []).append(f"{processed_data.velocity:.3f}")
         self.processed_data.setdefault("distance_m", []).append(
-            f"{processed_data.distance_m :.3f} m"
+            f"{processed_data.distance_m:.3f} m"
         )
 
     def presence_result_as_row(self, processed_data: presence.DetectorResult) -> None:

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -147,7 +147,7 @@ class DetectorConfig(AlgoConfigBase):
                 a121.ValidationWarning(
                     self,
                     "num_points",
-                    "Several depths measured, " "measures of different objects might be reported.",
+                    "Several depths measured, measures of different objects might be reported.",
                 )
             )
 

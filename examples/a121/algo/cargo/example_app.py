@@ -100,7 +100,7 @@ def main():
                 result_str = "Presence detected"
             else:
                 result_str = "Presence not detected"
-        print(f"Running detector: {example_app_result.mode.name}\n" f"{result_str}\n")
+        print(f"Running detector: {example_app_result.mode.name}\n{result_str}\n")
 
         try:
             pg_process.put_data(example_app_result)

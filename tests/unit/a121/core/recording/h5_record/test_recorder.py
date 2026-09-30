@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -45,9 +45,9 @@ def assert_record_equals(record_a: a121.Record, record_b: a121.Record) -> None:
                 attr_a = list(attr_a)
                 attr_b = list(attr_b)
 
-            assert (
-                attr_a == attr_b
-            ), f".{attr} in session {session_idx} differs:\n{attr_a},\n{attr_b}"
+            assert attr_a == attr_b, (
+                f".{attr} in session {session_idx} differs:\n{attr_a},\n{attr_b}"
+            )
 
 
 def test_init_defaults_with_path(tmp_file_path: Path) -> None:

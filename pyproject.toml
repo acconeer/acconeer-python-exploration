@@ -72,7 +72,7 @@ app = [
 ]
 
 [dependency-groups]
-lint = ["ruff==0.4.8"]
+lint = ["ruff==0.16.10"]
 
 [tool.hatch.build.targets.wheel]
 packages = [
@@ -272,7 +272,9 @@ namespace-packages = ["src/acconeer"]
 [tool.ruff.lint]
 preview = true
 explicit-preview-rules = true
-# "extend" here adds to the ruff defaults, rather than replacing.
+# The default rules of ruff before 0.16, which made them much broader.
+select = ["E4", "E7", "E9", "F"]
+# "extend" here adds to the selection above, rather than replacing.
 # See the full list on https://docs.astral.sh/ruff/rules
 #
 # Q = flake8-quotes

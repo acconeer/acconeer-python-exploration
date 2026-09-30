@@ -2136,7 +2136,7 @@ class Threaded_Scan(QtCore.QThread):
                 traceback.print_exc()
                 self._emit(
                     "client_error",
-                    "Failed to setup streaming!\n" "{}".format(self.format_error(e)),
+                    "Failed to setup streaming!\n{}".format(self.format_error(e)),
                 )
                 self.running = False
 

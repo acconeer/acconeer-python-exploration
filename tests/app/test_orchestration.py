@@ -123,9 +123,9 @@ def test_plugin_runs_startup_tasks(
         exit_code = qapp.exec()
 
     assert not set(mp.active_children()) - children_before, "The backend outlived the app"
-    assert (
-        model.num_errors == 0
-    ), f"{model.num_errors} errors, see the captured output.{reproduce_hint(et_opts)}"
+    assert model.num_errors == 0, (
+        f"{model.num_errors} errors, see the captured output.{reproduce_hint(et_opts)}"
+    )
     if exit_code == TIMEOUT_HAPPENED_RETURNCODE:
         pytest.fail(
             f"The tasks did not finish within {_EXEC_TIMEOUT_S} s.{reproduce_hint(et_opts)}"

@@ -86,7 +86,7 @@ def get_output(parameter_set=None, processor_modifier=None):
 
 def get_output_precalibrated(parameter_set=None):
     if parameter_set.get("threshold_type") != ProcessingConfiguration.ThresholdType.RECORDED:
-        pytest.skip(f'Test is N/A with threshold_type={parameter_set.get("threshold_type")}')
+        pytest.skip(f"Test is N/A with threshold_type={parameter_set.get('threshold_type')}")
 
     def calibration_updater(processor):
         calibration = DistanceDetectorCalibration.load(HERE / "calibration.npy")

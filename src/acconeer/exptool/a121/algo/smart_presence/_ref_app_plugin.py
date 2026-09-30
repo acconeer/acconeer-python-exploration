@@ -352,7 +352,7 @@ class PlotPlugin(PgPlotPlugin):
                 "Green background indicates active"
             )
         else:
-            title = "Nominal config<br>" "Detection type: fast (orange), slow (blue), both (green)"
+            title = "Nominal config<br>Detection type: fast (orange), slow (blue), both (green)"
 
         self.nominal_sector_plot, self.nominal_sectors = self.create_sector_plot(
             title,
