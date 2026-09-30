@@ -1,139 +1,130 @@
 # CLAUDE.md
 
-Everything below is a claim about the repo as it stands, and a stale claim is
-worse than none — it gets trusted and acted on. Fix an invalidated claim in the
-**same commit** as the change, and verify new ones by running them. Most likely
-to rot: the Hatch scripts, the `internal_tools/` checkers, the `Jenkinsfile`
-stages, the test layout, the per-algorithm file split.
+Everything below is a claim about the repo; a stale one is worse than none,
+since it gets trusted. Fix an invalidated claim in the **same commit** as the
+change, and verify new ones by running them. Most likely to rot: the Hatch
+scripts, the `internal_tools/` checkers, the `Jenkinsfile` stages, the test
+layout, the per-algorithm file split.
 
 ## Commands
 
-Everything goes through [Hatch](https://hatch.pypa.io/) envs in
+Everything runs through [Hatch](https://hatch.pypa.io/) envs in
 `pyproject.toml`; `noxfile.py` only prints the Hatch equivalent. Without
-`hatch` on PATH, run `uvx --exclude-newer <date> --from hatch==<pin> hatch`
-with the date and pin from `docker/Dockerfile`, passing the date as the flag,
-not `UV_EXCLUDE_NEWER`, which hatch's envs inherit.
+`hatch` on PATH, run `uvx --exclude-newer <date> hatch@<pin>` with the date and
+pin from `docker/Dockerfile`. Pass the date as the flag, not as
+`UV_EXCLUDE_NEWER`, which hatch's envs inherit.
 
 | Command | Purpose |
 |---|---|
-| `hatch check code`, `hatch check fmt` | The lint gate — what CI and the pre-push hook run. Much more than ruff; see below. |
+| `hatch check code`, `hatch check fmt` | The lint gate, run by CI and the pre-push hook (install: `internal_tools/install-git-hooks.sh`). More than ruff; see below. |
 | `hatch check code --fix`, `hatch check fmt --fix` | Auto-fix: copyright years, example-script doc pages, `ruff check --fix`, `ruff format`. |
-| `hatch run mypy:check` | Type check — pinned mypy on the oldest supported Python; see the `mypy` env in `pyproject.toml`. |
-| `hatch test` | Tests across the Python matrix in `pyproject.toml`. Extra args pass to pytest; `-py=<version>` picks one interpreter. |
-| `hatch test --update-outputs tests/processing/test_processing.py -k distance` | Regenerate one algorithm's regression baselines. |
+| `hatch run mypy:check` | Pinned mypy on the oldest supported Python (`mypy` env). |
+| `hatch test tests/ src/` | Tests on one interpreter of the matrix in `pyproject.toml`; `-py=<version>` picks it. Without paths, collecting `examples/` fails. Extra args pass to pytest. |
+| `hatch test --update-outputs tests/processing/test_processing.py -k "distance_processor or distance_detector"` | Regenerate one algorithm's regression baselines. `-k` also matches input file names. |
 | `hatch run docs:html` | Build docs. `docs:autobuild` live-reloads; `docs:build` is the CI gate. |
 | `hatch run app:new` | Launch the GUI. |
 
 Test-running traps:
 
-- `tests/integration/` and `tests/model/` only run when given CLI paths to RSS
-  artifacts (`--a121-exploration-server-paths` and friends, see
-  `tests/cli_options.py`). Without them every test **skips**,
-  so a green run exercised nothing — only CI, which fetches the binaries, runs
-  them for real.
-- `tests/processing/`'s only test module is `test_processing.py`, which
+- `tests/integration/` and `tests/model/` need CLI paths to RSS artifacts
+  (`--a121-exploration-server-paths` and friends, see `tests/cli_options.py`).
+  Without them nearly every test **skips**, so a green run proves almost
+  nothing; only CI, which fetches the binaries, runs them for real.
+- `tests/processing/`'s only A121 test module is `test_processing.py`, which
   parametrizes over factory functions in `tests/processing/a121/<algo>_test.py`.
-  Despite the names those are helpers with no test functions — pointing pytest
-  at one collects nothing.
-- Default `addopts` ignores `a111` and `tests/gui`, and the test env adds
-  `--doctest-modules`, making the examples in `type_migration`'s module
-  docstring executable tests — pass `src/` explicitly (as CI does) to collect
-  them.
+  Despite the names those hold no tests, so pytest on one collects nothing.
+- Default `addopts` ignores `tests/gui` and A111's source, not its tests. The
+  test env's `--doctest-modules` makes the examples in `type_migration`'s module
+  docstring tests, collected only when `src/` is passed, as CI does.
 - `tests/flash/test_devsite.py` needs `--test-devsite` and credentials.
-- `internal_tools/install-git-hooks.sh` installs the pre-push
-  `hatch check code && hatch check fmt`.
 
 ## The lint gate is more than ruff
 
-`hatch check code` also runs bespoke checkers from `internal_tools/`, covering
-repo obligations nothing in a diff would hint at:
+`hatch check code` also runs `internal_tools/` checkers:
 
-- **Copyright headers** — `# Copyright (c) Acconeer AB, <years>` /
-  `# All rights reserved` in every `.py` file. Two traps: the checker looks only
-  at files touched by **HEAD's commit**, not the working tree, so
-  `hatch check code --fix` won't add a header to an uncommitted new file — use
-  `python internal_tools/check_copyright.py --update-year --all-files`. And the
-  year it wants is HEAD's *commit* year, so old commits stay green.
-- **Changelog roles** — user-visible changes go in `UNRELEASED_CHANGELOG.md`;
-  `CHANGELOG.md` is rewritten only at release. The checker only guards that the
-  two keep their roles; nothing fails for a missing entry.
-- **Prose line length** in `CHANGELOG.md`, `UNRELEASED_CHANGELOG.md`,
-  `LICENSE.md` — the cap is `[tool.check_line_length]` in `pyproject.toml`.
-  Other Markdown is unchecked.
+- **Copyright headers** `# Copyright (c) Acconeer AB, <years>` /
+  `# All rights reserved` in every `.py` file. The checker reads only files
+  **HEAD's commit** touched (plus `docs/conf.py`), not the working tree, so
+  `hatch check code --fix` won't add a header to an uncommitted new file: commit
+  it, then fix and amend. It wants HEAD's *commit* year, so old commits stay
+  green.
+- **Changelog roles**: user-visible changes go in `UNRELEASED_CHANGELOG.md`, and
+  `CHANGELOG.md` is rewritten only at release. The checker only guards these
+  roles; a missing entry fails nothing.
+- **Prose line length** in `CHANGELOG.md`, `UNRELEASED_CHANGELOG.md` and
+  `LICENSE.md`, capped by `[tool.check_line_length]` in `pyproject.toml`. Other
+  Markdown is unchecked.
 - **SDK version consistency** across `README.md`, `docs/**/*.rst`,
   `Jenkinsfile`, and the app's resource tab.
-- **Generated doc pages** — adding or renaming an example script requires
+- **Generated doc pages**: adding or renaming an example script requires
   `python docs/generate_example_script_pages.py fix`.
 
-The `:glob:` ban in Sphinx toctrees is *not* in this gate — it's
-`hatch run docs:lint`, and stubbed out on Windows.
+The Sphinx toctree `:glob:` ban is *not* in this gate but in
+`hatch run docs:lint`, which is stubbed out on Windows.
 
 ## Architecture
 
-**A121 is the active generation and where new work belongs.** A111 is legacy —
-excluded from mypy, ignored by the default pytest run, exempted from several
-ruff rule groups. Same split for `app/new` vs `app/old`. Don't extend the
-legacy side unless asked.
+**New work belongs in A121.** A111 is legacy: excluded from mypy and from
+doctest collection, exempted from several ruff rule groups. `app/old` is legacy
+too; use `app/new`. Don't extend the legacy side unless asked.
 
 `_core/` is generation-agnostic plumbing (links, message stream, the generic
 `Client` base, h5 recording); `a121/_core/` builds entities, the exploration
 protocol and recording on top of it. Import from the public
 `acconeer.exptool.a121`, not the underscore submodules.
 
-**Every `a121/algo/<name>/` follows the same file split** — knowing it once
-saves reading any of them: `_processors.py` (per-frame Sparse IQ processing),
-`_detector.py` (owns a `Client`, drives the session), `_configs.py` plus
-`_context.py`/`_thresholds.py` where calibration is involved,
-`_detector_plugin.py` (GUI wiring), `_views.py` + `_pidget_mapping.py` (config
-editor widgets). Bases in `algo/_base.py`; copy `distance/` or `presence/`.
+**`a121/algo/<name>/` comes in two shapes.** The detectors (`distance/`,
+`presence/`, `obstacle/`, `speed/`) split into `_processors.py` (per-frame
+Sparse IQ processing), `_detector.py` (owns a `Client`, drives the session) and
+`_detector_plugin.py` (GUI wiring), plus `_pidget_mapping.py` (config editor
+widgets) in `distance/` and `presence/`; only `distance/` splits calibration
+into `_context.py` and `_thresholds.py`. The rest are apps: a `*_plugin.py`,
+mostly over a `_processor(s).py` of their own. Bases in `algo/_base.py`; copy
+`distance/` or `presence/` for a detector.
 
 **The app runs in two processes.** `MpBackend` (`app/new/backend/_backend.py`)
 runs the `Model` in a `multiprocessing.Process`, exchanging `Task`/`Message`
-over queues, while `AppModel` lives in the Qt process. Anything crossing must
-be picklable, and backend errors surface as a `ClosedTask`, not a traceback. A
+over queues; `AppModel` lives in the Qt process. Anything crossing must be
+picklable, and backend errors surface as a `ClosedTask`, not a traceback. A
 plugin is a backend + view + plot triplet from a `PluginSpec`.
 
 **Recordings are a compatibility surface.** `opser/` does h5
 (de)serialization; `type_migration/` keeps configs in *old* recordings loadable
-as classes evolve — changing a persisted config is a migration, not an edit;
+as classes evolve, so changing a persisted config is a migration, not an edit;
 read its module docstring first. `_ReplayingClient` replays a record through
-the `Client` interface, so examples and `tests/processing/` need no hardware.
+the `Client` interface, so `tests/processing/` needs no hardware.
 
 Tests: `unit/`, `processing/` (algorithm regression; baselines in
-`a121/data_files/expected_output/`), `app/` (Qt), `integration/` (real RSS
-server), `model/` (power/memory vs RSS limits), `package/`, `environment/`.
+`a121/data_files/expected_output/`), `app/` (Qt), `examples/`, `integration/`
+(real RSS server), `model/` (power/memory vs RSS limits), `package/`,
+`environment/`, `flash/`.
 
 ## Reuse before you add
 
-The algorithm directories solve overlapping problems, so almost anything you
-are about to write probably exists already — search first. Signal-processing
-and sensor-config helpers belong in `a121/algo/_utils.py` (peak finding and
+The algorithms overlap: search before writing. Signal-processing and
+sensor-config helpers belong in `a121/algo/_utils.py` (peak finding and
 interpolation, distance and velocity axes, filter coefficients, PRF and profile
-selection, temperature compensation, frame-rate estimation); the
-extended-structure (group → sensor → entry) manipulation that configs and
-results are full of belongs in `a121/_core/utils.py`. Subclass the bases in
-`algo/_base.py`, and assemble config editors from the existing pidget factories
-in `app/new/ui/components/pidgets/` plus `AttrsConfigEditor` — a hand-rolled
-widget for a config field is nearly always the wrong answer. When something
-genuinely is missing, extend the shared module rather than adding a private
-copy next to the one caller.
+selection, temperature compensation, frame-rate estimation), and
+extended-structure (group → sensor → entry) manipulation in
+`a121/_core/utils.py`. Subclass the bases in `algo/_base.py`, and build config
+editors from the pidget factories in `app/new/ui/components/pidgets/` plus
+`AttrsConfigEditor`; hand-rolled config-field widgets are rarely right. When
+something is missing, extend the shared module rather than add a private copy
+next to the one caller.
 
 ## Conventions
 
-Ruff names its own rules on violation. What it won't tell you: `Self`,
-`ParamSpec`, `Protocol` and friends are imported from `typing_extensions`
-(as `import typing_extensions as te`) throughout, even though the
-`requires-python` floor now covers native equivalents for all of them —
-that's existing house style, not a version constraint, and untangling it is
-separate follow-up work. `attrs` value objects carrying `numpy.typing`
-annotations are the house style too.
+Code you write or change uses native typing (`X | None`, and `Self`,
+`ParamSpec`, `Protocol` and friends from `typing`); untouched lines keep `te.`
+(`typing_extensions`). `attrs` value objects with `numpy.typing` annotations
+are house style.
 
 ## Pointers
 
-- `.claude/skills/code-review-local/` — repo review skill with
+- `.claude/skills/code-review-local/`: repo review skill with
   signal-processing dimensions.
-- `Jenkinsfile` — three build scopes (sanity / hourly / nightly) differing in
+- `Jenkinsfile`: three build scopes (sanity / hourly / nightly) differing in
   Python and RSS versions.
-- `docker/Dockerfile` — `ci`, the default target, is what Jenkins builds, and
-  `dev` takes `UID`/`GID` build args for a devcontainer.
+- `docker/Dockerfile`: `ci`, the default target, is what Jenkins builds; `dev`
+  takes `UID`/`GID` build args for a devcontainer.
 - Published docs: <https://docs.acconeer.com>, built from `docs/`.
