@@ -34,6 +34,9 @@
 
 ### Fixed
 
+- Installs no longer pick an h5py release built against NumPy 1,
+  which fails to import with NumPy 2.
+
 ### Removed
 
 - Support for Python 3.9, 3.10 & 3.11
