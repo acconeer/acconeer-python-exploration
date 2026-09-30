@@ -34,8 +34,8 @@
 
 ### Fixed
 
-- Installs no longer pick an h5py release built against NumPy 1,
-  which fails to import with NumPy 2.
+- Installs no longer pick an h5py or pandas release built against
+  NumPy 1, which fails to import with NumPy 2.
 
 ### Removed
 

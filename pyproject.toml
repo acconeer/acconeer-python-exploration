@@ -31,7 +31,7 @@ dependencies = [
     "h5py>=3.11,<4",
     "libusb_package==1.0.30.0",
     "numpy>=1.20",
-    "pandas>=1.3.5",
+    "pandas>=2.2.2",
     "packaging",
     "platformdirs",
     "pyserial>=3.5",
@@ -105,7 +105,7 @@ features = ["app"]
 dependencies = [
     "mypy==1.14.1",
     "pytest==7.2",
-    "pandas==2.1.1",
+    "pandas==2.2.2",
     "pandas-stubs",
     "PySide6==6.8.3",
     "pyqtgraph==0.13.7",
@@ -125,7 +125,7 @@ check = "python -m mypy {args}"
 features = ["app"]
 extra-args = ["--doctest-modules"]
 extra-dependencies = [
-    "pandas>=1.3.5",
+    "pandas>=2.2.2",
     "dirty-equals==0.5.0",
     "pytest-timeout",
     "hypothesis",
