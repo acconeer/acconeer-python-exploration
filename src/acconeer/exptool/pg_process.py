@@ -14,6 +14,8 @@ _MISSING = object()
 class PGProcess:
     def __init__(self, updater, max_freq=_MISSING, setup_style="layout", allow_subsampling=True):
         self._queue = mp.Queue()
+        # Exit without waiting for a lagging plot to read its queued data.
+        self._queue.cancel_join_thread()
         self._exit_event = mp.Event()
 
         if max_freq is _MISSING and not allow_subsampling:

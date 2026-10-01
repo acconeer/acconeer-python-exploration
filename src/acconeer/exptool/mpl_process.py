@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import contextlib
@@ -15,6 +15,8 @@ from matplotlib.animation import FuncAnimation
 class PlotProcess:
     def __init__(self, fig_updater, interval=10):
         self._queue = mp.Queue()
+        # Exit without waiting for a lagging plot to read its queued data.
+        self._queue.cancel_join_thread()
         self._exit_event = mp.Event()
 
         args = (

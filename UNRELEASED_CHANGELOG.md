@@ -39,6 +39,8 @@
 
 - Installs no longer pick an h5py or pandas release built against
   NumPy 1, which fails to import with NumPy 2.
+- A script using `PGProcess` or `PlotProcess` no longer hangs on exit when
+  its plot has fallen behind.
 
 ### Removed
 
