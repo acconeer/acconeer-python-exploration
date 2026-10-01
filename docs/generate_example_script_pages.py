@@ -12,18 +12,19 @@ AUTOGEN_COMMENT = ".. This document was automatically generated with the script 
 
 
 def script_docpage_contents(docpage_path: Path, et_root: Path, script_path: Path) -> str:
-    header_line = "#" * len(str(script_path))
-    include_path = _path_to_ancestor(docpage_path.parent, et_root) / script_path
+    script_path_str = script_path.as_posix()
+    header_line = "#" * len(script_path_str)
+    include_path = document_include_path(docpage_path.parent, et_root, script_path)
     return f"""{AUTOGEN_COMMENT}
 
 {header_line}
-{str(script_path)}
+{script_path_str}
 {header_line}
 
 .. literalinclude:: {include_path}
    :linenos:
 
-View this example on GitHub: `<https://github.com/acconeer/acconeer-python-exploration/tree/master/{script_path}>`_
+View this example on GitHub: `<https://github.com/acconeer/acconeer-python-exploration/tree/master/{script_path_str}>`_
 """
 
 
@@ -44,14 +45,14 @@ def index_docpage_contents(category: str) -> str:
 """
 
 
-def document_include_path(document_dir_path: Path, et_root: Path, script_path: Path) -> Path:
+def document_include_path(document_dir_path: Path, et_root: Path, script_path: Path) -> str:
     """The path that will be the argument to a ..literalinclude:: directive"""
-    return _path_to_ancestor(document_dir_path, et_root) / script_path
 
+    def _path_to_ancestor(path: Path, parent: Path) -> Path:
+        assert path.is_dir() and parent.is_dir()
+        return Path("./") if path == parent else _path_to_ancestor(path.parent, parent) / ".."
 
-def _path_to_ancestor(path: Path, parent: Path) -> Path:
-    assert path.is_dir() and parent.is_dir()
-    return Path("./") if path == parent else _path_to_ancestor(path.parent, parent) / ".."
+    return (_path_to_ancestor(document_dir_path, et_root) / script_path).as_posix()
 
 
 def example_script_category(example_script_path: Path) -> str:
@@ -70,7 +71,7 @@ def example_script_docpage_path(example_script_path: Path) -> Path:
     """Return a path, relative to 'docpages_root', where a script's docpage should be located"""
 
     dst_dir = Path(example_script_category(example_script_path))
-    return dst_dir / str(example_script_path.with_suffix(".rst")).replace("/", "-")
+    return dst_dir / "-".join(example_script_path.with_suffix(".rst").parts)
 
 
 def main() -> None:
@@ -161,13 +162,13 @@ def main() -> None:
         for index_path in missing_category_indexes:
             index_path.parent.mkdir(parents=True, exist_ok=True)
             print(f"Writing {index_path}")
-            index_path.write_text(index_docpage_contents(index_path.parent.name))
+            index_path.write_text(index_docpage_contents(index_path.parent.name), newline="\n")
 
         for script_path, docpage_path in missing_docpages.items():
             docpage_path.parent.mkdir(parents=True, exist_ok=True)
             print(f"Writing {script_path} to {docpage_path}")
             docpage_path.write_text(
-                script_docpage_contents(docpage_path, args.et_root, script_path)
+                script_docpage_contents(docpage_path, args.et_root, script_path), newline="\n"
             )
 
         print("All examples script docpages are up to date!")
