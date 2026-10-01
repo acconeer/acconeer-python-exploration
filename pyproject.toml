@@ -353,9 +353,9 @@ exclude = [
     "src/acconeer/exptool/flash/_device_flasher_base.py",
     "src/acconeer/exptool/_tests/.*",
     "src/acconeer/exptool/utils.py",
-    "src/acconeer/exptool/mpl_process.py",
+    "src/acconeer/exptool/_processes/mpl_process.py",
     "src/acconeer/exptool/libft4222.py",
-    "src/acconeer/exptool/pg_process.py",
+    "src/acconeer/exptool/_processes/pg_process.py",
     "src/acconeer/exptool/_bs_thread.py",
 ]
 check_untyped_defs = true
