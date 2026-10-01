@@ -8,6 +8,7 @@ import typing as t
 import pytest
 
 import acconeer.exptool.testing
+from acconeer.exptool._processes.start_method import avoid_fork
 
 
 PYTEST_XDIST_MAX_NUM_PROCESSES = 4
@@ -24,6 +25,10 @@ def pytest_xdist_auto_num_workers(config: t.Any) -> int:
     # [2] https://hatch.pypa.io/dev/tutorials/testing/overview/#parallelize-test-execution
     num_cpus = os.cpu_count() or 1
     return min(num_cpus, PYTEST_XDIST_MAX_NUM_PROCESSES)
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    avoid_fork(preload=["acconeer.exptool.app.new.backend"])
 
 
 def _validate_parametrization(iterable: t.Sized, err_msg: str) -> t.Sized:

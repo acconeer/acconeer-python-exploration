@@ -16,6 +16,7 @@ import traceback
 import typing as t
 from pathlib import Path
 
+from acconeer.exptool._processes.start_method import avoid_fork
 from acconeer.exptool.app.install_missing_app_extra import INSTALL_MISSING_APP_EXTRA_INSTRUCTIONS
 from acconeer.exptool.utils import config_logging
 
@@ -63,6 +64,7 @@ def main() -> None:
     parser = _ExptoolArgumentParser()
     args = parser.parse_args()
     config_logging(args)
+    avoid_fork(preload=["acconeer.exptool.app.new.backend"])
 
     if args.tasks:
         any_autoconnect = (
