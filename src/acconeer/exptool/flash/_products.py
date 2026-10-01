@@ -1,6 +1,7 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
+from acconeer.exptool._artifact_repository import Artifact
 from acconeer.exptool.flash._bootloader_tool import (
     XC120_BOOTLOADER_PID,
     XC120_EXPLORATION_SERVER_WINUSB_PID,
@@ -33,4 +34,8 @@ EVK_TO_PRODUCT_MAP = {
     "XM126": "XM126",
 }
 
-EVKS_THAT_HAVE_FW_ON_DEVSITE = ["XC120", "XM125", "XM126"]
+PRODUCT_NAME_TO_ARTIFACT = {
+    "XC120": Artifact.XC120_EXPLORATION_SERVER,
+    "XM125": Artifact.XM125_EXPLORATION_SERVER,
+    "XM126": Artifact.XM126_EXPLORATION_SERVER,
+}

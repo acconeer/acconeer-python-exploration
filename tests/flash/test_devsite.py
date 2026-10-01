@@ -14,7 +14,8 @@ import typing as t
 import bs4
 import pytest
 
-from acconeer.exptool import flash
+from acconeer.exptool._artifact_repository import Artifact, DevSiteRepository, LoginRequiredError
+from acconeer.exptool.flash import DevLicense
 
 
 # Marks all tests in this file as "devsite"
@@ -39,24 +40,33 @@ def valid_credentials(is_running_in_ci: bool) -> tuple[str, str]:
 
 def test_login_succeeds_with_valid_credentials(valid_credentials: tuple[str, str]) -> None:
     (username, password) = valid_credentials
-    cookiejar = flash.login(username, password)
-    assert cookiejar is not None
+    repo = DevSiteRepository(cookies=None)
+    repo.login(username, password)
+    assert repo.has_logged_in_previously()
 
 
 def test_login_fails_with_invalid_credentials() -> None:
-    cookiejar = flash.login("example@acconeer.com", "this_is_not_a_real_password")
-    assert cookiejar is None
+    repo = DevSiteRepository(cookies=None)
+    repo.login("example@acconeer.com", "this_is_not_a_real_password")
+    assert not repo.has_logged_in_previously()
+
+
+def test_download_raises_login_required_without_a_valid_session() -> None:
+    repo = DevSiteRepository(cookies=None)
+    with pytest.raises(LoginRequiredError):
+        repo.download(Artifact.XC120_EXPLORATION_SERVER, path=".")
 
 
 def test_cookiejar_contains_logged_in_cookie(
     valid_credentials: tuple[str, str],
 ) -> None:
     (username, password) = valid_credentials
-    cookiejar = flash.login(username, password)
-    assert cookiejar is not None
+    repo = DevSiteRepository(cookies=None)
+    repo.login(username, password)
+    assert repo.cookies is not None
 
     found = False
-    for k, v in cookiejar.items():
+    for k, v in repo.cookies.items():
         if "logged_in" in k:
             found = True
 
@@ -67,10 +77,11 @@ def test_logged_in_cookie_value_start_with_mangled_username(
     valid_credentials: tuple[str, str],
 ) -> None:
     (username, password) = valid_credentials
-    cookiejar = flash.login(username, password)
-    assert cookiejar is not None
+    repo = DevSiteRepository(cookies=None)
+    repo.login(username, password)
+    assert repo.cookies is not None
 
-    for k, v in cookiejar.items():
+    for k, v in repo.cookies.items():
         if "logged_in" in k:
             mangled_username = username.replace(".", "-").replace("@", "")
             assert v.startswith(mangled_username + "%")
@@ -80,7 +91,7 @@ def test_logged_in_cookie_value_start_with_mangled_username(
 
 
 def test_license_subheader_element_is_not_the_literal_string_none() -> None:
-    license = flash.DevLicense()
+    license = DevLicense()
     license.load()
     assert license.html is not None, "Could not fetch the license page from production."
 
@@ -96,7 +107,7 @@ def test_license_content_elements_contains_the_full_agreement_text() -> None:
     accidentally filtering out every paragraph (as opposed to truly having
     no content) is easy to tell apart from a short fallback message.
     """
-    license = flash.DevLicense()
+    license = DevLicense()
     license.load()
     assert license.html is not None, "Could not fetch the license page from production."
 
@@ -151,7 +162,7 @@ def test_license_content_elements_has_one_section_per_heading() -> None:
     APPLICABLE LAW", plus its "IMPORTANT-READ CAREFULLY:" preamble and its
     subheader: 13 headings in total, each owning at least its own text.
     """
-    license = flash.DevLicense()
+    license = DevLicense()
     license.load()
     assert license.html is not None, "Could not fetch the license page from production."
 

@@ -10,29 +10,33 @@ import tempfile
 import time
 import typing as t
 
+from acconeer.exptool._artifact_repository import (
+    ArtifactRepository,
+    DevSiteRepository,
+    LoginRequiredError,
+)
 from acconeer.exptool._core.communication import comm_devices
 from acconeer.exptool._core.communication.links.usb_link import UsbPortError
-from acconeer.exptool.flash._bin_fetcher import (
-    BIN_FETCH_PROMPT,
-    clear_cookies,
-    download,
-    get_content,
-    get_cookies,
-    is_redirected_to_login_page,
-    login,
-    save_cookies,
-)
 from acconeer.exptool.flash._bootloader_tool import BootloaderTool
 from acconeer.exptool.flash._flash_exception import FlashException
 from acconeer.exptool.flash._products import (
     EVK_TO_PRODUCT_MAP,
-    EVKS_THAT_HAVE_FW_ON_DEVSITE,
+    PRODUCT_NAME_TO_ARTIFACT,
     PRODUCT_NAME_TO_FLASH_MAP,
     PRODUCT_PID_TO_FLASH_MAP,
 )
 
 from ._dev_license import DevLicense
 from ._dev_license_tui import DevLicenseTuiDialog
+
+
+BIN_FETCH_PROMPT = (
+    "To fetch the latest image you need to log into your Acconeer Developer account.\n\n"
+    "If you don't have an account you can create one here:\n"
+    "https://developer.acconeer.com/create-account/ \n\n"
+    "Lost your password? Recover it here:\n"
+    "https://developer.acconeer.com/recover-password/"
+)
 
 
 def _query_yes_no(question: str, default: str = "yes") -> bool:
@@ -223,99 +227,101 @@ def get_post_dfu_description(
 def is_fw_downloadable(device_name: str) -> bool:
     device_name_upper = device_name.upper()
     if device_name_upper in EVK_TO_PRODUCT_MAP:
-        return EVK_TO_PRODUCT_MAP[device_name_upper] in EVKS_THAT_HAVE_FW_ON_DEVSITE
+        return EVK_TO_PRODUCT_MAP[device_name_upper] in PRODUCT_NAME_TO_ARTIFACT
     return False
 
 
 def _fetch_and_flash(args: argparse.Namespace) -> None:
     flash_device = _get_flash_device_from_args(args)
 
-    cookies = get_cookies()
-    new_login = False
-    login_succeed = False
-    while login_succeed is False:
-        if cookies is None:
+    devsite: ArtifactRepository = DevSiteRepository.from_saved_login()
+    remember_me = False
+    asked_to_remember_me = False
+
+    def _ensure_logged_in() -> None:
+        nonlocal remember_me, asked_to_remember_me
+
+        print("\nLogging in... ", end="", flush=True)
+        print("[OK]" if devsite.has_logged_in_previously() else "[Error]")
+
+        while not devsite.has_logged_in_previously():
             print("\n" + BIN_FETCH_PROMPT)
             email = input("\nEmail: ")
             password = getpass.getpass("Password: ")
-            new_login = True
-            cookies = login(email, password)
+            if not asked_to_remember_me:
+                remember_me = _query_yes_no(
+                    "\nWe use cookies to optimize the service of our applications."
+                    "\n\nCookie Policy: https://acconeer.com/cookie-policy-eu/"
+                    "\nPrivacy Statement: https://developer.acconeer.com/privacy-policy/"
+                    "\n\nSelecting yes to the following question will store a cookie on "
+                    "your computer:"
+                    "\nRemember me?"
+                )
+                asked_to_remember_me = True
+            devsite.login(email, password, remember_me=remember_me)
 
-        print("\nLogging in... ", end="", flush=True)
-        login_succeed, session, page = get_content(cookies)
-        if not login_succeed:
-            cookies = None
-            print("[Error]")
-
-            if is_redirected_to_login_page(page):
+            print("\nLogging in... ", end="", flush=True)
+            if not devsite.has_logged_in_previously():
+                print("[Error]")
                 print(
                     "Request failed. Try downloading the image directly "
                     "from https://developer.acconeer.com"
                 )
-
-        else:
-            print("[OK]")
-
-    # The loop above only exits once get_content() has confirmed cookies
-    # produced a valid, logged-in session.
-    assert cookies is not None
-
-    if new_login and _query_yes_no(
-        "\nWe use cookies to optimize the service of our applications."
-        "\n\nCookie Policy: https://acconeer.com/cookie-policy-eu/"
-        "\nPrivacy Statement: https://developer.acconeer.com/privacy-policy/"
-        "\n\nSelecting yes to the following question will store a cookie on "
-        "your computer:"
-        "\nRemember me?"
-    ):
-        save_cookies(cookies)
-
-    try:
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            print("Preparing license agreement... ", end="", flush=True)
-            license = DevLicense()
-            license.load()
-            print("[OK]")
-
-            time.sleep(1)
-            DevLicenseTuiDialog.run(log="textual.log", license=license)
-            license_accepted = DevLicenseTuiDialog.get_accept()
-
-            if license_accepted:
-                device_name = get_flash_download_name(flash_device, args.device)
-                print(f"Downloading {device_name} image file... ", end="", flush=True)
-                bin_path, version = download(
-                    session=session,
-                    cookies=cookies,
-                    path=tmp_dir,
-                    device=device_name,
-                )
-                print(f"[OK] (version: {version})")
-
-                boot_description = get_boot_description(flash_device, device_name)
-                if boot_description:
-                    boot_description = re.sub("<li>", " - ", boot_description)
-                    boot_description = re.sub("</[p|li]+?>", "\n", boot_description)
-                    boot_description = re.sub("<[^<]+?>", "", boot_description)
-                    print("\n\n" + boot_description)
-                if _query_yes_no("Proceed to flashing you device?"):
-                    print("Flashing...")
-                    flash_image(
-                        bin_path,
-                        flash_device,
-                        device_name=device_name,
-                        progress_callback=_flasher_progress_callback,
-                    )
-                post_dfu_description = get_post_dfu_description(flash_device, device_name)
-                if post_dfu_description:
-                    post_dfu_description = re.sub("<li>", " - ", post_dfu_description)
-                    post_dfu_description = re.sub("</[p|li]+?>", "\n", post_dfu_description)
-                    post_dfu_description = re.sub("<[^<]+?>", "", post_dfu_description)
-                    print("\n\n" + post_dfu_description)
             else:
-                print("You need to accept the license agreement to download the image file.")
-    finally:
-        session.close()
+                print("[OK]")
+
+    _ensure_logged_in()
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        print("Preparing license agreement... ", end="", flush=True)
+        license = DevLicense()
+        license.load()
+        print("[OK]")
+
+        time.sleep(1)
+        DevLicenseTuiDialog.run(log="textual.log", license=license)
+        license_accepted = DevLicenseTuiDialog.get_accept()
+
+        if license_accepted:
+            device_name = get_flash_download_name(flash_device, args.device)
+            print(f"Downloading {device_name} image file... ", end="", flush=True)
+            try:
+                bin_path, version = devsite.download(
+                    artifact=PRODUCT_NAME_TO_ARTIFACT[device_name],
+                    path=tmp_dir,
+                )
+            except LoginRequiredError:
+                print("[Error] Cookies have gone stale, please log in again.")
+                devsite.forget_login()
+                _ensure_logged_in()
+                bin_path, version = devsite.download(
+                    artifact=PRODUCT_NAME_TO_ARTIFACT[device_name],
+                    path=tmp_dir,
+                )
+            print(f"[OK] (version: {version})")
+
+            boot_description = get_boot_description(flash_device, device_name)
+            if boot_description:
+                boot_description = re.sub("<li>", " - ", boot_description)
+                boot_description = re.sub("</[p|li]+?>", "\n", boot_description)
+                boot_description = re.sub("<[^<]+?>", "", boot_description)
+                print("\n\n" + boot_description)
+            if _query_yes_no("Proceed to flashing you device?"):
+                print("Flashing...")
+                flash_image(
+                    bin_path,
+                    flash_device,
+                    device_name=device_name,
+                    progress_callback=_flasher_progress_callback,
+                )
+            post_dfu_description = get_post_dfu_description(flash_device, device_name)
+            if post_dfu_description:
+                post_dfu_description = re.sub("<li>", " - ", post_dfu_description)
+                post_dfu_description = re.sub("</[p|li]+?>", "\n", post_dfu_description)
+                post_dfu_description = re.sub("<[^<]+?>", "", post_dfu_description)
+                print("\n\n" + post_dfu_description)
+        else:
+            print("You need to accept the license agreement to download the image file.")
 
 
 def _flash(args: argparse.Namespace) -> None:
@@ -403,7 +409,7 @@ def main() -> None:
                 print("".join([f" - {dev}\n" for dev in serial_devices]))
         return
     elif args.operation == "clear":
-        clear_cookies()
+        DevSiteRepository(cookies=None).forget_login()
         print("Saved login session cookie deleted!\n")
     elif args.operation == "flash":
         try:

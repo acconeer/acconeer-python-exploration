@@ -34,6 +34,7 @@ from PySide6.QtWidgets import (
     QWizardPage,
 )
 
+from acconeer.exptool._artifact_repository import DevSiteRepository, LoginRequiredError
 from acconeer.exptool._core.communication.comm_devices import CommDevice
 from acconeer.exptool.app.new.app import ConnectionState
 from acconeer.exptool.app.new.app_model import AppModel
@@ -41,21 +42,15 @@ from acconeer.exptool.app.new.storage import get_temp_dir
 from acconeer.exptool.app.new.ui import icons
 from acconeer.exptool.flash import (
     DevLicense,
-    clear_cookies,
-    download,
     flash_image,
     get_boot_description,
-    get_content,
-    get_cookies,
     get_flash_download_name,
     get_flash_known_devices,
     get_post_dfu_description,
     is_fw_downloadable,
-    login,
-    save_cookies,
 )
 from acconeer.exptool.flash._dev_license import DEV_LICENSE_DEFAULT_HEADER
-from acconeer.exptool.flash._products import EVK_TO_PRODUCT_MAP
+from acconeer.exptool.flash._products import EVK_TO_PRODUCT_MAP, PRODUCT_NAME_TO_ARTIFACT
 
 from . import resources
 from .dialogs import UserMessageDialog
@@ -382,11 +377,16 @@ class LoginFormPage(QWizardPage):
     def put_login_bg_task(self) -> None:
         email = self.field(WizardField.EMAIL)
         pwd = self.field(WizardField.PASSWORD)
+        remember_me = self.field(WizardField.REMEMBER_ME)
         self.login_button.setText(self._LOGIN_BUTTON_PENDING_TEXT)
         self.login_button.setEnabled(False)
+
+        w = self.wizard()
+        assert isinstance(w, FlashWizard)
+
         BGTask.create_task(
-            login,
-            args=(email, pwd),
+            w.artifact_repository.login,
+            args=(email, pwd, remember_me),
             return_cb=self.handle_login_return,
             exception_cb=self.handle_login_exception,
         )
@@ -402,30 +402,19 @@ class LoginFormPage(QWizardPage):
         self.setField(WizardField.LOGIN_FEEDBACK_STYLESHEET, FeedbackStyleSheet.ERROR)
         self.login_button.setText(self._LOGIN_BUTTON_DEFAULT_TEXT)
 
-    def handle_login_return(self, cookies: t.Optional[requests.cookies.RequestsCookieJar]) -> None:
+    def handle_login_return(self, _login_result: None) -> None:
         self.login_button.setEnabled(True)
 
-        if cookies is None:
-            login_success = False
-            session = None
-        else:
-            (login_success, session, _) = get_content(cookies)
+        w = self.wizard()
+        assert isinstance(w, FlashWizard)
 
-        if login_success:
-            # login_success is only set above, in the branch that requires
-            # both cookies and session to be non-None.
-            assert cookies is not None
-            assert session is not None
-            obf_email = try_get_obfuscated_email_from_cookiejar(cookiejar=cookies)
-            if obf_email is None:
+        if w.artifact_repository.has_logged_in_previously():
+            user_repr = w.artifact_repository.get_user_representation()
+            if user_repr is None:
                 self.login_button.setText("Logged in")
             else:
-                self.login_button.setText(f"Logged in as {obf_email}")
+                self.login_button.setText(f"Logged in as {user_repr}")
 
-            w = self.wizard()
-            assert isinstance(w, FlashWizard)
-            w.set_cookies(cookies)
-            w.set_session(session)
             self.completeChanged.emit()
             w.next()  # Go to next page automatically
         else:
@@ -445,17 +434,7 @@ class LoginFormPage(QWizardPage):
     def isComplete(self) -> bool:
         w = self.wizard()
         assert isinstance(w, FlashWizard)
-        return w.cookies is not None
-
-    def validatePage(self) -> bool:
-        if self.field(WizardField.REMEMBER_ME):
-            w = self.wizard()
-            assert isinstance(w, FlashWizard)
-            # This page only validates once isComplete() has required cookies.
-            assert w.cookies is not None
-            save_cookies(w.cookies)
-
-        return True
+        return w.artifact_repository.has_logged_in_previously()
 
 
 class LicensePage(QWizardPage):
@@ -540,13 +519,12 @@ class DownloadPage(QWizardPage):
 
         w = self.wizard()
         assert isinstance(w, FlashWizard)
-        cookies = w.cookies
 
-        if cookies is None:
+        if not w.artifact_repository.has_logged_in_previously():
             self._forget_me_btn.setVisible(False)
         else:
             self._forget_me_btn.setVisible(True)
-            mby_obf_email = try_get_obfuscated_email_from_cookiejar(cookies)
+            mby_obf_email = w.artifact_repository.get_user_representation()
             if mby_obf_email is None:
                 self._auth_lbl.setText("Logged in.")
             else:
@@ -556,10 +534,9 @@ class DownloadPage(QWizardPage):
         return len(self.field(WizardField.BIN_PATH)) > 0
 
     def forget_me(self) -> None:
-        clear_cookies()
         w = self.wizard()
         assert isinstance(w, FlashWizard)
-        w.cookies = None
+        w.artifact_repository.forget_login()
         w.setCurrentId(_Page.LOGIN)
 
     def start_download(self) -> None:
@@ -569,28 +546,22 @@ class DownloadPage(QWizardPage):
         try:
             w = self.wizard()
             assert isinstance(w, FlashWizard)
-            cookies = w.cookies
-            session = w.session
             comm_device = w.comm_device
 
-            if cookies is None or comm_device is None:
+            if comm_device is None:
                 # Something has gone wrong, ask user to retry
                 w.setCurrentId(_Page.OOPSIE)
                 return
 
-            if session is None:
-                (login_success, session, _) = get_content(cookies)
-                w.session = session
-                if not login_success:
-                    self.setField(
-                        WizardField.LOGIN_FEEDBACK, "Cookies have gone stale, Please login again"
-                    )
-                    self.setField(WizardField.LOGIN_FEEDBACK_VISIBLE, True)
-                    self.setField(WizardField.LOGIN_FEEDBACK_STYLESHEET, FeedbackStyleSheet.NICE)
-                    clear_cookies()
-                    w.cookies = None
-                    w.setCurrentId(_Page.LOGIN)
-                    return
+            if not w.artifact_repository.has_logged_in_previously():
+                self.setField(
+                    WizardField.LOGIN_FEEDBACK, "Cookies have gone stale, Please login again"
+                )
+                self.setField(WizardField.LOGIN_FEEDBACK_VISIBLE, True)
+                self.setField(WizardField.LOGIN_FEEDBACK_STYLESHEET, FeedbackStyleSheet.NICE)
+                w.artifact_repository.forget_login()
+                w.setCurrentId(_Page.LOGIN)
+                return
 
             device = get_flash_download_name(
                 comm_device,
@@ -599,8 +570,8 @@ class DownloadPage(QWizardPage):
             download_dir_path = get_temp_dir()
 
             BGTask.create_task(
-                download,
-                (session, cookies, download_dir_path, device),
+                w.artifact_repository.download,
+                (PRODUCT_NAME_TO_ARTIFACT[device], download_dir_path),
                 return_cb=self.handle_successful_download,
                 exception_cb=self.handle_exception_during_download,
             )
@@ -619,6 +590,19 @@ class DownloadPage(QWizardPage):
     def handle_exception_during_download(self, exception: Exception) -> None:
         self._download_button.setEnabled(True)
         self._download_button.setText("Download")
+
+        if isinstance(exception, LoginRequiredError):
+            w = self.wizard()
+            assert isinstance(w, FlashWizard)
+
+            self.setField(
+                WizardField.LOGIN_FEEDBACK, "Cookies have gone stale, Please login again"
+            )
+            self.setField(WizardField.LOGIN_FEEDBACK_VISIBLE, True)
+            self.setField(WizardField.LOGIN_FEEDBACK_STYLESHEET, FeedbackStyleSheet.NICE)
+            w.artifact_repository.forget_login()
+            w.setCurrentId(_Page.LOGIN)
+            return
 
         self.feedback_lbl.setVisible(True)
         error_msg = get_internet_related_error_message(exception)
@@ -816,8 +800,7 @@ class FlashWizard(QWizard):
         self.setWindowTitle("Flash Wizard")
 
         self.comm_device: t.Optional[CommDevice] = None
-        self.cookies: t.Optional[requests.cookies.RequestsCookieJar] = get_cookies()
-        self.session: t.Optional[requests.Session] = None
+        self.artifact_repository = DevSiteRepository.from_saved_login()
 
         self.setPage(_Page.MODULE_SELECTION, ModuleSelectionPage())
         self.setPage(_Page.DEVICE_SELECTION, DeviceSelectionPage(app_model))
@@ -834,14 +817,8 @@ class FlashWizard(QWizard):
     def set_comm_device(self, comm_device: CommDevice) -> None:
         self.comm_device = comm_device
 
-    def set_cookies(self, cookies: requests.cookies.RequestsCookieJar) -> None:
-        self.cookies = cookies
-
-    def set_session(self, session: requests.Session) -> None:
-        self.session = session
-
     def nextId(self) -> int:
-        if self.cookies is None:
+        if not self.artifact_repository.has_logged_in_previously():
             license_next_page = _Page.LOGIN
         else:
             license_next_page = _Page.DOWNLOAD
@@ -963,40 +940,6 @@ def get_internet_related_error_message(exception: Exception) -> str:
     else:
         error_msg = "An unexpected error occured:\n" + "".join(exception.args)
     return error_msg
-
-
-def try_get_obfuscated_email_from_cookiejar(
-    cookiejar: t.Optional[requests.cookies.RequestsCookieJar],
-) -> t.Optional[str]:
-    # A cookie in the cookiejar k,v pairs look like this (2025-08-19):
-    # k = wordpress_logged_in_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    # v = firstname-lastnamedomain-com%XXXXXXXXXXXXXXXXXXXXXXXXX...
-    # (yes, the "@" is stripped)
-    if cookiejar is None:
-        return None
-
-    try:
-        for k, v in cookiejar.items():
-            if "logged_in" in k:
-                (mangled_email, *_) = str(v).split("%")
-                if mangled_email.count("-") < 2:
-                    return (
-                        mangled_email[0]
-                        + "@".center(len(mangled_email) - 2, "*")
-                        + mangled_email[-1]
-                    )
-                else:
-                    leftmost_dash_idx = mangled_email.find("-")
-                    rightmost_dash_idx = mangled_email.rfind("-")
-                    return (
-                        mangled_email[:leftmost_dash_idx]
-                        + "@".center(rightmost_dash_idx - leftmost_dash_idx, "*")
-                        + mangled_email[rightmost_dash_idx + 1 :]
-                    )
-    except Exception:
-        return None
-
-    return None
 
 
 class _Spacer(QWidget):
