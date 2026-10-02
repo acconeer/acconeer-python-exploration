@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -83,7 +83,6 @@ def processor_main(
     client.start_session()
 
     interrupt_handler = et.utils.ExampleInterruptHandler()
-    print("Press Ctrl-C to end session")
 
     loop = get_loop(client, processor, plot_plugin_widget, bs_process)
 

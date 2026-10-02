@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import acconeer.exptool as et
@@ -18,7 +18,6 @@ def main():
     info = client.start_session(config)
 
     interrupt_handler = et.utils.ExampleInterruptHandler()
-    print("Press Ctrl-C to end session")
 
     fc = et.utils.FreqCounter(num_bits=(4 * 8 * info["data_length"]))
 

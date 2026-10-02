@@ -40,7 +40,6 @@ def main():
     pg_process.start()
 
     interrupt_handler = et.utils.ExampleInterruptHandler()
-    print("Press Ctrl-C to end session")
 
     while not interrupt_handler.got_signal:
         detector_result = detector.get_next()

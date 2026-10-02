@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import matplotlib.pyplot as plt
@@ -44,7 +44,6 @@ def main():
     plt.show()
 
     interrupt_handler = et.utils.ExampleInterruptHandler()
-    print("Press Ctrl-C to end session")
 
     client.start_session()
 

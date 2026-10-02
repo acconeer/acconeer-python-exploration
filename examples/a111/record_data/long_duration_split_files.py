@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import os
@@ -42,7 +42,6 @@ def main():
     os.makedirs(args.output_dir)
 
     interrupt_handler = et.utils.ExampleInterruptHandler()
-    print("Press Ctrl-C to end session")
 
     total_num_frames = 0
     while not interrupt_handler.got_signal:

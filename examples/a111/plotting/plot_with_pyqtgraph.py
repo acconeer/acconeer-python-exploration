@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import numpy as np
@@ -62,7 +62,6 @@ def main():
 
     interrupt_handler = et.utils.ExampleInterruptHandler()
     win.closeEvent = lambda _: interrupt_handler.force_signal_interrupt()
-    print("Press Ctrl-C to end session")
 
     client.start_session()
 

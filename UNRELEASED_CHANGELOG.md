@@ -31,6 +31,9 @@
   keeps the performance it had before the HWAAS change. A configuration
   carried over from an older version can be converted with
   `distance.carry_over_signal_quality()`.
+- `ExampleInterruptHandler` prints the Ctrl-C prompt itself, once it can
+  catch the interrupt, so scripts no longer need to print their own. Pass
+  `prompt=None` to print nothing.
 
 ### Fixed
 

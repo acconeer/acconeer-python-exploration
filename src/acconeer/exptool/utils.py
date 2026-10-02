@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -39,9 +39,13 @@ DTypeT = TypeVar("DTypeT")
 
 
 class ExampleInterruptHandler:
-    def __init__(self):
+    PROMPT = "Press Ctrl-C to end session"
+
+    def __init__(self, prompt: str | None = PROMPT) -> None:
         self._signal_count = 0
         signal.signal(signal.SIGINT, self.interrupt_handler)
+        if prompt is not None:
+            print(prompt, flush=True)
 
     @property
     def got_signal(self):

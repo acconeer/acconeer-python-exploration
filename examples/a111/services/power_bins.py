@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import pyqtgraph as pg
@@ -27,7 +27,6 @@ def main():
     client.start_session()
 
     interrupt_handler = et.utils.ExampleInterruptHandler()
-    print("Press Ctrl-C to end session")
 
     while not interrupt_handler.got_signal:
         _, data = client.get_next()

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import acconeer.exptool as et
@@ -27,7 +27,6 @@ def main(module_info: ModuleInfo):
     client.start_session()
 
     interrupt_handler = et.utils.ExampleInterruptHandler()
-    print("Press Ctrl-C to end session")
 
     processor = module_info.processor(sensor_config, processing_config, session_info)
 

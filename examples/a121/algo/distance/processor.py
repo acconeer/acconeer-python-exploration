@@ -82,7 +82,6 @@ def main():
     client.start_session()
 
     interrupt_handler = et.utils.ExampleInterruptHandler()
-    print("Press Ctrl-C to end session")
 
     while not interrupt_handler.got_signal:
         extended_result = client.get_next()

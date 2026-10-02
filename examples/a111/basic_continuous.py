@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import acconeer.exptool as et
@@ -38,7 +38,6 @@ def main():
     # impatient, hitting Ctrl-C a couple of more times will raise a
     # KeyboardInterrupt which hopefully terminates the script.
     interrupt_handler = et.utils.ExampleInterruptHandler()
-    print("Press Ctrl-C to end session\n")
 
     while not interrupt_handler.got_signal:
         info, data = client.get_next()
