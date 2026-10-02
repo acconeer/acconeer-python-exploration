@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -116,11 +116,7 @@ class _ReplayingClient(Client, register=False):
         self._origin_time = None
 
     def get_next(self) -> Union[Result, list[dict[int, Result]]]:  # type: ignore[override]
-        if not self.session_is_setup:
-            msg = "Session is not set up."
-            raise ClientError(msg)
-
-        assert self._result_iterator is not None
+        self._assert_session_started()
 
         try:
             result = next(self._result_iterator)
@@ -146,6 +142,8 @@ class _ReplayingClient(Client, register=False):
             return core_utils.unextend(result)
 
     def stop_session(self) -> Any:
+        self._assert_session_started()
+
         try:
             _ = next(self._result_iterator)
         except StopIteration:
