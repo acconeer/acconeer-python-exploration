@@ -8,11 +8,64 @@ import os
 import signal
 import subprocess
 import sys
+import threading
+import time
 import uuid
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import attrs
 import pytest
+
+from acconeer.exptool.utils import ExampleInterruptHandler
+
+
+type StartExample = Callable[[list[str]], tuple[subprocess.Popen[str], threading.Event]]
+
+
+@pytest.fixture
+def start_example() -> Iterator[StartExample]:
+    """Starts examples, each with an event set once it prompts for Ctrl-C."""
+    started: list[tuple[subprocess.Popen[str], threading.Thread]] = []
+
+    def start(args: list[str]) -> tuple[subprocess.Popen[str], threading.Event]:
+        p = subprocess.Popen(
+            args,
+            stdout=subprocess.PIPE,
+            text=True,
+            # Headless, so a closing plt.show() returns rather than waits on its window.
+            env={
+                "QT_QPA_PLATFORM": "offscreen",
+                **os.environ,
+                "PYTHONUNBUFFERED": "1",
+                "MPLBACKEND": "Agg",
+            },
+        )
+        assert p.stdout is not None
+        stdout = p.stdout
+        ready = threading.Event()
+
+        def forward_output() -> None:
+            for line in stdout:
+                sys.stdout.write(line)
+                # Printed once the example's handler is set, so Ctrl-C is safe from then on.
+                if ExampleInterruptHandler.PROMPT in line:
+                    ready.set()
+
+        forwarder = threading.Thread(target=forward_output, daemon=True)
+        forwarder.start()
+        started.append((p, forwarder))
+        return p, ready
+
+    yield start
+
+    for p, forwarder in started:
+        if p.poll() is None:
+            p.kill()
+        # Joined so the example's last output lands in this test's report.
+        forwarder.join(timeout=5)
+        if not forwarder.is_alive() and p.stdout is not None:
+            p.stdout.close()
 
 
 def python_files_in_folder(relative_path: str) -> list[str]:
@@ -197,24 +250,28 @@ def test_example_command_modifies_the_script_and_passes_arguments(tmp_path: Path
 
 
 @pytest.mark.parametrize("example_script", sorted(_EXAMPLES))
-def test_examples(example_script: str, tmp_path: Path) -> None:
+def test_examples(example_script: str, tmp_path: Path, start_example: StartExample) -> None:
     command = _example_command(example_script, _EXAMPLES[example_script], tmp_path)
-    env = {"QT_QPA_PLATFORM": "offscreen", **os.environ}
-    p = subprocess.Popen(command, env=env)
+    p, ready = start_example(command)
 
-    start_grace_period_s = 3
+    startup_timeout_s = 60
     interrupt_timeout_s = 3
     kill_timeout_s = 1
 
-    # The example is non-interactive and without while-loop
-    # This is also where we whould find examples that don't run
-    try:
-        returncode = p.wait(timeout=start_grace_period_s)
-    except subprocess.TimeoutExpired:
-        pass
-    else:
-        assert returncode == 0
-        return
+    # A SIGINT during imports can be lost or crash the example, and a slow machine can
+    # spend seconds on them.
+    deadline = time.monotonic() + startup_timeout_s
+    while not ready.wait(timeout=0.1):
+        if (returncode := p.poll()) is not None:
+            # The example is non-interactive and without while-loop
+            # This is also where we would find examples that don't run
+            assert returncode == 0
+            return
+        if time.monotonic() > deadline:
+            pytest.fail(
+                f"{example_script!r} neither exited nor printed"
+                f" {ExampleInterruptHandler.PROMPT!r} within {startup_timeout_s} seconds."
+            )
 
     # The example is long-running and expects the user to interrupt it.
     try:
