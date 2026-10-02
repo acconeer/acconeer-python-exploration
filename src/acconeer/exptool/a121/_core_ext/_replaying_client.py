@@ -8,6 +8,8 @@ import time
 import warnings
 from typing import Any, Iterator, Optional, Union
 
+import attrs
+
 import acconeer.exptool.a121._core.utils as core_utils
 from acconeer.exptool._core import ClientInfo
 from acconeer.exptool._core.communication.client import ClientError
@@ -31,6 +33,12 @@ class ReplaySessionsExhaustedError(Exception):
     pass
 
 
+@attrs.define
+class _StartedSession:
+    results: Iterator[list[dict[int, Result]]]
+    origin_time: float | None = None
+
+
 class _ReplayingClient(Client, register=False):
     def __init__(
         self,
@@ -48,9 +56,7 @@ class _ReplayingClient(Client, register=False):
         """
         super().__init__(record.client_info)
         self._record = record
-        self._is_started: bool = False
-        self._result_iterator: Iterator[list[dict[int, Result]]] = iter([])
-        self._origin_time: Optional[float] = None
+        self._started: _StartedSession | None = None
         self._realtime_replay = realtime_replay
         self._session_idx: Optional[int] = None
         self._session_idx_iter: Union[Iterator[int], itertools.repeat[int]]
@@ -78,11 +84,12 @@ class _ReplayingClient(Client, register=False):
             msg = "Session is not set up."
             raise ClientError(msg)
 
-    def _assert_session_started(self) -> None:
+    def _started_session(self) -> _StartedSession:
         self._assert_session_setup()
-        if not self.session_is_started:
+        if self._started is None:
             msg = "Session is not started."
             raise ClientError(msg)
+        return self._started
 
     def _open(self) -> None:
         pass
@@ -111,15 +118,14 @@ class _ReplayingClient(Client, register=False):
             return core_utils.unextend(self.extended_metadata)
 
     def start_session(self) -> None:
-        self._result_iterator = self._record.session(self._actual_session_idx).extended_results
-        self._is_started = True
-        self._origin_time = None
+        session_record = self._record.session(self._actual_session_idx)
+        self._started = _StartedSession(session_record.extended_results)
 
     def get_next(self) -> Union[Result, list[dict[int, Result]]]:  # type: ignore[override]
-        self._assert_session_started()
+        session = self._started_session()
 
         try:
-            result = next(self._result_iterator)
+            result = next(session.results)
         except StopIteration:
             raise _StopReplay
 
@@ -128,10 +134,10 @@ class _ReplayingClient(Client, register=False):
         if self._realtime_replay:
             now = time.monotonic() - some_result.tick_time
 
-            if self._origin_time is None:
-                self._origin_time = now
+            if session.origin_time is None:
+                session.origin_time = now
 
-            delta = now - self._origin_time
+            delta = now - session.origin_time
 
             if delta < 0:
                 time.sleep(-delta)
@@ -142,16 +148,16 @@ class _ReplayingClient(Client, register=False):
             return core_utils.unextend(result)
 
     def stop_session(self) -> Any:
-        self._assert_session_started()
+        session = self._started_session()
 
         try:
-            _ = next(self._result_iterator)
+            _ = next(session.results)
         except StopIteration:
             pass
         else:
             warnings.warn(f"Results of session {self._actual_session_idx} were not exhausted.")
 
-        self._is_started = False
+        self._started = None
 
     def close(self) -> None:
         pass
@@ -166,7 +172,7 @@ class _ReplayingClient(Client, register=False):
 
     @property
     def session_is_started(self) -> bool:
-        return self._is_started
+        return self._started is not None
 
     @property
     def server_info(self) -> ServerInfo:
