@@ -52,9 +52,9 @@ class TabPGWidget(QFrame):
         self, widget: QWidget, title: str, callback: Callable[[], Any] = lambda: None
     ) -> None:
         new_tab_id = len(self._button_group.buttons())
-        widget.setVisible(new_tab_id == 0)
         self._plot_widgets.append(widget)
         self._main_layout.addWidget(widget)
+        widget.setVisible(new_tab_id == 0)
 
         button = QPushButton(title, self)
         button.clicked.connect(callback)

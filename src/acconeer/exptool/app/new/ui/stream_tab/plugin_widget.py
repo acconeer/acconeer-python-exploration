@@ -259,7 +259,6 @@ class PluginSelectionArea(QWidget):
                 )
             )
         )
-        a121_selection.setVisible(True)
 
         app_model.sig_notify.connect(
             lambda am: a121_selection.setVisible(am.plugin_generation == PluginGeneration.A121)

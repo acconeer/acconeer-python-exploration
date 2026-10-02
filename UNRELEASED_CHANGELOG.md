@@ -40,6 +40,8 @@
 - Replaying A121 H5 recordings, or iterating over their results, is much faster.
 
 ### Fixed
+- The Exploration Tool no longer shows a busy mouse pointer for several
+  seconds on startup and when loading apps on GNOME (Wayland).
 
 - The developer license page in the flash wizard shows the actual
   agreement text again, instead of a near-empty dialog: it no longer

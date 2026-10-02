@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -138,7 +138,6 @@ class _SensorIdsEditor(DataEditor[List[int]]):
         self._add_button.setFlat(True)
         self._add_button.setFixedWidth(pidgets.WIDGET_WIDTH)
         self._add_button.setFixedWidth(125)
-        self._add_button.setVisible(multiple_sensors)
         self._add_button.clicked.connect(self._create_and_add_row)
         self._add_button.clicked.connect(self._update_visuals)
         self._add_button.clicked.connect(self._emit_current_data)
@@ -164,6 +163,7 @@ class _SensorIdsEditor(DataEditor[List[int]]):
         layout.addWidget(self._add_button, stretch=0, alignment=Qt.AlignmentFlag.AlignRight)
         layout.addWidget(self._note_widget)
         self.setLayout(layout)
+        self._add_button.setVisible(multiple_sensors)
 
     @property
     def _free_sensors(self) -> list[int]:
