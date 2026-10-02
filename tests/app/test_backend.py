@@ -5,6 +5,7 @@ from __future__ import annotations
 import multiprocessing
 import os
 import signal
+import sys
 import typing as t
 
 import dirty_equals as de
@@ -260,6 +261,11 @@ class TestConnectedLoadedBackend(ConnectedBackend, LoadedBackend):
         b.stop()
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="os.kill() with SIGINT calls TerminateProcess on Windows; "
+    + "Ctrl+C reaches the child as a console control event instead",
+)
 class TestMpBackendSigint:
     """A terminal Ctrl+C delivers SIGINT to the whole foreground process
     group, so it reaches MpBackend's child process too. The child must

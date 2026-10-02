@@ -1,8 +1,7 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import argparse
-import sys
 
 import pytest
 import serial
@@ -10,9 +9,6 @@ from serial.tools.list_ports_common import ListPortInfo
 
 from acconeer.exptool import utils
 from acconeer.exptool.a111 import ExampleArgumentParser, get_client_args
-
-
-pytestmark = pytest.mark.skipif(sys.platform == "win32", reason="Windows unsupported")
 
 
 @pytest.fixture

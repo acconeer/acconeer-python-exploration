@@ -63,8 +63,13 @@ def start_example() -> Iterator[StartExample]:
     yield start
 
     for p, forwarder in started:
-        with contextlib.suppress(ProcessLookupError):
-            os.killpg(p.pid, signal.SIGKILL)
+        if sys.platform == "win32":
+            # Windows has no process groups, so the example's process tree is killed instead.
+            # It fails, harmlessly, for an example that has already exited.
+            subprocess.run(["taskkill", "/F", "/T", "/PID", str(p.pid)], capture_output=True)
+        else:
+            with contextlib.suppress(ProcessLookupError):
+                os.killpg(p.pid, signal.SIGKILL)
         # Joined so the example's last output lands in this test's report.
         forwarder.join(timeout=5)
         if not forwarder.is_alive() and p.stdout is not None:
@@ -146,7 +151,7 @@ class AstModifications(enum.Flag):
         output_script_path: str,
         new_filename: str,
     ) -> None:
-        tree = ast.parse(Path(input_script_path).read_text())
+        tree = ast.parse(Path(input_script_path).read_text(encoding="utf-8"))
 
         if AstModifications.CLIENT_OPEN in self:
             tree = ClientOpenAlwaysMockTrue().visit(tree)
@@ -155,7 +160,7 @@ class AstModifications(enum.Flag):
             tree = ModifyFilenameVariableAssignment(new_filename).visit(tree)
 
         tree = ast.fix_missing_locations(tree)
-        output_script_path.write_text(ast.unparse(tree))
+        output_script_path.write_text(ast.unparse(tree), encoding="utf-8")
 
 
 @attrs.frozen(kw_only=True)
@@ -291,6 +296,16 @@ def test_examples(example_script: str, tmp_path: Path, start_example: StartExamp
                 f"{example_script!r} neither exited nor printed"
                 f" {ExampleInterruptHandler.PROMPT!r} within {startup_timeout_s} seconds."
             )
+
+    if sys.platform == "win32":
+        # Windows can't send Ctrl-C to just the example. It runs for a few seconds instead,
+        # to show that it doesn't crash, and is then killed by start_example.
+        try:
+            returncode = p.wait(timeout=3)
+        except subprocess.TimeoutExpired:
+            return
+        assert returncode == 0
+        return
 
     # The example runs until Ctrl-C, which a terminal sends to its whole process group.
     os.killpg(p.pid, signal.SIGINT)

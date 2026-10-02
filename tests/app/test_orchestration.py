@@ -9,6 +9,7 @@ import subprocess as sp
 import sys
 from pathlib import Path
 
+import psutil
 import pytest
 
 from PySide6.QtCore import QTimer
@@ -154,16 +155,22 @@ def test_command_line_runs_startup_tasks(tmp_path: Path) -> None:
     et_opts = ["-v", *et_options(plugin_spec)]
 
     app = [sys.executable, "-m", "acconeer.exptool.app.new", "--data-dir", str(tmp_path), *et_opts]
-    try:
-        # A covered run measures the app too, through hatch's COVERAGE_PROCESS_START.
-        sp.check_call(["sh", "-x", "-c", f"timeout 60 {shlex.join(app)}"])
-    except sp.CalledProcessError as cpe:
-        if cpe.returncode == TIMEOUT_HAPPENED_RETURNCODE:
-            msg = (
+    # A covered run measures the app too, through hatch's COVERAGE_PROCESS_START.
+    with sp.Popen(app) as proc:
+        try:
+            returncode = proc.wait(timeout=60)
+        except sp.TimeoutExpired:
+            # The backend outlives a killed app, so kill it first.
+            for child in psutil.Process(proc.pid).children(recursive=True):
+                with contextlib.suppress(psutil.NoSuchProcess):
+                    child.kill()
+            proc.kill()
+            pytest.fail(
                 "Orchestration test timed out. If testing in parallel, reduce the core count. "
                 + "Otherwise increase the timeout for each test"
             )
-        elif cpe.returncode == _STARTUP_TASKS_GIVE_UP_EXIT_CODE:
+    if returncode != 0:
+        if returncode == _STARTUP_TASKS_GIVE_UP_EXIT_CODE:
             msg = (
                 "The app gave up waiting to become ready to run its startup tasks within"
                 + " app.py's _STARTUP_TASKS_TIMEOUT_S deadline."
@@ -172,7 +179,7 @@ def test_command_line_runs_startup_tasks(tmp_path: Path) -> None:
             )
         else:
             msg = (
-                f"The app exited with {cpe.returncode}."
+                f"The app exited with {returncode}."
                 + " Maybe some task is missing from TASK_TABLE or something should be changed"
                 + f" in the BackendPlugin?{reproduce_hint(et_opts)}"
             )

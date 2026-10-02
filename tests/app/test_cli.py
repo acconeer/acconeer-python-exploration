@@ -2,6 +2,7 @@
 # All rights reserved
 
 import subprocess as sp
+import sys
 from pathlib import Path
 
 
@@ -14,7 +15,7 @@ def test_purge_cache_does_not_remove_data_dir_override(tmp_path: Path) -> None:
 
     sp.check_call(
         [
-            "python",
+            sys.executable,
             "-m",
             "acconeer.exptool.app.new",
             "--purge-cache",
