@@ -1,6 +1,6 @@
 import groovy.transform.Field
 
-@Library('sw-jenkins-library@c3b0c10edb8a7752b9f74dbcf218eb827770ae44') _
+@Library('sw-jenkins-library@67e8e85f6bb9e8c6139a0477378160532c361d75') _
 
 enum BuildScope {
     SANITY, HOURLY, NIGHTLY
@@ -116,6 +116,9 @@ try {
     stage('Report start to Gerrit') {
         gerritReview labels: [Verified: 0], message: "Test started:: ${env.BUILD_URL}, Scope: ${buildScope}"
     }
+
+    // Without this, buildDocker gets the Dockerfile's default stage, dev.
+    env.TARGET_STAGE = 'ci'
 
     String dockerArgs =  (
         "--hostname ${env.NODE_NAME}" +

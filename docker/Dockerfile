@@ -55,6 +55,14 @@ ARG UV_EXCLUDE_NEWER=2026-09-25T00:00:00Z
 RUN uv tool install "hatch==1.18.1" \
     && uv tool install "twine==7.0.0"
 
+FROM base AS ci
+
+# CI runs the container as an arbitrary uid, which has no home here.
+ENV HOME=/home/ci
+# Writable by any uid, as is a new uv cache volume, which copies the mode of
+# its mount point.
+RUN mkdir -m 1777 /home/ci /home/ci/.cache /home/ci/.cache/uv
+
 FROM base AS dev
 
 # Built with the host's ids, so files in bind mounts keep their owner.
@@ -71,12 +79,3 @@ ENV PATH="/home/dev/.local/bin:$PATH"
 RUN mkdir /home/dev/.claude
 
 WORKDIR /home/dev
-
-# This stage comes last, so a build without --target gets it.
-FROM base AS ci
-
-# CI runs the container as an arbitrary uid, which has no home here.
-ENV HOME=/home/ci
-# Writable by any uid, as is a new uv cache volume, which copies the mode of
-# its mount point.
-RUN mkdir -m 1777 /home/ci /home/ci/.cache /home/ci/.cache/uv
