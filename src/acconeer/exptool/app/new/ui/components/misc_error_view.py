@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -34,8 +34,12 @@ class MiscErrorView(GroupBox[QVBoxLayout]):
         # Delete all existing error message widgets
         while self.layout().count():
             child = self.layout().takeAt(0)
-            if child.widget():
-                child.widget().deleteLater()
+            if child is None:
+                continue
+            widget = child.widget()
+            if widget is None:
+                continue
+            widget.deleteLater()
 
         for result in validation_results:
             error_widget = QLabel(parent=self)

@@ -11,6 +11,9 @@
   for security information and vulnerability reporting.
 
 ### Changed
+- The app extra now pins PySide6 6.11.2 instead of 6.8.3, so it can be
+  installed on Python 3.14. On Linux, PySide6 6.11.2 requires glibc 2.34
+  or newer (e.g. Ubuntu 22.04 or later).
 - A121 Distance: `ThresholdMethod.RECORDED` and `RecordedThresholdCalibration`
   are removed. Close range measurements internally still use a recorded
   threshold, calibrated automatically.
