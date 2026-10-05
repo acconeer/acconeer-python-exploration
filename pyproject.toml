@@ -30,7 +30,7 @@ dependencies = [
     "cbor2",
     "h5py>=3.11,<4",
     "libusb_package==1.0.30.0",
-    "numpy>=1.20",
+    "numpy>=1.26",
     "pandas>=2.2.2",
     "packaging",
     "platformdirs",
