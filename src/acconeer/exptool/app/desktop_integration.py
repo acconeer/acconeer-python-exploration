@@ -54,6 +54,23 @@ StartupWMClass={DESKTOP_FILE_ID}
 """
 
 
+def set_app_id() -> None:
+    """
+    Sets the application's XDG "app id" (Qt's "desktop file name").
+
+    Must be called before the QApplication is constructed: Qt registers the
+    app id with the XDG desktop portal at construction, and the portal
+    rejects a second registration made when the id changes afterwards.
+
+    Raises RuntimeError if a QApplication already exists.
+    """
+    if QApplication.instance() is not None:
+        msg = "set_app_id must be called before the QApplication is constructed"
+        raise RuntimeError(msg)
+    if sys.platform.startswith("linux"):
+        QApplication.setDesktopFileName(DESKTOP_FILE_ID)
+
+
 def ensure_wayland_integration(app: QApplication) -> QtGui.QIcon:
     """
     Sets up the application's icon, including what's needed for it to show up
@@ -64,13 +81,13 @@ def ensure_wayland_integration(app: QApplication) -> QtGui.QIcon:
     icon to display via a matching installed .desktop file. Without a
     matching .desktop file, Wayland falls back to a generic icon regardless
     of what setWindowIcon is given. This installs one (and its icon) for the
-    current user if it isn't already there.
+    current user if it isn't already there. The app id itself is set by
+    set_app_id, before the QApplication is constructed.
     """
     icon = _square_icon()
     app.setWindowIcon(icon)
 
     if sys.platform.startswith("linux"):
-        app.setDesktopFileName(DESKTOP_FILE_ID)
         _ensure_desktop_entry_installed(icon)
 
     return icon

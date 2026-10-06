@@ -28,7 +28,10 @@ try:
         QWidget,
     )
 
-    from acconeer.exptool.app.desktop_integration import ensure_wayland_integration
+    from acconeer.exptool.app.desktop_integration import (
+        ensure_wayland_integration,
+        set_app_id,
+    )
 except ImportError:
     traceback.print_exc(file=sys.stdout)
     print(INSTALL_MISSING_APP_EXTRA_INSTRUCTIONS)
@@ -156,6 +159,8 @@ def run_launcher() -> Optional[Literal["new", "old"]]:
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough,
     )
+    QApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
+    set_app_id()
 
     app = QApplication([])
     ensure_wayland_integration(app)

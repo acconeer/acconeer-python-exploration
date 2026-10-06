@@ -43,7 +43,7 @@ import acconeer.exptool as et
 from acconeer.exptool.a111 import _conf_to_rss_sdk
 from acconeer.exptool.a111.algo import Calibration, ModuleInfo
 from acconeer.exptool.app import resources
-from acconeer.exptool.app.desktop_integration import ensure_wayland_integration
+from acconeer.exptool.app.desktop_integration import ensure_wayland_integration, set_app_id
 
 from . import data_processing
 from .elements.helper import (
@@ -2261,6 +2261,7 @@ def main():
         QApplication.setHighDpiScaleFactorRoundingPolicy(
             QtCore.Qt.HighDpiScaleFactorRoundingPolicy.PassThrough,
         )
+        set_app_id()
         app = QApplication(sys.argv)
     ensure_wayland_integration(app)
     ex = GUI(use_last_config=args.use_last_config)

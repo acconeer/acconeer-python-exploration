@@ -36,7 +36,10 @@ try:
         create_artifact_repository,
         load_plugin_file,
     )
-    from acconeer.exptool.app.desktop_integration import ensure_wayland_integration
+    from acconeer.exptool.app.desktop_integration import (
+        ensure_wayland_integration,
+        set_app_id,
+    )
 except ImportError:
     traceback.print_exc(file=sys.stdout)
     print(INSTALL_MISSING_APP_EXTRA_INSTRUCTIONS)
@@ -118,6 +121,8 @@ def main() -> None:
         QApplication.setHighDpiScaleFactorRoundingPolicy(
             QtCore.Qt.HighDpiScaleFactorRoundingPolicy.PassThrough,
         )
+        QApplication.setAttribute(QtCore.Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
+        set_app_id()
 
     # Silences noisy, harmless focus-tracking mismatches logged by Qt's
     # Wayland text-input integration (zwp_text_input_v3).
