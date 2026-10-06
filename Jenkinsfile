@@ -36,6 +36,9 @@ def modelTestA121RssVersionForBuildScope = [
     (BuildScope.NIGHTLY) : [commit: 'interim/sw-main/master/2026/2026-09-22/a2-v1.1.0-rc1-25-g4984fc76c6'],
 ]
 
+@Field
+String dockerArgs = '--mount type=volume,src=uv-cache,dst=/home/ci/.cache/uv'
+
 boolean messageOnFailure = true
 
 def getCronTriggers(String branchName) {
@@ -119,11 +122,6 @@ try {
 
     // Without this, buildDocker gets the Dockerfile's default stage, dev.
     env.TARGET_STAGE = 'ci'
-
-    String dockerArgs =  (
-        "--hostname ${env.NODE_NAME}" +
-        ' --mount type=volume,src=uv-cache,dst=/home/ci/.cache/uv'
-    )
 
     // Meant to catch common (and fast to detect) errors.
     stage('Lint') {
