@@ -95,7 +95,7 @@ def finishBuild(boolean messageOnFailure) {
     }
 }
 
-def manageReleaseBranches(BuildScope buildScope) {
+def manageReleaseBranches(boolean update) {
     stage('Manage release branches') {
         node('docker') {
             ws('workspace/exptool') {
@@ -107,7 +107,7 @@ def manageReleaseBranches(BuildScope buildScope) {
                                      string(variable: 'RELEASE_BRANCHES',
                                             credentialsId: 'et_update_release_branches')])
                     {
-                        if (buildScope == BuildScope.NIGHTLY) {
+                        if (update) {
                             sh "git config user.name 'Jenkins Builder'"
                             sh "git config user.email 'ai@acconeer.com'"
                             sh(
@@ -115,7 +115,7 @@ def manageReleaseBranches(BuildScope buildScope) {
                                 " -b ${env.BRANCH_NAME}" +
                                 " -p ${RELEASE_BRANCHES}"
                             )
-                        } else if (buildScope == BuildScope.SANITY && currentBuild.currentResult == 'SUCCESS') {
+                        } else {
                             sh(
                                 'tests/release_branch/release_branch_push.sh' +
                                 " -b ${env.BRANCH_NAME}" +
@@ -157,12 +157,20 @@ try {
     // Without this, buildDocker gets the Dockerfile's default stage, dev.
     env.TARGET_STAGE = 'ci'
 
+    boolean isJenkinsMerge = false
+
     // Meant to catch common (and fast to detect) errors.
     stage('Lint') {
         node('docker') {
             ws('workspace/exptool') {
                 printNodeInfo()
                 checkoutAndCleanup()
+
+                // Read from this checkout so a build with no release branch work takes no node for it.
+                isJenkinsMerge = sh(returnStatus: true, script: '''#!/bin/bash
+                    source tests/release_branch/release_branch_utils.sh
+                    [ "$(commit_is_jenkins_merge HEAD)" -eq 1 ]
+                ''') == 0
 
                 buildDocker(path: 'docker').inside(dockerArgs) {
                     sh 'python3 -V'
@@ -392,7 +400,13 @@ try {
         }
     }
 
-    manageReleaseBranches(buildScope)
+    boolean updateReleaseBranches = buildScope == BuildScope.NIGHTLY
+    boolean pushReleaseBranch = (buildScope == BuildScope.SANITY && isJenkinsMerge
+                                 && currentBuild.currentResult == 'SUCCESS')
+
+    if (updateReleaseBranches || pushReleaseBranch) {
+        manageReleaseBranches(updateReleaseBranches)
+    }
 } catch (exception) {
     currentBuild.result = 'FAILURE'
 }
