@@ -95,6 +95,40 @@ def finishBuild(boolean messageOnFailure) {
     }
 }
 
+def manageReleaseBranches(BuildScope buildScope) {
+    stage('Manage release branches') {
+        node('docker') {
+            ws('workspace/exptool') {
+                printNodeInfo()
+                checkoutAndCleanup()
+
+                buildDocker(path: 'docker').inside(dockerArgs) {
+                    withCredentials([gitUsernamePassword(credentialsId: '1bef2b16-6cd9-4836-a014-421199e7fb0f'),
+                                     string(variable: 'RELEASE_BRANCHES',
+                                            credentialsId: 'et_update_release_branches')])
+                    {
+                        if (buildScope == BuildScope.NIGHTLY) {
+                            sh "git config user.name 'Jenkins Builder'"
+                            sh "git config user.email 'ai@acconeer.com'"
+                            sh(
+                                'tests/release_branch/release_branch_update.sh' +
+                                " -b ${env.BRANCH_NAME}" +
+                                " -p ${RELEASE_BRANCHES}"
+                            )
+                        } else if (buildScope == BuildScope.SANITY && currentBuild.currentResult == 'SUCCESS') {
+                            sh(
+                                'tests/release_branch/release_branch_push.sh' +
+                                " -b ${env.BRANCH_NAME}" +
+                                " -p ${RELEASE_BRANCHES}"
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 try {
     // Ensure cron triggers are setup (for periodic jobs)
     properties([getCronTriggers(env.BRANCH_NAME)])
@@ -358,37 +392,7 @@ try {
         }
     }
 
-    stage('Manage release branches') {
-        node('docker') {
-            ws('workspace/exptool') {
-                printNodeInfo()
-                checkoutAndCleanup()
-
-                buildDocker(path: 'docker').inside(dockerArgs) {
-                    withCredentials([gitUsernamePassword(credentialsId: '1bef2b16-6cd9-4836-a014-421199e7fb0f'),
-                                     string(variable: 'RELEASE_BRANCHES',
-                                            credentialsId: 'et_update_release_branches')])
-                    {
-                        if (buildScope == BuildScope.NIGHTLY) {
-                            sh "git config user.name 'Jenkins Builder'"
-                            sh "git config user.email 'ai@acconeer.com'"
-                            sh(
-                                'tests/release_branch/release_branch_update.sh' +
-                                " -b ${env.BRANCH_NAME}" +
-                                " -p ${RELEASE_BRANCHES}"
-                            )
-                        } else if (buildScope == BuildScope.SANITY && currentBuild.currentResult == 'SUCCESS') {
-                            sh(
-                                'tests/release_branch/release_branch_push.sh' +
-                                " -b ${env.BRANCH_NAME}" +
-                                " -p ${RELEASE_BRANCHES}"
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
+    manageReleaseBranches(buildScope)
 } catch (exception) {
     currentBuild.result = 'FAILURE'
 }
