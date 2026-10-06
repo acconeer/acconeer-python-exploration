@@ -91,6 +91,7 @@ version-file = "src/acconeer/exptool/_version.py"
 
 [tool.hatch.envs.default]
 installer = "uv"
+python = "3.12"
 
 [tool.hatch.envs.app]
 features = ["app"]
@@ -123,6 +124,7 @@ check = "python -m mypy {args}"
 [tool.hatch.envs.hatch-test]
 # This is the environment for "hatch test"
 features = ["app"]
+python = "3.12"
 extra-args = ["--doctest-modules", "--dist=worksteal"]
 extra-dependencies = [
     "pandas>=2.2.2",
