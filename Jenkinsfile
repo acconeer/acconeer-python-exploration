@@ -261,6 +261,7 @@ try {
                 }
 
                 stage("Run tests (${pythonVersions})") {
+                    printNodeInfo()
                     buildDocker(path: 'docker').inside(dockerArgs) {
                         withCredentials([usernamePassword(credentialsId: 'tools-devsite',
                                                           passwordVariable: 'DEV_PASSWORD',
