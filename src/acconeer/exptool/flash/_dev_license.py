@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import logging
-from typing import List, Optional
+from typing import Optional
 
 import bs4
 import requests
@@ -32,9 +32,9 @@ class DevLicense:
     def load(self) -> None:
         """Loads the license HTML document"""
         try:
-            self.html = bs4.BeautifulSoup(
-                requests.get(self.license_url, timeout=10).text, "html.parser"
-            )
+            response = requests.get(self.license_url, timeout=10)
+            response.raise_for_status()
+            self.html = bs4.BeautifulSoup(response.text, "html.parser")
         except Exception as e:
             log.warn(str(e))
             self.html = None
@@ -92,41 +92,53 @@ class DevLicense:
         subheader_elem = "<h3>" + DEV_LICENSE_DEFAULT_SUBHEADER + "</h3>"
 
         if self.html is not None:
-            subheader_elem = str(self.html.find("h3"))
+            subheader_element = self.html.find("h3")
+            if isinstance(subheader_element, bs4.Tag):
+                subheader_elem = str(subheader_element)
 
         return subheader_elem
 
-    def get_content(self) -> List[str]:
+    def _content_tags(self) -> list[tuple[bs4.Tag, str]]:
+        """Headings and paragraphs of the agreement, with their text, in reading order.
+
+        Scoped to <main> so that site navigation ("Products", "Contact", ...)
+        sharing the page's heading tags isn't picked up as license content.
+        Some of the agreement's own sections (e.g. "11. APPLICABLE LAW") have
+        no heading tag at all and are a <p> that's entirely bold instead;
+        those still pass the same "p" selector and need no special-casing.
+        Text comes from .get_text(), not .string: several headings split
+        their text across more than one <strong> run, which leaves .string
+        as None even though the heading has real text.
+        """
+        if self.html is None:
+            return []
+
+        main = self.html.find("main")
+        root = main if isinstance(main, bs4.Tag) else self.html
+
+        tags_with_text = [(tag, tag.get_text()) for tag in root.select("h2, h3, h4, p")]
+        return [(tag, text) for tag, text in tags_with_text if text]
+
+    def get_content(self) -> list[str]:
         """Get the HTML paragraph content as a list of strings
 
         :returns: HTML paragraphs.
 
         """
-        paragraphs = []
+        if self.html is None:
+            return [DEV_LICENSE_DEFAULT_CONFIRMATION_MSG]
 
-        if self.html is not None:
-            for p in self.html.select("p"):
-                if p is not None and p.string is not None:
-                    # The "\xa0" is a non-breaking space (&nbsp;) that is not
-                    # escaped by BeautifulSoup and hence filtered out here.
-                    paragraphs.append(p.string.replace("\xa0", " "))
-        else:
-            paragraphs.append(DEV_LICENSE_DEFAULT_CONFIRMATION_MSG)
+        # The "\xa0" is a non-breaking space (&nbsp;) that is not
+        # escaped by BeautifulSoup and hence filtered out here.
+        return [text.replace("\xa0", " ") for _tag, text in self._content_tags()]
 
-        return paragraphs
-
-    def get_content_elements(self) -> List[str]:
+    def get_content_elements(self) -> list[str]:
         """Get the HTML paragraph elements as a list of strings
 
         :returns: HTML paragraphs elements.
 
         """
-        paragraphs = []
+        if self.html is None:
+            return ["<p></p>", DEV_LICENSE_DEFAULT_CONFIRMATION_MSG]
 
-        if self.html is not None:
-            paragraphs = [str(p) for p in self.html.select("p") if "class=" not in str(p)]
-        else:
-            paragraphs.append("<p></p>")
-            paragraphs.append(DEV_LICENSE_DEFAULT_CONFIRMATION_MSG)
-
-        return paragraphs
+        return [str(tag) for tag, _text in self._content_tags()]

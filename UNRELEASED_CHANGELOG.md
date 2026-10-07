@@ -38,6 +38,13 @@
 
 ### Fixed
 
+- The developer license page in the flash wizard shows the actual
+  agreement text again, instead of a near-empty dialog: it no longer
+  shows the literal text "None" in place of its subheading, and each
+  section (e.g. "1. LIMITED LICENSE") keeps its heading instead of
+  the heading being silently dropped. Fetch failures, including a
+  server error response, now consistently fall back to pointing at
+  the website itself.
 - Installs no longer pick an h5py or pandas release built against
   NumPy 1, which fails to import with NumPy 2.
 - A script using `PGProcess` or `PlotProcess` no longer hangs on exit when
