@@ -161,6 +161,10 @@ class DevSiteRepository(ArtifactRepository):
         return self.cookies is not None
 
     def download(self, artifact: Artifact, path: str) -> Tuple[str, str]:
+        if artifact is Artifact.MODULE_BUNDLE:
+            msg = "The module bundle has no download location on the developer site yet."
+            raise NotImplementedError(msg)
+
         with requests.Session() as session:
             if self.cookies is not None:
                 session.cookies.update(self.cookies)

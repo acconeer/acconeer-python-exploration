@@ -64,7 +64,11 @@ from acconeer.exptool.app.new.backend import (
     TimingMessage,
     _RateStats,
 )
-from acconeer.exptool.app.new.storage import get_config_dir, remove_temp_dir
+from acconeer.exptool.app.new.storage import (
+    get_config_dir,
+    get_module_bundle_path,
+    remove_temp_dir,
+)
 from acconeer.exptool.app.new.ui.components.data_editor import DataEditor
 
 from .plugin_protocols import PlotPluginInterface
@@ -98,6 +102,7 @@ class PluginSpec(Protocol):
     presets: List[PluginPresetSpec]
     title: str
     default_preset_id: Enum
+    requires_module_bundle_artifact: bool
 
     def create_backend_plugin(
         self, callback: Callable[[Message], None], key: str
@@ -235,6 +240,7 @@ class AppModel(QObject):
 
     plugins: list[PluginSpec]
     plugin: Optional[PluginSpec]
+    module_bundle_available: bool
 
     backend_plugin_state: Any
 
@@ -280,6 +286,7 @@ class AppModel(QObject):
 
         self.plugins = plugins
         self.plugin = None
+        self.module_bundle_available = get_module_bundle_path().is_file()
 
         self.backend_plugin_state = None
 
@@ -859,6 +866,9 @@ class AppModel(QObject):
         if plugin == self.plugin:
             return
 
+        if self._refuse_without_module_bundle(plugin):
+            return
+
         log.debug("AppModel is unloading its current plugin")
         self.sig_load_plugin.emit(None)
         self._update_saveable_file(None)
@@ -879,6 +889,24 @@ class AppModel(QObject):
         self.plugin = plugin
         self.broadcast()
         self.broadcast_backend_state()
+
+    def _refuse_without_module_bundle(self, plugin: Optional[PluginSpec]) -> bool:
+        if plugin is None or not plugin.requires_module_bundle_artifact:
+            return False
+        if self.module_bundle_available:
+            return False
+
+        msg = (
+            f"{plugin.title} needs the module bundle. "
+            "Select it in the plugin list to download the module."
+        )
+        self.emit_error(HandledException(msg))
+        return True
+
+    def store_module_bundle(self, downloaded_path: Path) -> None:
+        shutil.move(downloaded_path, get_module_bundle_path())
+        self.module_bundle_available = True
+        self.broadcast()
 
     def set_plugin_preset(self, preset_id: Enum) -> None:
         BackendPlugin.set_preset.rpc(self.put_task, preset_id=preset_id.value)
@@ -923,6 +951,9 @@ class AppModel(QObject):
             return
 
         plugin = d.selected_plugin_option
+
+        if self._refuse_without_module_bundle(plugin):
+            return
 
         try:
             get_config_result = plugin.replay_dialog_get_config(path)

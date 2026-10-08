@@ -34,6 +34,7 @@ class PluginSpecBase(abc.ABC, PluginSpec):
     family: PluginFamily = attrs.field()
     presets: List[PluginPresetSpec] = attrs.field()
     default_preset_id: Enum = attrs.field()
+    requires_module_bundle_artifact: bool = attrs.field(default=False)
 
     @abc.abstractmethod
     def create_backend_plugin(

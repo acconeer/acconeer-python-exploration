@@ -15,6 +15,7 @@ class Artifact(Enum):
     XC120_EXPLORATION_SERVER = auto()
     XM125_EXPLORATION_SERVER = auto()
     XM126_EXPLORATION_SERVER = auto()
+    MODULE_BUNDLE = auto()
 
 
 class ArtifactRepositoryError(Exception):
