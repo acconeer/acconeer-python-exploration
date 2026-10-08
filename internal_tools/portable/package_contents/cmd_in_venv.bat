@@ -1,13 +1,15 @@
 @echo off
 
-IF NOT EXIST "update_timestamp.txt" (
-    echo ERROR: File 'update_timestamp.txt' does not exist.
+SET update_timestamp=
+IF EXIST "update_timestamp.txt" SET /P update_timestamp=<update_timestamp.txt
+
+IF "%update_timestamp%"=="" (
+    echo ERROR: File 'update_timestamp.txt' is missing or empty.
     echo ERROR: Run 'update.bat'.
     pause
     exit 1
 )
 
-SET /P update_timestamp=<update_timestamp.txt
 SET venvname=venv-%update_timestamp%
 
 @echo on

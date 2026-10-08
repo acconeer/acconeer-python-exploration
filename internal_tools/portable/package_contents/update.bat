@@ -18,9 +18,11 @@ IF ERRORLEVEL 1 (
 
 echo Updating timestamp in 'update_timestamp.txt' ...
 
-uvx python -c "import datetime; print(datetime.date.today())" >update_timestamp.txt
+REM The redirect creates the file even if uvx fails, so write it aside first
+uvx python -c "import datetime; print(datetime.date.today())" >update_timestamp.tmp
 
 IF ERRORLEVEL 1 (
+    del update_timestamp.tmp
     echo ERROR: Could not create timestamp, see above
     echo
     echo NOTE: If this is your first time running the 'update.bat' script,
@@ -28,6 +30,8 @@ IF ERRORLEVEL 1 (
     pause
     exit 1
 )
+
+move /Y update_timestamp.tmp update_timestamp.txt >nul
 
 echo
 echo INFO:
