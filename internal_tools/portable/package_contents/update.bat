@@ -30,23 +30,28 @@ uvx python -c "import datetime; print(datetime.date.today())" >update_timestamp.
 IF %ERRORLEVEL% NEQ 0 (
     del update_timestamp.tmp
     echo ERROR: Could not create timestamp, see above
-    echo.
-    echo NOTE: If uv was just installed, make sure it is on PATH and try
-    echo NOTE: running 'update.bat' again.
-    echo NOTE:
-    echo NOTE: If this issue persists, uninstall uv by running
-    echo NOTE: 'uninstall_uv.bat'.
+    echo INFO: #######################################################
+    echo INFO: #                                                     #
+    echo INFO: #  In order to proceed:                               #
+    echo INFO: #                                                     #
+    echo INFO: #      - if uv was just installed, make sure          #
+    echo INFO: #        it's on PATH and run 'update.bat' again      #
+    echo INFO: #      - if this persists, run 'uninstall_uv.bat'     #
+    echo INFO: #                                                     #
+    echo INFO: #######################################################
     pause
     exit 1
 )
 
 move /Y update_timestamp.tmp update_timestamp.txt >nul
 
-echo.
-echo INFO:
-echo INFO: Update done.
-echo INFO:
-echo INFO: Ready to run 'run_app.bat' or 'cmd_in_venv.bat'.
-echo INFO:
+echo INFO: #######################################################
+echo INFO: #                                                     #
+echo INFO: #  Update done! You can now:                          #
+echo INFO: #                                                     #
+echo INFO: #      - run 'run_app.bat' to launch the app          #
+echo INFO: #      - run 'cmd_in_venv.bat' for a venv shell       #
+echo INFO: #                                                     #
+echo INFO: #######################################################
 
 pause

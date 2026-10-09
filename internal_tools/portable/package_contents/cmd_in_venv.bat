@@ -5,7 +5,13 @@ IF EXIST "update_timestamp.txt" SET /P update_timestamp=<update_timestamp.txt
 
 IF "%update_timestamp%"=="" (
     echo ERROR: File 'update_timestamp.txt' is missing or empty.
-    echo ERROR: Run 'update.bat'.
+    echo INFO: #######################################################
+    echo INFO: #                                                     #
+    echo INFO: #  In order to proceed:                               #
+    echo INFO: #                                                     #
+    echo INFO: #      1. run the script 'update.bat'                 #
+    echo INFO: #                                                     #
+    echo INFO: #######################################################
     pause
     exit 1
 )

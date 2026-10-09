@@ -6,7 +6,11 @@ uv --version
 
 IF %ERRORLEVEL% NEQ 0 (
     echo INFO: Success! uv cannot be found on the system.
-    echo INFO:          To reinstall, run the 'update.bat' script
+    echo INFO: #######################################################
+    echo INFO: #                                                     #
+    echo INFO: #  To reinstall, run 'update.bat'                     #
+    echo INFO: #                                                     #
+    echo INFO: #######################################################
     pause
     exit 0
 )
@@ -19,13 +23,24 @@ IF %ERRORLEVEL% NEQ 0 (
     echo ERROR: uv was not installed via winget.
     echo ERROR:
     echo ERROR: It seems like you have installed uv yourself outside this
-    echo ERROR: portable ET distribution. You will need to uninstall your
-    echo ERROR: custom installation yourself before proceeding
+    echo ERROR: portable ET distribution.
+    echo INFO: #######################################################
+    echo INFO: #                                                     #
+    echo INFO: #  In order to proceed:                               #
+    echo INFO: #                                                     #
+    echo INFO: #      - uninstall your custom uv installation        #
+    echo INFO: #        yourself, then rerun this script             #
+    echo INFO: #                                                     #
+    echo INFO: #######################################################
     pause
     exit 1
 ) ELSE (
     echo INFO: Success! uv was uninstalled.
-    echo INFO:          To reinstall, run the 'update.bat' script
+    echo INFO: #######################################################
+    echo INFO: #                                                     #
+    echo INFO: #  To reinstall, run 'update.bat'                     #
+    echo INFO: #                                                     #
+    echo INFO: #######################################################
     pause
     exit 0
 )
