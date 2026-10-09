@@ -30,7 +30,7 @@ uvx python -c "import datetime; print(datetime.date.today())" >update_timestamp.
 IF %ERRORLEVEL% NEQ 0 (
     del update_timestamp.tmp
     echo ERROR: Could not create timestamp, see above
-    echo
+    echo.
     echo NOTE: If uv was just installed, make sure it is on PATH and try
     echo NOTE: running 'update.bat' again.
     echo NOTE:
@@ -42,7 +42,7 @@ IF %ERRORLEVEL% NEQ 0 (
 
 move /Y update_timestamp.tmp update_timestamp.txt >nul
 
-echo
+echo.
 echo INFO:
 echo INFO: Update done.
 echo INFO:
