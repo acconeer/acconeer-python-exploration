@@ -31,6 +31,9 @@ IF ERRORLEVEL 1 (
     echo
     echo NOTE: If uv was just installed, make sure it is on PATH and try
     echo NOTE: running 'update.bat' again.
+    echo NOTE:
+    echo NOTE: If this issue persists, uninstall uv by running
+    echo NOTE: 'uninstall_uv.bat'.
     pause
     exit 1
 )
