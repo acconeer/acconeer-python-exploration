@@ -13,6 +13,10 @@ IF ERRORLEVEL 1 (
         echo ERROR: Could not install uv, see above
         pause
         exit 1
+    ) ELSE (
+        echo INFO: Successfully installed uv, please rerun 'update.bat'
+        pause
+        exit 0
     )
 )
 
@@ -25,8 +29,8 @@ IF ERRORLEVEL 1 (
     del update_timestamp.tmp
     echo ERROR: Could not create timestamp, see above
     echo
-    echo NOTE: If this is your first time running the 'update.bat' script,
-    echo NOTE: please try running 'update.bat' one more time.
+    echo NOTE: If uv was just installed, make sure it is on PATH and try
+    echo NOTE: running 'update.bat' again.
     pause
     exit 1
 )
