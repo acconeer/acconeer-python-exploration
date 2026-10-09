@@ -25,7 +25,7 @@ echo Updating timestamp in 'update_timestamp.txt' ...
 REM The redirect creates the file even if uvx fails, so write it aside first
 uvx python -c "import datetime; print(datetime.date.today())" >update_timestamp.tmp
 
-IF ERRORLEVEL 1 (
+IF %ERRORLEVEL% NEQ 0 (
     del update_timestamp.tmp
     echo ERROR: Could not create timestamp, see above
     echo

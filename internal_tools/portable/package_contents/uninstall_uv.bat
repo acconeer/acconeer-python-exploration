@@ -4,7 +4,7 @@ echo Checking if uv is installed ...
 
 uv --version
 
-IF ERRORLEVEL 1 (
+IF %ERRORLEVEL% NEQ 0 (
     echo INFO: Success! uv cannot be found on the system.
     echo INFO:          To reinstall, run the 'update.bat' script
     pause
@@ -15,7 +15,7 @@ echo Trying to uninstall uv with winget ...
 
 winget uninstall --id=astral-sh.uv -e
 
-IF ERRORLEVEL 1 (
+IF %ERRORLEVEL% NEQ 0 (
     echo ERROR: uv was not installed via winget.
     echo ERROR:
     echo ERROR: It seems like you have installed uv yourself outside this
