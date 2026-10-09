@@ -4,21 +4,23 @@ echo Checking if uv is installed ...
 
 uv --version
 
-IF ERRORLEVEL 1 (
-    echo Trying to install uv with winget ...
+IF %ERRORLEVEL% EQU 0 GOTO :uv_present
 
-    winget install --id=astral-sh.uv -e
+echo Trying to install uv with winget ...
 
-    IF ERRORLEVEL 1 (
-        echo ERROR: Could not install uv, see above
-        pause
-        exit 1
-    ) ELSE (
-        echo INFO: Successfully installed uv, please rerun 'update.bat'
-        pause
-        exit 0
-    )
+winget install --id=astral-sh.uv -e
+
+IF %ERRORLEVEL% NEQ 0 (
+    echo ERROR: Could not install uv, see above
+    pause
+    exit 1
 )
+
+echo INFO: Successfully installed uv, please rerun 'update.bat'
+pause
+exit 0
+
+:uv_present
 
 echo Updating timestamp in 'update_timestamp.txt' ...
 
