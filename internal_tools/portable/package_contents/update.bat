@@ -18,9 +18,8 @@ IF ERRORLEVEL 1 (
 
 echo Updating timestamp in 'update_timestamp.txt' ...
 
-uvx python -c "import datetime; print(datetime.date.today())" >update_timestamp.txt
-
-IF ERRORLEVEL 1 (
+REM Treat a failed timestamp write as an update failure.
+uvx python -c "import datetime; print(datetime.date.today())" >update_timestamp.txt || (
     echo ERROR: Could not create timestamp, see above
     echo
     echo NOTE: If this is your first time running the 'update.bat' script,
