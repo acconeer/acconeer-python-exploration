@@ -7,9 +7,7 @@ import typing as t
 from dataclasses import dataclass
 from enum import Enum, IntEnum, auto
 
-import requests
-
-from PySide6.QtCore import QObject, QRunnable, QThreadPool, QTimerEvent, Signal
+from PySide6.QtCore import QTimerEvent
 from PySide6.QtGui import QDesktopServices, QPixmap
 from PySide6.QtWidgets import (
     QButtonGroup,
@@ -25,11 +23,9 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QRadioButton,
-    QSizePolicy,
     QTextEdit,
     QToolButton,
     QVBoxLayout,
-    QWidget,
     QWizard,
     QWizardPage,
 )
@@ -41,6 +37,9 @@ from acconeer.exptool.app.new.app import ConnectionState
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.storage import get_temp_dir
 from acconeer.exptool.app.new.ui import icons
+from acconeer.exptool.app.new.ui.background_task import BGTask
+from acconeer.exptool.app.new.ui.components.devsite import get_internet_related_error_message
+from acconeer.exptool.app.new.ui.utils import FeedbackStyleSheet, Spacer
 from acconeer.exptool.flash import (
     flash_image,
     get_boot_description,
@@ -73,11 +72,6 @@ class WizardField(str, Enum):
 
     def required(self) -> str:
         return self + "*"
-
-
-class FeedbackStyleSheet(str, Enum):
-    ERROR = f"background-color: {icons.ERROR_RED}; color: white"
-    NICE = f"background-color: {icons.BUTTON_ICON_COLOR}; color: white"
 
 
 class ModuleSelectionPage(QWizardPage):
@@ -158,7 +152,7 @@ class DeviceSelectionPage(QWizardPage):
         layout.addRow("Selected device", cb_refresh_layout)
         layout.addRow(self.show_all_devices_checkbox)
         layout.addRow(self.feedback_lbl)
-        layout.addRow(_Spacer())
+        layout.addRow(Spacer())
         self.setLayout(layout)
 
     def isComplete(self) -> bool:
@@ -362,7 +356,7 @@ class LoginFormPage(QWizardPage):
 
         layout.addRow(self.login_button)
 
-        layout.addRow(_Spacer())
+        layout.addRow(Spacer())
         layout.addRow(self.register_btn)
 
         self.setLayout(layout)
@@ -506,7 +500,7 @@ class DownloadPage(QWizardPage):
         layout = QGridLayout()
         layout.addWidget(self._download_button, 0, 0, 1, 2)
         layout.addWidget(self.feedback_lbl, 1, 0, 1, 2)
-        layout.addWidget(_Spacer(), 2, 0, 1, 2)
+        layout.addWidget(Spacer(), 2, 0, 1, 2)
         layout.addWidget(self._auth_lbl, 3, 0, 1, 1)
         layout.addWidget(self._forget_me_btn, 3, 1, 1, 1)
 
@@ -627,7 +621,7 @@ class FlashPage(QWizardPage):
         self.feedback_lbl = QLineEdit()
         self.feedback_lbl.setReadOnly(True)
         self.feedback_lbl.setVisible(False)
-        self.feedback_lbl.setStyleSheet(f"background-color: {icons.ERROR_RED}; color: white")
+        self.feedback_lbl.setStyleSheet(FeedbackStyleSheet.ERROR)
 
         self._flash_button = _ThreeDotAnimatedQPushButton("Flash")
         self._flash_button.clicked.connect(self.flash)
@@ -636,7 +630,7 @@ class FlashPage(QWizardPage):
         layout.addRow("Binary path", bin_path_line_edit)
         layout.addRow(self._flash_button)
         layout.addRow(self.feedback_lbl)
-        layout.addRow(_Spacer())
+        layout.addRow(Spacer())
         self.setLayout(layout)
 
     def isComplete(self) -> bool:
@@ -842,9 +836,6 @@ class FlashWizard(QWizard):
         return transitions[self.currentId()]
 
 
-_T = t.TypeVar("_T")
-
-
 @dataclass
 class _AnimationState:
     timer_id: int
@@ -892,56 +883,3 @@ class _ThreeDotAnimatedQPushButton(QPushButton):
         self._state.increment_frame_no()
 
         self._internal_set_text(btn_text)
-
-
-def reraise(e: Exception) -> None:
-    raise e
-
-
-class BGTask(QRunnable):
-    class Signals(QObject):
-        sig_return = Signal(object)  # _T
-        sig_exception = Signal(Exception)
-
-    @classmethod
-    def create_task(
-        cls,
-        f: t.Callable[..., _T],
-        args: tuple[t.Any, ...],
-        return_cb: t.Callable[[_T], t.Any] = lambda _: None,
-        exception_cb: t.Callable[[Exception], t.Any] = reraise,
-    ) -> None:
-        signals = BGTask.Signals()
-        signals.sig_return.connect(return_cb)
-        signals.sig_exception.connect(exception_cb)
-
-        QThreadPool.globalInstance().start(BGTask(f, args, signals))
-
-    def __init__(self, f: t.Callable[..., _T], args: tuple[t.Any, ...], signals: Signals) -> None:
-        super().__init__()
-        self.signals = signals
-        self.f = f
-        self.args = args
-
-    def run(self) -> None:
-        try:
-            res = self.f(*self.args)
-        except Exception as e:
-            self.signals.sig_exception.emit(e)
-        else:
-            self.signals.sig_return.emit(res)
-
-
-def get_internet_related_error_message(exception: Exception) -> str:
-    if isinstance(exception, requests.exceptions.ConnectionError):
-        # there is no internet access
-        error_msg = "Could not reach the Developer Site. Do you have an internet connection?"
-    else:
-        error_msg = "An unexpected error occured:\n" + "".join(exception.args)
-    return error_msg
-
-
-class _Spacer(QWidget):
-    def __init__(self) -> None:
-        super().__init__()
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)

@@ -1,11 +1,22 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 from __future__ import annotations
 
+from enum import Enum
 from typing import Optional
 
 from PySide6 import QtCore
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLayout, QScrollArea, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLayout,
+    QScrollArea,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
+
+from acconeer.exptool.app.new.ui.icons import BUTTON_ICON_COLOR, ERROR_RED
 
 
 class ScrollAreaDecorator(QScrollArea):
@@ -57,3 +68,14 @@ class HorizontalSeparator(QFrame):
     def __init__(self, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
         self.setFrameShape(QFrame.Shape.HLine)
+
+
+class Spacer(QWidget):
+    def __init__(self) -> None:
+        super().__init__()
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+
+
+class FeedbackStyleSheet(str, Enum):
+    ERROR = f"background-color: {ERROR_RED}; color: white"
+    NICE = f"background-color: {BUTTON_ICON_COLOR}; color: white"
