@@ -9,8 +9,12 @@ from pathlib import Path
 
 import dirty_equals as de
 import pytest
+import requests
+
+from PySide6.QtWidgets import QApplication
 
 from acconeer.exptool import a121
+from acconeer.exptool._artifact_repository import DevSiteRepository, _dev_site_repository
 from acconeer.exptool.a121.algo.sparse_iq._plugin import SPARSE_IQ_PLUGIN
 from acconeer.exptool.app.new._enums import PluginGeneration
 from acconeer.exptool.app.new.app_model import PluginSpec
@@ -19,6 +23,50 @@ from acconeer.exptool.app.new.storage import set_et_dir
 
 
 ALWAYS_RETURNS_NONE: t.Callable[[t.Any], None] = {}.get
+
+
+class FakeDevSite:
+    PASSWORD = "correct horse battery staple"
+
+    @staticmethod
+    def logged_in_cookies() -> requests.cookies.RequestsCookieJar:
+        return requests.cookies.cookiejar_from_dict(
+            {"wordpress_logged_in_0": "jane-doeexample-com%0"}
+        )
+
+    def login(
+        self, repository: DevSiteRepository, email: str, password: str, remember_me: bool = False
+    ) -> None:
+        if password != self.PASSWORD:
+            repository.cookies = None
+            return
+
+        repository.cookies = self.logged_in_cookies()
+        if remember_me:
+            _dev_site_repository._save_cookies(repository.cookies)
+
+
+@pytest.fixture
+def fake_devsite(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> FakeDevSite:
+    """Answers logins in place of developer.acconeer.com.
+
+    Saved logins go to a temporary file, keeping the developer's own saved
+    login out of the tests, and vice versa.
+    """
+    fake = FakeDevSite()
+    monkeypatch.setattr(_dev_site_repository, "COOKIE_DIR", tmp_path)
+    monkeypatch.setattr(_dev_site_repository, "COOKIE_FILEPATH", tmp_path / "login.pickle")
+    monkeypatch.setattr(
+        DevSiteRepository,
+        "login",
+        lambda repository, *args, **kwargs: fake.login(repository, *args, **kwargs),
+    )
+    return fake
+
+
+@pytest.fixture(scope="module")
+def qapplication() -> QApplication:
+    return QApplication.instance() or QApplication()
 
 
 @pytest.fixture(autouse=True)

@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from enum import Enum, IntEnum, auto
 
 from PySide6.QtCore import QTimerEvent
-from PySide6.QtGui import QDesktopServices, QPixmap
+from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import (
     QButtonGroup,
     QCheckBox,
@@ -23,8 +23,6 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QRadioButton,
-    QTextEdit,
-    QToolButton,
     QVBoxLayout,
     QWizard,
     QWizardPage,
@@ -32,12 +30,12 @@ from PySide6.QtWidgets import (
 
 from acconeer.exptool._artifact_repository import LoginRequiredError, create_artifact_repository
 from acconeer.exptool._core.communication.comm_devices import CommDevice
-from acconeer.exptool._dev_license import DEV_LICENSE_DEFAULT_HEADER, DevLicense
 from acconeer.exptool.app.new.app import ConnectionState
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.storage import get_temp_dir
 from acconeer.exptool.app.new.ui import icons
 from acconeer.exptool.app.new.ui.background_task import BGTask
+from acconeer.exptool.app.new.ui.components import LicenseWidget, LoginFormWidget
 from acconeer.exptool.app.new.ui.components.devsite import get_internet_related_error_message
 from acconeer.exptool.app.new.ui.utils import FeedbackStyleSheet, Spacer
 from acconeer.exptool.flash import (
@@ -54,19 +52,9 @@ from . import resources
 from .dialogs import UserMessageDialog
 
 
-DEVSITE_REGISTER_URL = "https://developer.acconeer.com/register/"
-
-
 class WizardField(str, Enum):
     DOWNLOAD_SELECTED = "download_selected"
     MODULE = "module"
-
-    EMAIL = "email"
-    PASSWORD = "password"
-    REMEMBER_ME = "remember_me"
-    LOGIN_FEEDBACK = "login_feedback"
-    LOGIN_FEEDBACK_VISIBLE = "login_feedback_visible"
-    LOGIN_FEEDBACK_STYLESHEET = "login_feedback_stylesheet"
 
     BIN_PATH = "bin_path"
 
@@ -277,198 +265,42 @@ class BrowseLocalFilePage(QWizardPage):
 
 
 class LoginFormPage(QWizardPage):
-    _LOGIN_BUTTON_DEFAULT_TEXT = "Log in"
-    _LOGIN_BUTTON_PENDING_TEXT = "Logging in ..."
-
-    _COOKIE_POLICY_LINK = "<a href='https://acconeer.com/cookie-policy-eu/'>Cookie Policy</a>"
-    _PRIVACY_STATEMENT_LINK = (
-        "<a href='https://developer.acconeer.com/privacy-policy/'>Privacy Statement</a>"
-    )
-    _REMEMBER_ME_TERMS_HTML = (
-        "<i>"
-        + (
-            "<br>".join(
-                [
-                    '"Remember me" will save your credentials for next time.',
-                    "By checking the box you agree to",
-                    f"Acconeer's {_COOKIE_POLICY_LINK} and {_PRIVACY_STATEMENT_LINK}.",
-                ]
-            )
-        )
-        + "</i>"
-    )
-
-    def __init__(self) -> None:
+    def __init__(self, repository: DevSiteRepository) -> None:
         super().__init__()
-        self.feedback_lbl = QLineEdit("Log in using your developer.accconeer.com account below")
-        self.feedback_lbl.setReadOnly(True)
-        self.feedback_lbl.setVisible(True)
-        self.feedback_lbl.setStyleSheet(FeedbackStyleSheet.NICE)
 
-        self.registerField(WizardField.LOGIN_FEEDBACK, self.feedback_lbl, "text")
-        self.registerField(WizardField.LOGIN_FEEDBACK_VISIBLE, self.feedback_lbl, "visible")
-        self.registerField(WizardField.LOGIN_FEEDBACK_STYLESHEET, self.feedback_lbl, "styleSheet")
+        self.login_widget = LoginFormWidget(repository)
+        self.login_widget.login_succeeded.connect(self._handle_login_succeeded)
 
-        self.email_line_edit = QLineEdit()
-        self.email_line_edit.setPlaceholderText("example@domain.com")
-        self.registerField(WizardField.EMAIL.required(), self.email_line_edit)
-        self.email_line_edit.textChanged.connect(self.update_login_button_enabledness)
-
-        self.password_line_edit = QLineEdit()
-        self.password_line_edit.setEchoMode(QLineEdit.EchoMode.Password)
-        self.password_line_edit.setPlaceholderText("*" * 12)
-        self.registerField(WizardField.PASSWORD.required(), self.password_line_edit)
-        self.password_line_edit.textChanged.connect(self.update_login_button_enabledness)
-
-        self.peek_button = QToolButton()
-        self.peek_button.setIcon(icons.EYE_OPEN())
-        self.peek_button.setCheckable(True)
-        self.peek_button.setChecked(False)
-        self.peek_button.toggled.connect(self._handle_peek_state_change)
-
-        password_and_peek_layout = QHBoxLayout()
-        password_and_peek_layout.addWidget(self.password_line_edit)
-        password_and_peek_layout.addWidget(self.peek_button)
-
-        remember_me_checkbox = QCheckBox()
-        remember_me_checkbox.setText("Remember me")
-        remember_me_checkbox.setChecked(False)
-        remember_me_terms_label = QLabel(self._REMEMBER_ME_TERMS_HTML)
-        remember_me_terms_label.setStyleSheet(f"QLabel {{ color: {icons.TEXT_LIGHTGREY}; }}")
-        self.registerField(WizardField.REMEMBER_ME, remember_me_checkbox)
-
-        self.register_btn = QPushButton(
-            "Don't have an account? Register on developer.acconeer.com!"
-        )
-        self.register_btn.setIcon(icons.EXTERNAL_LINK())
-        self.register_btn.clicked.connect(lambda: QDesktopServices.openUrl(DEVSITE_REGISTER_URL))
-
-        self.login_button = QPushButton(self._LOGIN_BUTTON_DEFAULT_TEXT)
-        self.login_button.setEnabled(False)
-        self.login_button.clicked.connect(self.put_login_bg_task)
-
-        layout = QFormLayout()
-
-        layout.addRow(self.feedback_lbl)
-        layout.addRow("Email", self.email_line_edit)
-        layout.addRow("Password", password_and_peek_layout)
-        layout.addRow(remember_me_checkbox, remember_me_terms_label)
-
-        layout.addRow(self.login_button)
-
-        layout.addRow(Spacer())
-        layout.addRow(self.register_btn)
-
+        layout = QVBoxLayout()
+        layout.addWidget(self.login_widget)
         self.setLayout(layout)
 
-    def update_login_button_enabledness(self) -> None:
-        should_be_enabled = (
-            self.field(WizardField.EMAIL) != "" and self.field(WizardField.PASSWORD) != ""
-        )
-        self.login_button.setEnabled(should_be_enabled)
-
-    def put_login_bg_task(self) -> None:
-        email = self.field(WizardField.EMAIL)
-        pwd = self.field(WizardField.PASSWORD)
-        remember_me = self.field(WizardField.REMEMBER_ME)
-        self.login_button.setText(self._LOGIN_BUTTON_PENDING_TEXT)
-        self.login_button.setEnabled(False)
-
-        w = self.wizard()
-        assert isinstance(w, FlashWizard)
-
-        BGTask.create_task(
-            w.artifact_repository.login,
-            args=(email, pwd, remember_me),
-            return_cb=self.handle_login_return,
-            exception_cb=self.handle_login_exception,
-        )
-
-    def handle_login_exception(self, exception: Exception) -> None:
-        self.login_button.setText(self._LOGIN_BUTTON_DEFAULT_TEXT)
-        self.login_button.setEnabled(True)
-
-        error_msg = get_internet_related_error_message(exception)
-
-        self.setField(WizardField.LOGIN_FEEDBACK, error_msg)
-        self.setField(WizardField.LOGIN_FEEDBACK_VISIBLE, True)
-        self.setField(WizardField.LOGIN_FEEDBACK_STYLESHEET, FeedbackStyleSheet.ERROR)
-        self.login_button.setText(self._LOGIN_BUTTON_DEFAULT_TEXT)
-
-    def handle_login_return(self, _login_result: None) -> None:
-        self.login_button.setEnabled(True)
-
-        w = self.wizard()
-        assert isinstance(w, FlashWizard)
-
-        if w.artifact_repository.has_logged_in_previously():
-            user_repr = w.artifact_repository.get_user_representation()
-            if user_repr is None:
-                self.login_button.setText("Logged in")
-            else:
-                self.login_button.setText(f"Logged in as {user_repr}")
-
-            self.completeChanged.emit()
-            w.next()  # Go to next page automatically
-        else:
-            self.setField(WizardField.LOGIN_FEEDBACK, "Wrong email or password. Please try again.")
-            self.setField(WizardField.LOGIN_FEEDBACK_VISIBLE, True)
-            self.setField(WizardField.LOGIN_FEEDBACK_STYLESHEET, FeedbackStyleSheet.ERROR)
-            self.login_button.setText(self._LOGIN_BUTTON_DEFAULT_TEXT)
-
-    def _handle_peek_state_change(self, peek_checked: bool) -> None:
-        if peek_checked:
-            self.password_line_edit.setEchoMode(QLineEdit.EchoMode.Normal)
-            self.peek_button.setIcon(icons.EYE_CLOSED())
-        else:
-            self.password_line_edit.setEchoMode(QLineEdit.EchoMode.Password)
-            self.peek_button.setIcon(icons.EYE_OPEN())
-
     def isComplete(self) -> bool:
-        w = self.wizard()
-        assert isinstance(w, FlashWizard)
-        return w.artifact_repository.has_logged_in_previously()
+        return self.login_widget.has_logged_in()
+
+    def _handle_login_succeeded(self) -> None:
+        self.completeChanged.emit()
+        # The user can leave this page while the login is running.
+        if self.wizard().currentPage() is self:
+            self.wizard().next()
 
 
 class LicensePage(QWizardPage):
     def __init__(self) -> None:
         super().__init__()
 
-        self.license_has_been_fetched = False
-
-        self.setTitle(DEV_LICENSE_DEFAULT_HEADER)
+        self.license_widget = LicenseWidget()
+        self.setTitle(self.license_widget.title)
         self.setButtonText(QWizard.WizardButton.NextButton, "I Accept")
-
-        self.license_text_edit = QTextEdit()
-        self.license_text_edit.setReadOnly(True)
-        self.license_text_edit.setText("Downloading license ...")
-        BGTask.create_task(self.get_dev_licence, args=(), return_cb=self.populate_devlicence)
+        self.license_widget.title_changed.connect(self.setTitle)
+        self.license_widget.fetch_completed.connect(self.completeChanged.emit)
 
         layout = QVBoxLayout()
-        layout.addWidget(self.license_text_edit)
+        layout.addWidget(self.license_widget)
         self.setLayout(layout)
 
     def isComplete(self) -> bool:
-        return self.license_has_been_fetched
-
-    @staticmethod
-    def get_dev_licence() -> tuple[str, str, str]:
-        dev_license = DevLicense()
-        dev_license.load()
-
-        title = dev_license.get_header()
-        subtitle = dev_license.get_subheader_element()
-        paragraphs = "".join(dev_license.get_content_elements())
-
-        return (title, subtitle, paragraphs)
-
-    def populate_devlicence(self, t: tuple[str, str, str]) -> None:
-        self.license_has_been_fetched = True
-        self.completeChanged.emit()
-
-        (title, subtitle, paragraphs) = t
-        self.setTitle(title)
-        self.license_text_edit.setHtml(subtitle + paragraphs)
+        return self.license_widget.has_license()
 
 
 class DownloadPage(QWizardPage):
@@ -547,13 +379,7 @@ class DownloadPage(QWizardPage):
                 return
 
             if not w.artifact_repository.has_logged_in_previously():
-                self.setField(
-                    WizardField.LOGIN_FEEDBACK, "Cookies have gone stale, Please login again"
-                )
-                self.setField(WizardField.LOGIN_FEEDBACK_VISIBLE, True)
-                self.setField(WizardField.LOGIN_FEEDBACK_STYLESHEET, FeedbackStyleSheet.NICE)
-                w.artifact_repository.forget_login()
-                w.setCurrentId(_Page.LOGIN)
+                w.ask_for_login_again()
                 return
 
             device = get_flash_download_name(
@@ -587,14 +413,7 @@ class DownloadPage(QWizardPage):
         if isinstance(exception, LoginRequiredError):
             w = self.wizard()
             assert isinstance(w, FlashWizard)
-
-            self.setField(
-                WizardField.LOGIN_FEEDBACK, "Cookies have gone stale, Please login again"
-            )
-            self.setField(WizardField.LOGIN_FEEDBACK_VISIBLE, True)
-            self.setField(WizardField.LOGIN_FEEDBACK_STYLESHEET, FeedbackStyleSheet.NICE)
-            w.artifact_repository.forget_login()
-            w.setCurrentId(_Page.LOGIN)
+            w.ask_for_login_again()
             return
 
         self.feedback_lbl.setVisible(True)
@@ -800,7 +619,7 @@ class FlashWizard(QWizard):
         self.setPage(_Page.LOCAL_FILE_OR_DOWNLOAD, SelectLocalFileOrDownloadFromDevsitePage())
         self.setPage(_Page.BROWSE_LOCAL_FILE, BrowseLocalFilePage())
         self.setPage(_Page.LICENSE, LicensePage())
-        self.setPage(_Page.LOGIN, LoginFormPage())
+        self.setPage(_Page.LOGIN, LoginFormPage(self.artifact_repository))
         self.setPage(_Page.DOWNLOAD, DownloadPage())
         self.setPage(_Page.FLASH, FlashPage(app_model))
         self.setPage(_Page.FINAL, FinalPage())
@@ -809,6 +628,16 @@ class FlashWizard(QWizard):
 
     def set_comm_device(self, comm_device: CommDevice) -> None:
         self.comm_device = comm_device
+
+    def ask_for_login_again(self) -> None:
+        login_page = self.page(_Page.LOGIN)
+        assert isinstance(login_page, LoginFormPage)
+        login_page.login_widget.set_feedback(
+            "Your developer.acconeer.com login has expired. Log in again to download.",
+            FeedbackStyleSheet.NICE,
+        )
+        self.artifact_repository.forget_login()
+        self.setCurrentId(_Page.LOGIN)
 
     def nextId(self) -> int:
         if not self.artifact_repository.has_logged_in_previously():
