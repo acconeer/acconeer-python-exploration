@@ -1,7 +1,6 @@
 # Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
-from ._dev_license import DevLicense
 from ._flash_exception import FlashException
 from ._flasher import (
     BIN_FETCH_PROMPT,

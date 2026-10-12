@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ from textual.app import App, Driver
 from textual.geometry import Spacing
 from textual.widgets import Button, ButtonPressed, Header, ScrollView
 
-from ._dev_license import DevLicense
+from acconeer.exptool._dev_license import DevLicense
 
 
 class DevLicenseTuiDialog(App):

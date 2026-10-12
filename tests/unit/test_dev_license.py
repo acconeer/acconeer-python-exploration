@@ -8,8 +8,8 @@ import typing as t
 import pytest
 import requests
 
-from acconeer.exptool.flash import _dev_license
-from acconeer.exptool.flash._dev_license import (
+from acconeer.exptool import _dev_license
+from acconeer.exptool._dev_license import (
     DEV_LICENSE_DEFAULT_CONFIRMATION_MSG,
     DEV_LICENSE_DEFAULT_HEADER,
     DEV_LICENSE_DEFAULT_SUBHEADER,

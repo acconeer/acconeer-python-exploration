@@ -36,12 +36,12 @@ from PySide6.QtWidgets import (
 
 from acconeer.exptool._artifact_repository import LoginRequiredError, create_artifact_repository
 from acconeer.exptool._core.communication.comm_devices import CommDevice
+from acconeer.exptool._dev_license import DEV_LICENSE_DEFAULT_HEADER, DevLicense
 from acconeer.exptool.app.new.app import ConnectionState
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.storage import get_temp_dir
 from acconeer.exptool.app.new.ui import icons
 from acconeer.exptool.flash import (
-    DevLicense,
     flash_image,
     get_boot_description,
     get_flash_download_name,
@@ -49,7 +49,6 @@ from acconeer.exptool.flash import (
     get_post_dfu_description,
     is_fw_downloadable,
 )
-from acconeer.exptool.flash._dev_license import DEV_LICENSE_DEFAULT_HEADER
 from acconeer.exptool.flash._products import EVK_TO_PRODUCT_MAP, PRODUCT_NAME_TO_ARTIFACT
 
 from . import resources

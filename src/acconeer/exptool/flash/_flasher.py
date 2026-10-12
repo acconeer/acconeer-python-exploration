@@ -20,6 +20,7 @@ from acconeer.exptool._artifact_repository import (
 )
 from acconeer.exptool._core.communication import comm_devices
 from acconeer.exptool._core.communication.links.usb_link import UsbPortError
+from acconeer.exptool._dev_license import DevLicense
 from acconeer.exptool.flash._bootloader_tool import BootloaderTool
 from acconeer.exptool.flash._flash_exception import FlashException
 from acconeer.exptool.flash._products import (
@@ -29,7 +30,6 @@ from acconeer.exptool.flash._products import (
     PRODUCT_PID_TO_FLASH_MAP,
 )
 
-from ._dev_license import DevLicense
 from ._dev_license_tui import DevLicenseTuiDialog
 
 

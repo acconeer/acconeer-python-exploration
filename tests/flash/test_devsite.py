@@ -15,7 +15,7 @@ import bs4
 import pytest
 
 from acconeer.exptool._artifact_repository import Artifact, DevSiteRepository, LoginRequiredError
-from acconeer.exptool.flash import DevLicense
+from acconeer.exptool._dev_license import DevLicense
 
 
 # Marks all tests in this file as "devsite"
