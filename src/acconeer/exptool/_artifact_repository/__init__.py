@@ -3,6 +3,7 @@
 
 from ._dev_site_repository import DevSiteRepository
 from ._interface import Artifact, ArtifactRepository, ArtifactRepositoryError, LoginRequiredError
+from ._module_bundle import extract_module_bundle, import_module_bundle, install_module_bundle
 from ._plugins import (
     ArtifactRepositoryModuleSpec,
     create_artifact_repository,
@@ -20,7 +21,10 @@ __all__ = [
     "DevSiteRepository",
     "LoginRequiredError",
     "create_artifact_repository",
+    "extract_module_bundle",
     "get_plugin_manager",
     "hookimpl",
+    "import_module_bundle",
+    "install_module_bundle",
     "load_plugin_file",
 ]
