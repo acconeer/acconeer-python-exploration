@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from PySide6.QtCore import Signal
-from PySide6.QtWidgets import QPushButton, QTextEdit, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QDialog, QHBoxLayout, QPushButton, QTextEdit, QVBoxLayout, QWidget
 
 from acconeer.exptool._dev_license import DEV_LICENSE_DEFAULT_HEADER, DevLicense
 from acconeer.exptool.app.new.ui.background_task import BGTask
@@ -76,3 +76,33 @@ class LicenseWidget(QWidget):
         )
         self.retry_button.setVisible(True)
         self.fetch_completed.emit()
+
+
+class LicenseDialog(QDialog):
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+
+        self.license_widget = LicenseWidget()
+        self.setWindowTitle(self.license_widget.title)
+        self.license_widget.title_changed.connect(self.setWindowTitle)
+
+        self._accept_button = QPushButton("Accept")
+        self._accept_button.setEnabled(False)
+        self._accept_button.clicked.connect(self.accept)
+        self.license_widget.fetch_completed.connect(self._handle_fetch_completed)
+
+        self._decline_button = QPushButton("Decline")
+        self._decline_button.clicked.connect(self.reject)
+
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+        button_layout.addWidget(self._decline_button)
+        button_layout.addWidget(self._accept_button)
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.license_widget)
+        layout.addLayout(button_layout)
+        self.setLayout(layout)
+
+    def _handle_fetch_completed(self) -> None:
+        self._accept_button.setEnabled(self.license_widget.has_license())

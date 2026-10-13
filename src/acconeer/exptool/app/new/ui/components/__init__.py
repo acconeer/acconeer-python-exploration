@@ -5,7 +5,7 @@ from . import a121, pidgets
 from .attrs_config_editor import AttrsConfigEditor, JoinedPartialAttrsConfigEditors
 from .collapsible_widget import CollapsibleWidget
 from .data_editor import DataEditor
-from .devsite import LicenseWidget, LoginFormWidget
+from .devsite import LicenseDialog, LicenseWidget, LoginDialog, LoginFormWidget
 from .goto_resource_tab_button import GotoResourceTabButton
 from .group_box import GroupBox
 from .json_save_load_buttons import PresentationType, PresenterFunc

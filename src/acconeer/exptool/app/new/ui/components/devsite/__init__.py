@@ -2,5 +2,5 @@
 # All rights reserved
 
 from ._utils import get_internet_related_error_message
-from .license import LicenseWidget
-from .login import LoginFormWidget
+from .license import LicenseDialog, LicenseWidget
+from .login import LoginDialog, LoginFormWidget

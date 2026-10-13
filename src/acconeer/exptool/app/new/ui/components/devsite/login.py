@@ -6,12 +6,14 @@ from PySide6.QtCore import Signal
 from PySide6.QtGui import QDesktopServices, QShowEvent
 from PySide6.QtWidgets import (
     QCheckBox,
+    QDialog,
     QFormLayout,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QPushButton,
     QToolButton,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -145,6 +147,9 @@ class LoginFormWidget(QWidget):
 
     def _handle_login_exception(self, exception: Exception) -> None:
         self._login_pending = False
+        if not self.isVisible():
+            return
+
         self.login_button.setEnabled(True)
 
         error_msg = get_internet_related_error_message(exception)
@@ -153,6 +158,11 @@ class LoginFormWidget(QWidget):
 
     def _handle_login_return(self, _login_result: None) -> None:
         self._login_pending = False
+        # The user can close the form while the login is in flight; the
+        # login then goes unreported.
+        if not self.isVisible():
+            return
+
         self.login_button.setEnabled(True)
 
         if self.has_logged_in():
@@ -179,3 +189,38 @@ class LoginFormWidget(QWidget):
     def set_feedback(self, message: str, style: FeedbackStyleSheet) -> None:
         self.feedback_lbl.setText(message)
         self.feedback_lbl.setStyleSheet(style)
+
+
+class LoginDialog(QDialog):
+    """Asks the user to log in to developer.acconeer.com.
+
+    Check ``DevSiteRepository.from_saved_login().has_logged_in_previously()``
+    first; a remembered login needs no dialog. ``repository`` is ``None``
+    unless ``exec()`` returned ``Accepted``.
+    """
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Log in")
+
+        self.repository: DevSiteRepository | None = None
+        self._pending_repository = DevSiteRepository(cookies=None)
+
+        self.login_widget = LoginFormWidget(self._pending_repository)
+        self.login_widget.login_succeeded.connect(self._handle_login_succeeded)
+
+        self._cancel_button = QPushButton("Cancel")
+        self._cancel_button.clicked.connect(self.reject)
+
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+        button_layout.addWidget(self._cancel_button)
+
+        layout = QVBoxLayout()
+        layout.addWidget(self.login_widget)
+        layout.addLayout(button_layout)
+        self.setLayout(layout)
+
+    def _handle_login_succeeded(self) -> None:
+        self.repository = self._pending_repository
+        self.accept()
