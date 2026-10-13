@@ -12,8 +12,10 @@ import typing as t
 
 from acconeer.exptool._artifact_repository import (
     ArtifactRepository,
+    ArtifactRepositoryError,
     DevSiteRepository,
     LoginRequiredError,
+    create_artifact_repository,
 )
 from acconeer.exptool._core.communication import comm_devices
 from acconeer.exptool._core.communication.links.usb_link import UsbPortError
@@ -234,7 +236,7 @@ def is_fw_downloadable(device_name: str) -> bool:
 def _fetch_and_flash(args: argparse.Namespace) -> None:
     flash_device = _get_flash_device_from_args(args)
 
-    devsite: ArtifactRepository = DevSiteRepository.from_saved_login()
+    devsite: ArtifactRepository = create_artifact_repository()
     remember_me = False
     asked_to_remember_me = False
 
@@ -423,4 +425,6 @@ def main() -> None:
         except FlashException as e:
             print(f"\n{str(e)}\n")
         except UsbPortError as e:
+            print(f"\n{str(e)}\n")
+        except ArtifactRepositoryError as e:
             print(f"\n{str(e)}\n")

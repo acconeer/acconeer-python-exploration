@@ -19,6 +19,7 @@ import platformdirs
 import requests
 
 from ._interface import Artifact, ArtifactRepository, LoginRequiredError
+from ._plugins import hookimpl
 from ._utils import try_get_obfuscated_email_from_cookiejar, version_from_filename
 
 
@@ -247,3 +248,9 @@ class DevSiteRepository(ArtifactRepository):
             os.remove(filepath)
 
         return dst_path, version
+
+
+@hookimpl(trylast=True)
+def create_artifact_repository() -> DevSiteRepository:
+    """The default: the production developer site."""
+    return DevSiteRepository.from_saved_login()

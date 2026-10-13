@@ -34,7 +34,7 @@ from PySide6.QtWidgets import (
     QWizardPage,
 )
 
-from acconeer.exptool._artifact_repository import DevSiteRepository, LoginRequiredError
+from acconeer.exptool._artifact_repository import LoginRequiredError, create_artifact_repository
 from acconeer.exptool._core.communication.comm_devices import CommDevice
 from acconeer.exptool.app.new.app import ConnectionState
 from acconeer.exptool.app.new.app_model import AppModel
@@ -800,7 +800,7 @@ class FlashWizard(QWizard):
         self.setWindowTitle("Flash Wizard")
 
         self.comm_device: t.Optional[CommDevice] = None
-        self.artifact_repository = DevSiteRepository.from_saved_login()
+        self.artifact_repository = create_artifact_repository()
 
         self.setPage(_Page.MODULE_SELECTION, ModuleSelectionPage())
         self.setPage(_Page.DEVICE_SELECTION, DeviceSelectionPage(app_model))
