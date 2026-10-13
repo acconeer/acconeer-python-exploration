@@ -16,6 +16,7 @@ from acconeer.exptool._artifact_repository import (
     DevSiteRepository,
     LoginRequiredError,
     create_artifact_repository,
+    load_plugin_file,
 )
 from acconeer.exptool._core.communication import comm_devices
 from acconeer.exptool._core.communication.links.usb_link import UsbPortError
@@ -236,6 +237,8 @@ def is_fw_downloadable(device_name: str) -> bool:
 def _fetch_and_flash(args: argparse.Namespace) -> None:
     flash_device = _get_flash_device_from_args(args)
 
+    if args.artifact_repository is not None:
+        load_plugin_file(args.artifact_repository)
     devsite: ArtifactRepository = create_artifact_repository()
     remember_me = False
     asked_to_remember_me = False
@@ -348,6 +351,13 @@ def _add_common_options(parser: argparse.ArgumentParser) -> None:
             "Fetch latest image file from the web and flash it. "
             "Requires an Acconeer Developer Account."
         ),
+    )
+    # A pluggy plugin file providing the repository '--fetch' gets the image
+    # from, instead of the developer site. Internal use only.
+    parser.add_argument(
+        "--artifact-repository",
+        dest="artifact_repository",
+        help=argparse.SUPPRESS,  # makes option hidden
     )
 
 

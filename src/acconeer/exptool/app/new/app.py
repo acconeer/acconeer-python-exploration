@@ -29,6 +29,12 @@ try:
 
     import pyqtgraph as pg
 
+    # Imports bs4, which comes with the app extra
+    from acconeer.exptool._artifact_repository import (
+        ArtifactRepositoryError,
+        create_artifact_repository,
+        load_plugin_file,
+    )
     from acconeer.exptool.app.desktop_integration import ensure_wayland_integration
 except ImportError:
     traceback.print_exc(file=sys.stdout)
@@ -90,6 +96,14 @@ def main() -> None:
 
     if args.data_dir_override is not None:
         set_et_dir(args.data_dir_override)
+
+    if args.artifact_repository is not None:
+        try:
+            load_plugin_file(args.artifact_repository)
+            # Fails fast on a broken plugin, rather than when flashing.
+            create_artifact_repository()
+        except ArtifactRepositoryError as e:
+            parser.error(str(e))
 
     if sys.platform == "win32" or sys.platform == "cygwin":
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("acconeer.exptool")
@@ -373,6 +387,14 @@ class _ExptoolArgumentParser(argparse.ArgumentParser):
                 + "python module (e.g. 'my_processor.latest.plugin'). "
                 + "This option can be repeated."
             ),
+        )
+
+        # A pluggy plugin file providing the repository the flash wizard
+        # downloads images from, instead of the developer site. Internal use only.
+        self.add_argument(
+            "--artifact-repository",
+            dest="artifact_repository",
+            help=argparse.SUPPRESS,  # makes option hidden
         )
 
         startup_group = self.add_argument_group(title="startup")
