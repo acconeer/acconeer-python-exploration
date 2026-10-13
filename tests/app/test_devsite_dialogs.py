@@ -9,7 +9,7 @@ import pytest
 from PySide6.QtCore import QThreadPool
 from PySide6.QtWidgets import QApplication, QDialog
 
-from acconeer.exptool._artifact_repository import _dev_site_repository
+from acconeer.exptool._artifact_repository import DevSiteRepository, _dev_site_repository
 from acconeer.exptool.app.new.ui.components.devsite import LicenseDialog, LoginDialog
 from acconeer.exptool.app.new.ui.components.devsite.license import LicenseWidget
 
@@ -35,39 +35,37 @@ def _start_login(dialog: LoginDialog, password: str, remember_me: bool = False) 
 
 
 def test_login_dialog_accepts_with_a_ready_session(fake_devsite: FakeDevSite) -> None:
-    dialog = LoginDialog()
+    repository = DevSiteRepository(cookies=None)
+    dialog = LoginDialog(repository)
 
     _start_login(dialog, fake_devsite.PASSWORD)
     _finish_background_tasks()
 
     assert dialog.result() == QDialog.DialogCode.Accepted
-    assert dialog.repository is not None
-    assert dialog.repository.has_logged_in_previously()
+    assert repository.has_logged_in_previously()
 
 
-def test_cancelled_login_dialog_hands_back_no_session(fake_devsite: FakeDevSite) -> None:
-    dialog = LoginDialog()
+def test_cancelled_login_dialog_is_rejected(fake_devsite: FakeDevSite) -> None:
+    dialog = LoginDialog(DevSiteRepository(cookies=None))
     dialog.show()
 
     dialog.reject()
 
     assert dialog.result() == QDialog.DialogCode.Rejected
-    assert dialog.repository is None
 
 
 def test_login_finishing_after_cancel_is_ignored(fake_devsite: FakeDevSite) -> None:
-    dialog = LoginDialog()
+    dialog = LoginDialog(DevSiteRepository(cookies=None))
 
     _start_login(dialog, fake_devsite.PASSWORD)
     dialog.reject()
     _finish_background_tasks()
 
     assert dialog.result() == QDialog.DialogCode.Rejected
-    assert dialog.repository is None
 
 
 def test_remembered_login_is_saved(fake_devsite: FakeDevSite) -> None:
-    dialog = LoginDialog()
+    dialog = LoginDialog(DevSiteRepository(cookies=None))
 
     _start_login(dialog, fake_devsite.PASSWORD, remember_me=True)
     _finish_background_tasks()
@@ -76,7 +74,7 @@ def test_remembered_login_is_saved(fake_devsite: FakeDevSite) -> None:
 
 
 def test_login_cancelled_in_flight_is_still_remembered(fake_devsite: FakeDevSite) -> None:
-    dialog = LoginDialog()
+    dialog = LoginDialog(DevSiteRepository(cookies=None))
 
     _start_login(dialog, fake_devsite.PASSWORD, remember_me=True)
     dialog.reject()

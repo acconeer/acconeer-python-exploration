@@ -10,8 +10,9 @@ from PySide6.QtWidgets import QDialog, QLabel, QMessageBox, QVBoxLayout, QWidget
 
 from acconeer.exptool._artifact_repository import (
     Artifact,
-    DevSiteRepository,
+    ArtifactRepository,
     LoginRequiredError,
+    create_artifact_repository,
 )
 from acconeer.exptool.app.new.storage import get_temp_dir
 from acconeer.exptool.app.new.ui.background_task import BGTask
@@ -34,7 +35,7 @@ class _DownloadDialog(QDialog):
     download would make a later success silently discarded.
     """
 
-    def __init__(self, repository: DevSiteRepository, parent: QWidget | None = None) -> None:
+    def __init__(self, repository: ArtifactRepository, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Downloading")
         self.downloaded_path: Path | None = None
@@ -70,14 +71,11 @@ class _DownloadDialog(QDialog):
         super().keyPressEvent(event)
 
 
-def _log_in(parent: QWidget, feedback: str | None = None) -> DevSiteRepository | None:
-    login_dialog = LoginDialog(parent)
+def _log_in(repository: ArtifactRepository, parent: QWidget, feedback: str | None = None) -> bool:
+    login_dialog = LoginDialog(repository, parent)
     if feedback is not None:
         login_dialog.login_widget.set_feedback(feedback, FeedbackStyleSheet.NICE)
-    if login_dialog.exec() != QDialog.DialogCode.Accepted:
-        return None
-    assert login_dialog.repository is not None
-    return login_dialog.repository
+    return login_dialog.exec() == QDialog.DialogCode.Accepted
 
 
 def download_module_bundle(parent: QWidget) -> Path | None:
@@ -86,12 +84,9 @@ def download_module_bundle(parent: QWidget) -> Path | None:
     Returns the downloaded file, or None if the user cancelled or the
     download failed (reported via a message box).
     """
-    repository = DevSiteRepository.from_saved_login()
-    if not repository.has_logged_in_previously():
-        logged_in_repository = _log_in(parent)
-        if logged_in_repository is None:
-            return None
-        repository = logged_in_repository
+    repository = create_artifact_repository()
+    if not repository.has_logged_in_previously() and not _log_in(repository, parent):
+        return None
 
     license_dialog = LicenseDialog(parent)
     if license_dialog.exec() != QDialog.DialogCode.Accepted:
@@ -112,10 +107,5 @@ def download_module_bundle(parent: QWidget) -> Path | None:
             return None
 
         repository.forget_login()
-        logged_in_repository = _log_in(
-            parent,
-            "Your developer.acconeer.com login has expired. Log in again to download.",
-        )
-        if logged_in_repository is None:
+        if not _log_in(repository, parent, "Your login has expired. Log in again to download."):
             return None
-        repository = logged_in_repository

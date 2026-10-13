@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from acconeer.exptool._artifact_repository import ArtifactRepository, DevSiteRepository
+from acconeer.exptool._artifact_repository import ArtifactRepository
 from acconeer.exptool.app.new.ui import icons
 from acconeer.exptool.app.new.ui.background_task import BGTask
 from acconeer.exptool.app.new.ui.components.devsite._utils import (
@@ -192,22 +192,18 @@ class LoginFormWidget(QWidget):
 
 
 class LoginDialog(QDialog):
-    """Asks the user to log in to developer.acconeer.com.
+    """Asks the user to log in to ``repository``.
 
-    Check ``DevSiteRepository.from_saved_login().has_logged_in_previously()``
-    first; a remembered login needs no dialog. ``repository`` is ``None``
-    unless ``exec()`` returned ``Accepted``.
+    Check ``repository.has_logged_in_previously()`` first; a remembered
+    login needs no dialog.
     """
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, repository: ArtifactRepository, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle("Log in")
 
-        self.repository: DevSiteRepository | None = None
-        self._pending_repository = DevSiteRepository(cookies=None)
-
-        self.login_widget = LoginFormWidget(self._pending_repository)
-        self.login_widget.login_succeeded.connect(self._handle_login_succeeded)
+        self.login_widget = LoginFormWidget(repository)
+        self.login_widget.login_succeeded.connect(self.accept)
 
         self._cancel_button = QPushButton("Cancel")
         self._cancel_button.clicked.connect(self.reject)
@@ -220,7 +216,3 @@ class LoginDialog(QDialog):
         layout.addWidget(self.login_widget)
         layout.addLayout(button_layout)
         self.setLayout(layout)
-
-    def _handle_login_succeeded(self) -> None:
-        self.repository = self._pending_repository
-        self.accept()

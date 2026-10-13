@@ -4,19 +4,34 @@ from __future__ import annotations
 
 import importlib
 import typing as t
+from pathlib import Path
 
 import pytest
 import requests
 
-from PySide6.QtWidgets import QDialog
+from PySide6.QtWidgets import QDialog, QWidget
 
-from acconeer.exptool._artifact_repository import LoginRequiredError
+from acconeer.exptool._artifact_repository import Artifact, LoginRequiredError
 
 
 # The package re-exports a function by the module's name, hiding the module
 download_module = importlib.import_module(
     "acconeer.exptool.app.new.ui.components.devsite.download_module_bundle"
 )
+pytestmark = pytest.mark.usefixtures("qapplication")
+
+
+class _PluginRepository:
+    def __init__(self, logged_in: bool) -> None:
+        self.logged_in = logged_in
+        self.downloads: list[Artifact] = []
+
+    def has_logged_in_previously(self) -> bool:
+        return self.logged_in
+
+    def download(self, artifact: Artifact, path: str) -> tuple[str, str]:
+        self.downloads.append(artifact)
+        return str(Path(path) / "module_bundle.bin"), "1.0.0"
 
 
 class _SavedLogin:
@@ -35,6 +50,15 @@ class _AcceptedDialog:
         return QDialog.DialogCode.Accepted
 
 
+class _LoginIntoGivenRepository:
+    def __init__(self, repository: _PluginRepository, *_: t.Any) -> None:
+        self.repository = repository
+
+    def exec(self) -> QDialog.DialogCode:
+        self.repository.logged_in = True
+        return QDialog.DialogCode.Accepted
+
+
 class _LoginWidget:
     def __init__(self) -> None:
         self.feedback: list[str] = []
@@ -48,7 +72,6 @@ class _CancelledLoginDialog:
 
     def __init__(self, *_: t.Any) -> None:
         self.login_widget = _LoginWidget()
-        self.repository = None
         _CancelledLoginDialog.shown.append(self)
 
     def exec(self) -> QDialog.DialogCode:
@@ -67,11 +90,18 @@ class _FailingDownloadDialog:
 
 
 @pytest.fixture
+def plugin_repository(monkeypatch: pytest.MonkeyPatch) -> _PluginRepository:
+    repository = _PluginRepository(logged_in=False)
+    monkeypatch.setattr(download_module, "create_artifact_repository", lambda: repository)
+    monkeypatch.setattr(download_module, "LicenseDialog", _AcceptedDialog)
+    monkeypatch.setattr(download_module, "LoginDialog", _LoginIntoGivenRepository)
+    return repository
+
+
+@pytest.fixture
 def critical_messages(monkeypatch: pytest.MonkeyPatch) -> list[str]:
     messages: list[str] = []
-    monkeypatch.setattr(
-        download_module.DevSiteRepository, "from_saved_login", staticmethod(_SavedLogin)
-    )
+    monkeypatch.setattr(download_module, "create_artifact_repository", _SavedLogin)
     monkeypatch.setattr(download_module, "LicenseDialog", _AcceptedDialog)
     monkeypatch.setattr(download_module, "LoginDialog", _CancelledLoginDialog)
     monkeypatch.setattr(download_module, "_DownloadDialog", _FailingDownloadDialog)
@@ -82,6 +112,24 @@ def critical_messages(monkeypatch: pytest.MonkeyPatch) -> list[str]:
     )
     _CancelledLoginDialog.shown = []
     return messages
+
+
+def test_module_bundle_is_downloaded_from_the_plugin_repository(
+    plugin_repository: _PluginRepository,
+) -> None:
+    plugin_repository.logged_in = True
+
+    downloaded_path = download_module.download_module_bundle(QWidget())
+
+    assert downloaded_path is not None
+    assert plugin_repository.downloads == [Artifact.MODULE_BUNDLE]
+
+
+def test_login_happens_in_the_plugin_repository(plugin_repository: _PluginRepository) -> None:
+    downloaded_path = download_module.download_module_bundle(QWidget())
+
+    assert downloaded_path is not None
+    assert plugin_repository.downloads == [Artifact.MODULE_BUNDLE]
 
 
 def test_offline_download_failure_suggests_checking_the_connection(
