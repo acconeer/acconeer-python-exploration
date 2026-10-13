@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from acconeer.exptool._artifact_repository import DevSiteRepository
+from acconeer.exptool._artifact_repository import ArtifactRepository, DevSiteRepository
 from acconeer.exptool.app.new.ui import icons
 from acconeer.exptool.app.new.ui.background_task import BGTask
 from acconeer.exptool.app.new.ui.components.devsite._utils import (
@@ -54,7 +54,7 @@ class LoginFormWidget(QWidget):
 
     login_succeeded = Signal()
 
-    def __init__(self, repository: DevSiteRepository) -> None:
+    def __init__(self, repository: ArtifactRepository) -> None:
         super().__init__()
         self._repository = repository
         self._login_pending = False

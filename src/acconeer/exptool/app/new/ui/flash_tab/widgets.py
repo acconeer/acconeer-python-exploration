@@ -28,7 +28,11 @@ from PySide6.QtWidgets import (
     QWizardPage,
 )
 
-from acconeer.exptool._artifact_repository import LoginRequiredError, create_artifact_repository
+from acconeer.exptool._artifact_repository import (
+    ArtifactRepository,
+    LoginRequiredError,
+    create_artifact_repository,
+)
 from acconeer.exptool._core.communication.comm_devices import CommDevice
 from acconeer.exptool.app.new.app import ConnectionState
 from acconeer.exptool.app.new.app_model import AppModel
@@ -265,7 +269,7 @@ class BrowseLocalFilePage(QWizardPage):
 
 
 class LoginFormPage(QWizardPage):
-    def __init__(self, repository: DevSiteRepository) -> None:
+    def __init__(self, repository: ArtifactRepository) -> None:
         super().__init__()
 
         self.login_widget = LoginFormWidget(repository)
