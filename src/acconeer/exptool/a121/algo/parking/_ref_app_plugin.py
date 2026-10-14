@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import logging
-from enum import Enum, auto
 from typing import Callable, Mapping, Optional
 
 import attrs
@@ -20,6 +19,7 @@ import acconeer.exptool as et
 from acconeer.exptool import a121, opser
 from acconeer.exptool._core.docstrings import get_attribute_docstring
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
+from acconeer.exptool.a121.algo._plugin_specs.parking import PluginPresetId
 from acconeer.exptool.a121.algo._plugins import (
     A121BackendPluginBase,
     A121ViewPluginBase,
@@ -41,10 +41,7 @@ from acconeer.exptool.app.new import (
     MiscErrorView,
     PgPlotPlugin,
     PidgetGroupFactoryMapping,
-    PluginFamily,
     PluginGeneration,
-    PluginPresetBase,
-    PluginSpecBase,
     PluginState,
     PluginStateMessage,
     backend,
@@ -74,11 +71,6 @@ class SharedState:
     sensor_id: int = attrs.field(default=1)
     config: RefAppConfig = attrs.field(factory=get_ground_config)
     context: RefAppContext = attrs.field(default=None)
-
-
-class PluginPresetId(Enum):
-    GROUND = auto()
-    POLE = auto()
 
 
 @attrs.frozen(kw_only=True)
@@ -810,39 +802,3 @@ class ViewPlugin(A121ViewPluginBase):
 
     def _on_sensor_id_update(self, sensor_id: int) -> None:
         BackendPlugin.update_sensor_id.rpc(self.app_model.put_task, sensor_id=sensor_id)
-
-
-class PluginSpec(PluginSpecBase):
-    def create_backend_plugin(
-        self, callback: Callable[[Message], None], key: str
-    ) -> BackendPlugin:
-        return BackendPlugin(callback=callback, generation=self.generation, key=key)
-
-    def create_view_plugin(self, app_model: AppModel) -> ViewPlugin:
-        return ViewPlugin(app_model=app_model)
-
-    def create_plot_plugin(self, app_model: AppModel) -> PlotPlugin:
-        return PlotPlugin(app_model=app_model)
-
-
-PARKING_PLUGIN = PluginSpec(
-    generation=PluginGeneration.A121,
-    key="parking",
-    title="Parking",
-    docs_link="https://docs.acconeer.com/en/latest/ref_apps/a121/parking.html",
-    description="Detect parked cars.",
-    family=PluginFamily.REF_APP,
-    presets=[
-        PluginPresetBase(
-            name="Ground",
-            description="Ground mounted",
-            preset_id=PluginPresetId.GROUND,
-        ),
-        PluginPresetBase(
-            name="Pole",
-            description="Pole mounted",
-            preset_id=PluginPresetId.POLE,
-        ),
-    ],
-    default_preset_id=PluginPresetId.GROUND,
-)

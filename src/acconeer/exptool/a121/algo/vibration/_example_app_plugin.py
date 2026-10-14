@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import logging
-from enum import Enum, auto
 from typing import Callable, Mapping, Optional
 
 import attrs
@@ -16,6 +15,7 @@ from PySide6.QtWidgets import QLayout, QPushButton, QVBoxLayout
 from acconeer.exptool import a121
 from acconeer.exptool._core.docstrings import get_attribute_docstring
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
+from acconeer.exptool.a121.algo._plugin_specs.vibration import PluginPresetId
 from acconeer.exptool.a121.algo._plugins import (
     A121BackendPluginBase,
     A121ViewPluginBase,
@@ -34,10 +34,7 @@ from acconeer.exptool.app.new import (
     MiscErrorView,
     PgPlotPlugin,
     PidgetFactoryMapping,
-    PluginFamily,
     PluginGeneration,
-    PluginPresetBase,
-    PluginSpecBase,
     backend,
     icons,
     is_task,
@@ -57,11 +54,6 @@ from .plot import VibrationPlot
 log = logging.getLogger(__name__)
 
 REORDER_SUBSWEEP_ET_VERSION = Version("7.17.5")
-
-
-class PluginPresetId(Enum):
-    LOW_FREQ = auto()
-    HIGH_FREQ = auto()
 
 
 @attrs.mutable(kw_only=True)
@@ -463,31 +455,3 @@ class PlotPlugin(PgPlotPlugin):
             result=example_app_result,
             extra_result=example_app_result.processor_extra_result,
         )
-
-
-class PluginSpec(PluginSpecBase):
-    def create_backend_plugin(
-        self, callback: Callable[[Message], None], key: str
-    ) -> BackendPlugin:
-        return BackendPlugin(callback=callback, generation=self.generation, key=key)
-
-    def create_view_plugin(self, app_model: AppModel) -> ViewPlugin:
-        return ViewPlugin(app_model=app_model)
-
-    def create_plot_plugin(self, app_model: AppModel) -> PlotPlugin:
-        return PlotPlugin(app_model=app_model)
-
-
-VIBRATION_PLUGIN = PluginSpec(
-    generation=PluginGeneration.A121,
-    key="vibration",
-    title="Vibration measurement",
-    docs_link="https://docs.acconeer.com/en/latest/example_apps/a121/vibration.html",
-    description="Quantify the frequency content of vibrating object.",
-    family=PluginFamily.EXAMPLE_APP,
-    presets=[
-        PluginPresetBase(name="Low frequency", preset_id=PluginPresetId.LOW_FREQ),
-        PluginPresetBase(name="High frequency", preset_id=PluginPresetId.HIGH_FREQ),
-    ],
-    default_preset_id=PluginPresetId.LOW_FREQ,
-)

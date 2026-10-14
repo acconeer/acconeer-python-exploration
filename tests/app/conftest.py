@@ -15,7 +15,7 @@ from PySide6.QtWidgets import QApplication
 
 from acconeer.exptool import a121
 from acconeer.exptool._artifact_repository import DevSiteRepository, _dev_site_repository
-from acconeer.exptool.a121.algo.sparse_iq._plugin import SPARSE_IQ_PLUGIN
+from acconeer.exptool.a121.algo._plugin_specs.sparse_iq import SPARSE_IQ_PLUGIN
 from acconeer.exptool.app.new._enums import PluginGeneration
 from acconeer.exptool.app.new.app_model import PluginSpec
 from acconeer.exptool.app.new.backend import Backend, ClosedTask, Message, Task

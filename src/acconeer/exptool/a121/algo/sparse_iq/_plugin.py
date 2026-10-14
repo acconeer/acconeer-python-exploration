@@ -1,12 +1,11 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
 import itertools
 import logging
-from enum import Enum, auto
-from typing import Callable, Dict, List, Optional, Type, TypeVar
+from typing import Dict, List, Optional, Type, TypeVar
 
 import numpy as np
 import numpy.typing as npt
@@ -23,22 +22,18 @@ import acconeer.exptool as et
 from acconeer.exptool import a121
 from acconeer.exptool.a121 import algo
 from acconeer.exptool.a121._core import utils as core_utils
+from acconeer.exptool.a121.algo._plugin_specs.sparse_iq import PluginPresetId
 from acconeer.exptool.a121.algo._plugins import (
     ExtendedProcessorBackendPluginBase,
     ProcessorBackendPluginSharedState,
     ProcessorPluginPreset,
-    ProcessorPluginSpec,
     ProcessorViewPluginBase,
     SetupMessage,
 )
 from acconeer.exptool.app.new import (
     AppModel,
-    Message,
     PidgetFactoryMapping,
     PlotPluginBase,
-    PluginFamily,
-    PluginGeneration,
-    PluginPresetBase,
     backend,
     pidgets,
 )
@@ -57,10 +52,6 @@ log = logging.getLogger(__name__)
 
 
 _T = TypeVar("_T")
-
-
-class PluginPresetId(Enum):
-    DEFAULT = auto()
 
 
 SEMI_TRANSPARENT_BRUSH = pg.mkBrush(color=(0xFF, 0xFF, 0xFF, int(0.8 * 0xFF)))
@@ -431,36 +422,3 @@ class PlotPlugin(PlotPluginBase):
 
         self.phase_curves = core_utils.create_extended_structure(phase_curves)
         self.ft_images = core_utils.create_extended_structure(dvm_images)
-
-
-class PluginSpec(
-    ProcessorPluginSpec[
-        List[Dict[int, a121.Result]],
-        ProcessorConfig,
-        ProcessorResult,
-        List[Dict[int, a121.Metadata]],
-    ]
-):
-    def create_backend_plugin(
-        self, callback: Callable[[Message], None], key: str
-    ) -> BackendPlugin:
-        return BackendPlugin(callback=callback, generation=self.generation, key=key)
-
-    def create_view_plugin(self, app_model: AppModel) -> ViewPlugin:
-        return ViewPlugin(app_model=app_model)
-
-    def create_plot_plugin(self, app_model: AppModel) -> PlotPlugin:
-        return PlotPlugin(app_model=app_model)
-
-
-SPARSE_IQ_PLUGIN = PluginSpec(
-    generation=PluginGeneration.A121,
-    key="sparse_iq",
-    title="Sparse IQ",
-    description="Basic usage of the sparse IQ service.",
-    family=PluginFamily.SERVICE,
-    presets=[
-        PluginPresetBase(name="Default", preset_id=PluginPresetId.DEFAULT),
-    ],
-    default_preset_id=PluginPresetId.DEFAULT,
-)

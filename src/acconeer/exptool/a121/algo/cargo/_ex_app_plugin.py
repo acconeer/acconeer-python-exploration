@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import logging
-from enum import Enum, auto
 from typing import Callable, List, Mapping, Optional
 
 import attrs
@@ -20,6 +19,7 @@ import acconeer.exptool as et
 from acconeer.exptool import a121
 from acconeer.exptool._core.docstrings import get_attribute_docstring
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
+from acconeer.exptool.a121.algo._plugin_specs.cargo import PluginPresetId
 from acconeer.exptool.a121.algo._plugins import (
     A121BackendPluginBase,
     A121ViewPluginBase,
@@ -36,10 +36,7 @@ from acconeer.exptool.app.new import (
     MiscErrorView,
     PgPlotPlugin,
     PidgetFactoryMapping,
-    PluginFamily,
     PluginGeneration,
-    PluginPresetBase,
-    PluginSpecBase,
     backend,
     icons,
     is_task,
@@ -79,13 +76,6 @@ class SharedState:
     sensor_id: int = attrs.field(default=1)
     config: ExAppConfig = attrs.field(factory=get_20_ft_container_config)
     ex_app_context: Optional[ExAppContext] = attrs.field(default=None)
-
-
-class PluginPresetId(Enum):
-    CONTAINER_10_FT = auto()
-    CONTAINER_20_FT = auto()
-    CONTAINER_40_FT = auto()
-    NO_LENS = auto()
 
 
 @attrs.frozen(kw_only=True)
@@ -934,49 +924,3 @@ class ViewPlugin(A121ViewPluginBase):
 
     def _on_sensor_id_update(self, sensor_id: int) -> None:
         BackendPlugin.update_sensor_id.rpc(self.app_model.put_task, sensor_id=sensor_id)
-
-
-class PluginSpec(PluginSpecBase):
-    def create_backend_plugin(
-        self, callback: Callable[[Message], None], key: str
-    ) -> BackendPlugin:
-        return BackendPlugin(callback=callback, generation=self.generation, key=key)
-
-    def create_view_plugin(self, app_model: AppModel) -> ViewPlugin:
-        return ViewPlugin(app_model=app_model)
-
-    def create_plot_plugin(self, app_model: AppModel) -> PlotPlugin:
-        return PlotPlugin(app_model=app_model)
-
-
-CARGO_PLUGIN = PluginSpec(
-    generation=PluginGeneration.A121,
-    key="cargo",
-    title="Cargo",
-    docs_link="https://docs.acconeer.com/en/latest/example_apps/a121/cargo.html",
-    description="Detects utilization level and presence in container.",
-    family=PluginFamily.EXAMPLE_APP,
-    presets=[
-        PluginPresetBase(
-            name="10 feet (3 m)",
-            description="Container 10 feet (3 m)",
-            preset_id=PluginPresetId.CONTAINER_10_FT,
-        ),
-        PluginPresetBase(
-            name="20 feet (6 m)",
-            description="Container 20 feet (6 m)",
-            preset_id=PluginPresetId.CONTAINER_20_FT,
-        ),
-        PluginPresetBase(
-            name="40 feet (12 m)",
-            description="Container 40 feet (12 m)",
-            preset_id=PluginPresetId.CONTAINER_40_FT,
-        ),
-        PluginPresetBase(
-            name="No lens",
-            description="No lens configuration",
-            preset_id=PluginPresetId.NO_LENS,
-        ),
-    ],
-    default_preset_id=PluginPresetId.NO_LENS,
-)

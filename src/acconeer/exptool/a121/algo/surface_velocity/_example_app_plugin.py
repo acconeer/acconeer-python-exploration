@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import logging
-from enum import Enum, auto
 from typing import Callable, Mapping, Optional
 
 import attrs
@@ -19,6 +18,7 @@ import acconeer.exptool as et
 from acconeer.exptool import a121
 from acconeer.exptool._core.docstrings import get_attribute_docstring
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
+from acconeer.exptool.a121.algo._plugin_specs.surface_velocity import PluginPresetId
 from acconeer.exptool.a121.algo._plugins import (
     A121BackendPluginBase,
     A121ViewPluginBase,
@@ -33,10 +33,7 @@ from acconeer.exptool.app.new import (
     MiscErrorView,
     PgPlotPlugin,
     PidgetFactoryMapping,
-    PluginFamily,
     PluginGeneration,
-    PluginPresetBase,
-    PluginSpecBase,
     backend,
     icons,
     is_task,
@@ -55,10 +52,6 @@ log = logging.getLogger(__name__)
 class SharedState:
     sensor_id: int = attrs.field(default=1)
     config: ExampleAppConfig = attrs.field(factory=ExampleAppConfig)
-
-
-class PluginPresetId(Enum):
-    DEFAULT = auto()
 
 
 @attrs.frozen(kw_only=True)
@@ -594,30 +587,3 @@ class ViewPlugin(A121ViewPluginBase):
 
     def _on_sensor_id_update(self, sensor_id: int) -> None:
         BackendPlugin.update_sensor_id.rpc(self.app_model.put_task, sensor_id=sensor_id)
-
-
-class PluginSpec(PluginSpecBase):
-    def create_backend_plugin(
-        self, callback: Callable[[Message], None], key: str
-    ) -> BackendPlugin:
-        return BackendPlugin(callback=callback, generation=self.generation, key=key)
-
-    def create_view_plugin(self, app_model: AppModel) -> ViewPlugin:
-        return ViewPlugin(app_model=app_model)
-
-    def create_plot_plugin(self, app_model: AppModel) -> PlotPlugin:
-        return PlotPlugin(app_model=app_model)
-
-
-SURFACE_VELOCITY_PLUGIN = PluginSpec(
-    generation=PluginGeneration.A121,
-    key="surface_velocity",
-    title="Surface velocity",
-    docs_link="https://docs.acconeer.com/en/latest/example_apps/a121/surface_velocity.html",
-    description="Estimate surface speed and direction of streaming water.",
-    family=PluginFamily.EXAMPLE_APP,
-    presets=[
-        PluginPresetBase(name="Default", preset_id=PluginPresetId.DEFAULT),
-    ],
-    default_preset_id=PluginPresetId.DEFAULT,
-)

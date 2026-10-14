@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import logging
-from enum import Enum, auto
 from typing import Any, Callable, Mapping, Optional
 
 import attrs
@@ -19,6 +18,7 @@ import pyqtgraph as pg
 import acconeer.exptool as et
 from acconeer.exptool import a121
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
+from acconeer.exptool.a121.algo._plugin_specs.presence import PluginPresetId
 from acconeer.exptool.a121.algo._plugins import (
     A121BackendPluginBase,
     A121ViewPluginBase,
@@ -33,10 +33,7 @@ from acconeer.exptool.app.new import (
     MiscErrorView,
     PgPlotPlugin,
     PidgetGroupFactoryMapping,
-    PluginFamily,
     PluginGeneration,
-    PluginPresetBase,
-    PluginSpecBase,
     backend,
     icons,
     is_task,
@@ -74,13 +71,6 @@ class SharedState:
     sensor_id: int = attrs.field(default=1)
     config: DetectorConfig = attrs.field(factory=DetectorConfig)
     context: Optional[DetectorContext] = attrs.field(default=None)
-
-
-class PluginPresetId(Enum):
-    SHORT_RANGE = auto()
-    MEDIUM_RANGE = auto()
-    LONG_RANGE = auto()
-    LOW_POWER = auto()
 
 
 @attrs.frozen(kw_only=True)
@@ -631,49 +621,3 @@ static void set_config(acc_detector_presence_config_t *presence_config, presence
 """
 
     return None
-
-
-class PluginSpec(PluginSpecBase):
-    def create_backend_plugin(
-        self, callback: Callable[[Message], None], key: str
-    ) -> BackendPlugin:
-        return BackendPlugin(callback=callback, generation=self.generation, key=key)
-
-    def create_view_plugin(self, app_model: AppModel) -> ViewPlugin:
-        return ViewPlugin(app_model=app_model)
-
-    def create_plot_plugin(self, app_model: AppModel) -> PlotPlugin:
-        return PlotPlugin(app_model=app_model)
-
-
-PRESENCE_DETECTOR_PLUGIN = PluginSpec(
-    generation=PluginGeneration.A121,
-    key="presence_detector",
-    title="Presence detector",
-    docs_link="https://docs.acconeer.com/en/latest/detectors/a121/presence_detector.html",
-    description="Detect human presence.",
-    family=PluginFamily.DETECTOR,
-    presets=[
-        PluginPresetBase(
-            name="Short range",
-            description="Short range",
-            preset_id=PluginPresetId.SHORT_RANGE,
-        ),
-        PluginPresetBase(
-            name="Medium range",
-            description="Medium range",
-            preset_id=PluginPresetId.MEDIUM_RANGE,
-        ),
-        PluginPresetBase(
-            name="Long range",
-            description="Long range",
-            preset_id=PluginPresetId.LONG_RANGE,
-        ),
-        PluginPresetBase(
-            name="Low power, Wake up",
-            description="Low power presence detection, which can be used as a trigger",
-            preset_id=PluginPresetId.LOW_POWER,
-        ),
-    ],
-    default_preset_id=PluginPresetId.MEDIUM_RANGE,
-)

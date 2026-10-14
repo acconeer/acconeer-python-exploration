@@ -6,7 +6,6 @@ from __future__ import annotations
 import logging
 import math
 import time
-from enum import Enum, auto
 from typing import Any, Callable, Mapping, Optional
 
 import attrs
@@ -21,6 +20,7 @@ import acconeer.exptool as et
 from acconeer.exptool import a121, opser
 from acconeer.exptool._core.docstrings import get_attribute_docstring
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
+from acconeer.exptool.a121.algo._plugin_specs.tank_level import PluginPresetId
 from acconeer.exptool.a121.algo._plugins import (
     A121BackendPluginBase,
     A121ViewPluginBase,
@@ -49,10 +49,7 @@ from acconeer.exptool.app.new import (
     HandledException,
     Message,
     PgPlotPlugin,
-    PluginFamily,
     PluginGeneration,
-    PluginPresetBase,
-    PluginSpecBase,
     PluginState,
     PluginStateMessage,
     backend,
@@ -86,12 +83,6 @@ class SharedState:
     sensor_id: int = attrs.field(default=1)
     config: RefAppConfig = attrs.field(factory=RefAppConfig)
     context: RefAppContext = attrs.field(factory=RefAppContext)
-
-
-class PluginPresetId(Enum):
-    SMALL = auto()
-    MEDIUM = auto()
-    LARGE = auto()
 
 
 @attrs.mutable(kw_only=True)
@@ -900,32 +891,3 @@ static void set_config(acc_ref_app_tank_level_config_t *app_config, tank_level_p
 """
 
     return None
-
-
-class PluginSpec(PluginSpecBase):
-    def create_backend_plugin(
-        self, callback: Callable[[Message], None], key: str
-    ) -> BackendPlugin:
-        return BackendPlugin(callback, generation=self.generation, key=key)
-
-    def create_view_plugin(self, app_model: AppModel) -> ViewPlugin:
-        return ViewPlugin(app_model=app_model)
-
-    def create_plot_plugin(self, app_model: AppModel) -> PlotPlugin:
-        return PlotPlugin(app_model=app_model)
-
-
-TANK_LEVEL_PLUGIN = PluginSpec(
-    generation=PluginGeneration.A121,
-    key="tank_level",
-    title="Tank level",
-    docs_link="https://docs.acconeer.com/en/latest/ref_apps/a121/tank_level.html",
-    description="Measure liquid levels in tanks",
-    family=PluginFamily.REF_APP,
-    presets=[
-        PluginPresetBase(name="Small", preset_id=PluginPresetId.SMALL),
-        PluginPresetBase(name="Medium", preset_id=PluginPresetId.MEDIUM),
-        PluginPresetBase(name="Large", preset_id=PluginPresetId.LARGE),
-    ],
-    default_preset_id=PluginPresetId.SMALL,
-)

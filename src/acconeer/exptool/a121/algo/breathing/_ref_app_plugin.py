@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import logging
-from enum import Enum, auto
 from typing import Callable, Mapping, Optional
 
 import attrs
@@ -21,6 +20,7 @@ from acconeer.exptool import a121
 from acconeer.exptool._core.docstrings import get_attribute_docstring
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
 from acconeer.exptool.a121.algo import APPROX_BASE_STEP_LENGTH_M
+from acconeer.exptool.a121.algo._plugin_specs.breathing import PluginPresetId
 from acconeer.exptool.a121.algo._plugins import (
     A121BackendPluginBase,
     A121ViewPluginBase,
@@ -47,10 +47,7 @@ from acconeer.exptool.app.new import (
     MiscErrorView,
     PgPlotPlugin,
     PidgetGroupFactoryMapping,
-    PluginFamily,
     PluginGeneration,
-    PluginPresetBase,
-    PluginSpecBase,
     backend,
     icons,
     is_task,
@@ -75,11 +72,6 @@ log = logging.getLogger(__name__)
 class SharedState:
     sensor_id: int = attrs.field(default=1)
     config: RefAppConfig = attrs.field(factory=RefAppConfig)
-
-
-class PluginPresetId(Enum):
-    SITTING = auto()
-    INFANT = auto()
 
 
 @attrs.frozen(kw_only=True)
@@ -832,39 +824,3 @@ class ViewPlugin(A121ViewPluginBase):
 
     def _on_sensor_id_update(self, sensor_id: int) -> None:
         BackendPlugin.update_sensor_id.rpc(self.app_model.put_task, sensor_id=sensor_id)
-
-
-class PluginSpec(PluginSpecBase):
-    def create_backend_plugin(
-        self, callback: Callable[[Message], None], key: str
-    ) -> BackendPlugin:
-        return BackendPlugin(callback=callback, generation=self.generation, key=key)
-
-    def create_view_plugin(self, app_model: AppModel) -> ViewPlugin:
-        return ViewPlugin(app_model=app_model)
-
-    def create_plot_plugin(self, app_model: AppModel) -> PlotPlugin:
-        return PlotPlugin(app_model=app_model)
-
-
-BREATHING_PLUGIN = PluginSpec(
-    generation=PluginGeneration.A121,
-    key="breathing",
-    title="Breathing",
-    docs_link="https://docs.acconeer.com/en/latest/ref_apps/a121/breathing.html",
-    description="Detect breathing rate.",
-    family=PluginFamily.REF_APP,
-    presets=[
-        PluginPresetBase(
-            name="Sitting",
-            description="Sitting",
-            preset_id=PluginPresetId.SITTING,
-        ),
-        PluginPresetBase(
-            name="Infant",
-            description="Infant",
-            preset_id=PluginPresetId.INFANT,
-        ),
-    ],
-    default_preset_id=PluginPresetId.SITTING,
-)

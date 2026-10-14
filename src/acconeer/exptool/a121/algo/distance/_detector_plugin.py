@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import contextlib
 import logging
-from enum import Enum, auto
 from typing import Any, Callable, Mapping, Optional
 
 import attrs
@@ -20,6 +19,7 @@ import pyqtgraph as pg
 import acconeer.exptool as et
 from acconeer.exptool import a121, opser
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
+from acconeer.exptool.a121.algo._plugin_specs.distance import PluginPresetId
 from acconeer.exptool.a121.algo._plugins import (
     A121BackendPluginBase,
     A121ViewPluginBase,
@@ -35,10 +35,7 @@ from acconeer.exptool.app.new import (
     MiscErrorView,
     PgPlotPlugin,
     PidgetFactoryMapping,
-    PluginFamily,
     PluginGeneration,
-    PluginPresetBase,
-    PluginSpecBase,
     PluginState,
     PluginStateMessage,
     backend,
@@ -79,11 +76,6 @@ class SharedState:
     sensor_ids: list[int] = attrs.field(factory=lambda: [1])
     config: DetectorConfig = attrs.field(factory=DetectorConfig)
     context: DetectorContext = attrs.field(factory=DetectorContext)
-
-
-class PluginPresetId(Enum):
-    BALANCED = auto()
-    HIGH_ACCURACY = auto()
 
 
 @attrs.frozen(kw_only=True)
@@ -719,31 +711,3 @@ static void set_config(acc_detector_distance_config_t *detector_config, distance
 """
 
     return None
-
-
-class PluginSpec(PluginSpecBase):
-    def create_backend_plugin(
-        self, callback: Callable[[Message], None], key: str
-    ) -> BackendPlugin:
-        return BackendPlugin(callback, generation=self.generation, key=key)
-
-    def create_view_plugin(self, app_model: AppModel) -> ViewPlugin:
-        return ViewPlugin(app_model=app_model)
-
-    def create_plot_plugin(self, app_model: AppModel) -> PlotPlugin:
-        return PlotPlugin(app_model=app_model)
-
-
-DISTANCE_DETECTOR_PLUGIN = PluginSpec(
-    generation=PluginGeneration.A121,
-    key="distance_detector",
-    title="Distance detector",
-    docs_link="https://docs.acconeer.com/en/latest/detectors/a121/distance_detector.html",
-    description="Easily measure distance to objects.",
-    family=PluginFamily.DETECTOR,
-    presets=[
-        PluginPresetBase(name="Balanced", preset_id=PluginPresetId.BALANCED),
-        PluginPresetBase(name="High accuracy", preset_id=PluginPresetId.HIGH_ACCURACY),
-    ],
-    default_preset_id=PluginPresetId.BALANCED,
-)

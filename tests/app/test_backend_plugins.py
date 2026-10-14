@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 
 from acconeer.exptool import a121
-from acconeer.exptool.a121.algo.bilateration._plugin import BILATERATION_PLUGIN
-from acconeer.exptool.a121.algo.speed._detector_plugin import SPEED_DETECTOR_PLUGIN
+from acconeer.exptool.a121.algo._plugin_specs.bilateration import BILATERATION_PLUGIN
+from acconeer.exptool.a121.algo._plugin_specs.speed import SPEED_DETECTOR_PLUGIN
 from acconeer.exptool.app.new import PluginGeneration, PluginState
 from acconeer.exptool.app.new.app_model import PluginSpec
 from acconeer.exptool.app.new.backend import (

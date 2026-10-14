@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -59,25 +59,25 @@ def import_and_register_plugin_module(module_name: str) -> None:
 
 
 def load_default_plugins() -> list[PluginSpec]:
-    from acconeer.exptool.a121.algo.bilateration._plugin import BILATERATION_PLUGIN
-    from acconeer.exptool.a121.algo.breathing._ref_app_plugin import BREATHING_PLUGIN
-    from acconeer.exptool.a121.algo.cargo._ex_app_plugin import CARGO_PLUGIN
-    from acconeer.exptool.a121.algo.distance._detector_plugin import DISTANCE_DETECTOR_PLUGIN
-    from acconeer.exptool.a121.algo.hand_motion._example_app_plugin import HAND_MOTION_PLUGIN
-    from acconeer.exptool.a121.algo.obstacle._detector_plugin import OBSTACLE_DETECTOR_PLUGIN
-    from acconeer.exptool.a121.algo.parking._ref_app_plugin import PARKING_PLUGIN
-    from acconeer.exptool.a121.algo.phase_tracking._plugin import PHASE_TRACKING_PLUGIN
-    from acconeer.exptool.a121.algo.presence._detector_plugin import PRESENCE_DETECTOR_PLUGIN
-    from acconeer.exptool.a121.algo.smart_presence._ref_app_plugin import SMART_PRESENCE_PLUGIN
-    from acconeer.exptool.a121.algo.sparse_iq._plugin import SPARSE_IQ_PLUGIN
-    from acconeer.exptool.a121.algo.speed._detector_plugin import SPEED_DETECTOR_PLUGIN
-    from acconeer.exptool.a121.algo.surface_velocity._example_app_plugin import (
+    from acconeer.exptool.a121.algo._plugin_specs.bilateration import BILATERATION_PLUGIN
+    from acconeer.exptool.a121.algo._plugin_specs.breathing import BREATHING_PLUGIN
+    from acconeer.exptool.a121.algo._plugin_specs.cargo import CARGO_PLUGIN
+    from acconeer.exptool.a121.algo._plugin_specs.distance import DISTANCE_DETECTOR_PLUGIN
+    from acconeer.exptool.a121.algo._plugin_specs.hand_motion import HAND_MOTION_PLUGIN
+    from acconeer.exptool.a121.algo._plugin_specs.obstacle import OBSTACLE_DETECTOR_PLUGIN
+    from acconeer.exptool.a121.algo._plugin_specs.parking import PARKING_PLUGIN
+    from acconeer.exptool.a121.algo._plugin_specs.phase_tracking import PHASE_TRACKING_PLUGIN
+    from acconeer.exptool.a121.algo._plugin_specs.presence import PRESENCE_DETECTOR_PLUGIN
+    from acconeer.exptool.a121.algo._plugin_specs.smart_presence import SMART_PRESENCE_PLUGIN
+    from acconeer.exptool.a121.algo._plugin_specs.sparse_iq import SPARSE_IQ_PLUGIN
+    from acconeer.exptool.a121.algo._plugin_specs.speed import SPEED_DETECTOR_PLUGIN
+    from acconeer.exptool.a121.algo._plugin_specs.surface_velocity import (
         SURFACE_VELOCITY_PLUGIN,
     )
-    from acconeer.exptool.a121.algo.tank_level._plugin import TANK_LEVEL_PLUGIN
-    from acconeer.exptool.a121.algo.touchless_button._plugin import TOUCHLESS_BUTTON_PLUGIN
-    from acconeer.exptool.a121.algo.vibration._example_app_plugin import VIBRATION_PLUGIN
-    from acconeer.exptool.a121.algo.waste_level._plugin import WASTE_LEVEL_PLUGIN
+    from acconeer.exptool.a121.algo._plugin_specs.tank_level import TANK_LEVEL_PLUGIN
+    from acconeer.exptool.a121.algo._plugin_specs.touchless_button import TOUCHLESS_BUTTON_PLUGIN
+    from acconeer.exptool.a121.algo._plugin_specs.vibration import VIBRATION_PLUGIN
+    from acconeer.exptool.a121.algo._plugin_specs.waste_level import WASTE_LEVEL_PLUGIN
 
     # Please keep in lexicographical order
     return [

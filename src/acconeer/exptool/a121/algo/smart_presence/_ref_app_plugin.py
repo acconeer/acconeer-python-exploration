@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import logging
-from enum import Enum, auto
 from typing import Callable, List, Mapping, Optional, Tuple
 
 import attrs
@@ -21,6 +20,7 @@ import acconeer.exptool as et
 from acconeer.exptool import a121
 from acconeer.exptool._core.docstrings import get_attribute_docstring
 from acconeer.exptool.a121._h5_utils import _create_h5_string_dataset
+from acconeer.exptool.a121.algo._plugin_specs.smart_presence import PluginPresetId
 from acconeer.exptool.a121.algo._plugins import (
     A121BackendPluginBase,
     A121ViewPluginBase,
@@ -36,10 +36,7 @@ from acconeer.exptool.app.new import (
     MiscErrorView,
     PgPlotPlugin,
     PidgetGroupFactoryMapping,
-    PluginFamily,
     PluginGeneration,
-    PluginPresetBase,
-    PluginSpecBase,
     backend,
     icons,
     is_task,
@@ -78,14 +75,6 @@ class SharedState:
     sensor_id: int = attrs.field(default=1)
     config: RefAppConfig = attrs.field(factory=get_medium_range_config)
     ref_app_context: Optional[RefAppContext] = attrs.field(default=None)
-
-
-class PluginPresetId(Enum):
-    SHORT_RANGE = auto()
-    MEDIUM_RANGE = auto()
-    LONG_RANGE = auto()
-    CEILING = auto()
-    LOW_POWER = auto()
 
 
 @attrs.frozen(kw_only=True)
@@ -819,54 +808,3 @@ class ViewPlugin(A121ViewPluginBase):
 
     def _on_sensor_id_update(self, sensor_id: int) -> None:
         BackendPlugin.update_sensor_id.rpc(self.app_model.put_task, sensor_id=sensor_id)
-
-
-class PluginSpec(PluginSpecBase):
-    def create_backend_plugin(
-        self, callback: Callable[[Message], None], key: str
-    ) -> BackendPlugin:
-        return BackendPlugin(callback=callback, generation=self.generation, key=key)
-
-    def create_view_plugin(self, app_model: AppModel) -> ViewPlugin:
-        return ViewPlugin(app_model=app_model)
-
-    def create_plot_plugin(self, app_model: AppModel) -> PlotPlugin:
-        return PlotPlugin(app_model=app_model)
-
-
-SMART_PRESENCE_PLUGIN = PluginSpec(
-    generation=PluginGeneration.A121,
-    key="smart_presence",
-    title="Smart presence",
-    docs_link="https://docs.acconeer.com/en/latest/ref_apps/a121/smart_presence.html",
-    description="Split presence detection range into zones.",
-    family=PluginFamily.REF_APP,
-    presets=[
-        PluginPresetBase(
-            name="Short range",
-            description="Short range",
-            preset_id=PluginPresetId.SHORT_RANGE,
-        ),
-        PluginPresetBase(
-            name="Medium range",
-            description="Medium range",
-            preset_id=PluginPresetId.MEDIUM_RANGE,
-        ),
-        PluginPresetBase(
-            name="Long range",
-            description="Long range",
-            preset_id=PluginPresetId.LONG_RANGE,
-        ),
-        PluginPresetBase(
-            name="Ceiling",
-            description="Ceiling",
-            preset_id=PluginPresetId.CEILING,
-        ),
-        PluginPresetBase(
-            name="Low power, Wake up",
-            description="Low power, Wake up",
-            preset_id=PluginPresetId.LOW_POWER,
-        ),
-    ],
-    default_preset_id=PluginPresetId.MEDIUM_RANGE,
-)
