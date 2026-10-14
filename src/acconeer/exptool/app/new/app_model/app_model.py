@@ -13,6 +13,7 @@ import sys
 import time
 import traceback
 import types
+import zipfile
 from enum import Enum
 from pathlib import Path
 from typing import (
@@ -37,6 +38,7 @@ from PySide6.QtWidgets import QMessageBox, QWidget
 
 from acconeer.exptool import _core as core
 from acconeer.exptool import a121
+from acconeer.exptool._artifact_repository import install_module_bundle
 from acconeer.exptool._core.communication.comm_devices import CommDevice, SerialDevice, USBDevice
 from acconeer.exptool.app.new._enums import (
     ConnectionInterface,
@@ -66,7 +68,6 @@ from acconeer.exptool.app.new.backend import (
 )
 from acconeer.exptool.app.new.storage import (
     get_config_dir,
-    get_module_bundle_path,
     remove_temp_dir,
 )
 from acconeer.exptool.app.new.ui.components.data_editor import DataEditor
@@ -286,7 +287,7 @@ class AppModel(QObject):
 
         self.plugins = plugins
         self.plugin = None
-        self.module_bundle_available = get_module_bundle_path().is_file()
+        self.module_bundle_available = False
 
         self.backend_plugin_state = None
 
@@ -903,9 +904,17 @@ class AppModel(QObject):
         self.emit_error(HandledException(msg))
         return True
 
-    def store_module_bundle(self, downloaded_path: Path) -> None:
-        shutil.move(downloaded_path, get_module_bundle_path())
-        self.module_bundle_available = True
+    def try_install_module_bundle(self, module_bundle_path: Path, extract_dir: Path) -> None:
+        """Call once the UI listens to sig_error, which is how a failed install is reported."""
+        try:
+            install_module_bundle(module_bundle_path, extract_dir)
+        except (ValueError, zipfile.BadZipFile) as e:
+            self.module_bundle_available = False
+            self.emit_error(HandledException(f"Could not install the module bundle: {e}"))
+        else:
+            Model.import_module_bundle.rpc(self.put_task, extract_dir=extract_dir)
+            self.module_bundle_available = True
+
         self.broadcast()
 
     def set_plugin_preset(self, preset_id: Enum) -> None:

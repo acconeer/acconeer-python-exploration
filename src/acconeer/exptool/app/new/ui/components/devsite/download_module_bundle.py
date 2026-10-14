@@ -2,6 +2,7 @@
 # All rights reserved
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 
 from PySide6.QtCore import Qt
@@ -14,7 +15,7 @@ from acconeer.exptool._artifact_repository import (
     LoginRequiredError,
     create_artifact_repository,
 )
-from acconeer.exptool.app.new.storage import get_temp_dir
+from acconeer.exptool.app.new.storage import get_module_bundle_path, get_temp_dir
 from acconeer.exptool.app.new.ui.background_task import BGTask
 from acconeer.exptool.app.new.ui.components.devsite._utils import (
     get_internet_related_error_message,
@@ -81,8 +82,8 @@ def _log_in(repository: ArtifactRepository, parent: QWidget, feedback: str | Non
 def download_module_bundle(parent: QWidget) -> Path | None:
     """Walks the user through login, license and download of the module bundle.
 
-    Returns the downloaded file, or None if the user cancelled or the
-    download failed (reported via a message box).
+    Returns where the downloaded file is stored, or None if the user
+    cancelled or the download failed (reported via a message box).
     """
     repository = create_artifact_repository()
     if not repository.has_logged_in_previously() and not _log_in(repository, parent):
@@ -95,7 +96,8 @@ def download_module_bundle(parent: QWidget) -> Path | None:
     while True:
         download_dialog = _DownloadDialog(repository, parent)
         if download_dialog.exec() == QDialog.DialogCode.Accepted:
-            return download_dialog.downloaded_path
+            assert download_dialog.downloaded_path is not None
+            return Path(shutil.move(download_dialog.downloaded_path, get_module_bundle_path()))
 
         if not isinstance(download_dialog.error, LoginRequiredError):
             assert download_dialog.error is not None

@@ -51,7 +51,14 @@ from ._sigint import _InterruptCounter
 from .app_model import AppModel, PluginSpec
 from .backend import Backend, GenBackend, MpBackend
 from .plugin_loader import import_and_register_plugin_module, load_plugins
-from .storage import DEFAULT_ET_DIR, remove_config_dir, remove_temp_dir, set_et_dir
+from .storage import (
+    DEFAULT_ET_DIR,
+    get_module_bundle_extract_dir,
+    get_module_bundle_path,
+    remove_config_dir,
+    remove_temp_dir,
+    set_et_dir,
+)
 from .ui.app_model_viewer import AppModelViewer
 from .ui.main_window import MainWindow
 
@@ -167,6 +174,9 @@ def main() -> None:
     model, mw = build_main_window(args, plugins, backend)
     app.aboutToQuit.connect(model.stop)
     app.aboutToQuit.connect(backend.stop)
+
+    if get_module_bundle_path().is_file():
+        model.try_install_module_bundle(get_module_bundle_path(), get_module_bundle_extract_dir())
 
     if args.amv:
         app_model_viewer = AppModelViewer(model)

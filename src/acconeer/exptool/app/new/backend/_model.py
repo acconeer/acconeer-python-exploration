@@ -5,11 +5,13 @@ from __future__ import annotations
 
 import contextlib
 import time
+from pathlib import Path
 from typing import Any, Callable, Iterator, Optional, TypeVar
 
 import packaging.version
 
 from acconeer.exptool import _core as core
+from acconeer.exptool._artifact_repository import import_module_bundle
 from acconeer.exptool.app.new._enums import ConnectionState, PluginState
 from acconeer.exptool.app.new._exceptions import HandledException
 
@@ -146,6 +148,10 @@ class Model:
             self._logger.debug(f"{plugin_factory.__name__} was attached a Client")
 
         self.task_callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
+
+    @is_task
+    def import_module_bundle(self, *, extract_dir: Path) -> None:
+        import_module_bundle(extract_dir)
 
     @is_task
     def unload_plugin(self, send_callback: bool = True) -> None:

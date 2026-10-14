@@ -12,6 +12,7 @@ import requests
 from PySide6.QtWidgets import QDialog, QWidget
 
 from acconeer.exptool._artifact_repository import Artifact, LoginRequiredError
+from acconeer.exptool.app.new.storage import get_module_bundle_path
 
 
 # The package re-exports a function by the module's name, hiding the module
@@ -31,7 +32,9 @@ class _PluginRepository:
 
     def download(self, artifact: Artifact, path: str) -> tuple[str, str]:
         self.downloads.append(artifact)
-        return str(Path(path) / "module_bundle.bin"), "1.0.0"
+        downloaded_path = Path(path) / "module_bundle.bin"
+        downloaded_path.write_bytes(b"module")
+        return str(downloaded_path), "1.0.0"
 
 
 class _SavedLogin:
@@ -123,6 +126,17 @@ def test_module_bundle_is_downloaded_from_the_plugin_repository(
 
     assert downloaded_path is not None
     assert plugin_repository.downloads == [Artifact.MODULE_BUNDLE]
+
+
+def test_downloaded_module_bundle_is_stored_for_later_starts(
+    plugin_repository: _PluginRepository,
+) -> None:
+    plugin_repository.logged_in = True
+
+    stored_path = download_module.download_module_bundle(QWidget())
+
+    assert stored_path == get_module_bundle_path()
+    assert stored_path.read_bytes() == b"module"
 
 
 def test_login_happens_in_the_plugin_repository(plugin_repository: _PluginRepository) -> None:

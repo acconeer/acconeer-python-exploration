@@ -55,10 +55,18 @@ def remove_temp_dir() -> None:
     shutil.rmtree(_temp_dir(), ignore_errors=True)
 
 
-def get_module_bundle_path() -> Path:
+def _artifact_dir() -> Path:
     artifact_dir = ET_DIR / CODENAME / "artifacts"
     artifact_dir.mkdir(parents=True, exist_ok=True)
-    return artifact_dir / "module_bundle"
+    return artifact_dir
+
+
+def get_module_bundle_path() -> Path:
+    return _artifact_dir() / "module_bundle"
+
+
+def get_module_bundle_extract_dir() -> Path:
+    return _artifact_dir() / "module_bundle_modules"
 
 
 def get_temp_h5_path() -> Path:

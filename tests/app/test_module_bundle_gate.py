@@ -9,15 +9,29 @@ from uuid import UUID, uuid4
 import attrs
 import pytest
 
+from acconeer.exptool._artifact_repository import install_module_bundle
 from acconeer.exptool.app.new._enums import PluginGeneration
 from acconeer.exptool.app.new._exceptions import HandledException
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.app_model import app_model as app_model_module
 from acconeer.exptool.app.new.app_model.file_detective import FileFindings
-from acconeer.exptool.app.new.storage import get_module_bundle_path
+from acconeer.exptool.app.new.backend import BackendLogger
+from acconeer.exptool.app.new.backend import _model as model_module
+from acconeer.exptool.app.new.storage import get_module_bundle_extract_dir, get_module_bundle_path
 
 
 pytestmark = pytest.mark.usefixtures("qapplication")
+
+
+@pytest.fixture(autouse=True)
+def installs(monkeypatch: pytest.MonkeyPatch) -> list[tuple[Path, Path]]:
+    calls: list[tuple[Path, Path]] = []
+    monkeypatch.setattr(
+        app_model_module,
+        "install_module_bundle",
+        lambda zip_path, extract_dir: calls.append((zip_path, extract_dir)),
+    )
+    return calls
 
 
 class _RecordingBackend:
@@ -94,18 +108,92 @@ def test_recording_of_plugin_needing_missing_module_bundle_is_not_loaded(
     assert backend.tasks == []
 
 
-def test_module_bundle_present_at_startup_is_available() -> None:
+def _try_install(app_model: AppModel) -> None:
+    app_model.try_install_module_bundle(get_module_bundle_path(), get_module_bundle_extract_dir())
+
+
+def test_installed_module_bundle_is_available() -> None:
     get_module_bundle_path().write_bytes(b"module")
-
-    assert _app_model(_RecordingBackend()).module_bundle_available
-
-
-def test_stored_module_bundle_becomes_available(tmp_path: Path) -> None:
     app_model = _app_model(_RecordingBackend())
-    downloaded = tmp_path / "downloaded.bin"
-    downloaded.write_bytes(b"module")
 
-    app_model.store_module_bundle(downloaded)
+    _try_install(app_model)
 
     assert app_model.module_bundle_available
-    assert get_module_bundle_path().read_bytes() == b"module"
+
+
+def _import_task() -> tuple[str, dict[str, t.Any]]:
+    return ("import_module_bundle", {"extract_dir": get_module_bundle_extract_dir()})
+
+
+def test_module_bundle_is_installed(installs: list[tuple[Path, Path]]) -> None:
+    get_module_bundle_path().write_bytes(b"module")
+
+    _try_install(_app_model(_RecordingBackend()))
+
+    assert installs == [(get_module_bundle_path(), get_module_bundle_extract_dir())]
+
+
+def test_installed_module_bundle_is_imported_by_the_backend() -> None:
+    get_module_bundle_path().write_bytes(b"module")
+    backend = _RecordingBackend()
+
+    _try_install(_app_model(backend))
+
+    assert backend.tasks == [_import_task()]
+
+
+def test_module_bundle_refused_by_the_install_is_reported(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def _refuse(*_: t.Any) -> None:
+        msg = "/somewhere/_node.py would shadow '_node' from the bundle."
+        raise ValueError(msg)
+
+    monkeypatch.setattr(app_model_module, "install_module_bundle", _refuse)
+    get_module_bundle_path().write_bytes(b"module")
+    app_model = _app_model(_RecordingBackend())
+    errors = _record_errors(app_model)
+
+    _try_install(app_model)
+
+    (error,) = errors
+    assert "would shadow" in str(error)
+    assert not app_model.module_bundle_available
+
+
+def test_backend_imports_the_extracted_bundle(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    imported: list[Path] = []
+    monkeypatch.setattr(model_module, "import_module_bundle", imported.append)
+    monkeypatch.setattr(BackendLogger, "_callback", lambda _: None)
+
+    model_module.Model(task_callback=lambda _: None).import_module_bundle(extract_dir=tmp_path)
+
+    assert imported == [tmp_path]
+
+
+def test_failed_install_is_reported_right_away(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(app_model_module, "install_module_bundle", install_module_bundle)
+    get_module_bundle_path().write_bytes(b"not a zip")
+    app_model = _app_model(_RecordingBackend())
+    errors = _record_errors(app_model)
+
+    _try_install(app_model)
+
+    (error,) = errors
+    assert "Could not install the module bundle" in str(error)
+    assert not app_model.module_bundle_available
+
+
+def test_module_bundle_present_at_startup_is_left_for_the_caller_to_install(
+    installs: list[tuple[Path, Path]],
+) -> None:
+    get_module_bundle_path().write_bytes(b"module")
+    backend = _RecordingBackend()
+
+    app_model = _app_model(backend)
+
+    assert installs == []
+    assert backend.tasks == []
+    assert not app_model.module_bundle_available
