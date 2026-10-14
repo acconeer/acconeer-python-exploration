@@ -25,7 +25,6 @@ from .flash_tab import FlashWizard
 from .help_tab import HelpMainWidget
 from .icons import EXTERNAL_DOCS, FLASH, GAUGE, HELP, RECORD
 from .misc import ExceptionWidget
-from .resource_tab import ResourceMainWidget
 from .status_bar import StatusBar
 from .stream_tab import StreamingMainWidget
 from .utils import LayoutWrapper, TopAlignDecorator
@@ -138,6 +137,9 @@ class _PagedLayout(QSplitter):
             is_active=False,
             tooltip=rc_tooltip,
         )
+        # The resource tab needs Config definitions, which are lazily loaded (not at import time)
+        from .resource_tab import ResourceMainWidget
+
         self._resource_main_widget = ResourceMainWidget()
         self._index_button_group.addButton(rc_index_button, id=self._ButtonId.RESOURCE_CALCULATOR)
         self._index_button_layout.addWidget(rc_index_button)
