@@ -122,6 +122,10 @@ Code you write or change uses native typing (`X | None`, and `Self`,
 (`typing_extensions`). `attrs` value objects with `numpy.typing` annotations
 are house style.
 
+Fix the cause, not the symptom, even when the diff is larger: put things where
+the tool expects them instead of configuring around it, and fix a bug where it
+arises instead of guarding callers against it.
+
 ## Pointers
 
 - `.claude/skills/code-review-local/`: repo review skill with
