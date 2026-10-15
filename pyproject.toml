@@ -163,18 +163,19 @@ pre-install-commands = [
 
 [tool.hatch.envs.docs.scripts]
 clean = "rm -rf docs/_build"
-default-sphinx-build = "python -m sphinx --fail-on-warning --quiet --jobs auto {args} docs docs/_build"
+# Sphinx's make-mode layout: one output directory per builder, one shared cache.
+default-sphinx-build = "python -m sphinx --fail-on-warning --quiet --jobs auto --doctree-dir docs/_build/doctrees {args}"
 
 autobuild = [
     "clean",
     "lint",
-    "python -m sphinx_autobuild -b html docs docs/_build --watch src",
+    "python -m sphinx_autobuild -b html --doctree-dir docs/_build/doctrees docs docs/_build/html --watch src",
 ]
-html = "default-sphinx-build -b html"
-linkcheck = "default-sphinx-build -b linkcheck"
-spelling = "default-sphinx-build -b spelling"
-rediraffe-write = "default-sphinx-build -b rediraffewritediff"
-rediraffe-check = "default-sphinx-build -b rediraffecheckdiff"
+html = "default-sphinx-build -b html docs docs/_build/html"
+linkcheck = "default-sphinx-build -b linkcheck docs docs/_build/linkcheck"
+spelling = "default-sphinx-build -b spelling docs docs/_build/spelling"
+rediraffe-write = "default-sphinx-build -b rediraffewritediff docs docs/_build/rediraffewritediff"
+rediraffe-check = "default-sphinx-build -b rediraffecheckdiff docs docs/_build/rediraffecheckdiff"
 build = ["clean", "lint", "html", "spelling", "rediraffe-check"]
 
 # We've found that .. toctree:: with :glob: can be a foot gun in some scenarios. Let's not use it!
