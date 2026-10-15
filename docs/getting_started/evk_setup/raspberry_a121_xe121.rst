@@ -14,7 +14,7 @@ Hardware Overview
 
 The image below depicts the XE121 from the front (left) and back (right).
 
-.. figure:: /images/hw_images/xe121_hw_overview.png
+.. figure:: /images/hw_images/xe121_hw_overview.jpg
    :align: center
    :width: 80%
 

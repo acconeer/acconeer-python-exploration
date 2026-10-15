@@ -16,7 +16,7 @@
    other_products/index
 
 
-.. figure:: /images/acconeer_evk.png
+.. figure:: /images/acconeer_evk.jpg
     :align: center
     :width: 100%
 

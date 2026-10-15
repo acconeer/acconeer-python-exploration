@@ -142,7 +142,7 @@ The tests were performed with an adult sitting, an adult lying down and an infan
 The data collection and processing was done with the breathing reference application, available in Exploration tool.
 The following pictures illustrates the setup.
 
-.. image:: /images/processing/a121_breathing_person.png
+.. image:: /images/processing/a121_breathing_person.jpg
     :width: 600
     :align: center
 

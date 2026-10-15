@@ -89,7 +89,7 @@ Test setup
 In these tests the A121 EVK was used. In the first test cases, the EVK was mounted on a wall at the same height as the test person's torso, see :numref:`wall_setup`.
 
 .. _wall_setup:
-.. figure:: /images/processing/smart_presence_setup.png
+.. figure:: /images/processing/smart_presence_setup.jpg
     :align: center
 
     Sensor mounted on the wall. Setup used for test cases 1-6.
@@ -97,7 +97,7 @@ In these tests the A121 EVK was used. In the first test cases, the EVK was mount
 In the later test cases, the EVK was mounted on the ceiling, see :numref:`ceiling_setup`.
 
 .. _ceiling_setup:
-.. figure:: /images/processing/a121_smart_presence_ceiling.png
+.. figure:: /images/processing/a121_smart_presence_ceiling.jpg
     :align: center
 
     Sensor mounted on the ceiling about 3 m up from the floor. Setup used for test cases 7 and 8.

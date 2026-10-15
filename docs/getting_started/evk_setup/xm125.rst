@@ -13,7 +13,7 @@ Hardware Overview
 
 The image below depicts the XE125 from the front (left) and back (right).
 
-.. figure:: /images/hw_images/xe125_hw_overview.png
+.. figure:: /images/hw_images/xe125_hw_overview.jpg
    :align: center
    :width: 80%
 

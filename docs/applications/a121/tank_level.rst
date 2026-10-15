@@ -52,13 +52,13 @@ Testing
 Test setup
     The level estimation performance of the reference application is tested using the three different setups shown below, which correspond to small (left), medium (middle), and large (right) tanks.
 
-    .. image:: /images/processing/a121_tank_level_test_small.png
+    .. image:: /images/processing/a121_tank_level_test_small.jpg
         :width: 32%
 
-    .. image:: /images/processing/a121_tank_level_test_medium.png
+    .. image:: /images/processing/a121_tank_level_test_medium.jpg
         :width: 31.8%
 
-    .. image:: /images/processing/a121_tank_level_test_large.png
+    .. image:: /images/processing/a121_tank_level_test_large.jpg
         :width: 32.70%
 
 Test equipment

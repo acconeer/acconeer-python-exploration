@@ -151,7 +151,7 @@ For this test an A121 EVK (XC120 + XE121) was used integrated with a blinkstick 
 10 different people were asked to perform a tap with the back of their hand/fingers towards the sensor, as if they were tapping a button to open a door on for example a buss or a train. The action counted as detected if either or both of the ranges (close range and far range) detected the action.
 
 .. _touchless_button_persons_test:
-.. figure:: /images/processing/a121_touchless_button_persons_test.png
+.. figure:: /images/processing/a121_touchless_button_persons_test.jpg
     :align: center
 
     Shows the setup and action used in the persons test.
