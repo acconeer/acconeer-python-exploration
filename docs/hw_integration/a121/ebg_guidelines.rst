@@ -9,7 +9,7 @@ The radiation pattern can be degraded by sidelobes, which represent unintentiona
 The sidelobe level can be significantly improved with the use of horn antennas or reflectors. However, an alternative cost-effective way to improve the sidelobe level is by implementing Electromagnetic bandgap (EBG) structures. EBGs are periodic structures that can be implemented on the PCB top layer close to the sensor. This is shown in :numref:`fig_A121_with_ebgs_lens_and_casing`, where square patch mushroom type EBGs have been added to the PCB.
 
 .. _fig_A121_with_ebgs_lens_and_casing:
-.. figure:: /_static/hw_images/A121_ebg_pcb_lens_and_casing_3D.png
+.. figure:: /images/hw_images/A121_ebg_pcb_lens_and_casing_3D.png
     :align: center
     :width: 75%
 
@@ -23,12 +23,12 @@ Side lobe suppression
 .. list-table::
    :widths: 50 50
 
-   * - .. figure:: /_static/hw_images/XS121_20_EBG_06_03_19x15x7x15_3D.png
+   * - .. figure:: /images/hw_images/XS121_20_EBG_06_03_19x15x7x15_3D.png
           :name: fig_XS121-20_EBG_eplane_3D
 
           E-plane EBG example.
 
-     - .. figure:: /_static/hw_images/XS121_20_EBG_06_03_19x19x7x7_3D.png
+     - .. figure:: /images/hw_images/XS121_20_EBG_06_03_19x19x7x7_3D.png
           :name: fig_XS121-20_EBG_ehplane_3D
 
           E and H-plane EBG example.
@@ -36,7 +36,7 @@ Side lobe suppression
 :numref:`fig_XS121_ebg_farfields` shows Tx+Rx far-field measurements with and without EBGs for two EBG variants. Both variants improve the E-plane side lobe level by approximately 10 dB at +/-90 deg angles. We also notice a small increase in boresight gain as the EBG reflection phase have been optimized. The E and H-plane EBG implementation yields some further SLL improvement with the cost of additional PCB routing complexity.
 
 .. _fig_XS121_ebg_farfields:
-.. figure:: /_static/hw_images/XS121-20-EBG_v1.1.svg
+.. figure:: /images/hw_images/XS121-20-EBG_v1.1.svg
     :align: center
     :width: 100%
 
@@ -48,7 +48,7 @@ Impact of product enclosure
 Increased side lobes can occur from spillover radiation hitting the product enclosure walls, PCB standoffs and other nearby structures if these need to be close to the sensor (:numref:`fig_A121_with_ebgs_lens_and_casing`). :numref:`fig_EBGs_farfields_with_lens_and_casing` shows how the side lobe level improve with the addition of EBGs, especially in the E-plane. Again, we observe a small increase in boresight gain (~2 dB) with the addition of EBGs.
 
 .. _fig_EBGs_farfields_with_lens_and_casing:
-.. figure:: /_static/hw_images/XS121-20-EBG_v1.1_with_lens_and_casing.svg
+.. figure:: /images/hw_images/XS121-20-EBG_v1.1_with_lens_and_casing.svg
     :align: center
     :width: 100%
 
@@ -62,7 +62,7 @@ The EBGs used here are mushroom-type EBGs and these are one of the most common a
 Both blind vias and through hole vias can be used for constructing the EBG cells. The patch size, element spacing, dielectric thickness and dielectric properties are important tuning parameters for obtaining the desired performance.
 
 .. _fig_EBG_schematic:
-.. figure:: /_static/hw_images/EBG_top_and_side_views.svg
+.. figure:: /images/hw_images/EBG_top_and_side_views.svg
     :align: center
     :width: 95%
 
@@ -87,7 +87,7 @@ When laying out a PCB, the preferred way is to place all external components suc
 The exact location and dimensions of the EBG cells are important for optimal performance. When using through-hole vias, signals can be routed between the EBG vias on layer 3 and below, see :numref:`fig_XS121_ebg_routing_example`. The E-plane only variant allows more routing area with a small loss in SLL performance. Occasionally, some EBG vias may need to be slightly shifted or removed to fit other signals and components. When this is needed, it is strongly recommended to do this on EBGs farthest away from the sensor as the innermost elements are most important.
 
 .. _fig_XS121_ebg_routing_example:
-.. figure:: /_static/hw_images/XS121_ebg_routing.svg
+.. figure:: /images/hw_images/XS121_ebg_routing.svg
     :align: center
     :width: 50%
 

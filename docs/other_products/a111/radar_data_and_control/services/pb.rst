@@ -15,7 +15,7 @@ The Power Bins service can be configured with different pulse length profiles, s
 
 ``examples/a111/services/power_bins.py`` contains example code on how the Power Bins service can be used.
 
-.. figure:: /_static/services/pb.png
+.. figure:: /images/services/pb.png
    :align: center
    :width: 90%
 

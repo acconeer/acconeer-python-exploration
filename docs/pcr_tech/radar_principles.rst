@@ -55,7 +55,7 @@ Representative back scattering pattern of a sphere, flat plate and trihedral cor
 It is seen that the objects can have different maximum RCS, but also different radiation patterns, a flat plate for instance is very directive and if tilted away from the radar, the received energy will be decreased, whereas the corner has less angular dependence and is a more robust reflector in terms of angle with respect to the radar.
 
 .. _fig_rcs:
-.. figure:: /_static/introduction/fig_rcs.png
+.. figure:: /images/introduction/fig_rcs.png
     :align: center
     :width: 95%
 

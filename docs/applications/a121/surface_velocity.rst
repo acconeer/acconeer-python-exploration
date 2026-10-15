@@ -18,7 +18,7 @@ Based on the measured range, the optimal profile is automatically chosen.
 The direction of the flow is seen as either positive or negative. Water flowing towards the sensor will be seen as negative flow,
 while water flowing away from the sensor will be seen as positive flow.
 
-.. image:: /_static/processing/surface_velocity_setup.png
+.. image:: /images/processing/surface_velocity_setup.png
     :align: center
 
 Time series
@@ -67,7 +67,7 @@ The top plot in the GUI shows a timeline of the estimated velocity. It also disp
 In the second plot, the PSD together with the CFAR threshold is shown.
 The frequencies have been converted to velocities and the colored middle section in the PSD represents the slow zone.
 
-.. image:: /_static/processing/surface_velocity_gui.png
+.. image:: /images/processing/surface_velocity_gui.png
     :align: center
 
 Configuration parameters

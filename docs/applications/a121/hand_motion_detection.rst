@@ -59,7 +59,7 @@ The parameters are described below, followed by picture, illustrating their rela
 - :attr:`~acconeer.exptool.a121.algo.hand_motion.ExampleAppConfig.water_jet_width`: The water jet width. Note, when setting this parameters, it is good to consider the maximum variation of the water jet over the life time of the system, including clogging and other sources of water jet width variation (m).
 - :attr:`~acconeer.exptool.a121.algo.hand_motion.ExampleAppConfig.measurement_range_end` : End point of the measurement range (m). The end of the measurement range is the location where the detection of the hand should start, for instance the end of the sink.
 
-.. image:: /_static/processing/a121_faucet_setup.png
+.. image:: /images/processing/a121_faucet_setup.png
     :align: center
     :width: 45%
 

@@ -34,7 +34,7 @@ The lower left plot shows an illustration of the container and visualizes the ut
 Presence is shown in the right plots. The upper plot shows the presence scores for inter frame presence and intra frame presence together with the respective thresholds.
 The lower right plot visualizes if presence is detected or not in the container.
 
-.. image:: /_static/processing/cargo_gui.png
+.. image:: /images/processing/cargo_gui.png
     :align: center
 
 Configuration
@@ -195,7 +195,7 @@ A two second long transient of no detection in the beginning was allowed per pos
 With these conditions, a detection rate of roughly 100% was almost established.
 The performance can be seen in the figure below, where the sensor placement is illustrated with a red *"v"*.
 
-.. image:: /_static/processing/cargo_presence_detection.png
+.. image:: /images/processing/cargo_presence_detection.png
     :align: center
     :scale: 80%
 

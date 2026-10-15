@@ -62,7 +62,7 @@ If only one to three distance points are below the threshold, these can be seen 
 The top left plot illustrates the waste bin together with the fill level in both meters and percent.
 The top right plot shows the history of the detected fill level in meters.
 
-.. image:: /_static/processing/waste_level_gui.png
+.. image:: /images/processing/waste_level_gui.png
     :align: center
 
 Sanity Testing

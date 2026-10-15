@@ -15,11 +15,11 @@ The Envelope service can be configured with different pulse length profiles, see
 
 ``examples/a111/services/envelope.py`` contains example code on how this service can be used.
 
-.. figure:: /_static/services/envelope_snr.png
+.. figure:: /images/services/envelope_snr.png
    :align: center
    :width: 90%
 
-.. figure:: /_static/services/envelope_depth.png
+.. figure:: /images/services/envelope_depth.png
    :align: center
    :width: 90%
 

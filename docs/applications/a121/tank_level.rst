@@ -43,7 +43,7 @@ GUI
 The GUI includes three plots. The top left plot indicates the fluid level, and the top right plot shows the level history.
 The bottom plot shows the tank size, the subsweeps, and the threshold used by the distance detector to detect amplitude peaks in the subsweeps. The subsweeps and different threshold types are described in :doc:`/detectors/a121/distance_detector`.
 
-.. image:: /_static/processing/a121_tank_level.png
+.. image:: /images/processing/a121_tank_level.png
     :align: center
 
 Testing
@@ -52,13 +52,13 @@ Testing
 Test setup
     The level estimation performance of the reference application is tested using the three different setups shown below, which correspond to small (left), medium (middle), and large (right) tanks.
 
-    .. image:: /_static/processing/a121_tank_level_test_small.png
+    .. image:: /images/processing/a121_tank_level_test_small.png
         :width: 32%
 
-    .. image:: /_static/processing/a121_tank_level_test_medium.png
+    .. image:: /images/processing/a121_tank_level_test_medium.png
         :width: 31.8%
 
-    .. image:: /_static/processing/a121_tank_level_test_large.png
+    .. image:: /images/processing/a121_tank_level_test_large.png
         :width: 32.70%
 
 Test equipment

@@ -9,6 +9,6 @@ Depending on how you installed in :ref:`installation-and-setup`, start Explorati
 
 Then get started by pressing the **Flash** button in Exploration Tool and you will be guided through the flashing process.
 
-.. figure:: /_static/et_flash_button_highlight.gif
+.. figure:: /images/et_flash_button_highlight.gif
    :align: center
    :width: 100%

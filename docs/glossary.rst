@@ -17,7 +17,7 @@ Glossary
       Profiles are used to set the transmitted pulse length in discrete steps. The higher the Profile, the longer the transmitted pulse length.
 
       .. _fig_a121_profiles:
-      .. figure:: /_static/handbook/a121/profiles.png
+      .. figure:: /images/handbook/a121/profiles.png
          :align: center
          :width: 80%
 

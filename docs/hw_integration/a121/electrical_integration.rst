@@ -8,12 +8,12 @@ The A121 sensor contains the mmWave front-end, digital control logic, digitizati
 .. list-table::
    :widths: 50 50
 
-   * - .. figure:: /_static/hw_images/A121_3V3_schematic.svg
+   * - .. figure:: /images/hw_images/A121_3V3_schematic.svg
           :name: A121_3V3_schematics
 
           3.3 V MCU integration
 
-     - .. figure:: /_static/hw_images/A121_1V8_schematic.svg
+     - .. figure:: /images/hw_images/A121_1V8_schematic.svg
           :name: A121_1V8_schematics
 
           1.8 V MCU integration

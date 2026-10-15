@@ -161,7 +161,7 @@ to the left and 0.40 m in front of the sensors. The plot also shows a blue half 
 corresponding to a measurement from the left sensor at 0.9 m, without a counterpart at the right
 sensor.
 
-.. image:: /_static/processing/a121_bilateration_capture.png
+.. image:: /images/processing/a121_bilateration_capture.png
     :align: center
 
 .. autoclass:: acconeer.exptool.a121.algo.bilateration.ProcessorConfig

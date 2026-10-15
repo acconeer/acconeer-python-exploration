@@ -104,7 +104,7 @@ The breathing rate is estimated as the peak location(plus interpolation as previ
 Lastly, the lower plot shows the history of the estimated breathing rate.
 The solid blue line shows the estimated rate after each frame and the red dots show the output of the embedded implementation, outputting a new values when half of the buffer contains new data. Here, the person has an initial breathing rate of 12 bpm, transferring to a higher rate around 19 bpm.
 
-.. image:: /_static/processing/a121_breathing_gui.png
+.. image:: /images/processing/a121_breathing_gui.png
     :width: 600
     :align: center
 
@@ -142,7 +142,7 @@ The tests were performed with an adult sitting, an adult lying down and an infan
 The data collection and processing was done with the breathing reference application, available in Exploration tool.
 The following pictures illustrates the setup.
 
-.. image:: /_static/processing/a121_breathing_person.png
+.. image:: /images/processing/a121_breathing_person.png
     :width: 600
     :align: center
 

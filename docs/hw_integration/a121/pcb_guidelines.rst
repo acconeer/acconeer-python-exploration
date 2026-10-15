@@ -13,12 +13,12 @@ The A121 sensor integrates folded dipole antennas, with the internal IC package 
 .. list-table::
    :widths: 50 50
 
-   * - .. figure:: /_static/hw_images/A121_pcb_back_side_components_3D.svg
+   * - .. figure:: /images/hw_images/A121_pcb_back_side_components_3D.svg
           :name: fig_a121_pcb_back_side_components_3D
 
           External components on sensor back side.
 
-     - .. figure:: /_static/hw_images/A121_pcb_front_side_components_3D.svg
+     - .. figure:: /images/hw_images/A121_pcb_front_side_components_3D.svg
           :name: fig_a121_pcb_front_side_components_3D
 
           External components on sensor front side. Crystal is placed outside the marked clearance region (12x15 mm).
@@ -37,7 +37,7 @@ The preferred way is to place all external components such as decoupling capacit
 - Add stitching vias with <0.6 mm spacing at the PCB outer edge to suppress potential edge radiation.
 
 .. _fig_a121_pcb_back_side_components:
-.. figure:: /_static/hw_images/A121_pcb_back_side_components.svg
+.. figure:: /images/hw_images/A121_pcb_back_side_components.svg
     :align: center
     :width: 100%
 
@@ -52,7 +52,7 @@ External components can be placed on the same side as the sensor with negligible
 - Larger components such as connectors, batteries, metallic screws and PCB standoffs can cause stronger radiation pattern distortion and when these need to be on the sensor side, they are best placed along the H-plane axis as far away as possible. Acconeer's customer support can further help optimizing component placement for critical applications.
 
 .. _fig_a121_pcb_top_side_components:
-.. figure:: /_static/hw_images/A121_pcb_front_side_components.svg
+.. figure:: /images/hw_images/A121_pcb_front_side_components.svg
     :align: center
     :width: 100%
 
@@ -64,7 +64,7 @@ Ground plane size
 The normalized gain pattern for some different ground plane sizes are shown in :numref:`fig_tx_rx_gain_vs_groundplane_size`. As the ground plane size is increased, the directivity increases because of the larger reflector size. However, the directivity does not increase monotonically with ground plane size due to constructive and destructive interference. Also, see section :ref:`a121_ebg_guidelines` for implementing metasurfaces to further improve the side lobe level. For PCBs smaller than 15×15 mm, the H-plane side lobe level increases, which should be considered in applications where this is important.
 
 .. _fig_tx_rx_gain_vs_groundplane_size:
-.. figure:: /_static/hw_images/A121_gain_vs_groundplane_size.svg
+.. figure:: /images/hw_images/A121_gain_vs_groundplane_size.svg
     :align: center
     :width: 100%
 
@@ -82,7 +82,7 @@ Conformal coating may be used to protect the sensor and other electronic compone
 :numref:`fig_conformal_coating_gain_vs_thickness_Dk` shows the simulated gain pattern impact after a linear lossless (tan(δ)=0) coating has been added on top of the radar sensor and the PCB. For increasing coating thicknesses, the boresight gain decreases and the E-plane side lobe level increases. For critical applications where maximum boresight gain and low SLL is needed, it is recommended to use a thin coating layer (< 50 µm) with a low rel. permittivity and loss factor. As many coating materials are not well characterized at mmWave frequencies, performance should be verified with actual tests. Note that if the coating is only applied on the PCB, the impact will be significantly less.
 
 .. _fig_conformal_coating_gain_vs_thickness_Dk:
-.. figure:: /_static/hw_images/A121_gain_vs_coating_thickness.svg
+.. figure:: /images/hw_images/A121_gain_vs_coating_thickness.svg
     :align: center
     :width: 100%
 

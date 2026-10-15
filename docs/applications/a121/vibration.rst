@@ -41,7 +41,7 @@ is above the amplitude threshold.
 
 Information about the detected peak is presented in the table below the spectrum plot.
 
-.. image:: /_static/processing/a121_vibration_gui.png
+.. image:: /images/processing/a121_vibration_gui.png
     :align: center
 
 Up to 30 peaks can be reported in the spectrum plot and the table below it. When multiple peaks are
@@ -49,7 +49,7 @@ detected, the table might add horizontally scroll bars to accommodate all peaks.
 the table allow selecting between peak and RMS values, choosing the sorting order (by displacement,
 frequency, velocity, or acceleration), and limiting the number of displayed peaks.
 
-.. image:: /_static/processing/a121_vibration_gui_multiple_peaks.png
+.. image:: /images/processing/a121_vibration_gui_multiple_peaks.png
     :align: center
 
 Embedded C
@@ -130,7 +130,7 @@ This feature can be enabled with the parameter
 Since a subsweep is added, the number of samples is increased and thus, the sweep rate cannot be as high as without this feature.
 Due to this, it is only recommended to enable this feature if there is an interest in detecting very low frequencies.
 
-.. image:: /_static/processing/a121_vibration_gui_flat_fft.png
+.. image:: /images/processing/a121_vibration_gui_flat_fft.png
     :align: center
 
 Example App Output

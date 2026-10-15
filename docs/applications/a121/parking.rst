@@ -37,7 +37,7 @@ The secondary plot, called *Noise adjusted amplitude* shows the amplitude levels
 The obstruction plot is only shown when the obstruction detection is activated. This plot shows the amplitude data for the region that the obstruction detection is active in as well as the signature of the displayed data as an orange point. In addition, the signature of the calibration data is also shown together with a bounding box based on the distance threshold. If the orange point moves outside the box, the obstruction detection will trigger.
 
 .. _parking_gui:
-.. figure:: /_static/processing/a121_parking_gui.png
+.. figure:: /images/processing/a121_parking_gui.png
     :align: center
 
     Example of the parking GUI with obstruction detection active. A parked car is reported and the reported object has been seen for three frames (which is indicated that you have three dots above the threshold).
@@ -88,7 +88,7 @@ This use case is highly dependent on the integration, both for the obstruction d
 In the pole mounted case (when the sensor looks at the car from the side) there are a few issues found in testing. Since a car hood often consists of large flat surfaces which can deflect the signal instead of reflecting it, there is a risk that a car can appear "invisible" to the sensor. The most natural way to mitigate this issue is to tilt the sensor slightly downwards, which often catches the front of the car, which more often than the hood has reflective surfaces more perpendicular to the sensor. All pole mounted tests were performed with the sensor angled slightly downwards, see :numref:`pole_mounted` and :numref:`angle_pole_mounted`.
 
 .. _angle_pole_mounted:
-.. figure:: /_static/processing/a121_parking_pole_angle.png
+.. figure:: /images/processing/a121_parking_pole_angle.png
     :align: center
 
     Illustration of the sensor mount with angle used in testing the pole mounted case.
@@ -208,7 +208,7 @@ The pole mounted case intends to simulate when the sensor is mounted inside an e
 
 
 .. _pole_mounted:
-.. figure:: /_static/processing/a121_parking_pole_mounted.jpg
+.. figure:: /images/processing/a121_parking_pole_mounted.jpg
     :align: center
 
     Test setup for the pole mounted testing, note that the sensor is tilted slightly downwards (about 20 degrees from a ground perpendicular axis). An FZP lens was also used, as seen in the picture.

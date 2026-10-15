@@ -59,7 +59,7 @@ The upper plots in the example in :numref:`smart_presence_gui` show that fast mo
 The lower plot displays the range which is set to 1-3 m and that slow motions are detected in the middle zone.
 
 .. _smart_presence_gui:
-.. figure:: /_static/processing/a121_smart_presence_gui.png
+.. figure:: /images/processing/a121_smart_presence_gui.png
     :align: center
 
     Example of the smart presence GUI. Inter presence is detecting presence in the middle zone, while intra presence is not detecting movement.
@@ -89,7 +89,7 @@ Test setup
 In these tests the A121 EVK was used. In the first test cases, the EVK was mounted on a wall at the same height as the test person's torso, see :numref:`wall_setup`.
 
 .. _wall_setup:
-.. figure:: /_static/processing/smart_presence_setup.png
+.. figure:: /images/processing/smart_presence_setup.png
     :align: center
 
     Sensor mounted on the wall. Setup used for test cases 1-6.
@@ -97,7 +97,7 @@ In these tests the A121 EVK was used. In the first test cases, the EVK was mount
 In the later test cases, the EVK was mounted on the ceiling, see :numref:`ceiling_setup`.
 
 .. _ceiling_setup:
-.. figure:: /_static/processing/a121_smart_presence_ceiling.png
+.. figure:: /images/processing/a121_smart_presence_ceiling.png
     :align: center
 
     Sensor mounted on the ceiling about 3 m up from the floor. Setup used for test cases 7 and 8.
@@ -238,11 +238,11 @@ Results
 ^^^^^^^
 **1. Human walking from Zone 3 -> Zone 1 (1-3 meters range)**
 
-.. image:: /_static/processing/smart_presence_test1_a.png
+.. image:: /images/processing/smart_presence_test1_a.png
     :width: 600
     :align: center
 
-.. image:: /_static/processing/smart_presence_test1_b.png
+.. image:: /images/processing/smart_presence_test1_b.png
     :width: 600
     :align: center
 
@@ -275,7 +275,7 @@ Results
 
 **5. Human walking into wake up config and confirm detection. Continue walking and confirm detection is done with nominal config.**
 
-.. figure:: /_static/processing/a121_smart_presence_short_nominal_config.png
+.. figure:: /images/processing/a121_smart_presence_short_nominal_config.png
     :width: 600
     :align: center
 

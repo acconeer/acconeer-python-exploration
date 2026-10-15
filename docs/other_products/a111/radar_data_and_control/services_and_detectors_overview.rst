@@ -4,7 +4,7 @@ Services and detectors overview
 The RSS provides output at two different levels, Service and Detector. The Service output is preprocessed sensor data as a function of distance. Detectors are built with this Service data as the input and the output is a result, in the form of e.g. distance, presence, angle etc. Services and Detectors currently available are listed in :numref:`fig_detectors_services`.
 
 .. _fig_detectors_services:
-.. figure:: /_static/introduction/fig_detectors_services.png
+.. figure:: /images/introduction/fig_detectors_services.png
     :align: center
     :width: 70%
 

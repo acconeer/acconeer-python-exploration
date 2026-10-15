@@ -17,7 +17,7 @@ The SNR can be modeled as a function of a limited number of parameters: the RCS 
 :numref:`fig_rx_power_vs_dist` shows how the received energy drops with increasing :math:`R` for objects where the exponent :math:`k` is equal to 4, which applies for objects which are smaller than the area which is illuminated coherently by the radar. For objects that are larger than this area the :math:`k` is smaller than 4, with a lower limit of :math:`k = 2`  when the object is a large flat surface.
 
 .. _fig_rx_power_vs_dist:
-.. figure:: /_static/introduction/fig_rx_power_vs_dist.png
+.. figure:: /images/introduction/fig_rx_power_vs_dist.png
     :align: center
 
     Received signal power versus distance. Note: signal, S, is plotted in dB.

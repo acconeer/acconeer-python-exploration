@@ -11,7 +11,7 @@ The feature is enabled/disabled using the Sensor Configuration parameter
 
 The following graph shows the measured amplitude and phase with loopback enabled.
 
-.. figure:: /_static/handbook/a121/in-depth_topics/loopback.png
+.. figure:: /images/handbook/a121/in-depth_topics/loopback.png
    :align: center
    :width: 70%
 
@@ -116,7 +116,7 @@ of the complex samples are adjusted according to the quantified phase pattern.
 The following graph shows the phase and envelope of a measurement against a single target, with and
 without phase enhancement enabled.
 
-.. figure:: /_static/handbook/a121/in-depth_topics/phase_enhancement.png
+.. figure:: /images/handbook/a121/in-depth_topics/phase_enhancement.png
    :align: center
    :width: 70%
 
@@ -145,14 +145,14 @@ The IQ-imbalance repeats outside the small interval so the same coefficients are
 Figures below show the phase rotation and resulting amplitude, with and without IQ imbalance compensation, for an object that moves within the interval.
 The left and right envelope corresponds to the same object but with different phase rotations.
 
-.. figure:: /_static/handbook/a121/in-depth_topics/iq_imbalance.png
+.. figure:: /images/handbook/a121/in-depth_topics/iq_imbalance.png
    :align: center
    :width: 70%
 
    Amplitude oscillates when the phase rotates over a distance without compensation.
 
 
-.. figure:: /_static/handbook/a121/in-depth_topics/no_iq_imbalance.png
+.. figure:: /images/handbook/a121/in-depth_topics/no_iq_imbalance.png
    :align: center
    :width: 70%
 

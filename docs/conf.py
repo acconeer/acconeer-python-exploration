@@ -103,8 +103,8 @@ spelling_word_list_filename = ["spelling_wordlist.txt"]
 
 html_theme = "sphinx_book_theme"
 
-html_favicon = "_static/favicon.png"
-html_logo = "_static/logo.svg"
+html_favicon = "images/favicon.png"
+html_logo = "images/logo.svg"
 html_static_path = ["_static"]
 html_css_files = ["css/custom.css"]
 

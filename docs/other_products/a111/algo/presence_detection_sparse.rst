@@ -17,7 +17,7 @@ Both the inter- and the intra-frame deviations are filtered both in time and dep
 Plots
 -----
 
-.. figure:: /_static/processing/sparse_presence.png
+.. figure:: /images/processing/sparse_presence.png
     :align: center
 
     A screenshot of the plots. In it, we can see a target detected at around 0.5 m.

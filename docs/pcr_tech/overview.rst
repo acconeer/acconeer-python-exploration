@@ -19,7 +19,7 @@ where :math:`\varepsilon_r` is the relative permittivity of the medium. The '2' 
 The term "coherent" means that the returned signal contains both amplitude and phase information, which is useful in many applications. The phase information can, for example, be utilized to detect very small movements or speed. "Coherent" also implies that the starting phase of the transmitted signal is well known, as illustrated in :numref:`fig_transmit_signal_length_a121`. The figure shows a transmitted signal from an Acconeer sensor in the time domain. The timing between each pulse is controlled by the :term:`PRF`, the length of each pulse is controlled by the :term:`Profile` setting, and the carrier frequency of each wavelet is set to 60.5 GHz for all Acconeer products.
 
 .. _fig_transmit_signal_length_a121:
-.. figure:: /_static/introduction/fig_transmit_signal_length.png
+.. figure:: /images/introduction/fig_transmit_signal_length.png
     :align: center
 
     Illustration of the time domain transmitted signal from an Acconeer sensor using a :term:`PRF` of 13 MHz. A radar sweep typically consists of thousands of pulses. The length of the pulses can be controlled by setting :term:`Profile`.

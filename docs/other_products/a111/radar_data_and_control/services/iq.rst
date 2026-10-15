@@ -6,7 +6,7 @@ IQ
 The IQ service utilizes the phase-coherency of the Acconeer pulsed radar to produce stable In-phase and Quadrature (IQ) components, capable of detecting fine movement occurring in a target scene. Such micro-motions can be used in, for instance, presence detection in front of the sensor, detection of breathing rate and obstacle detection.
 
 
-.. figure:: /_static/services/iq.png
+.. figure:: /images/services/iq.png
    :align: center
    :width: 90%
 
@@ -15,7 +15,7 @@ The In-phase and Quadrature components are represented as complex values in cart
 The cartesian data can be transformed to polar data providing phase and amplitude of the signal. Having the phase of the signal available makes it possible to perform more accurate measurements as compared to the Power bins and Envelope Services where only the amplitude is available. This is illustrated in :numref:`fig_wavelet` where an object is moving towards the radar. The envelope of the signal only varies slightly when the object is moving, while the value of the coherent signal at a fixed time delay varies substantially. This change will be present in the phase of the data from the IQ Service.
 
 .. _fig_wavelet:
-.. figure:: /_static/introduction/fig_wavelet.png
+.. figure:: /images/introduction/fig_wavelet.png
     :align: center
     :width: 95%
 

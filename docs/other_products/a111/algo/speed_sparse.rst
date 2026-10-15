@@ -8,7 +8,7 @@ This is a speed measuring algorithm built on top of the :ref:`sparse-service` se
 Plots
 -----
 
-.. figure:: /_static/processing/sparse_speed.png
+.. figure:: /images/processing/sparse_speed.png
     :align: center
 
     A screenshot of the plots. A target detected with the speed 4.4 m/s can be seen.

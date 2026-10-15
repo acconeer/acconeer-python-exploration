@@ -59,7 +59,8 @@ Test-running traps:
 - **Generated doc pages**: adding or renaming an example script requires
   `python docs/generate_example_script_pages.py fix`.
 
-The Sphinx toctree `:glob:` ban is *not* in this gate but in
+The Sphinx toctree `:glob:` ban and the no-images-in-`docs/_static` rule (images
+go in `docs/images/`) are *not* in this gate but in
 `hatch run docs:lint`, which is stubbed out on Windows.
 
 ## Architecture

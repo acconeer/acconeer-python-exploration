@@ -7,7 +7,7 @@ Radome and mechanical design
 This chapter covers the EM design considerations for radomes used with A121, including thickness and placement optimization. A radome is the product enclosure or plastic cover in front of the radar that protects it from mechanical impact and weather, see :numref:`fig_a121_spherical_enclosure`. When designed correctly, the radome is effectively transparent to the radar signal, as discussed below. Note that in applications where a dielectric lens is used, no additional radome is needed.
 
 .. _fig_a121_spherical_enclosure:
-.. figure:: /_static/hw_images/A121_pcb_and_spherical_radome.png
+.. figure:: /images/hw_images/A121_pcb_and_spherical_radome.png
     :align: center
     :width: 75%
 
@@ -40,7 +40,7 @@ Radome design
 Without a lens or horn antenna, the A121 behaves as a hemispherical source with a wide field of view (FoV). To preserve the radiation pattern, a curved or spherical radome with a fixed thickness is ideal as every ray hits the radome at normal incidence over all angles (:numref:`fig_a121_spherical_enclosure`). However, planar radomes (:numref:`fig_a121_planar_enclosure`) are commonly preferred from a product design standpoint, and when properly designed, these radomes have negligible impact on the radiation pattern. We will in the following discuss how to optimize these radomes.
 
 .. _fig_a121_planar_enclosure:
-.. figure:: /_static/hw_images/A121_pcb_and_planar_radome.png
+.. figure:: /images/hw_images/A121_pcb_and_planar_radome.png
     :align: center
     :width: 75%
 
@@ -77,7 +77,7 @@ Second, for the quarter-wavelength condition:
 we have :math:`e^{-2jkd_{2}}=-1`, and the reflection coefficient reaches its maximum or :math:`\Gamma_{1} = \frac{2r_{1}}{1+r_{1}^{2}}`.
 
 .. _fig_transmission_reflection:
-.. figure:: /_static/hw_images/radome_transmission_and_reflection.svg
+.. figure:: /images/hw_images/radome_transmission_and_reflection.svg
     :align: center
     :width: 60%
 
@@ -100,7 +100,7 @@ The above corresponds to the orange curve in :numref:`fig_a121_planar_and_spheri
 If the dielectric thickness is an odd multiple of :math:`\lambda/4`, maximum reflection occurs (:eq:`eq_quarter_wavelength_condition`). This is also shown in :numref:`fig_a121_planar_and_spherical_radomes` (green curve) where the planar radome thickness is :math:`3\lambda/4` =2.25 mm. This results in significant pattern interference and gain loss. The importance of properly choosing the radome thickness has thus been demonstrated.
 
 .. _fig_a121_planar_and_spherical_radomes:
-.. figure:: /_static/hw_images/A121_gain_vs_radomes.svg
+.. figure:: /images/hw_images/A121_gain_vs_radomes.svg
     :align: center
     :width: 100%
 
@@ -114,7 +114,7 @@ When using (half-wavelength) planar radomes, some back reflection occurs for ang
 :numref:`fig_planar_radome_distance` shows the simulated far-field pattern for a half-wavelength planar radome with :math:`\varepsilon_r=2.8` for different radome distances. When the radome distance is 3.0 - 3.5 mm (with respect to PCB ground plane), minimum pattern ripple is observed. This corresponds to a distance of :math:`\sim\lambda_{0}/2` between the sensor and radome.
 
 .. _fig_planar_radome_distance:
-.. figure:: /_static/hw_images/A121_gain_vs_planar_radome_distance.svg
+.. figure:: /images/hw_images/A121_gain_vs_planar_radome_distance.svg
     :align: center
     :width: 100%
 

@@ -190,9 +190,19 @@ if grep -R -C3 ':glob:' ./docs/ \
 fi
 """
 
+# Sphinx copies all of _static to the output, used or not, on top of copying used images to _images.
+staticlint = """
+if find ./docs/_static -iname '*.gif' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.svg' \
+        | grep .; then \
+    echo 'Put images in docs/images/, not docs/_static/'
+    false
+fi
+"""
+
 lint = [
     "python -m doc8 --extension .rst docs",
-    "globlint"
+    "globlint",
+    "staticlint",
 ]
 
 nightlybuild = ["build", "linkcheck"]
@@ -203,6 +213,7 @@ platform.windows.scripts = [
     # The "|| echo ..." is both friendly and supresses a non-zero exit code if "docs/_build" was missing
     'clean=rmdir /s /q "docs\_build" || echo Could not find "docs\_build" and that is OK!',
     'globlint=echo Skipping "globlint" on Windows: CI will take care of it!',
+    'staticlint=echo Skipping "staticlint" on Windows: CI will take care of it!',
 ]
 
 [tool.hatch.envs.hatch-check-code]

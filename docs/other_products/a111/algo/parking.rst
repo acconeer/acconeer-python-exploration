@@ -36,7 +36,7 @@ spot in a way so that the amount of reflection from a parked car is maximized.
 Plots
 -----
 
-.. figure:: /_static/processing/parking_plots.png
+.. figure:: /images/processing/parking_plots.png
     :align: center
 
     A screenshot of the parking detection plots for a sensor placed under a parked car.

@@ -5,7 +5,7 @@ Phase tracking
 
 An example of a relative movements tracking algorithm using phase information.
 
-.. image:: /_static/processing/phase_tracking.png
+.. image:: /images/processing/phase_tracking.png
 
 
 :github_1a5d2c6:`Phase Tracking <src/acconeer/exptool/a111/algo/phase_tracking/_processor.py>`

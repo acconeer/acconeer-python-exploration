@@ -12,7 +12,7 @@ A *sweep* is a array of these complex values corresponding to an amplitude and p
 For any given frame, we let :math:`z(s, d)` be the complex IQ value (point) for a sweep :math:`s` and a distance point :math:`d`.
 
 .. _fig_data_static_SENSOR_PLACEHOLDER_LOWER:
-.. figure:: /_static/handbook/a121/data_static.png
+.. figure:: /images/handbook/a121/data_static.png
    :align: center
    :width: 80%
 
@@ -25,7 +25,7 @@ As such, they could be *coherently* averaged together to linearly increase signa
 In this context, coherently simply means "in the complex plane".
 
 .. _fig_data_moving_SENSOR_PLACEHOLDER_LOWER:
-.. figure:: /_static/handbook/a121/data_moving.png
+.. figure:: /images/handbook/a121/data_moving.png
    :align: center
    :width: 80%
 
@@ -38,7 +38,7 @@ Due to this, we can no longer coherently average the sweeps together.
 However, we can still (non-coherently) average the amplitudes.
 
 .. _fig_data_moving_slice_polar_SENSOR_PLACEHOLDER_LOWER:
-.. figure:: /_static/handbook/a121/data_moving_slice_polar.png
+.. figure:: /images/handbook/a121/data_moving_slice_polar.png
    :align: center
    :width: 50%
 
@@ -58,7 +58,7 @@ This is utilized in for example the *presence detector*, which can detect the pr
 It can also be used to detect a change in signal very close to the sensor, creating a "touchless button".
 
 .. _fig_data_range_doppler_SENSOR_PLACEHOLDER_LOWER:
-.. figure:: /_static/handbook/a121/data_range_doppler.png
+.. figure:: /images/handbook/a121/data_range_doppler.png
    :align: center
    :width: 80%
 

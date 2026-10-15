@@ -14,13 +14,13 @@ Hardware Overview
 
 The image below depicts the XE121 from the front (left) and back (right).
 
-.. figure:: /_static/hw_images/xe121_hw_overview.png
+.. figure:: /images/hw_images/xe121_hw_overview.png
    :align: center
    :width: 80%
 
 The image below depicts a Raspberry Pi connected to the XE121.
 
-.. figure:: /_static/hw_images/rpi_xe121_hw_overview.jpg
+.. figure:: /images/hw_images/rpi_xe121_hw_overview.jpg
    :align: center
    :width: 80%
 
@@ -73,6 +73,6 @@ The XE121 has an Arduino UNO connector, as can be seen in :ref:`rpi_xe121-hw-ove
 This makes it easy to connect to an STM32 Nucleo development board.
 Note that this is for embedded C evaluation only, Exploration Tool is not supported for this setup.
 
-.. figure:: /_static/hw_images/nucleo_xe121_assembled.jpg
+.. figure:: /images/hw_images/nucleo_xe121_assembled.jpg
    :align: center
    :width: 80%

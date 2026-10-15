@@ -13,5 +13,5 @@ The lower graph shows the estimated distance, where in this case, an object is b
 The green vertical line shows where the phase is currently being tracked, which is determined by the location of the highest envelope peak.
 Note, as this example use a simple peak tracking strategy (highest peak), it might not perform as well in the case of multiple objects.
 
-.. image:: /_static/processing/a121_phase_tracking.png
+.. image:: /images/processing/a121_phase_tracking.png
     :align: center

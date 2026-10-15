@@ -56,7 +56,7 @@ In the GUI two plots are displayed, see :numref:`touchless_button_gui`. The top 
 The bottom plot displays the detection score for each distance point in each range. To hide thresholds or points click on the corresponding symbol in the legend. The points represent the second highest detection score per frame for each distance. The second highest score is chosen for plotting since a frame counts as significant after two points at the same distance pass the threshold during the same frame. A detection in the activated range(s) will be shown in the top plot when the consecutive number of points above the threshold is greater or equal to the patience parameter for the activated range(s). The purpose of the bottom plot is to demonstrate the effect of the sensitivity settings and to give the user an idea of which points are most important for the user’s detection scenario. The sensitivity settings might need to be adjusted depending on integration and purpose of the application. The sensitivity will always result in a trade-off between missed detections and false detections.
 
 .. _touchless_button_gui:
-.. figure:: /_static/processing/a121_touchless_button_gui.png
+.. figure:: /images/processing/a121_touchless_button_gui.png
     :align: center
 
     Example of the touchless button GUI. Detection is found in both the close and far range. The threshold for each range and the detection score for each distance is shown in the lower plot.
@@ -74,7 +74,7 @@ The purpose of this test was to check that no detections are made outside the ap
 For this test an A121 EVK (XC120 + XE121) was used. To test the presets a corner reflector was moved just outside the edge of the appointed ranges (0.05 m and 0.24 m), see :numref:`touchless_button_presets_test`.
 
 .. _touchless_button_presets_test:
-.. figure:: /_static/processing/touchless_button_presets_range_test.jpg
+.. figure:: /images/processing/touchless_button_presets_range_test.jpg
     :align: center
 
     Test setup to test preset ranges, to ensure no detection outside the range.
@@ -151,7 +151,7 @@ For this test an A121 EVK (XC120 + XE121) was used integrated with a blinkstick 
 10 different people were asked to perform a tap with the back of their hand/fingers towards the sensor, as if they were tapping a button to open a door on for example a buss or a train. The action counted as detected if either or both of the ranges (close range and far range) detected the action.
 
 .. _touchless_button_persons_test:
-.. figure:: /_static/processing/a121_touchless_button_persons_test.png
+.. figure:: /images/processing/a121_touchless_button_persons_test.png
     :align: center
 
     Shows the setup and action used in the persons test.

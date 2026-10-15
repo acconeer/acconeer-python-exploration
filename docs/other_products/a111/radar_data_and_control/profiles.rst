@@ -19,13 +19,13 @@ Depth resolution, :math:`d_{res}`, is the ability to resolve reflections which a
 * longer pulses provides higher SNR at a cost of reduced depth resolution
 
 .. _fig_distance_resolution:
-.. figure:: /_static/introduction/fig_distance_resolution.png
+.. figure:: /images/introduction/fig_distance_resolution.png
     :align: center
 
     Illustration of received signal containing 2 echoes. A longer pulse increases the radar loop gain, but also limits the depth resolution. The displayed data corresponds to the two setups in :numref:`fig_scenario`.
 
 .. _fig_scenario:
-.. figure:: /_static/introduction/fig_scenario.png
+.. figure:: /images/introduction/fig_scenario.png
     :align: center
 
     Illustration of scenarios that can produce the data in :numref:`fig_distance_resolution`. A strong reflector, such as a flat metallic surface, can give a moderate radar signal if the angle to the radar is high. :math:`R_1` is identical in the two illustrations as well as :math:`R_2`.
@@ -35,7 +35,7 @@ Optimizing on depth resolution also means that close-in range performance is imp
 If angular information is needed one possibility is to mechanically move the sensor to scan an area and produce a synthetic aperture radar (SAR). One such case is for autonomous robots using sensor input for navigation. Another option is to use multiple A111 sensors and merge data from them to calculate the position of the object by trilateration. This can be achieved by running the sensors sequentially and merge the data in the application.
 
 .. _fig_close_in_distance:
-.. figure:: /_static/introduction/fig_close_in_distance.png
+.. figure:: /images/introduction/fig_close_in_distance.png
     :align: center
 
     Illustration of how the leakage between the Tx and Rx antenna will appear in the Envelope Service data for Profile 1 and Profile 2 pulse lengths.

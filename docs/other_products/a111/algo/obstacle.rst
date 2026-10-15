@@ -8,7 +8,7 @@ The
 is an example of a simple obstacle detection algorithm based on the synthetic aperture radar (SAR) principle. The main goal of the obstacle detector is to find obstacles in front of the sensor and estimate their distance and angle. In an application where the sensor is installed on a robot (such as vacuum cleaners or lawn mowers), the object data can be used to issue movement commands to the robot to avoid and circumnavigate the found obstacles.
 Note that the half power beam width (HPBW) along the H- and E-plane of the sensor is 60 and 40 degrees, respectively.
 
-.. image:: /_static/processing/obstacle_setup.png
+.. image:: /images/processing/obstacle_setup.png
 
 At the core of the detection algorithm is a fast Fourier transform (FFT), which is used to improve the signal-to-noise ratio (SNR) of obstacles in the vicinity of the radar sensor for extraction of angle :math:`{\alpha}` and distance :math:`d`.
 
@@ -59,12 +59,12 @@ During the time the obstacle velocity and angle towards the radar are not changi
 
 On the other hand, for static background amplitude **and** phase are constant. Static background usually originates from reflections of enclosure or other parts attached close to or in front of the sensor.
 
-.. image:: /_static/processing/obstacle_sweeps.png
+.. image:: /images/processing/obstacle_sweeps.png
 
 Next, we create a sweep matrix of :math:`N_s` consecutive sweeps (17 in our example) as shown in below figure.
 Time progresses along the x-Axis, distance along the y-Axis. Increasing :math:`N_s` will improve angular resolution, but only as long as the obstacle velocity and angle towards the sensor are constant. Reducing :math:`N_s` will decrease angular resolution, but also reduce influence of velocity and angle change.
 
-.. image:: /_static/processing/obstacle_sweep_matrix.png
+.. image:: /images/processing/obstacle_sweep_matrix.png
 
 Once the sweep matrix is filled, it will be further processed with each following sweep to extract angle and distance from potential obstacles.
 
@@ -103,7 +103,7 @@ Consequently, only phase shifts of up to :math:`\pi` can un-ambiguously be attri
 For special cases, where only one direction of motion occurs, this can be extended to :math:`2\pi`.
 Thus, an FFT shift is performed to "sort" the bins in a way that :math:`0` phase shift and velocity is centered and negative and positive velocities extend to the left and right, respectively.
 
-.. image:: /_static/processing/obstacle_fft.png
+.. image:: /images/processing/obstacle_fft.png
 
 In the python example, the x-Axis of the FFT matrix already shows velocity, ranging from :math:`-v_{max}` to :math:`+v_{max}`.
 It uses by default a sweep frequency :math:`f_s=66\,\text{Hz}` resulting in a maximum resolvable velocity :math:`v_{max}=\pm8\frac{\text{cm}}{\text{s}}`.
@@ -113,7 +113,7 @@ To the right, at a velocity of :math:`6` to :math:`7\frac{\text{cm}}{\text{s}}` 
 
 To visualize the coherent addition of sweeps at the matching bin, the example also shows the envelope of the current complex sweep (blue solid line) and the envelope along the bin of the global maximum in the FFT matrix (dashed orange line).
 
-.. image:: /_static/processing/obstacle_fft_max.png
+.. image:: /images/processing/obstacle_fft_max.png
 
 The bin with the global peak is here around :math:`7\frac{\text{cm}}{\text{s}}`.
 As can be seen, the signal-to-noise ratio (SNR) of the peak to the rest of the sweep has increased significantly.
@@ -134,7 +134,7 @@ In the final step, the example calculates the angle :math:`\alpha` the obstacle 
 In order to do so, we need to assume that either the sensor is moving and all found obstacles are motionless or vice versa.
 In general, when the sensor and the obstacles are moving at the same time, the measured phase shift cannot be related un-ambiguously to a velocity according to :eq:`obst_phase_change` and hence no statement about the obstacle's angle can be made.
 
-.. image:: /_static/processing/obstacle_results.png
+.. image:: /images/processing/obstacle_results.png
 
 We assume that the radar sensor is moving at a constant velocity :math:`v_{robot}` (being attached to a robot) and all obstacles are motionless.
 Thus, in the reference frame of the sensor, all obstacles are moving with :math:`v_{robot}` towards the robot parallel to the normal of the robot front.

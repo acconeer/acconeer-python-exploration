@@ -20,7 +20,7 @@ Below is an example of the detections of both fast and slow motions. It is measu
 
 .. _figure_presence_human_only_1:
 
-.. figure:: /_static/processing/presence_human_only_1.png
+.. figure:: /images/processing/presence_human_only_1.png
     :align: center
 
     A measurement with multiple cases of human and fan presence
@@ -64,7 +64,7 @@ For this implementation to work, there are three main timelines as shown in the 
 
 .. _figure_presence_human_only_2:
 
-.. figure:: /_static/processing/presence_human_only_2.png
+.. figure:: /images/processing/presence_human_only_2.png
     :align: center
 
     Implementation of :attr:`~acconeer.exptool.a111.algo.presence_detect_human_only.ProcessingConfiguration.adaptive_threshold`
@@ -75,7 +75,7 @@ By activating the adaptive threshold, it will automatically change the threshold
 
 .. _figure_presence_human_only_3:
 
-.. figure:: /_static/processing/presence_human_only_3.png
+.. figure:: /images/processing/presence_human_only_3.png
     :align: center
 
     UI appearance

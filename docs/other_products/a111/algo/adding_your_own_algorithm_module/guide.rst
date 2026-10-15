@@ -115,7 +115,7 @@ which defines the services and detectors loaded into the App, to include the new
 
 That's it! Now, lets have a look at what we have accomplished.
 
-.. figure:: /_static/gui/my_new_algorithm_module_select_service.png
+.. figure:: /images/gui/my_new_algorithm_module_select_service.png
     :figwidth: 40%
     :align: right
 

@@ -16,7 +16,7 @@ To quickly get started using a lens, Acconeer provides two example lenses, one p
    .. grid-item::
 
       .. _fig_module_plano-convex:
-      .. figure:: /_static/handbook/a121/in-depth_topics/integration/module_plano_convex_lens.png
+      .. figure:: /images/handbook/a121/in-depth_topics/integration/module_plano_convex_lens.png
          :alt: Module plano-convex lens
          :width: 150%
 
@@ -25,7 +25,7 @@ To quickly get started using a lens, Acconeer provides two example lenses, one p
    .. grid-item::
 
       .. _fig_module_FZP:
-      .. figure:: /_static/handbook/a121/in-depth_topics/integration/FZP_module_lens.png
+      .. figure:: /images/handbook/a121/in-depth_topics/integration/FZP_module_lens.png
          :alt: Module FZP Lens
          :width: 65%
 
@@ -54,7 +54,7 @@ One of the lens surfaces can be chosen arbitrarily, for example planar or spheri
    .. grid-item::
 
       .. _fig_hyperbolic_efield:
-      .. figure:: /_static/handbook/a121/in-depth_topics/integration/hyperbolic_efield.png
+      .. figure:: /images/handbook/a121/in-depth_topics/integration/hyperbolic_efield.png
          :alt: Hyperbolic E-field
          :width: 68%
 
@@ -63,7 +63,7 @@ One of the lens surfaces can be chosen arbitrarily, for example planar or spheri
    .. grid-item::
 
       .. _fig_hyperbolic_ray_model:
-      .. figure:: /_static/handbook/a121/in-depth_topics/integration/hyperbolic_ray_model.svg
+      .. figure:: /images/handbook/a121/in-depth_topics/integration/hyperbolic_ray_model.svg
          :alt: Hyperbolic ray model
          :width: 100%
 
@@ -130,7 +130,7 @@ Constraining the inner surface to planar results in a plano-convex lens, see :nu
     \end{cases}
 
 .. _fig_plano-convex_ray_model:
-.. figure:: /_static/handbook/a121/in-depth_topics/integration/plano-convex_ray_model.svg
+.. figure:: /images/handbook/a121/in-depth_topics/integration/plano-convex_ray_model.svg
     :align: center
     :width: 95%
 
@@ -153,14 +153,14 @@ The lens gain is related to the lens effective area by :math:`G = \frac{4 \pi A_
 :numref:`fig_hyperbolic_gain_vs_size` and :numref:`fig_plano_convex_gain_vs_size` show simulated :term:`RLG` pattern plots for the hyperbolic and the plano-convex lenses for some sample values of F and D. These figures can be used as a rough guideline for choosing the lens size. Observe that for the same diameter, the plano-convex lens yields somewhat higher gain compared to the hyperbolic lens. The exact :term:`RLG` pattern will also depend on the lens housing, choice of material, and PCB size.
 
 .. _fig_hyperbolic_gain_vs_size:
-.. figure:: /_static/handbook/a121/in-depth_topics/integration/hyperbolic_size_vs_gain.svg
+.. figure:: /images/handbook/a121/in-depth_topics/integration/hyperbolic_size_vs_gain.svg
     :align: center
     :width: 95%
 
     Simulated :term:`RLG` patterns for different size hyperbolic lenses assuming lossless :term:`dielectrics<Dielectric>`.
 
 .. _fig_plano_convex_gain_vs_size:
-.. figure:: /_static/handbook/a121/in-depth_topics/integration/Plano-convex_size_vs_gain.svg
+.. figure:: /images/handbook/a121/in-depth_topics/integration/Plano-convex_size_vs_gain.svg
     :align: center
     :width: 95%
 
@@ -178,7 +178,7 @@ The plano-convex and convex-planar type lenses are :term:`refracting<Refraction>
    .. grid-item::
 
       .. _fig_fzp_ray_model:
-      .. figure:: /_static/handbook/a121/in-depth_topics/integration/FZP_ray_model.png
+      .. figure:: /images/handbook/a121/in-depth_topics/integration/FZP_ray_model.png
          :alt: FZP Ray model
          :width: 100%
 
@@ -187,7 +187,7 @@ The plano-convex and convex-planar type lenses are :term:`refracting<Refraction>
    .. grid-item::
 
       .. _fig_FZP_efield:
-      .. figure:: /_static/handbook/a121/in-depth_topics/integration/FZP_efield.png
+      .. figure:: /images/handbook/a121/in-depth_topics/integration/FZP_efield.png
          :alt: FZP E-field
          :width: 92%
 
@@ -231,7 +231,7 @@ Lens thickness comparison
 For mass production, injection molding is usually cost effective but producing thick lenses can be challenging as sink marks and other deformations can occur. It is therefore of interest to find lens designs which are as thin as possible. In :numref:`fig_lens_thickness_comp` we have compared the lens thickness to diameter ratio (T/D) as a function of :math:`\varepsilon_r`. Common thermoplastics have :math:`\varepsilon_r` in the range 2-4 and the hyperboloidal lens is the thinnest lens. To obtain even thinner lenses, the F/D ratio can be increased; however, this may also increase side lobe levels due to spillover radiation, especially for small-diameter lenses.
 
 .. _fig_lens_thickness_comp:
-.. figure:: /_static/handbook/a121/in-depth_topics/integration/lens_thickness_comparison.svg
+.. figure:: /images/handbook/a121/in-depth_topics/integration/lens_thickness_comparison.svg
     :align: center
     :width: 95%
 
@@ -254,7 +254,7 @@ The focal distance :math:`F` is an input parameter for all lens designs provided
 :numref:`fig_focal_distance_tuning` shows the gain variation of the integrated lens with the radome with respect to the free space scenario for the XM112 module. The maximum gain happens at 7.5 mm distance for both lenses. Other maxima happen every half-a-wavelength (2.5 mm).
 
 .. _fig_focal_distance_tuning:
-.. figure:: /_static/handbook/a121/in-depth_topics/integration/gain_vs_focal_distance.png
+.. figure:: /images/handbook/a121/in-depth_topics/integration/gain_vs_focal_distance.png
     :align: center
     :width: 95%
 

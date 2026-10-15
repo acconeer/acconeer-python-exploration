@@ -8,7 +8,7 @@ The sparse IQ service can be configured to measure practically any range of dist
 In other words, a sweep makes up the points in space where reflected pulses are measured.
 
 .. _fig_data_simple_SENSOR_PLACEHOLDER_LOWER:
-.. figure:: /_static/handbook/a121/data_simple.png
+.. figure:: /images/handbook/a121/data_simple.png
    :align: center
    :width: 80%
 

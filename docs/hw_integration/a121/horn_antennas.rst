@@ -9,7 +9,7 @@ A waveguide is a hollow metal pipe where wave propagation is restricted in accor
 The A121 sensor can couple to a waveguide and horn antenna, thus enabling high directivity and good sidelobe suppression. The dimensions of the waveguide determine which modes are excited as well as the sensor input impedance and Tx to Rx coupling. In the following we will only consider conical horns although rectangular or other shapes can also be constructed.
 
 .. _fig_horn_antenna_and_PCB_3D:
-.. figure:: /_static/hw_images/A121_conical_horn_3D.png
+.. figure:: /images/hw_images/A121_conical_horn_3D.png
     :align: center
     :width: 50%
 
@@ -21,7 +21,7 @@ To fit a circular waveguide around the sensor, the waveguide must have a minimum
 - L40 horn: 20 dB Tx+Rx gain
 
 .. _L25_horn_antenna_farfields:
-.. figure:: /_static/handbook/a121/horn_antenna/L25_L40_horn_antennas.svg
+.. figure:: /images/handbook/a121/horn_antenna/L25_L40_horn_antennas.svg
     :align: center
     :width: 100%
 
