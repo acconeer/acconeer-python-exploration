@@ -52,6 +52,9 @@ Systematically review the diff across these dimensions:
 
 - Are there unnecessary loops, or expensive operations in hot paths?
 - Are there memory leaks or unbounded allocations?
+- Each file Step 2's image check can shrink is Important, since git keeps every byte. A colour
+  hint ("over 16k colours") is a Suggestion: look at the image. If the check was not run, say
+  why on the Gates line. Any binary over 300 kB needs a reason in the commit message.
 
 ### 3d. Readability & Maintainability
 

@@ -158,13 +158,14 @@ template = "hatch-test"
 
 
 [tool.hatch.envs.docs]
-dependencies = ["sphinx_autobuild"]
+dependencies = ["sphinx_autobuild", "pillow==11.3.0", "imagequant==1.1.4", "pyoxipng==9.1.0"]
 pre-install-commands = [
     "{env:HATCH_UV:uv} pip install -r docs/requirements.txt"
 ]
 
 [tool.hatch.envs.docs.scripts]
 clean = "rm -rf docs/_build"
+compress-images = "python internal_tools/compress_images.py {args}"
 # Sphinx's make-mode layout: one output directory per builder, one shared cache.
 default-sphinx-build = "python -m sphinx --fail-on-warning --quiet --jobs auto --doctree-dir docs/_build/doctrees {args}"
 

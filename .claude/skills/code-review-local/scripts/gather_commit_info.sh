@@ -23,6 +23,19 @@ else
     exit 0
 fi
 
+# The image report for commits that add or change images. Only these start hatch.
+image_check() {
+    local out err
+    git show --format= --name-only --diff-filter=AM --diff-merges=first-parent "$1" -- \
+        ':(icase)*.png' ':(icase)*.jpg' ':(icase)*.jpeg' | grep -q . || return 0
+    echo "=== Image check ==="
+    err=$(mktemp)
+    out=$(cd "$(git rev-parse --show-toplevel)" &&
+        hatch run docs:compress-images --rev "$1" 2>"$err") || out="not run: $(tail -n 1 "$err")"
+    rm -f "$err"
+    echo "$out"
+}
+
 # Claude Code saves longer output to a file and shows only a preview.
 budget=${BASH_MAX_OUTPUT_LENGTH:-30000}
 heads=()
@@ -35,6 +48,7 @@ for c in "${commits[@]}"; do
         git show --stat "$c"
         echo "=== Remote branches containing it ==="
         git branch -r --contains "$c" | grep . || echo "none"
+        image_check "$c"
         echo "=== Diff ==="
     )
     heads+=("$head")
