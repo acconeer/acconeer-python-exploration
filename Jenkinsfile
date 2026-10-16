@@ -130,8 +130,11 @@ def manageReleaseBranches(boolean update) {
 }
 
 try {
-    // Ensure cron triggers are setup (for periodic jobs)
-    properties([getCronTriggers(env.BRANCH_NAME)])
+    // Ensure cron triggers are setup (for periodic jobs) and old builds are discarded
+    properties([
+        getCronTriggers(env.BRANCH_NAME),
+        buildDiscarder(logRotator(daysToKeepStr: '14')),
+    ])
 
     def buildScope = getBuildScope()
 
