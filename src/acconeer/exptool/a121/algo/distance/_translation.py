@@ -403,14 +403,16 @@ def carry_over_signal_quality(config: DetectorConfig) -> DetectorConfig:
 
     Older versions used a tenth of the matched filter's processing gain in the
     HWAAS calculation. Call this once on a configuration carried over from such a
-    version to keep the HWAAS, and the detection performance, of its max profile
-    subsweeps.
+    version to keep the HWAAS, and the detection performance, of the subsweeps that
+    reach furthest. Those use max profile, unless the range ends before it is used.
 
     :param config: The configuration to carry over. It is left untouched.
-    :returns: A copy with signal quality raised by 9*log10(processing gain).
+    :returns: A copy with signal quality raised by 9*log10(processing gain) of the
+        subsweep that reaches furthest.
     """
-    step_length = _limit_step_length(config.max_profile, config.max_step_length)
-    offset = 9 * np.log10(calc_processing_gain(config.max_profile, step_length))
+    (_, profile) = _get_furthest_measurement(config)
+    step_length = _limit_step_length(profile, config.max_step_length)
+    offset = 9 * np.log10(calc_processing_gain(profile, step_length))
     return attrs.evolve(config, signal_quality=config.signal_quality + float(offset))
 
 

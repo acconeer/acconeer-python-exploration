@@ -1337,6 +1337,26 @@ def test_carry_over_signal_quality_offset(max_profile, max_step_length, expected
     assert config.signal_quality == 20.0
 
 
+def test_signal_quality_offset_follows_the_profile_reaching_furthest():
+    # A range this short ends before max profile is used and measures with profile 1
+    # only, at HWAAS 21 before the gain fix, as door open detection does.
+    short_range = DetectorConfig(
+        start_m=0.1,
+        end_m=0.35,
+        signal_quality=25.0,
+        threshold_sensitivity=0.5,
+        reflector_shape=ReflectorShape.PLANAR,
+    )
+
+    converted = carry_over_signal_quality(short_range)
+
+    assert converted.signal_quality == pytest.approx(25.0 + 5.2, abs=0.05)
+    session_config = detector_config_to_session_config(converted, [1])
+    assert [(s.profile, s.hwaas) for s in _subsweeps(session_config)] == [
+        (a121.Profile.PROFILE_1, 21)
+    ]
+
+
 def test_carry_over_signal_quality_reproduces_the_hwaas_from_before_the_gain_fix():
     # what the old default configuration measured while only a tenth of the gain was used
     old_default = DetectorConfig(signal_quality=15.0)
