@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -48,7 +48,7 @@ attrs_dict_ndarray_isclose = attrs.cmp_using(eq=_dict_wrapper(ndarray_isclose))
 
 
 def attrs_ndarray_validator(
-    ndim: int, element_type: np.dtype[np.generic]
+    ndim: int, element_type: npt.DTypeLike
 ) -> t.Callable[[t.Any, t.Any, t.Any], None]:
     """
     Creates a validator to be used in attrs fields. Does the following checks:

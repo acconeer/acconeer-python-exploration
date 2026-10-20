@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2024-2025
+# Copyright (c) Acconeer AB, 2024-2026
 # All rights reserved
 
 """
@@ -115,4 +115,5 @@ The module also supports requiring context when defining the timeline
 to 'migrate' via a Completer (i.e. a function with a specific signature).
 """
 
+from . import common_exceptions
 from .core import Completer, MigrationError, MigrationErrorGroup, Node, start
