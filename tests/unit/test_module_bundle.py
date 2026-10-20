@@ -5,24 +5,19 @@ from __future__ import annotations
 import importlib
 import sys
 import zipfile
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 
 import pytest
 
 from acconeer.exptool._artifact_repository import install_module_bundle
-from acconeer.exptool._artifact_repository._module_bundle import _PARENT_BY_MODULE
 
 
-_MEMBER = "presence/bundled_module"
-_PARENT = "acconeer.exptool.a121.algo.presence"
+_PACKAGE = "bundled_test_package"
 
 
 @pytest.fixture(autouse=True)
 def _restore_import_state(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setitem(_PARENT_BY_MODULE, _MEMBER, _PARENT)
-    for parent in set(_PARENT_BY_MODULE.values()):
-        pkg = importlib.import_module(parent)
-        monkeypatch.setattr(pkg, "__path__", list(pkg.__path__))
+    monkeypatch.setattr(sys, "path", list(sys.path))
     modules_before = set(sys.modules)
     yield
     for name in set(sys.modules) - modules_before:
@@ -36,56 +31,40 @@ def _write_zip(path: Path, members: dict[str, str]) -> Path:
     return path
 
 
-def test_every_parent_is_an_importable_package() -> None:
-    for parent in set(_PARENT_BY_MODULE.values()):
-        assert hasattr(importlib.import_module(parent), "__path__"), parent
-
-
-def test_imports_each_module_under_its_package(tmp_path: Path) -> None:
-    members = {f"{member}.py": f"name = {member!r}" for member in _PARENT_BY_MODULE}
-    zip_path = _write_zip(tmp_path / "bundle.zip", members)
+def test_installed_package_is_importable(tmp_path: Path) -> None:
+    zip_path = _write_zip(
+        tmp_path / "bundle.zip",
+        {f"{_PACKAGE}/__init__.py": "", f"{_PACKAGE}/module.py": "name = 'bundled'"},
+    )
 
     install_module_bundle(zip_path, tmp_path / "extracted")
 
-    for member, parent in _PARENT_BY_MODULE.items():
-        imported = importlib.import_module(f"{parent}.{PurePosixPath(member).name}")
-        assert imported.name == member
+    assert importlib.import_module(f"{_PACKAGE}.module").name == "bundled"
 
 
-def test_skips_unknown_module(tmp_path: Path) -> None:
-    zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_MEMBER}.py": "", "not_a_module.py": ""})
+def test_installing_again_adds_the_directory_once(tmp_path: Path) -> None:
+    zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_PACKAGE}/__init__.py": ""})
 
-    with pytest.warns(UserWarning, match="not a known module"):
-        install_module_bundle(zip_path, tmp_path / "extracted")
+    install_module_bundle(zip_path, tmp_path / "extracted")
+    install_module_bundle(zip_path, tmp_path / "extracted")
 
-    assert not list(tmp_path.rglob("not_a_module.py"))
-
-
-def test_skips_known_module_in_another_directory(tmp_path: Path) -> None:
-    name = PurePosixPath(_MEMBER).name
-    zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_MEMBER}.py": "", f"other/{name}.py": ""})
-
-    with pytest.warns(UserWarning, match=f"'other/{name}.py' is not a known module"):
-        install_module_bundle(zip_path, tmp_path / "extracted")
+    assert sys.path.count(str(tmp_path / "extracted")) == 1
 
 
-def test_skips_member_escaping_its_directory(tmp_path: Path) -> None:
-    zip_path = _write_zip(
-        tmp_path / "bundle.zip", {f"{_MEMBER}.py": "", f"{_MEMBER}.py/../../evil.py": ""}
-    )
+def test_keeps_members_inside_its_directory(tmp_path: Path) -> None:
+    zip_path = _write_zip(tmp_path / "bundle.zip", {"../evil.py": ""})
 
-    with pytest.warns(UserWarning, match="not a known module"):
-        install_module_bundle(zip_path, tmp_path / "extracted")
+    install_module_bundle(zip_path, tmp_path / "extracted")
 
-    assert not list(tmp_path.rglob("evil.py"))
+    assert not (tmp_path / "evil.py").exists()
 
 
-def test_rejects_module_shadowed_by_existing_file(tmp_path: Path) -> None:
+def test_rejects_package_shadowed_by_one_on_the_path(tmp_path: Path) -> None:
     shadowing_dir = tmp_path / "shadowing"
-    shadowing_dir.mkdir()
-    (shadowing_dir / f"{PurePosixPath(_MEMBER).name}.py").write_text("")
-    importlib.import_module(_PARENT).__path__.insert(0, str(shadowing_dir))
-    zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_MEMBER}.so": ""})
+    (shadowing_dir / _PACKAGE).mkdir(parents=True)
+    (shadowing_dir / _PACKAGE / "__init__.py").write_text("")
+    sys.path.insert(0, str(shadowing_dir))
+    zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_PACKAGE}/__init__.py": ""})
 
     with pytest.raises(ValueError, match="shadow"):
         install_module_bundle(zip_path, tmp_path / "extracted")
