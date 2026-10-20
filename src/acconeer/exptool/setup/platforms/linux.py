@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -28,6 +28,13 @@ class Linux(PlatformInstall):
         'SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a449", GROUP="plugdev", TAG+="uaccess"\n'
     )
 
+    XE212_UDEV_RULE_FILE = "/etc/udev/rules.d/50-xe212.rules"
+    XE212_UDEV_RULE = (
+        'SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a560", GROUP="plugdev", TAG+="uaccess"\n'
+        'SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a561", GROUP="plugdev", TAG+="uaccess"\n'
+        'SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="a562", GROUP="plugdev", TAG+="uaccess"\n'
+    )
+
     def __init__(self) -> None:
         super().__init__(
             utils.WithDescription(
@@ -49,6 +56,10 @@ class Linux(PlatformInstall):
             utils.WithDescription(
                 "> Create an udev rule for USB communication with XC120.",
                 RequireFileContentStep(self.XC120_UDEV_RULE_FILE, self.XC120_UDEV_RULE, sudo=True),
+            ),
+            utils.WithDescription(
+                "> Create an udev rule for USB communication with XE212.",
+                RequireFileContentStep(self.XE212_UDEV_RULE_FILE, self.XE212_UDEV_RULE, sudo=True),
             ),
         )
 

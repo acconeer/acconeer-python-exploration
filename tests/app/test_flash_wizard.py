@@ -12,9 +12,11 @@ from PySide6.QtCore import QThreadPool
 from PySide6.QtWidgets import QApplication
 
 from acconeer.exptool._artifact_repository import DevSiteRepository, LoginRequiredError
+from acconeer.exptool._core.communication.comm_devices import USBDevice
 from acconeer.exptool.app.new.ui.components.devsite.license import LicenseWidget
 from acconeer.exptool.app.new.ui.components.devsite.login import LoginFormWidget
 from acconeer.exptool.app.new.ui.flash_tab.widgets import (
+    DeviceSelectionPage,
     DownloadPage,
     FlashWizard,
     LoginFormPage,
@@ -220,6 +222,14 @@ def test_login_finishing_after_leaving_the_login_page_keeps_the_wizard_still(
     _wait_for_background_tasks()
 
     assert wizard.currentId() == page_after_back
+
+
+def test_device_page_skips_a_device_the_flasher_does_not_know(wizard: FlashWizard) -> None:
+    device_page = wizard.page(_Page.DEVICE_SELECTION)
+    assert isinstance(device_page, DeviceSelectionPage)
+    device = USBDevice(name="XC211", vid=0xACC0, pid=0xE211, recognized=True)
+
+    assert not device_page.is_currently_selected_module(device)
 
 
 def test_license_page_takes_the_title_of_the_fetched_license(wizard: FlashWizard) -> None:

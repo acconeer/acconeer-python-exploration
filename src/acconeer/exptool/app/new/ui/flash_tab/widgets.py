@@ -81,6 +81,10 @@ class ModuleSelectionPage(QWizardPage):
             assert path.exists()
             self.xe121_pixmap = QPixmap(path)
 
+        with importlib.resources.path(resources, "xe212.jpg") as path:
+            assert path.exists()
+            self.xe212_pixmap = QPixmap(path)
+
         with importlib.resources.path(resources, "xm126.jpg") as path:
             assert path.exists()
             self.xm126_pixmap = QPixmap(path)
@@ -107,6 +111,8 @@ class ModuleSelectionPage(QWizardPage):
             self.picture_label.setPixmap(self.xe125_pixmap)
         elif combo_box_text == "XM126":
             self.picture_label.setPixmap(self.xm126_pixmap)
+        elif combo_box_text == "XE212":
+            self.picture_label.setPixmap(self.xe212_pixmap)
         else:
             pass
 
@@ -169,8 +175,7 @@ class DeviceSelectionPage(QWizardPage):
         if comm_device.name is None:
             return False
 
-        evk_name = comm_device.name
-        product_name = EVK_TO_PRODUCT_MAP[evk_name]
+        product_name = EVK_TO_PRODUCT_MAP.get(comm_device.name)
         return bool(self.field(WizardField.MODULE) == product_name)
 
     def _repopulate_combobox(self) -> None:
