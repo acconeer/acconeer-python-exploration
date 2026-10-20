@@ -4,9 +4,13 @@
 from __future__ import annotations
 
 import importlib.machinery
+import pkgutil
 import sys
 import zipfile
 from pathlib import Path, PurePosixPath
+
+
+_PACKAGES: list[str] = []
 
 
 def install_module_bundle(zip_path: Path, extract_dir: Path) -> None:
@@ -29,6 +33,14 @@ def import_module_bundle(extract_dir: Path) -> None:
     """Makes the packages extracted by ``extract_module_bundle`` importable."""
     if str(extract_dir) not in sys.path:
         sys.path.append(str(extract_dir))
+    for module in pkgutil.iter_modules([str(extract_dir)]):
+        if module.ispkg and module.name not in _PACKAGES:
+            _PACKAGES.append(module.name)
+
+
+def module_bundle_packages() -> list[str]:
+    """The top-level packages that ``import_module_bundle`` made importable."""
+    return list(_PACKAGES)
 
 
 def _raise_if_shadowed(name: str, extract_dir: Path) -> None:
