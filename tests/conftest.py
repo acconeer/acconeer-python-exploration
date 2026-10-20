@@ -97,7 +97,9 @@ def pytest_generate_tests(metafunc):
     if "a111_exploration_server_path" in metafunc.fixturenames:
         # A111 testing could be left out when running sanity tests
         values = list(metafunc.config.getoption("--a111-exploration-server-paths", []))
-        metafunc.parametrize(argnames="a111_exploration_server_path", argvalues=values)
+        metafunc.parametrize(
+            argnames="a111_exploration_server_path", argvalues=values, scope="session"
+        )
 
     if "a121_exploration_server_path" in metafunc.fixturenames:
         values = _validate_parametrization(
@@ -110,19 +112,34 @@ def pytest_generate_tests(metafunc):
             argnames="a121_exploration_server_path", argvalues=values, scope="session"
         )
 
+    if "a2_exploration_server_path" in metafunc.fixturenames:
+        values = _validate_parametrization(
+            metafunc.config.getoption("--a2-exploration-server-paths", []),
+            err_msg=err_msg_fmt.format("A2 Exploration Server"),
+        )
+        # scope="session": the fuzzing exploration server fixtures are
+        # session-scoped and depend on this path.
+        metafunc.parametrize(
+            argnames="a2_exploration_server_path", argvalues=values, scope="session"
+        )
+
     if "sensor_current_limits_path" in metafunc.fixturenames:
         values = _validate_parametrization(
             metafunc.config.getoption("--sensor-current-limits-path", []),
             err_msg=err_msg_fmt.format("A121 sensor current limits"),
         )
-        metafunc.parametrize(argnames="sensor_current_limits_path", argvalues=values)
+        metafunc.parametrize(
+            argnames="sensor_current_limits_path", argvalues=values, scope="session"
+        )
 
     if "module_current_limits_path" in metafunc.fixturenames:
         values = _validate_parametrization(
             metafunc.config.getoption("--module-current-limits-path", []),
             err_msg=err_msg_fmt.format("A121 module current limits"),
         )
-        metafunc.parametrize(argnames="module_current_limits_path", argvalues=values)
+        metafunc.parametrize(
+            argnames="module_current_limits_path", argvalues=values, scope="session"
+        )
 
     if "inter_sweep_idle_state_current_limits_path" in metafunc.fixturenames:
         values = _validate_parametrization(
@@ -130,7 +147,9 @@ def pytest_generate_tests(metafunc):
             err_msg=err_msg_fmt.format("A121 inter sweep idle state current limits"),
         )
         metafunc.parametrize(
-            argnames="inter_sweep_idle_state_current_limits_path", argvalues=values
+            argnames="inter_sweep_idle_state_current_limits_path",
+            argvalues=values,
+            scope="session",
         )
 
     if "memory_usage_path" in metafunc.fixturenames:
@@ -138,7 +157,39 @@ def pytest_generate_tests(metafunc):
             metafunc.config.getoption("--memory-usage-path", []),
             err_msg=err_msg_fmt.format("A121 memory usage"),
         )
-        metafunc.parametrize(argnames="memory_usage_path", argvalues=values)
+        metafunc.parametrize(argnames="memory_usage_path", argvalues=values, scope="session")
+
+    if "a2_sensor_current_limits_path" in metafunc.fixturenames:
+        values = _validate_parametrization(
+            metafunc.config.getoption("--a2-sensor-current-limits-path", []),
+            err_msg=err_msg_fmt.format("A2 sensor current limits"),
+        )
+        metafunc.parametrize(
+            argnames="a2_sensor_current_limits_path", argvalues=values, scope="session"
+        )
+
+    if "a2_timing_limits_path" in metafunc.fixturenames:
+        values = _validate_parametrization(
+            metafunc.config.getoption("--a2-timing-limits-path", []),
+            err_msg=err_msg_fmt.format("A2 timing limits"),
+        )
+        metafunc.parametrize(argnames="a2_timing_limits_path", argvalues=values, scope="session")
+
+    if "a2_computation_time_limits_path" in metafunc.fixturenames:
+        values = _validate_parametrization(
+            metafunc.config.getoption("--a2-computation-time-limits-path", []),
+            err_msg=err_msg_fmt.format("A2 computation time limits"),
+        )
+        metafunc.parametrize(
+            argnames="a2_computation_time_limits_path", argvalues=values, scope="session"
+        )
+
+    if "a2_memory_usage_path" in metafunc.fixturenames:
+        values = _validate_parametrization(
+            metafunc.config.getoption("--a2-memory-usage-path", []),
+            err_msg=err_msg_fmt.format("A2 memory usage"),
+        )
+        metafunc.parametrize(argnames="a2_memory_usage_path", argvalues=values, scope="session")
 
 
 def pytest_collection_modifyitems(config, items):

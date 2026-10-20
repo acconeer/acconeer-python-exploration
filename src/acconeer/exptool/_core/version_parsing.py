@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -45,11 +45,14 @@ def parse_rss_version(rss_version: str) -> tuple[str, Version]:
     >>> parse_rss_version("a121-v1.2.3-rc4-123-g0e03503be1")
     ('a121', <Version('1.2.3rc5.dev123+g0e03503be1')>)
 
+    >>> parse_rss_version("a2-v0.13.0-343-g9898d5df2b")
+    ('a2', <Version('0.13.1.dev343+g9898d5df2b')>)
+
     Read more: https://packaging.pypa.io/en/latest/version.html
     """
 
     pattern = (
-        r"(?P<release_line>a\d{3})-v(?P<major>\d+)\.(?P<minor>\d+)\.(?P<micro>\d+)"
+        r"(?P<release_line>a\d(\d\d)?)-v(?P<major>\d+)\.(?P<minor>\d+)\.(?P<micro>\d+)"
         r"(?:-(?P<pre_phase>rc)(?P<pre_number>\d+))?"
         r"(?:-(?P<dev_number>\d+)-(?P<dev_commit>g\w+))?"
         r"(?:-(dirty))?"

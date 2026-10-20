@@ -2,7 +2,7 @@
 # All rights reserved
 
 from . import _qt_bindings_canary, a111, utils
-from ._core.communication.comm_devices import USBDevice
+from ._core.communication.comm_devices import USBDevice, get_usb_devices
 from ._processes.pg_process import PGProccessDiedException, PGProcess
 from ._structs import configbase
 

@@ -27,6 +27,13 @@ def integrationTestA111RssVersionsForBuildScope = [
     (BuildScope.NIGHTLY) : [branch: 'master', tag: 'a111-v2.15.5'],
 ]
 
+@Field
+def integrationTestA2RssVersionsForBuildScope = [
+    (BuildScope.SANITY)  : [branch: 'master'],
+    (BuildScope.HOURLY)  : [branch: 'master'],
+    (BuildScope.NIGHTLY) : [branch: 'master'],
+]
+
 // Entries are [branch: ...], [tag: ...] or, for a build that carries no tag,
 // [commit: '<build storage folder>'].
 @Field
@@ -141,6 +148,7 @@ try {
     def pythonVersions = pythonVersionsForBuildScope[buildScope]
     def integrationTestA121RssVersions = integrationTestA121RssVersionsForBuildScope[buildScope]
     def integrationTestA111RssVersions = integrationTestA111RssVersionsForBuildScope[buildScope]
+    def integrationTestA2RssVersions = integrationTestA2RssVersionsForBuildScope[buildScope]
     def modelTestA121RssVersion = modelTestA121RssVersionForBuildScope[buildScope]
 
     if (env.BRANCH_NAME =~ /[0-9]+\/[0-9]+\/[0-9]+/) {
@@ -228,7 +236,8 @@ try {
     parallel_steps[(
         "Test (py=${pythonVersions}, " +
         "rss_a121=${integrationTestA121RssVersions}, " +
-        "rss_a111=${integrationTestA111RssVersions})"
+        "rss_a111=${integrationTestA111RssVersions}, " +
+        "rss_a2=${integrationTestA2RssVersions})"
     )] = {
         node('docker') {
             ws('workspace/exptool') {
@@ -270,6 +279,25 @@ try {
                             ]
                         )
                         sh "tar -xzf out/internal_stash_binaries_sanitizer_a121.tgz -C ${stashFolder}"
+                    }
+                }
+
+                stage("Fetch A2 stashes (${integrationTestA2RssVersions})") {
+                    integrationTestA2RssVersions.each { rssVersion ->
+                        def rssVersionName = rssVersion.getValue()
+                        def stashFolder = "stash/a2/${rssVersionName}"
+
+                        sh "mkdir -p ${stashFolder}"
+
+                        findBuildAndCopyArtifacts(
+                            [
+                                projectName: 'sw-main',
+                                artifactNames: ['out/internal_stash_binaries_x86_64_a2r2.tgz'],
+                                // e.g. (branch): 'master' or (tag): 'a2-vX.Y.Z'
+                                (rssVersion.getKey()): rssVersion.getValue(),
+                            ]
+                        )
+                        sh "tar -xzf out/internal_stash_binaries_x86_64_a2r2.tgz -C ${stashFolder}"
                     }
                 }
 
@@ -322,6 +350,10 @@ try {
                                 'stash/a111/*/out/customer/a111/internal_sanitizer_x86_64/out/' +
                                 'acc_exploration_server_a111'
                             ))
+                            def a2_es_binaries = findFiles(glob: (
+                                'stash/a2/*/out/customer/a2/internal_linux_x86_64/out/' +
+                                'acc_exploration_server_a2'
+                            ))
 
                             def a121_sensor_current_limits_matches = findFiles(
                                 glob: 'stash/model_a121/**/python_libs/**/sensor_current_limits.yaml'
@@ -338,6 +370,7 @@ try {
 
                             echo "a121_es_binaries=${a121_es_binaries}"
                             echo "a111_es_binaries=${a111_es_binaries}"
+                            echo "a2_es_binaries=${a2_es_binaries}"
                             echo "a121_sensor_current_limits_matches=${a121_sensor_current_limits_matches}"
                             echo "a121_module_current_limits_matches=${a121_module_current_limits_matches}"
                             echo "a121_inter_sweep_idle_state_current_limits_matches=${a121_inter_sweep_idle_state_current_limits_matches}"
@@ -346,6 +379,7 @@ try {
                             hatchWrap """test ${versionSelection} --parallel --cover tests/ src/ \
                                 --a121-exploration-server-paths ${a121_es_binaries.join(' ')} \
                                 --a111-exploration-server-paths ${a111_es_binaries.join(' ')} \
+                                --a2-exploration-server-paths ${a2_es_binaries.join(' ')} \
                                 --sensor-current-limits-path ${a121_sensor_current_limits_matches[0]} \
                                 --module-current-limits-path ${a121_module_current_limits_matches[0]} \
                                 --inter-sweep-idle-state-current-limits-path \

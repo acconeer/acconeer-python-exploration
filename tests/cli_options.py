@@ -40,6 +40,13 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     )
 
     parser.addoption(
+        "--a2-exploration-server-paths",
+        nargs="*",
+        type=_existing_path,
+        default=[],
+    )
+
+    parser.addoption(
         "--sensor-current-limits-path",
         nargs="*",
         type=_existing_path,
@@ -67,6 +74,34 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         default=[],
     )
 
+    parser.addoption(
+        "--a2-sensor-current-limits-path",
+        nargs="*",
+        type=_existing_path,
+        default=[],
+    )
+
+    parser.addoption(
+        "--a2-timing-limits-path",
+        nargs="*",
+        type=_existing_path,
+        default=[],
+    )
+
+    parser.addoption(
+        "--a2-computation-time-limits-path",
+        nargs="*",
+        type=_existing_path,
+        default=[],
+    )
+
+    parser.addoption(
+        "--a2-memory-usage-path",
+        nargs="*",
+        type=_existing_path,
+        default=[],
+    )
+
     parser.addoption("--test-devsite", action="store_true")
 
     parser.addoption(
@@ -79,4 +114,18 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         "--dangerously-skip-integrity-check",
         action="store_true",
         help="Installs a '--module-bundle' zip that this release doesn't expect.",
+    )
+
+    parser.addoption(
+        "--plot-show",
+        action="store_true",
+        default=False,
+        help="Show plots after each test.",
+    )
+
+    parser.addoption(
+        "--plot-show-on-fail",
+        action="store_true",
+        default=False,
+        help="Show plots after a test failure.",
     )

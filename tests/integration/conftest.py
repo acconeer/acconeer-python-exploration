@@ -27,9 +27,26 @@ def worker_tcp_port(worker_id: str) -> int:
 
 
 @pytest.fixture(scope="session")
-def fuzzing_a121_worker_tcp_port(worker_id: int) -> int:
-    """Returns a unique tcp port for each pytest-xdist worker to use for its session-scoped, fuzzing Exploration Server"""
+def fuzzing_a2_worker_tcp_port(worker_id: int) -> int:
+    """Returns a unique tcp port for each pytest-xdist worker to use for its session-scoped, fuzzing A2 Exploration Server"""
     return worker_id_to_tcp_port(worker_id, tcp_port_base=16110)
+
+
+@pytest.fixture(scope="session")
+def fuzzing_a121_worker_tcp_port(worker_id: int) -> int:
+    """Returns a unique tcp port for each pytest-xdist worker to use for its session-scoped, fuzzing A121 Exploration Server"""
+    # A base of its own: the A2 fuzzing server is session-scoped too and runs
+    # in the same pytest session.
+    return worker_id_to_tcp_port(worker_id, tcp_port_base=26110)
+
+
+@pytest.fixture(scope="function")
+def a2_exploration_server(
+    worker_tcp_port: int, a2_exploration_server_path: Path, tmp_path: Path
+) -> t.Iterator[None]:
+    yield from exploration_server_process_fixture(
+        worker_tcp_port, a2_exploration_server_path, tmp_path
+    )
 
 
 @pytest.fixture(scope="session")
@@ -41,10 +58,28 @@ def fuzzing_a121_exploration_server(
     # NOTE!
     # This server might be running at the same time as the servers managed by the
     # "a121_exploration_server" fixture
+
     yield from exploration_server_process_fixture(
         fuzzing_a121_worker_tcp_port,
         a121_exploration_server_path,
-        tmp_path_factory.mktemp("fuzzing_server"),
+        tmp_path_factory.mktemp("fuzzing_a121_server"),
+    )
+
+
+@pytest.fixture(scope="session")
+def fuzzing_a2_exploration_server(
+    fuzzing_a2_worker_tcp_port: int,
+    a2_exploration_server_path: Path,
+    tmp_path_factory: pytest.TempPathFactory,
+) -> t.Iterator[None]:
+    # NOTE!
+    # This server might be running at the same time as the servers managed by the
+    # "a2_exploration_server" fixture
+
+    yield from exploration_server_process_fixture(
+        fuzzing_a2_worker_tcp_port,
+        a2_exploration_server_path,
+        tmp_path_factory.mktemp("fuzzing_a2_server"),
     )
 
 

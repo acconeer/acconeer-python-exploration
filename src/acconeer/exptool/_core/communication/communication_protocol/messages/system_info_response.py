@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -16,6 +16,7 @@ class SystemInfoDict(te.TypedDict):
     sensor_count: int
     ticks_per_second: int
     hw: te.NotRequired[t.Optional[str]]
+    serial: te.NotRequired[t.Optional[str]]
     max_baudrate: te.NotRequired[int]
 
 

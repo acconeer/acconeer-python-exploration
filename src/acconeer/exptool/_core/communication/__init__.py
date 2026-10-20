@@ -1,8 +1,8 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from .client import Client, ClientCreationError, ClientError
-from .communication_protocol import CommunicationProtocol, Message, ParseError
+from .communication_protocol import CommunicationProtocol, Message, ParseError, messages
 from .links import (
     BufferedLink,
     ExploreSerialLink,
