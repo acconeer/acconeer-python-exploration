@@ -55,6 +55,7 @@ from .storage import (
     DEFAULT_ET_DIR,
     get_module_bundle_extract_dir,
     get_module_bundle_path,
+    get_temp_dir,
     remove_config_dir,
     remove_temp_dir,
     set_et_dir,
@@ -175,8 +176,7 @@ def main() -> None:
     app.aboutToQuit.connect(model.stop)
     app.aboutToQuit.connect(backend.stop)
 
-    if get_module_bundle_path().is_file():
-        model.try_install_module_bundle(get_module_bundle_path(), get_module_bundle_extract_dir())
+    install_startup_module_bundle(args, model)
 
     if args.amv:
         app_model_viewer = AppModelViewer(model)
@@ -286,6 +286,23 @@ def build_main_window(
     mw = MainWindow(model)
     mw.show()
     return model, mw
+
+
+def install_startup_module_bundle(args: argparse.Namespace, model: AppModel) -> None:
+    """Installs the module bundle given by '--module-bundle', else the one downloaded before."""
+    if args.module_bundle is not None:
+        # Apart from the downloaded bundle's, which it would otherwise replace
+        model.try_install_module_bundle(args.module_bundle, get_temp_dir() / "module_bundle")
+    elif get_module_bundle_path().is_file():
+        model.try_install_module_bundle(get_module_bundle_path(), get_module_bundle_extract_dir())
+
+
+def _module_bundle_file(value: str) -> Path:
+    path = Path(value)
+    if not path.is_file():
+        msg = f"No module bundle at '{path}'"
+        raise argparse.ArgumentTypeError(msg)
+    return path
 
 
 def load_startup_plugin(args: argparse.Namespace, model: AppModel) -> None:
@@ -420,6 +437,14 @@ class _ExptoolArgumentParser(argparse.ArgumentParser):
         self.add_argument(
             "--artifact-repository",
             dest="artifact_repository",
+            help=argparse.SUPPRESS,  # makes option hidden
+        )
+
+        # A module bundle zip used instead of the one downloaded from the
+        # artifact repository. Internal use only.
+        self.add_argument(
+            "--module-bundle",
+            type=_module_bundle_file,
             help=argparse.SUPPRESS,  # makes option hidden
         )
 

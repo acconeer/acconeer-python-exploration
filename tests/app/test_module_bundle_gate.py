@@ -12,6 +12,7 @@ import pytest
 from acconeer.exptool._artifact_repository import install_module_bundle
 from acconeer.exptool.app.new._enums import PluginGeneration
 from acconeer.exptool.app.new._exceptions import HandledException
+from acconeer.exptool.app.new.app import _ExptoolArgumentParser, install_startup_module_bundle
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.app_model import app_model as app_model_module
 from acconeer.exptool.app.new.app_model.file_detective import FileFindings
@@ -197,3 +198,40 @@ def test_module_bundle_present_at_startup_is_left_for_the_caller_to_install(
     assert installs == []
     assert backend.tasks == []
     assert not app_model.module_bundle_available
+
+
+def _install_at_startup(app_model: AppModel, *options: str) -> None:
+    install_startup_module_bundle(_ExptoolArgumentParser().parse_args(options), app_model)
+
+
+def test_module_bundle_option_installs_that_zip_apart_from_the_downloaded_one(
+    tmp_path: Path, installs: list[tuple[Path, Path]]
+) -> None:
+    zip_path = tmp_path / "bundle.zip"
+    zip_path.write_bytes(b"module")
+    get_module_bundle_path().write_bytes(b"downloaded")
+
+    _install_at_startup(_app_model(_RecordingBackend()), "--module-bundle", str(zip_path))
+
+    ((installed, extract_dir),) = installs
+    assert installed == zip_path
+    assert extract_dir != get_module_bundle_extract_dir()
+
+
+def test_downloaded_module_bundle_is_installed_at_startup(
+    installs: list[tuple[Path, Path]],
+) -> None:
+    get_module_bundle_path().write_bytes(b"downloaded")
+
+    _install_at_startup(_app_model(_RecordingBackend()))
+
+    assert installs == [(get_module_bundle_path(), get_module_bundle_extract_dir())]
+
+
+def test_module_bundle_option_refuses_a_missing_file(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    with pytest.raises(SystemExit):
+        _ExptoolArgumentParser().parse_args(["--module-bundle", str(tmp_path / "missing.zip")])
+
+    assert f"No module bundle at '{tmp_path / 'missing.zip'}'" in capsys.readouterr().err
