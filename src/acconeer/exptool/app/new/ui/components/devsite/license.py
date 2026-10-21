@@ -104,5 +104,7 @@ class LicenseDialog(QDialog):
         layout.addLayout(button_layout)
         self.setLayout(layout)
 
+        self.resize(700, 600)
+
     def _handle_fetch_completed(self) -> None:
         self._accept_button.setEnabled(self.license_widget.has_license())
