@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import importlib.machinery
 import pkgutil
+import shutil
 import sys
 import zipfile
 from pathlib import Path, PurePosixPath
@@ -25,6 +26,8 @@ def extract_module_bundle(zip_path: Path, extract_dir: Path) -> None:
         top_level = {PurePosixPath(name).parts[0].split(".")[0] for name in zf.namelist()}
         for name in filter(str.isidentifier, top_level):
             _raise_if_shadowed(name, extract_dir)
+        # Files left by an earlier extraction would be imported with the bundle
+        shutil.rmtree(extract_dir, ignore_errors=True)
         # extractall() keeps every member inside extract_dir
         zf.extractall(extract_dir)
 

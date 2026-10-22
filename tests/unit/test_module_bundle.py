@@ -55,6 +55,16 @@ def test_installing_again_adds_the_directory_once(tmp_path: Path) -> None:
     assert sys.path.count(str(tmp_path / "extracted")) == 1
 
 
+def test_install_leaves_no_stale_files_behind(tmp_path: Path) -> None:
+    extract_dir = tmp_path / "extracted"
+    (extract_dir / "stale_package").mkdir(parents=True)
+    zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_PACKAGE}/__init__.py": ""})
+
+    install_module_bundle(zip_path, extract_dir)
+
+    assert not (extract_dir / "stale_package").exists()
+
+
 def test_keeps_members_inside_its_directory(tmp_path: Path) -> None:
     zip_path = _write_zip(tmp_path / "bundle.zip", {"../evil.py": ""})
 
