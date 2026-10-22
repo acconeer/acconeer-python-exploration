@@ -3,19 +3,34 @@
 
 from __future__ import annotations
 
+import hashlib
 import importlib.machinery
 import pkgutil
 import shutil
 import sys
 import zipfile
+from collections.abc import Collection
 from pathlib import Path, PurePosixPath
 
+
+# SHA-256 of the module bundle zips that this release accepts
+ACCEPTED_DIGESTS: frozenset[str] = frozenset()
 
 _PACKAGES: list[str] = []
 
 
-def install_module_bundle(zip_path: Path, extract_dir: Path) -> None:
-    """Extracts ``zip_path`` and makes the packages in it importable."""
+def install_module_bundle(
+    zip_path: Path,
+    extract_dir: Path,
+    *,
+    accepted_digests: Collection[str] | None = ACCEPTED_DIGESTS,
+) -> None:
+    """Extracts ``zip_path`` and makes the packages in it importable.
+
+    ``accepted_digests=None`` skips the check of the zip's SHA-256.
+    """
+    if accepted_digests is not None:
+        _raise_if_unexpected(zip_path, accepted_digests)
     extract_module_bundle(zip_path, extract_dir)
     import_module_bundle(extract_dir)
 
@@ -44,6 +59,16 @@ def import_module_bundle(extract_dir: Path) -> None:
 def module_bundle_packages() -> list[str]:
     """The top-level packages that ``import_module_bundle`` made importable."""
     return list(_PACKAGES)
+
+
+def _raise_if_unexpected(zip_path: Path, accepted_digests: Collection[str]) -> None:
+    digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
+    if digest not in accepted_digests:
+        msg = (
+            f"This ET release expects a different module bundle than {zip_path} "
+            f"(SHA-256 {digest}). Upgrade ET, or delete the bundle and download it again"
+        )
+        raise ValueError(msg)
 
 
 def _raise_if_shadowed(name: str, extract_dir: Path) -> None:

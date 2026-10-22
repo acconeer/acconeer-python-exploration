@@ -2,6 +2,7 @@
 # All rights reserved
 from __future__ import annotations
 
+import hashlib
 import importlib
 import sys
 import zipfile
@@ -35,13 +36,34 @@ def _write_zip(path: Path, members: dict[str, str]) -> Path:
     return path
 
 
+def _test__install_module_bundle(zip_path: Path, extract_dir: Path) -> None:
+    digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
+    install_module_bundle(zip_path, extract_dir, accepted_digests={digest})
+
+
+def test_bundle_of_an_unexpected_digest_is_refused(tmp_path: Path) -> None:
+    zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_PACKAGE}/__init__.py": ""})
+
+    with pytest.raises(ValueError, match="Upgrade ET, or delete the bundle and download it again"):
+        install_module_bundle(zip_path, tmp_path / "extracted", accepted_digests={"0" * 64})
+
+    assert not (tmp_path / "extracted").exists()
+
+
+def test_bundle_is_checked_against_the_digests_of_this_release(tmp_path: Path) -> None:
+    zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_PACKAGE}/__init__.py": ""})
+
+    with pytest.raises(ValueError, match="expects a different module bundle"):
+        install_module_bundle(zip_path, tmp_path / "extracted")
+
+
 def test_installed_package_is_importable(tmp_path: Path) -> None:
     zip_path = _write_zip(
         tmp_path / "bundle.zip",
         {f"{_PACKAGE}/__init__.py": "", f"{_PACKAGE}/module.py": "name = 'bundled'"},
     )
 
-    install_module_bundle(zip_path, tmp_path / "extracted")
+    _test__install_module_bundle(zip_path, tmp_path / "extracted")
 
     assert importlib.import_module(f"{_PACKAGE}.module").name == "bundled"
 
@@ -49,8 +71,8 @@ def test_installed_package_is_importable(tmp_path: Path) -> None:
 def test_installing_again_adds_the_directory_once(tmp_path: Path) -> None:
     zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_PACKAGE}/__init__.py": ""})
 
-    install_module_bundle(zip_path, tmp_path / "extracted")
-    install_module_bundle(zip_path, tmp_path / "extracted")
+    _test__install_module_bundle(zip_path, tmp_path / "extracted")
+    _test__install_module_bundle(zip_path, tmp_path / "extracted")
 
     assert sys.path.count(str(tmp_path / "extracted")) == 1
 
@@ -60,7 +82,7 @@ def test_install_leaves_no_stale_files_behind(tmp_path: Path) -> None:
     (extract_dir / "stale_package").mkdir(parents=True)
     zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_PACKAGE}/__init__.py": ""})
 
-    install_module_bundle(zip_path, extract_dir)
+    _test__install_module_bundle(zip_path, extract_dir)
 
     assert not (extract_dir / "stale_package").exists()
 
@@ -68,7 +90,7 @@ def test_install_leaves_no_stale_files_behind(tmp_path: Path) -> None:
 def test_keeps_members_inside_its_directory(tmp_path: Path) -> None:
     zip_path = _write_zip(tmp_path / "bundle.zip", {"../evil.py": ""})
 
-    install_module_bundle(zip_path, tmp_path / "extracted")
+    _test__install_module_bundle(zip_path, tmp_path / "extracted")
 
     assert not (tmp_path / "evil.py").exists()
 
@@ -81,7 +103,7 @@ def test_rejects_package_shadowed_by_one_on_the_path(tmp_path: Path) -> None:
     zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_PACKAGE}/__init__.py": ""})
 
     with pytest.raises(ValueError, match="shadow"):
-        install_module_bundle(zip_path, tmp_path / "extracted")
+        _test__install_module_bundle(zip_path, tmp_path / "extracted")
 
 
 _BUNDLED_SPEC_MODULE = """
@@ -132,7 +154,7 @@ def _install_fake_bundle(tmp_path: Path) -> None:
             "a_package_without_plugins/__init__.py": "",
         },
     )
-    install_module_bundle(zip_path, tmp_path / "extracted")
+    _test__install_module_bundle(zip_path, tmp_path / "extracted")
 
 
 def test_bundled_plugin_spec_creates_plugins_of_the_bundled_spec(tmp_path: Path) -> None:
