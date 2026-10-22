@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from enum import Enum, auto
@@ -80,3 +80,4 @@ class PluginFamily(Enum):
 class PluginGeneration(Enum):
     A111 = "a111"
     A121 = "a121"
+    A2 = "a2"
