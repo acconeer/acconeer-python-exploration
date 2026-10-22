@@ -38,7 +38,11 @@ from PySide6.QtWidgets import QMessageBox, QWidget
 
 from acconeer.exptool import _core as core
 from acconeer.exptool import a121
-from acconeer.exptool._artifact_repository import install_module_bundle
+from acconeer.exptool._artifact_repository import (
+    ACCEPTED_DIGESTS,
+    UnexpectedModuleBundleError,
+    install_module_bundle,
+)
 from acconeer.exptool._core.communication.comm_devices import CommDevice, SerialDevice, USBDevice
 from acconeer.exptool.app.new._enums import (
     ConnectionInterface,
@@ -69,6 +73,7 @@ from acconeer.exptool.app.new.backend import (
 from acconeer.exptool.app.new.storage import (
     get_config_dir,
     get_module_bundle_extract_dir,
+    get_module_bundle_path,
     remove_temp_dir,
 )
 from acconeer.exptool.app.new.ui.components.data_editor import DataEditor
@@ -264,6 +269,7 @@ class AppModel(QObject):
         simulated_autocconnect: bool = False,
         *,
         module_bundle: Path,
+        skip_integrity_check: bool = False,
     ) -> None:
         super().__init__()
         self._backend = backend
@@ -293,6 +299,7 @@ class AppModel(QObject):
         self.plugins = plugins
         self.plugin = None
         self.module_bundle = module_bundle
+        self._skip_integrity_check = skip_integrity_check
         self.module_bundle_available = False
 
         self.backend_plugin_state = None
@@ -914,15 +921,27 @@ class AppModel(QObject):
         """Call once the UI listens to sig_error, which is how a failed install is reported."""
         extract_dir = get_module_bundle_extract_dir()
         try:
-            install_module_bundle(self.module_bundle, extract_dir)
+            install_module_bundle(
+                self.module_bundle,
+                extract_dir,
+                accepted_digests=None if self._skip_integrity_check else ACCEPTED_DIGESTS,
+            )
         except (ValueError, zipfile.BadZipFile) as e:
+            msg = f"Could not install the module bundle: {e}"
+            if isinstance(e, UnexpectedModuleBundleError) and self.module_bundle_is_developers:
+                msg += ". Pass --dangerously-skip-integrity-check to use a bundle of your own"
             self.module_bundle_available = False
-            self.emit_error(HandledException(f"Could not install the module bundle: {e}"))
+            self.emit_error(HandledException(msg))
         else:
             Model.import_module_bundle.rpc(self.put_task, extract_dir=extract_dir)
             self.module_bundle_available = True
 
         self.broadcast()
+
+    @property
+    def module_bundle_is_developers(self) -> bool:
+        """Given by '--module-bundle' rather than downloaded"""
+        return self.module_bundle != get_module_bundle_path()
 
     def set_plugin_preset(self, preset_id: Enum) -> None:
         BackendPlugin.set_preset.rpc(self.put_task, preset_id=preset_id.value)

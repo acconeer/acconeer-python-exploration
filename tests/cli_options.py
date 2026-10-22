@@ -74,3 +74,9 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         type=_existing_path,
         help="Installs this module bundle zip, for the tests marked module_bundle.",
     )
+
+    parser.addoption(
+        "--dangerously-skip-integrity-check",
+        action="store_true",
+        help="Installs a '--module-bundle' zip that this release doesn't expect.",
+    )

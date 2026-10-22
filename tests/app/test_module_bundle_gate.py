@@ -3,14 +3,16 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import typing as t
+from collections.abc import Collection
 from pathlib import Path
 from uuid import UUID, uuid4
 
 import attrs
 import pytest
 
-from acconeer.exptool._artifact_repository import install_module_bundle
+from acconeer.exptool._artifact_repository import ACCEPTED_DIGESTS, install_module_bundle
 from acconeer.exptool.app.new._enums import PluginGeneration
 from acconeer.exptool.app.new._exceptions import HandledException
 from acconeer.exptool.app.new.app import (
@@ -29,14 +31,25 @@ from acconeer.exptool.app.new.storage import get_module_bundle_extract_dir, get_
 pytestmark = pytest.mark.usefixtures("qapplication")
 
 
+@pytest.fixture
+def checked_digests() -> list[Collection[str] | None]:
+    """The digests each install accepted, None where it skipped the check"""
+    return []
+
+
 @pytest.fixture(autouse=True)
-def installs(monkeypatch: pytest.MonkeyPatch) -> list[tuple[Path, Path]]:
+def installs(
+    monkeypatch: pytest.MonkeyPatch, checked_digests: list[Collection[str] | None]
+) -> list[tuple[Path, Path]]:
     calls: list[tuple[Path, Path]] = []
-    monkeypatch.setattr(
-        app_model_module,
-        "install_module_bundle",
-        lambda zip_path, extract_dir: calls.append((zip_path, extract_dir)),
-    )
+
+    def _install(
+        zip_path: Path, extract_dir: Path, *, accepted_digests: Collection[str] | None
+    ) -> None:
+        calls.append((zip_path, extract_dir))
+        checked_digests.append(accepted_digests)
+
+    monkeypatch.setattr(app_model_module, "install_module_bundle", _install)
     return calls
 
 
@@ -152,7 +165,7 @@ def test_installed_module_bundle_is_imported_by_the_backend() -> None:
 def test_module_bundle_refused_by_the_install_is_reported(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def _refuse(*_: t.Any) -> None:
+    def _refuse(*_: t.Any, **__: t.Any) -> None:
         msg = "/somewhere/_node.py would shadow '_node' from the bundle."
         raise ValueError(msg)
 
@@ -213,8 +226,7 @@ def _launch(*options: str) -> tuple[argparse.Namespace, AppModel]:
 
 
 def _install_at_startup(*options: str) -> None:
-    _args, app_model = _launch(*options)
-    install_startup_module_bundle(app_model)
+    install_startup_module_bundle(*_launch(*options))
 
 
 def test_module_bundle_option_installs_that_zip_instead_of_the_downloaded_one(
@@ -247,3 +259,93 @@ def test_module_bundle_option_refuses_a_missing_file(
         _ExptoolArgumentParser().parse_args(["--module-bundle", str(tmp_path / "missing.zip")])
 
     assert f"No module bundle at '{tmp_path / 'missing.zip'}'" in capsys.readouterr().err
+
+
+def test_module_bundle_option_is_checked_by_default(
+    tmp_path: Path, checked_digests: list[Collection[str] | None]
+) -> None:
+    zip_path = tmp_path / "bundle.zip"
+    zip_path.write_bytes(b"module")
+
+    _install_at_startup("--module-bundle", str(zip_path))
+
+    assert checked_digests == [ACCEPTED_DIGESTS]
+
+
+def test_skip_option_skips_the_check_of_the_module_bundle_option(
+    tmp_path: Path, checked_digests: list[Collection[str] | None]
+) -> None:
+    zip_path = tmp_path / "bundle.zip"
+    zip_path.write_bytes(b"module")
+
+    _install_at_startup(
+        "--module-bundle",
+        str(zip_path),
+        "--dangerously-skip-integrity-check",
+    )
+
+    assert checked_digests == [None]
+
+
+def test_skip_option_skips_the_check_of_the_downloaded_bundle(
+    checked_digests: list[Collection[str] | None],
+) -> None:
+    get_module_bundle_path().write_bytes(b"downloaded")
+
+    _install_at_startup("--dangerously-skip-integrity-check")
+
+    assert checked_digests == [None]
+
+
+def test_skip_option_skips_the_check_of_a_bundle_downloaded_after_start(
+    checked_digests: list[Collection[str] | None],
+) -> None:
+    args, app_model = _launch("--dangerously-skip-integrity-check")
+    install_startup_module_bundle(args, app_model)
+    get_module_bundle_path().write_bytes(b"downloaded")
+
+    app_model.try_install_module_bundle()
+
+    assert checked_digests == [None]
+
+
+def test_skip_option_warns(caplog: pytest.LogCaptureFixture) -> None:
+    get_module_bundle_path().write_bytes(b"downloaded")
+
+    with caplog.at_level(logging.WARNING):
+        _install_at_startup("--dangerously-skip-integrity-check")
+
+    assert "integrity" in caplog.text
+
+
+def test_skip_option_is_hidden_from_help() -> None:
+    assert "--dangerously-skip-integrity-check" not in _ExptoolArgumentParser().format_help()
+
+
+def test_failed_check_of_module_bundle_option_suggests_the_skip_option(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(app_model_module, "install_module_bundle", install_module_bundle)
+    zip_path = tmp_path / "bundle.zip"
+    zip_path.write_bytes(b"a bundle of my own")
+    args, app_model = _launch("--module-bundle", str(zip_path))
+    errors = _record_errors(app_model)
+
+    install_startup_module_bundle(args, app_model)
+
+    (error,) = errors
+    assert "--dangerously-skip-integrity-check" in str(error)
+
+
+def test_failed_check_of_downloaded_bundle_keeps_the_skip_option_hidden(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(app_model_module, "install_module_bundle", install_module_bundle)
+    get_module_bundle_path().write_bytes(b"corrupt")
+    args, app_model = _launch()
+    errors = _record_errors(app_model)
+
+    install_startup_module_bundle(args, app_model)
+
+    (error,) = errors
+    assert "--dangerously-skip-integrity-check" not in str(error)

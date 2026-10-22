@@ -10,7 +10,12 @@ from pathlib import Path
 import pytest
 
 import acconeer.exptool.testing
-from acconeer.exptool._artifact_repository import install_module_bundle
+from acconeer.exptool._artifact_repository import (
+    ACCEPTED_DIGESTS,
+    UnexpectedModuleBundleError,
+    _module_bundle,
+    install_module_bundle,
+)
 from acconeer.exptool._processes.start_method import avoid_fork
 
 
@@ -54,7 +59,20 @@ def pytest_configure(config: pytest.Config) -> None:
         bundle_dir = tempfile.TemporaryDirectory(prefix="module_bundle_")
         config.add_cleanup(bundle_dir.cleanup)
         extract_dir = Path(bundle_dir.name) / "extracted"
-        install_module_bundle(zip_path, extract_dir)
+        skip_integrity_check = config.getoption("--dangerously-skip-integrity-check")
+        try:
+            install_module_bundle(
+                zip_path,
+                extract_dir,
+                accepted_digests=None if skip_integrity_check else ACCEPTED_DIGESTS,
+            )
+        except UnexpectedModuleBundleError as e:
+            msg = (
+                f"{e}.\nA new bundle release needs its SHA-256 in ACCEPTED_DIGESTS of "
+                f"{_module_bundle.__file__}. "
+                "To test a bundle of your own, pass --dangerously-skip-integrity-check"
+            )
+            raise pytest.UsageError(msg) from e
         config.stash[MODULE_BUNDLE_EXTRACT_DIR] = extract_dir
 
 

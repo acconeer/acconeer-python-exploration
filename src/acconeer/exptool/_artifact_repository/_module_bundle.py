@@ -19,6 +19,10 @@ ACCEPTED_DIGESTS: frozenset[str] = frozenset()
 _PACKAGES: list[str] = []
 
 
+class UnexpectedModuleBundleError(ValueError):
+    """The module bundle's SHA-256 is not one this release accepts"""
+
+
 def install_module_bundle(
     zip_path: Path,
     extract_dir: Path,
@@ -68,7 +72,7 @@ def _raise_if_unexpected(zip_path: Path, accepted_digests: Collection[str]) -> N
             f"This ET release expects a different module bundle than {zip_path} "
             f"(SHA-256 {digest}). Upgrade ET, or delete the bundle and download it again"
         )
-        raise ValueError(msg)
+        raise UnexpectedModuleBundleError(msg)
 
 
 def _raise_if_shadowed(name: str, extract_dir: Path) -> None:

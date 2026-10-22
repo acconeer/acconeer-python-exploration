@@ -4,6 +4,8 @@
 from ._dev_site_repository import DevSiteRepository
 from ._interface import Artifact, ArtifactRepository, ArtifactRepositoryError, LoginRequiredError
 from ._module_bundle import (
+    ACCEPTED_DIGESTS,
+    UnexpectedModuleBundleError,
     extract_module_bundle,
     import_module_bundle,
     install_module_bundle,
@@ -19,12 +21,14 @@ from ._plugins import (
 
 
 __all__ = [
+    "ACCEPTED_DIGESTS",
     "Artifact",
     "ArtifactRepository",
     "ArtifactRepositoryError",
     "ArtifactRepositoryModuleSpec",
     "DevSiteRepository",
     "LoginRequiredError",
+    "UnexpectedModuleBundleError",
     "create_artifact_repository",
     "extract_module_bundle",
     "get_plugin_manager",

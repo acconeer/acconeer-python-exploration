@@ -174,7 +174,7 @@ def main() -> None:
     app.aboutToQuit.connect(model.stop)
     app.aboutToQuit.connect(backend.stop)
 
-    install_startup_module_bundle(model)
+    install_startup_module_bundle(args, model)
 
     if args.amv:
         app_model_viewer = AppModelViewer(model)
@@ -290,10 +290,14 @@ def create_app_model(
         args.socket_autoconnect,
         args.simulated_autoconnect,
         module_bundle=args.module_bundle or get_module_bundle_path(),
+        skip_integrity_check=args.dangerously_skip_integrity_check,
     )
 
 
-def install_startup_module_bundle(model: AppModel) -> None:
+def install_startup_module_bundle(args: argparse.Namespace, model: AppModel) -> None:
+    if args.dangerously_skip_integrity_check:
+        _LOG.warning("Skipping the integrity check of the module bundle")
+
     if model.module_bundle.is_file():
         model.try_install_module_bundle()
 
@@ -446,6 +450,13 @@ class _ExptoolArgumentParser(argparse.ArgumentParser):
         self.add_argument(
             "--module-bundle",
             type=_module_bundle_file,
+            help=argparse.SUPPRESS,  # makes option hidden
+        )
+        # Installs the module bundle of this launch without checking that this
+        # release expects it. Internal use only.
+        self.add_argument(
+            "--dangerously-skip-integrity-check",
+            action="store_true",
             help=argparse.SUPPRESS,  # makes option hidden
         )
 

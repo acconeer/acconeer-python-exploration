@@ -120,7 +120,7 @@ def test_plugin_runs_startup_tasks(
         model.sig_error.connect(lambda *_: qapp.exit(1))
         if plugin_spec.requires_module_bundle_artifact:
             # As the app does at startup, but this process has extracted the bundle already
-            monkeypatch.setattr(app_model_module, "install_module_bundle", lambda *_: None)
+            monkeypatch.setattr(app_model_module, "install_module_bundle", lambda *_, **__: None)
             monkeypatch.setattr(
                 app_model_module,
                 "get_module_bundle_extract_dir",
