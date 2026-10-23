@@ -58,6 +58,9 @@ Test-running traps:
 - **Prose line length** in `CHANGELOG.md`, `UNRELEASED_CHANGELOG.md` and
   `LICENSE.md`, capped by `[tool.check_line_length]` in `pyproject.toml`. Other
   Markdown is unchecked.
+- **Import-free `__init__.py`**: files listed in `[tool.check_no_imports]`
+  in `pyproject.toml` may hold no imports, so callers import from the
+  submodule itself.
 - **SDK version consistency** across `README.md`, `docs/**/*.rst`,
   `Jenkinsfile`, and the app's resource tab.
 - **Generated doc pages**: adding or renaming an example script requires

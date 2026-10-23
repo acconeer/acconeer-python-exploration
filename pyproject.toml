@@ -228,6 +228,7 @@ dependency-groups = ["lint"]
 lint-check = [
     "python internal_tools/check_permissions.py",
     "python internal_tools/check_line_length.py",
+    "python internal_tools/check_no_imports.py",
     "python internal_tools/check_sdk_mentions.py",
     "python internal_tools/check_changelog.py",
     "python internal_tools/check_copyright.py",
@@ -444,6 +445,11 @@ include = [
     "LICENSE.md",
     "CHANGELOG.md",
     "UNRELEASED_CHANGELOG.md",
+]
+
+[tool.check_no_imports]
+include = [
+    "src/acconeer/exptool/a2/algo/nodes/__init__.py",
 ]
 
 [tool.check_sdk_mentions]
