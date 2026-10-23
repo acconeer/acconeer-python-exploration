@@ -390,6 +390,7 @@ def test_input_output(
     ("resource_name", "processor_factory"),
     [
         ("capon_heatmap.h5", heatmap_test.capon_heatmap_processing),
+        ("coherent_heatmap.h5", heatmap_test.coherent_heatmap_processing),
         ("conventional_heatmap.h5", heatmap_test.conventional_heatmap_processing),
         ("conventional_heatmap_movement.h5", heatmap_test.conventional_heatmap_processing),
     ],
