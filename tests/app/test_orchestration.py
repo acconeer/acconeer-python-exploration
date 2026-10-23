@@ -22,6 +22,7 @@ from acconeer.exptool.app.new.app import (
     build_main_window,
     load_startup_plugin,
 )
+from acconeer.exptool.app.new.app_model import app_model as app_model_module
 from acconeer.exptool.app.new.backend import MpBackend
 
 
@@ -93,6 +94,7 @@ def test_plugin_runs_startup_tasks(
     plugin_spec: plugin_loader.PluginSpec,
     qapp: QApplication,
     monkeypatch: pytest.MonkeyPatch,
+    module_bundle_extract_dir: Path | None,
 ) -> None:
     """Runs a session of each plugin as the app would with '--tasks', but in-process."""
     et_opts = et_options(plugin_spec)
@@ -116,6 +118,10 @@ def test_plugin_runs_startup_tasks(
         monkeypatch.setattr(sys, "excepthook", model.excepthook)
         # Stops at the first error, rather than once the unloaded plugin's tasks time out.
         model.sig_error.connect(lambda *_: qapp.exit(1))
+        if plugin_spec.requires_module_bundle_artifact:
+            # As the app does at startup, but this process has extracted the bundle already
+            monkeypatch.setattr(app_model_module, "install_module_bundle", lambda *_: None)
+            model.try_install_module_bundle(Path(), module_bundle_extract_dir)
 
         load_startup_plugin(args, model)
         model.broadcast()

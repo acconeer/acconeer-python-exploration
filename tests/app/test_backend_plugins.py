@@ -95,11 +95,17 @@ class TestBackendPlugins:
         assert_messages: t.Callable[..., None],
         plugin: PluginSpec,
         extra_tasks: t.Iterable[Task],
+        module_bundle_extract_dir: Path | None,
     ) -> t.Iterator[Backend]:
         b = CaptureSaveableFile.wrap(MpBackend())
         b.start()
         b.put_task(tasks.CONNECT_CLIENT_TASK[plugin.generation])
         assert_messages(b, received=[tasks.SUCCESSFULLY_CLOSED_TASK])
+
+        if plugin.requires_module_bundle_artifact:
+            # As the app does once it has installed the bundle
+            b.put_task(("import_module_bundle", dict(extract_dir=module_bundle_extract_dir)))
+            assert_messages(b, received=[tasks.SUCCESSFULLY_CLOSED_TASK])
 
         b.put_task(tasks.load_plugin_task(plugin))
         assert_messages(b, received=[tasks.SUCCESSFULLY_CLOSED_TASK])

@@ -68,3 +68,9 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     )
 
     parser.addoption("--test-devsite", action="store_true")
+
+    parser.addoption(
+        "--module-bundle",
+        type=_existing_path,
+        help="Installs this module bundle zip, for the tests marked module_bundle.",
+    )

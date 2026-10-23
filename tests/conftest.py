@@ -3,15 +3,20 @@
 
 import os
 import sys
+import tempfile
 import typing as t
+from pathlib import Path
 
 import pytest
 
 import acconeer.exptool.testing
+from acconeer.exptool._artifact_repository import install_module_bundle
 from acconeer.exptool._processes.start_method import avoid_fork
 
 
 PYTEST_XDIST_MAX_NUM_PROCESSES = 4
+
+MODULE_BUNDLE_EXTRACT_DIR = pytest.StashKey[Path]()
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "helpers"))
 
@@ -43,6 +48,20 @@ def pytest_xdist_auto_num_workers(config: t.Any) -> int:
 
 def pytest_configure(config: pytest.Config) -> None:
     avoid_fork(preload=["acconeer.exptool.app.new.backend"])
+
+    zip_path = config.getoption("--module-bundle")
+    if zip_path is not None:
+        bundle_dir = tempfile.TemporaryDirectory(prefix="module_bundle_")
+        config.add_cleanup(bundle_dir.cleanup)
+        extract_dir = Path(bundle_dir.name) / "extracted"
+        install_module_bundle(zip_path, extract_dir)
+        config.stash[MODULE_BUNDLE_EXTRACT_DIR] = extract_dir
+
+
+def _has_plugin_needing_module_bundle(item: pytest.Item) -> bool:
+    callspec = getattr(item, "callspec", None)
+    params = callspec.params.values() if callspec is not None else []
+    return any(getattr(p, "requires_module_bundle_artifact", False) is True for p in params)
 
 
 def _validate_parametrization(iterable: t.Sized, err_msg: str) -> t.Sized:
@@ -105,6 +124,15 @@ def pytest_generate_tests(metafunc):
 
 
 def pytest_collection_modifyitems(config, items):
+    skip_module_bundle_marker = pytest.mark.skip(
+        reason="Needs the module bundle, pass '--module-bundle <zip>'"
+    )
+    for item in items:
+        if _has_plugin_needing_module_bundle(item):
+            item.add_marker(pytest.mark.module_bundle)
+        if "module_bundle" in item.keywords and config.getoption("--module-bundle") is None:
+            item.add_marker(skip_module_bundle_marker)
+
     if config.getoption("--test-devsite"):
         return  # Don't skip any devsite tests
 
@@ -119,6 +147,12 @@ def pytest_runtest_makereport(item, call):
     outcome = yield
     result = outcome.get_result()
     setattr(item, f"rep_{result.when}", result)
+
+
+@pytest.fixture(scope="session")
+def module_bundle_extract_dir(request: pytest.FixtureRequest) -> Path | None:
+    """Where the module bundle was installed to, for backend processes to import it from"""
+    return request.config.stash.get(MODULE_BUNDLE_EXTRACT_DIR, None)
 
 
 @pytest.fixture(scope="session")
