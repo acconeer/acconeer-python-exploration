@@ -28,16 +28,23 @@ class TabPGWidget(QFrame):
     Since QTabWidget and GraphicsLayoutWidget caused GUI to freeze.
     """
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: Optional[QWidget] = None, right_controls: Optional[QWidget] = None):
         super().__init__(parent=parent)
 
         self._button_group = QButtonGroup()
         self._button_layout = QHBoxLayout()
         self._button_layout.setContentsMargins(0, 0, 0, 0)
+        button_wrapper = LeftAlignDecorator(LayoutWrapper(self._button_layout))
+
+        top_layout = QHBoxLayout()
+        top_layout.setContentsMargins(0, 0, 0, 0)
+        top_layout.addWidget(button_wrapper)
+
+        if right_controls is not None:
+            top_layout.addWidget(right_controls)
 
         self._main_layout = QVBoxLayout()
-        button_wrapper = LeftAlignDecorator(LayoutWrapper(self._button_layout))
-        self._main_layout.addWidget(button_wrapper)
+        self._main_layout.addWidget(LayoutWrapper(top_layout))
 
         self._plot_widgets: List[pg.GrachicsLayoutWidget] = []
 

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2025
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -8,7 +8,15 @@ import typing as t
 
 from PySide6.QtCore import QPoint, QRect
 from PySide6.QtGui import QResizeEvent
-from PySide6.QtWidgets import QFrame, QGridLayout, QLabel, QLayout, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QFrame,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QLayout,
+    QVBoxLayout,
+    QWidget,
+)
 
 
 _T = t.TypeVar("_T", bound=QLayout)
@@ -84,6 +92,23 @@ class GroupBox(QWidget, t.Generic[_T]):
         return cls(
             left_header,
             QGridLayout,  # type: ignore[return-value,arg-type]
+            right_header=right_header,
+            min_top_padding=min_top_padding,
+            parent=parent,
+        )
+
+    @classmethod
+    def horizontal(
+        cls,
+        left_header: t.Union[QWidget, str],
+        right_header: t.Optional[QWidget] = None,
+        *,
+        min_top_padding: int = 0,
+        parent: t.Optional[QWidget] = None,
+    ) -> GroupBox[QHBoxLayout]:
+        return cls(
+            left_header,
+            QHBoxLayout,  # type: ignore[return-value,arg-type]
             right_header=right_header,
             min_top_padding=min_top_padding,
             parent=parent,
