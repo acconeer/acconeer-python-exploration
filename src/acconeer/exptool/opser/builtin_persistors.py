@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -275,9 +275,10 @@ class TuplePersistor(core.Persistor):
             RegistryPersistor(element_group, str(i), element_subtree).save(element)
 
     def _load(self) -> t.Tuple[t.Any, ...]:
+        keys = sorted(self.group.keys(), key=int)
         return tuple(
             RegistryPersistor(self.group, key, element_type_tree).load()
-            for key, element_type_tree in zip(self.group.keys(), self.type_tree.children.values())
+            for key, element_type_tree in zip(keys, self.type_tree.children.values())
         )
 
 

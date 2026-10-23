@@ -624,6 +624,31 @@ def test_cannot_create_type_tree_for_class_with_variadic_tuple() -> None:
         _ = opser.core.create_type_tree(VariadicTupleParent)
 
 
+@pytest.mark.parametrize("track_order", [False, True], ids=["name_order", "creation_order"])
+@pytest.mark.parametrize(
+    ("instance", "typ"),
+    [
+        (tuple(range(10)), t.Tuple[(int,) * 10]),
+        (tuple(range(11)), t.Tuple[(int,) * 11]),
+        (tuple(range(12)), t.Tuple[(int,) * 12]),
+        ((*range(10), "ten"), t.Tuple[(int,) * 10 + (str,)]),
+    ],
+    ids=["len10", "len11", "len12", "len11_str_last"],
+)
+def test_tuple_elements_are_loaded_in_positional_order(
+    instance: t.Tuple[t.Any, ...], typ: t.Any, track_order: bool, tmp_h5_file: h5py.File
+) -> None:
+    # Pin the iteration order of the tuple's own group instead of inheriting it from
+    # the global h5py config. Without creation order tracking, HDF5 iterates by name.
+    group = tmp_h5_file.create_group("tuple", track_order=track_order)
+    opser.serialize(instance, group, override_type=typ)
+
+    names = [str(i) for i in range(len(instance))]
+    assert list(group.keys()) == (names if track_order else sorted(names))
+
+    assert opser.deserialize(group, typ) == instance
+
+
 def test_is_class() -> None:
     assert opser.core.is_class(Simple)
     assert opser.core.is_class(Parent)
