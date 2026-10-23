@@ -389,6 +389,7 @@ def test_input_output(
 @pytest.mark.parametrize(
     ("resource_name", "processor_factory"),
     [
+        ("capon_heatmap.h5", heatmap_test.capon_heatmap_processing),
         ("conventional_heatmap.h5", heatmap_test.conventional_heatmap_processing),
         ("conventional_heatmap_movement.h5", heatmap_test.conventional_heatmap_processing),
     ],
@@ -426,3 +427,58 @@ def test_heatmap_processor(
         assert len(expected_results) == len(heatmaps)
         for expected, actual in zip(expected_results, heatmaps):
             np.testing.assert_allclose(expected, actual, atol=1e-7)
+
+
+def test_ap212_angle_prevalency() -> None:
+    """This file is a recording of a corner reflector using the ap212.
+
+    The corner reflector is offset in both angles and has a distance of ~50cm from the sensor.
+    (distance is not important for this test though).
+
+    To describe the reflector position; imagine looking straight at the sensor, separating
+    the space between you and the sensor into 4 quadrants by
+
+    - one horizontal plane, intersecting with both your eyes and dividing the sensor chip along its long side [1]
+    - one vertical plane, dividing your nose into 2 symmetrical parts and dividing the sensor chip along its short side [2]
+
+    Then the position of the corner reflector is in the quite far up in the lower left quadrant.
+
+                |
+                |
+                |
+            +-------+
+     -------| ##### |------- [1]
+       .<   +-------+
+       |        |
+                |
+                |
+               [2]
+    """
+    input_file = "angle_prevalency.h5"
+
+    with (
+        as_file(files(data_files_a2.recorded_data) / input_file) as input_path,
+        a2.open_record(input_path) as record,
+    ):
+        processor, _ = heatmap_test.heatmap_from_record(record)
+
+        ap212_heatmaps = []
+        for idx, result in enumerate(record.results):
+            print(idx)
+            result = processor.process(result)
+            if result.heatmap is None or idx < 12:
+                continue
+            ap212_heatmaps.append(
+                result.heatmap
+            )  # The heatmap is a 3d object with 23 az angles and 53 el angles.
+
+        max_depth_time = np.max(ap212_heatmaps, axis=(0, 1))  # Take max over depths and time.
+
+        max_az_ind = np.argmax(np.max(max_depth_time, axis=1))
+        max_el_ind = np.argmax(np.max(max_depth_time, axis=0))
+
+        max_az_angle = processor.heatmap_config.az_angles[max_az_ind]
+        max_el_angle = processor.heatmap_config.el_angles[max_el_ind]
+
+        assert np.isclose(max_az_angle, 30.0, atol=10.1)
+        assert np.isclose(max_el_angle, -5.0, atol=10.1)
