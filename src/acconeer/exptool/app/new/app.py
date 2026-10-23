@@ -53,9 +53,7 @@ from .backend import Backend, GenBackend, MpBackend
 from .plugin_loader import import_and_register_plugin_module, load_plugins
 from .storage import (
     DEFAULT_ET_DIR,
-    get_module_bundle_extract_dir,
     get_module_bundle_path,
-    get_temp_dir,
     remove_config_dir,
     remove_temp_dir,
     set_et_dir,
@@ -176,7 +174,7 @@ def main() -> None:
     app.aboutToQuit.connect(model.stop)
     app.aboutToQuit.connect(backend.stop)
 
-    install_startup_module_bundle(args, model)
+    install_startup_module_bundle(model)
 
     if args.amv:
         app_model_viewer = AppModelViewer(model)
@@ -261,14 +259,7 @@ def build_main_window(
     """
     backend.start()
 
-    model = AppModel(
-        backend,
-        plugins,
-        args.use_port_updater,
-        args.usb_or_serial_autoconnect,
-        args.socket_autoconnect,
-        args.simulated_autoconnect,
-    )
+    model = create_app_model(args, plugins, backend)
     model.start()
 
     if args.dump_exceptions:
@@ -288,13 +279,23 @@ def build_main_window(
     return model, mw
 
 
-def install_startup_module_bundle(args: argparse.Namespace, model: AppModel) -> None:
-    """Installs the module bundle given by '--module-bundle', else the one downloaded before."""
-    if args.module_bundle is not None:
-        # Apart from the downloaded bundle's, which it would otherwise replace
-        model.try_install_module_bundle(args.module_bundle, get_temp_dir() / "module_bundle")
-    elif get_module_bundle_path().is_file():
-        model.try_install_module_bundle(get_module_bundle_path(), get_module_bundle_extract_dir())
+def create_app_model(
+    args: argparse.Namespace, plugins: list[PluginSpec], backend: Backend
+) -> AppModel:
+    return AppModel(
+        backend,
+        plugins,
+        args.use_port_updater,
+        args.usb_or_serial_autoconnect,
+        args.socket_autoconnect,
+        args.simulated_autoconnect,
+        module_bundle=args.module_bundle or get_module_bundle_path(),
+    )
+
+
+def install_startup_module_bundle(model: AppModel) -> None:
+    if model.module_bundle.is_file():
+        model.try_install_module_bundle()
 
 
 def _module_bundle_file(value: str) -> Path:

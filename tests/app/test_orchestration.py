@@ -121,7 +121,12 @@ def test_plugin_runs_startup_tasks(
         if plugin_spec.requires_module_bundle_artifact:
             # As the app does at startup, but this process has extracted the bundle already
             monkeypatch.setattr(app_model_module, "install_module_bundle", lambda *_: None)
-            model.try_install_module_bundle(Path(), module_bundle_extract_dir)
+            monkeypatch.setattr(
+                app_model_module,
+                "get_module_bundle_extract_dir",
+                lambda: module_bundle_extract_dir,
+            )
+            model.try_install_module_bundle()
 
         load_startup_plugin(args, model)
         model.broadcast()

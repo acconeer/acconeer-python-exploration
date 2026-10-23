@@ -31,7 +31,6 @@ from acconeer.exptool.app import resources
 from acconeer.exptool.app.new._enums import PluginFamily, PluginGeneration, PluginState
 from acconeer.exptool.app.new.app_model import AppModel, PluginPresetSpec, PluginSpec
 from acconeer.exptool.app.new.pluginbase import PlotPluginBase, PluginSpecBase
-from acconeer.exptool.app.new.storage import get_module_bundle_extract_dir
 from acconeer.exptool.app.new.ui.components.devsite import download_module_bundle
 from acconeer.exptool.app.new.ui.components.group_box import GroupBox
 from acconeer.exptool.app.new.ui.icons import ARROW_LEFT_BOLD, DOWNLOAD, EXTERNAL_LINK, TEXT_GREY
@@ -229,11 +228,10 @@ class PluginSelection(QWidget):
 
         plugin = self.button_group.checkedButton().plugin
         if plugin.requires_module_bundle_artifact and not self.app_model.module_bundle_available:
-            stored_path = download_module_bundle(self)
-            if stored_path is None:
+            if download_module_bundle(self) is None:
                 self._on_app_model_update(self.app_model)
                 return
-            self.app_model.try_install_module_bundle(stored_path, get_module_bundle_extract_dir())
+            self.app_model.try_install_module_bundle()
 
         self.app_model.load_plugin(plugin)
 

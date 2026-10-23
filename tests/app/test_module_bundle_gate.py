@@ -2,6 +2,7 @@
 # All rights reserved
 from __future__ import annotations
 
+import argparse
 import typing as t
 from pathlib import Path
 from uuid import UUID, uuid4
@@ -12,7 +13,11 @@ import pytest
 from acconeer.exptool._artifact_repository import install_module_bundle
 from acconeer.exptool.app.new._enums import PluginGeneration
 from acconeer.exptool.app.new._exceptions import HandledException
-from acconeer.exptool.app.new.app import _ExptoolArgumentParser, install_startup_module_bundle
+from acconeer.exptool.app.new.app import (
+    _ExptoolArgumentParser,
+    create_app_model,
+    install_startup_module_bundle,
+)
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.app_model import app_model as app_model_module
 from acconeer.exptool.app.new.app_model.file_detective import FileFindings
@@ -67,7 +72,12 @@ class _AcceptedReplayDialog:
 
 
 def _app_model(backend: _RecordingBackend) -> AppModel:
-    return AppModel(backend, [_PluginNeedingModuleBundle()], use_port_updater=False)  # type: ignore[arg-type, list-item]
+    return AppModel(
+        backend,  # type: ignore[arg-type]
+        [_PluginNeedingModuleBundle()],  # type: ignore[list-item]
+        use_port_updater=False,
+        module_bundle=get_module_bundle_path(),
+    )
 
 
 def _record_errors(app_model: AppModel) -> list[BaseException]:
@@ -109,15 +119,11 @@ def test_recording_of_plugin_needing_missing_module_bundle_is_not_loaded(
     assert backend.tasks == []
 
 
-def _try_install(app_model: AppModel) -> None:
-    app_model.try_install_module_bundle(get_module_bundle_path(), get_module_bundle_extract_dir())
-
-
 def test_installed_module_bundle_is_available() -> None:
     get_module_bundle_path().write_bytes(b"module")
     app_model = _app_model(_RecordingBackend())
 
-    _try_install(app_model)
+    app_model.try_install_module_bundle()
 
     assert app_model.module_bundle_available
 
@@ -129,7 +135,7 @@ def _import_task() -> tuple[str, dict[str, t.Any]]:
 def test_module_bundle_is_installed(installs: list[tuple[Path, Path]]) -> None:
     get_module_bundle_path().write_bytes(b"module")
 
-    _try_install(_app_model(_RecordingBackend()))
+    _app_model(_RecordingBackend()).try_install_module_bundle()
 
     assert installs == [(get_module_bundle_path(), get_module_bundle_extract_dir())]
 
@@ -138,7 +144,7 @@ def test_installed_module_bundle_is_imported_by_the_backend() -> None:
     get_module_bundle_path().write_bytes(b"module")
     backend = _RecordingBackend()
 
-    _try_install(_app_model(backend))
+    _app_model(backend).try_install_module_bundle()
 
     assert backend.tasks == [_import_task()]
 
@@ -155,7 +161,7 @@ def test_module_bundle_refused_by_the_install_is_reported(
     app_model = _app_model(_RecordingBackend())
     errors = _record_errors(app_model)
 
-    _try_install(app_model)
+    app_model.try_install_module_bundle()
 
     (error,) = errors
     assert "would shadow" in str(error)
@@ -180,7 +186,7 @@ def test_failed_install_is_reported_right_away(monkeypatch: pytest.MonkeyPatch) 
     app_model = _app_model(_RecordingBackend())
     errors = _record_errors(app_model)
 
-    _try_install(app_model)
+    app_model.try_install_module_bundle()
 
     (error,) = errors
     assert "Could not install the module bundle" in str(error)
@@ -200,22 +206,28 @@ def test_module_bundle_present_at_startup_is_left_for_the_caller_to_install(
     assert not app_model.module_bundle_available
 
 
-def _install_at_startup(app_model: AppModel, *options: str) -> None:
-    install_startup_module_bundle(_ExptoolArgumentParser().parse_args(options), app_model)
+def _launch(*options: str) -> tuple[argparse.Namespace, AppModel]:
+    args = _ExptoolArgumentParser().parse_args(["--no-port-updater", *options])
+    plugins = [_PluginNeedingModuleBundle()]
+    return args, create_app_model(args, plugins, _RecordingBackend())  # type: ignore[arg-type]
 
 
-def test_module_bundle_option_installs_that_zip_apart_from_the_downloaded_one(
+def _install_at_startup(*options: str) -> None:
+    _args, app_model = _launch(*options)
+    install_startup_module_bundle(app_model)
+
+
+def test_module_bundle_option_installs_that_zip_instead_of_the_downloaded_one(
     tmp_path: Path, installs: list[tuple[Path, Path]]
 ) -> None:
     zip_path = tmp_path / "bundle.zip"
     zip_path.write_bytes(b"module")
     get_module_bundle_path().write_bytes(b"downloaded")
 
-    _install_at_startup(_app_model(_RecordingBackend()), "--module-bundle", str(zip_path))
+    _install_at_startup("--module-bundle", str(zip_path))
 
-    ((installed, extract_dir),) = installs
-    assert installed == zip_path
-    assert extract_dir != get_module_bundle_extract_dir()
+    assert [installed for installed, _ in installs] == [zip_path]
+    assert get_module_bundle_path().read_bytes() == b"downloaded"
 
 
 def test_downloaded_module_bundle_is_installed_at_startup(
@@ -223,7 +235,7 @@ def test_downloaded_module_bundle_is_installed_at_startup(
 ) -> None:
     get_module_bundle_path().write_bytes(b"downloaded")
 
-    _install_at_startup(_app_model(_RecordingBackend()))
+    _install_at_startup()
 
     assert installs == [(get_module_bundle_path(), get_module_bundle_extract_dir())]
 

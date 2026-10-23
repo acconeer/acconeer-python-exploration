@@ -68,6 +68,7 @@ from acconeer.exptool.app.new.backend import (
 )
 from acconeer.exptool.app.new.storage import (
     get_config_dir,
+    get_module_bundle_extract_dir,
     remove_temp_dir,
 )
 from acconeer.exptool.app.new.ui.components.data_editor import DataEditor
@@ -241,6 +242,8 @@ class AppModel(QObject):
 
     plugins: list[PluginSpec]
     plugin: Optional[PluginSpec]
+    module_bundle: Path
+    """The zip this launch installs, whether given by '--module-bundle' or downloaded"""
     module_bundle_available: bool
 
     backend_plugin_state: Any
@@ -259,6 +262,8 @@ class AppModel(QObject):
         force_autoconnect: bool = False,
         socket_autoconnect: Optional[str] = None,
         simulated_autocconnect: bool = False,
+        *,
+        module_bundle: Path,
     ) -> None:
         super().__init__()
         self._backend = backend
@@ -287,6 +292,7 @@ class AppModel(QObject):
 
         self.plugins = plugins
         self.plugin = None
+        self.module_bundle = module_bundle
         self.module_bundle_available = False
 
         self.backend_plugin_state = None
@@ -904,10 +910,11 @@ class AppModel(QObject):
         self.emit_error(HandledException(msg))
         return True
 
-    def try_install_module_bundle(self, module_bundle_path: Path, extract_dir: Path) -> None:
+    def try_install_module_bundle(self) -> None:
         """Call once the UI listens to sig_error, which is how a failed install is reported."""
+        extract_dir = get_module_bundle_extract_dir()
         try:
-            install_module_bundle(module_bundle_path, extract_dir)
+            install_module_bundle(self.module_bundle, extract_dir)
         except (ValueError, zipfile.BadZipFile) as e:
             self.module_bundle_available = False
             self.emit_error(HandledException(f"Could not install the module bundle: {e}"))
