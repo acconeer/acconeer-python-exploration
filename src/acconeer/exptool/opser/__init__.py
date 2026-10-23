@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from . import builtin_persistors, core, optimizing_persistors
@@ -9,3 +9,4 @@ from .api import (
     serialize,
     try_deserialize,
 )
+from .core import LoadError
