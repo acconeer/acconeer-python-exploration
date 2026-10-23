@@ -65,6 +65,9 @@ def load_default_plugins() -> list[PluginSpec]:
     from acconeer.exptool.a2.algo._plugin_specs.conventional_heatmap import (
         CONVENTIONAL_HEATMAP_PLUGIN as CONVENTIONAL_HEATMAP,
     )
+    from acconeer.exptool.a2.algo._plugin_specs.robust_capon_heatmap import (
+        ROBUST_CAPON_HEATMAP_PLUGIN as ROBUST_CAPON_HEATMAP,
+    )
     from acconeer.exptool.a2.algo._plugin_specs.sparse_iq import (
         SPARSE_IQ_PLUGIN as SPARSE_IQ_PLUGIN_A2,
     )
@@ -110,6 +113,7 @@ def load_default_plugins() -> list[PluginSpec]:
         # A2 plugins
         SPARSE_IQ_PLUGIN_A2,
         CAPON_HEATMAP,
+        ROBUST_CAPON_HEATMAP,
         CONVENTIONAL_HEATMAP,
     ]
 
