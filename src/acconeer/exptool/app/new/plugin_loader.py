@@ -59,6 +59,9 @@ def import_and_register_plugin_module(module_name: str) -> None:
 
 
 def load_default_plugins() -> list[PluginSpec]:
+    from acconeer.exptool.a2.algo._plugin_specs.conventional_heatmap import (
+        CONVENTIONAL_HEATMAP_PLUGIN as CONVENTIONAL_HEATMAP,
+    )
     from acconeer.exptool.a2.algo._plugin_specs.sparse_iq import (
         SPARSE_IQ_PLUGIN as SPARSE_IQ_PLUGIN_A2,
     )
@@ -103,6 +106,7 @@ def load_default_plugins() -> list[PluginSpec]:
         WASTE_LEVEL_PLUGIN,
         # A2 plugins
         SPARSE_IQ_PLUGIN_A2,
+        CONVENTIONAL_HEATMAP,
     ]
 
 

@@ -13,3 +13,4 @@ version = "0.0.0"
 
 [tool.setuptools.package-dir]
 exptool_a121_test = "a121"
+exptool_a2_test = "a2"

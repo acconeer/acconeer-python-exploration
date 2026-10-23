@@ -145,6 +145,7 @@ class PluginSelection(QWidget):
         PluginFamily.EXTERNAL_PLUGIN,
         PluginFamily.SERVICE,
         PluginFamily.DETECTOR,
+        PluginFamily.PROCESSORS,
         PluginFamily.REF_APP,
         PluginFamily.EXAMPLE_APP,
     ]

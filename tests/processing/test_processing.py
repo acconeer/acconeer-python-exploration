@@ -8,11 +8,16 @@ from importlib.resources import as_file, files
 from pathlib import Path
 
 import h5py
+import numpy as np
+import numpy.typing as npt
 import pytest
+import typing_extensions as te
 
-from acconeer.exptool import a121, opser
+from acconeer.exptool import a2, a121, opser
 from acconeer.exptool.a121._core_ext import ReplaySessionsExhaustedError, _StopReplay
 
+from .a2 import data_files as data_files_a2
+from .a2 import heatmap_test
 from .a121 import (
     breathing_test,
     cargo_test,
@@ -379,3 +384,45 @@ def test_input_output(
 
     for i, (expected_result, actual_result) in enumerate(zip(expected_results, actual_results)):
         assert expected_result == actual_result, f"failed at {i}"
+
+
+@pytest.mark.parametrize(
+    ("resource_name", "processor_factory"),
+    [
+        ("conventional_heatmap.h5", heatmap_test.conventional_heatmap_processing),
+        ("conventional_heatmap_movement.h5", heatmap_test.conventional_heatmap_processing),
+    ],
+)
+def test_heatmap_processor(
+    resource_name: str,
+    processor_factory: t.Callable[[a2.H5Record], t.Tuple[t.Any, t.Any]],
+    should_update_outputs: bool,
+) -> None:
+    with (
+        as_file(files(data_files_a2.recorded_data) / resource_name) as input_path,
+        a2.open_record(input_path) as record,
+    ):
+        processor, noise_normalization_processor, _ = processor_factory(record)
+        heatmaps = []
+        heatmaps_type: te.TypeAlias = t.List[npt.NDArray[np.float64]]
+
+        for idx, result in enumerate(record.results):
+            group_result = noise_normalization_processor.process(result)
+            result = processor.process(group_result)
+            if result.heatmap is None:
+                continue
+            heatmaps.append(result.heatmap)
+        output_path = get_output_path(input_path, "heatmap")
+        if should_update_outputs:
+            with contextlib.suppress(FileNotFoundError):
+                output_path.unlink()
+            with h5py.File(output_path, "w") as expected_out:
+                opser.serialize(heatmaps, expected_out, override_type=heatmaps_type)
+        with h5py.File(output_path, "r") as expected_out:
+            expected_results = opser.deserialize(expected_out, heatmaps_type)
+            # Check that we have at least one non-NaN in the data
+            assert not np.all(np.isnan(expected_results))
+
+        assert len(expected_results) == len(heatmaps)
+        for expected, actual in zip(expected_results, heatmaps):
+            np.testing.assert_allclose(expected, actual, atol=1e-7)
