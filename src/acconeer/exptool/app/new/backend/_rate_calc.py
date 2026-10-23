@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -82,7 +82,12 @@ class _RateCalculator:
             return _RateStats.invalid()
 
         measured_tick_period = statistics.mean(self.tick_diffs)
-        measured_rate = 1.0 / (measured_tick_period / self.ticks_per_second)
+
+        try:
+            measured_rate = 1.0 / (measured_tick_period / self.ticks_per_second)
+        except ZeroDivisionError:
+            measured_rate = math.inf
+
         rate_warning = frame_delayed or measured_tick_period > self.tick_period_upper_bound
 
         if len(self.tick_diffs) < 2:

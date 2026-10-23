@@ -8,7 +8,7 @@ from typing import Any, Callable, Generic, Optional, TypeVar, Union, cast
 
 import typing_extensions as te
 
-from acconeer.exptool import a121
+from acconeer.exptool import a2, a121
 from acconeer.exptool._core.communication import Client
 from acconeer.exptool.a121._core import utils
 
@@ -84,6 +84,37 @@ class _A121Extractor(_Extractor):
         return msgs
 
 
+class _A2Extractor(_Extractor):
+    @staticmethod
+    def create_rate_calculator(client: a2.Client) -> _RateCalculator:
+        return _RateCalculator(client.server_info.ticks_per_second, client.tick_period)
+
+    @staticmethod
+    def update_rate_calculator(
+        calculator: _RateCalculator, result: Union[a2.GroupResult, a2.Result]
+    ) -> _RateStats:
+        if isinstance(result, a2.Result):
+            return calculator.update(result.tick, result.frame_delayed)
+        else:
+            first_result = result.results[0]
+            return calculator.update(first_result.tick, first_result.frame_delayed)
+
+    @staticmethod
+    def get_status_messages(result: Union[a2.GroupResult, a2.Result]) -> list[str]:
+        if isinstance(result, a2.GroupResult):
+            saturated_flags = [flag for r in result.results for flag in r.data_saturated]
+        elif isinstance(result, a2.Result):
+            saturated_flags = result.data_saturated
+        else:
+            msg = f"Unexpected type for 'result': {type(result)}"
+            raise AssertionError(msg)
+
+        if any(saturated_flags):
+            return [_DATA_SATURATED_MESSAGE]
+        else:
+            return []
+
+
 class ApplicationClient(Generic[ClientT]):
     callback: Callable[[Message], None]
     extractor_strategy: type[_Extractor]
@@ -120,17 +151,21 @@ class ApplicationClient(Generic[ClientT]):
         """
         return cast(ClientT, cls(wrapped_client, callback, _A121Extractor))
 
+    @classmethod
+    def wrap_a2(cls, wrapped_client: ClientT, callback: Callable[[Message], None]) -> ClientT:
+        return cast(ClientT, cls(wrapped_client, callback, _A2Extractor))
+
     def start_session(self) -> None:
         self._wrapped_client.start_session()
         self._rate_stats_calc = self.extractor_strategy.create_rate_calculator(
             self._wrapped_client
         )
 
-    def get_next(self) -> Any:
+    def get_next(self, *args: Any, **kwargs: Any) -> Any:
         assert self._rate_stats_calc is not None
 
         with warnings.catch_warnings(record=True) as caught_warnings:
-            result = self._wrapped_client.get_next()
+            result = self._wrapped_client.get_next(*args, **kwargs)
 
         for w in caught_warnings:
             if isinstance(w.message, str):
