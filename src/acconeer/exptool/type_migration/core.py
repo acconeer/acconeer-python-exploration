@@ -275,7 +275,7 @@ class Node(t.Generic[_HeadT, _ReqCtxT, _MigT_contra]):
         for transform, transform_fails, ancestor in self.inbounds:
             try:
                 ancestor_migrated = ancestor._migrate(obj, completer)
-            except Exception as e:
+            except MigrationError as e:
                 errors.append(e)
                 continue
 
