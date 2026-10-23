@@ -59,6 +59,9 @@ def import_and_register_plugin_module(module_name: str) -> None:
 
 
 def load_default_plugins() -> list[PluginSpec]:
+    from acconeer.exptool.a2.algo._plugin_specs.sparse_iq import (
+        SPARSE_IQ_PLUGIN as SPARSE_IQ_PLUGIN_A2,
+    )
     from acconeer.exptool.a121.algo._plugin_specs.bilateration import BILATERATION_PLUGIN
     from acconeer.exptool.a121.algo._plugin_specs.breathing import BREATHING_PLUGIN
     from acconeer.exptool.a121.algo._plugin_specs.cargo import CARGO_PLUGIN
@@ -98,6 +101,8 @@ def load_default_plugins() -> list[PluginSpec]:
         VIBRATION_PLUGIN,
         SPEED_DETECTOR_PLUGIN,
         WASTE_LEVEL_PLUGIN,
+        # A2 plugins
+        SPARSE_IQ_PLUGIN_A2,
     ]
 
 

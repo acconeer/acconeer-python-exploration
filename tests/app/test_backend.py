@@ -27,8 +27,8 @@ pytestmark = pytest.mark.timeout(60)
 def generation(request: pytest.FixtureRequest) -> PluginGeneration:
     gen = t.cast(PluginGeneration, request.param)
 
-    if gen not in [PluginGeneration.A121]:
-        pytest.xfail("These tests uses a mock client. Only A121 has a mock client at the moment.")
+    if gen == PluginGeneration.A111:
+        pytest.xfail("No support for A111")
     else:
         return gen
 
@@ -124,11 +124,12 @@ class UnloadedBackend:
 
     def test_loading_a_plugin_reports_loading_and_loaded_plugin_state(
         self,
+        generation: PluginGeneration,
         backend: Backend,
         assert_messages: t.Callable[..., None],
         tasks: t.Any,
     ) -> None:
-        backend.put_task(tasks.LOAD_PLUGIN_TASK)
+        backend.put_task(tasks.LOAD_PLUGIN_TASK[generation])
         assert_messages(
             backend,
             received=[
@@ -157,11 +158,12 @@ class LoadedBackend:
 
     def test_loading_a_plugin_does_not_report_any_unloading_state_changes(
         self,
+        generation: PluginGeneration,
         backend: Backend,
         assert_messages: t.Callable[..., None],
         tasks: t.Any,
     ) -> None:
-        backend.put_task(tasks.LOAD_PLUGIN_TASK)
+        backend.put_task(tasks.LOAD_PLUGIN_TASK[generation])
         assert_messages(
             backend,
             received=[
@@ -228,10 +230,12 @@ class TestDisconnectedLoadedBackend(DisconnectedBackend, LoadedBackend):
     """
 
     @pytest.fixture
-    def backend(self, tasks: t.Any, assert_messages: t.Callable[..., None]) -> t.Iterator[Backend]:
+    def backend(
+        self, generation: PluginGeneration, tasks: t.Any, assert_messages: t.Callable[..., None]
+    ) -> t.Iterator[Backend]:
         b = MpBackend()
         b.start()
-        b.put_task(tasks.LOAD_PLUGIN_TASK)
+        b.put_task(tasks.LOAD_PLUGIN_TASK[generation])
         assert_messages(b, received=[tasks.SUCCESSFULLY_CLOSED_TASK])
         yield b
         b.stop()
@@ -250,7 +254,7 @@ class TestConnectedLoadedBackend(ConnectedBackend, LoadedBackend):
         b.start()
         b.put_task(tasks.CONNECT_CLIENT_TASK[generation])
         assert_messages(b, received=[tasks.SUCCESSFULLY_CLOSED_TASK])
-        b.put_task(tasks.LOAD_PLUGIN_TASK)
+        b.put_task(tasks.LOAD_PLUGIN_TASK[generation])
         assert_messages(b, received=[tasks.SUCCESSFULLY_CLOSED_TASK])
         yield b
         b.stop()

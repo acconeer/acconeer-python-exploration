@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from acconeer.exptool import a121
+from acconeer.exptool import a2, a121
 from acconeer.exptool.a121.algo._plugin_specs.bilateration import BILATERATION_PLUGIN
 from acconeer.exptool.a121.algo._plugin_specs.speed import SPEED_DETECTOR_PLUGIN
 from acconeer.exptool.app.new import PluginGeneration, PluginState
@@ -72,10 +72,8 @@ class TestBackendPlugins:
     def plugin(self, request: pytest.FixtureRequest) -> PluginSpec:
         plugin = t.cast(PluginSpec, request.param)
 
-        if plugin.generation not in [PluginGeneration.A121]:
-            pytest.xfail(
-                "These tests uses a mock client. Only A121 has a mock client at the moment."
-            )
+        if plugin.generation == PluginGeneration.A111:
+            pytest.xfail("No support for A111 plugins")
         else:
             return plugin
 
@@ -162,10 +160,14 @@ class TestBackendPlugins:
 
         saved_file = t.cast(CaptureSaveableFile, backend).saveable_file_path
 
-        with a121.open_record(saved_file) as _:
-            # this open makes sure that the file can be opened directly after
-            # the session is stopped
-            pass
+        if plugin.generation == PluginGeneration.A121:
+            with a121.open_record(saved_file) as _:
+                # this open makes sure that the file can be opened directly after
+                # the session is stopped
+                pass
+        elif plugin.generation == PluginGeneration.A2:
+            f = a2.open_record(saved_file)
+            f.close()
 
         if plugin in [SPEED_DETECTOR_PLUGIN]:
             pytest.xfail(

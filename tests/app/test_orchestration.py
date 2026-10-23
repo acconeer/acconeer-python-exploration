@@ -150,7 +150,11 @@ def test_plugin_runs_startup_tasks(
 
 def test_command_line_runs_startup_tasks(tmp_path: Path) -> None:
     """Runs the real entry point, which the in-process test builds around."""
-    (plugin_spec,) = [p for p in plugin_loader.load_plugins() if p.key == "sparse_iq"]
+    (plugin_spec,) = [
+        p
+        for p in plugin_loader.load_plugins()
+        if (p.generation.value, p.key) == ("a121", "sparse_iq")
+    ]
     et_opts = ["-v", *et_options(plugin_spec)]
 
     app = [sys.executable, "-m", "acconeer.exptool.app.new", "--data-dir", str(tmp_path), *et_opts]

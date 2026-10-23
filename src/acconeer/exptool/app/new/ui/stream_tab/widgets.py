@@ -86,9 +86,9 @@ class WorkingArea(QSplitter):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
+        # No explicit minimum or maximum width. The area sizes itself to make
+        # room for its widest plugin row.
         self._left_area = PluginSelectionArea(app_model, self)
-        self._left_area.setMinimumWidth(250)
-        self._left_area.setMaximumWidth(350)
         layout.addWidget(self._left_area)
         layout.setStretchFactor(self._left_area, 0)
 

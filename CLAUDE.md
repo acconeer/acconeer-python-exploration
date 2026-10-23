@@ -89,12 +89,13 @@ widgets) in `distance/` and `presence/`; only `distance/` splits calibration
 into `_context.py` and `_thresholds.py`. The rest are apps: a `*_plugin.py`,
 mostly over a `_processor(s).py` of their own. Bases in `algo/_base.py`; copy
 `distance/` or `presence/` for a detector. Each app plugin's `PluginSpec` and
-`PluginPresetId` live apart, in `algo/_plugin_specs/<name>.py`, importing the
-plugin module only inside `create_*_plugin`, so the plugin list loads no
-algorithm (guarded by `tests/unit/test_plugin_specs_are_light.py`). A plugin
-shipped in the module bundle has a `BundledPluginSpec` instead, which forwards
-to the spec class a bundle package lists in `PLUGIN_SPECS` of its
-`plugin_specs` module, under the same key.
+`PluginPresetId` live apart, in `algo/_plugin_specs/<name>.py` (in both `a121/`
+and `a2/`), importing the plugin module only inside `create_*_plugin` and
+`replay_dialog_*`, so the plugin list loads no algorithm (guarded by
+`tests/unit/test_plugin_specs_are_light.py`). A plugin shipped in the module
+bundle has a `BundledPluginSpec` instead, which forwards to the spec class a
+bundle package lists in `PLUGIN_SPECS` of its `plugin_specs` module, under
+the same key.
 
 **The app runs in two processes.** `MpBackend` (`app/new/backend/_backend.py`)
 runs the `Model` in a `multiprocessing.Process`, exchanging `Task`/`Message`

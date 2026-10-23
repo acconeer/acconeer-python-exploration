@@ -260,6 +260,8 @@ class PluginSelection(QWidget):
 
 
 class PluginSelectionArea(QWidget):
+    _PREFERRED_MAX_WIDTH = 350
+
     def __init__(self, app_model: AppModel, parent: Optional[QWidget] = None) -> None:
         super().__init__(parent)
 
@@ -283,14 +285,62 @@ class PluginSelectionArea(QWidget):
             )
         )
 
+        a2_selection = ScrollAreaDecorator(
+            TopAlignDecorator(
+                PluginSelection(
+                    app_model,
+                    [
+                        plugin
+                        for plugin in app_model.plugins
+                        if (
+                            plugin.generation == PluginGeneration.A2
+                            and isinstance(plugin, PluginSpecBase)
+                        )
+                    ],
+                    self,
+                )
+            )
+        )
+        a2_selection.setVisible(False)
+
         app_model.sig_notify.connect(
             lambda am: a121_selection.setVisible(am.plugin_generation == PluginGeneration.A121)
         )
+        app_model.sig_notify.connect(
+            lambda am: a2_selection.setVisible(am.plugin_generation == PluginGeneration.A2)
+        )
+
+        self._selections = [a121_selection, a2_selection]
 
         layout.addWidget(a121_selection)
+        layout.addWidget(a2_selection)
         layout.addWidget(HorizontalSeparator())
         layout.addWidget(PluginPresetPlaceholder(app_model, self))
         self.setLayout(layout)
+
+    def minimumSizeHint(self) -> QtCore.QSize:
+        """Fits the widest row of either generation, docs button and scroll bar included.
+
+        The selections never scroll horizontally, so anything narrower crops the rows.
+        Both generations count, so that switching between them doesn't resize the area.
+        """
+        hint = super().minimumSizeHint()
+        width = hint.width()
+        for selection in self._selections:
+            content = selection.widget()
+            assert content is not None
+            width = max(
+                width,
+                content.minimumSizeHint().width()
+                + selection.verticalScrollBar().sizeHint().width(),
+            )
+        return QtCore.QSize(width, hint.height())
+
+    def showEvent(self, event: QtGui.QShowEvent) -> None:
+        # Showing polished the rows, so the hint now includes their style sheet.
+        # With a large font the widest row is wider than the preferred maximum.
+        self.setMaximumWidth(max(self._PREFERRED_MAX_WIDTH, self.minimumSizeHint().width()))
+        super().showEvent(event)
 
 
 class PlotPlaceholder(PlotPluginBase):

@@ -13,9 +13,14 @@ import requests
 
 from PySide6.QtWidgets import QApplication
 
-from acconeer.exptool import a121
+from acconeer.exptool import a2, a121
 from acconeer.exptool._artifact_repository import DevSiteRepository, _dev_site_repository
-from acconeer.exptool.a121.algo._plugin_specs.sparse_iq import SPARSE_IQ_PLUGIN
+from acconeer.exptool.a2.algo._plugin_specs.sparse_iq import (
+    SPARSE_IQ_PLUGIN as A2_SPARSE_IQ_PLUGIN,
+)
+from acconeer.exptool.a121.algo._plugin_specs.sparse_iq import (
+    SPARSE_IQ_PLUGIN as A121_SPARSE_IQ_PLUGIN,
+)
 from acconeer.exptool.app.new._enums import PluginGeneration
 from acconeer.exptool.app.new.app_model import PluginSpec
 from acconeer.exptool.app.new.backend import Backend, ClosedTask, Message, Task
@@ -94,6 +99,13 @@ class Tasks:
                 get_connection_warning=ALWAYS_RETURNS_NONE,
             ),
         ),
+        PluginGeneration.A2: (
+            "connect_client",
+            dict(
+                client_factory=functools.partial(a2.Client.open, mock=True),
+                get_connection_warning=ALWAYS_RETURNS_NONE,
+            ),
+        ),
     }
     BAD_CONNECT_CLIENT_TASK = {
         PluginGeneration.A121: (
@@ -103,12 +115,25 @@ class Tasks:
                 get_connection_warning=ALWAYS_RETURNS_NONE,
             ),
         ),
+        PluginGeneration.A2: (
+            "connect_client",
+            dict(
+                client_factory=functools.partial(a2.Client.open, ip_address="some_ip"),
+                get_connection_warning=ALWAYS_RETURNS_NONE,
+            ),
+        ),
     }
     DISCONNECT_CLIENT_TASK: Task = ("disconnect_client", {})
-    LOAD_PLUGIN_TASK: Task = (
-        "load_plugin",
-        dict(plugin_factory=SPARSE_IQ_PLUGIN.create_backend_plugin, key="key"),
-    )
+    LOAD_PLUGIN_TASK: dict[PluginGeneration, Task] = {
+        PluginGeneration.A121: (
+            "load_plugin",
+            dict(plugin_factory=A121_SPARSE_IQ_PLUGIN.create_backend_plugin, key="key"),
+        ),
+        PluginGeneration.A2: (
+            "load_plugin",
+            dict(plugin_factory=A2_SPARSE_IQ_PLUGIN.create_backend_plugin, key="key"),
+        ),
+    }
     UNLOAD_PLUGIN_TASK: Task = ("unload_plugin", {})
     START_SESSION_TASK: Task = ("start_session", dict(with_recorder=True))
     STOP_SESSION_TASK: Task = ("stop_session", {})
