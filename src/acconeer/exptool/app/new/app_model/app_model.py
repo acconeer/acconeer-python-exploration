@@ -37,7 +37,7 @@ from PySide6.QtCore import QDeadlineTimer, QEventLoop, QObject, QThread, QTimer,
 from PySide6.QtWidgets import QMessageBox, QWidget
 
 from acconeer.exptool import _core as core
-from acconeer.exptool import a121
+from acconeer.exptool import a2, a121
 from acconeer.exptool._artifact_repository import (
     ACCEPTED_DIGESTS,
     UnexpectedModuleBundleError,
@@ -267,6 +267,7 @@ class AppModel(QObject):
         force_autoconnect: bool = False,
         socket_autoconnect: Optional[str] = None,
         simulated_autocconnect: bool = False,
+        plugin_generation: Optional[PluginGeneration] = None,
         *,
         module_bundle: Path,
         skip_integrity_check: bool = False,
@@ -288,6 +289,7 @@ class AppModel(QObject):
         self._force_autoconnect = force_autoconnect
 
         self._a121_server_info: Optional[a121.ServerInfo] = None
+        self._a2_server_info: Optional[a2.ServerInfo] = None
 
         try:
             self._persistent_state = _PersistentState.from_config_file()
@@ -313,6 +315,12 @@ class AppModel(QObject):
         self.available_usb_devices = []
 
         self.saveable_file = None
+
+        # The autoconnect below builds its client for 'self.plugin_generation'. Apply the
+        # requested generation first so a non-default generation (e.g. A2) does not get a
+        # client for the default generation (A121).
+        if plugin_generation is not None:
+            self._persistent_state.plugin_generation = plugin_generation
 
         if socket_autoconnect is not None:
             self.set_connection_interface(ConnectionInterface.SOCKET)
@@ -518,7 +526,11 @@ class AppModel(QObject):
 
         if message.name == "server_info":
             server_info = message.data
-            if isinstance(server_info, a121.ServerInfo):
+            if isinstance(server_info, a2.ServerInfo):
+                self._a2_server_info = server_info
+                self._a121_server_info = None
+            elif isinstance(server_info, a121.ServerInfo):
+                self._a2_server_info = None
                 self._a121_server_info = server_info
             else:
                 msg = f"Unexpected server_info type: {type(server_info)}"
@@ -706,7 +718,10 @@ class AppModel(QObject):
         log.debug(f"Connecting client with {open_client_parameters}")
 
         get_connection_warning = functools.partial(
-            self._connection_warning, Version(a121.SDK_VERSION)
+            self._connection_warning,
+            Version(a121.SDK_VERSION)
+            if self.plugin_generation == PluginGeneration.A121
+            else Version(a2.SDK_VERSION),
         )
         task_putter = functools.partial(
             self.put_task,
@@ -730,6 +745,8 @@ class AppModel(QObject):
         factory: Callable[..., _AnyClient]
         if generation == PluginGeneration.A121:
             factory = a121.Client.open
+        elif generation == PluginGeneration.A2:
+            factory = a2.Client.open
         else:
             msg = f"Don't know how to construct a client for generation {generation}"
             raise NotImplementedError(msg)
@@ -749,6 +766,7 @@ class AppModel(QObject):
         Model.disconnect_client.rpc(self.put_task)
         self.connection_warning = None
         self._a121_server_info = None
+        self._a2_server_info = None
         self.broadcast()
 
     def is_connect_ready(self) -> bool:
@@ -1050,6 +1068,9 @@ class AppModel(QObject):
     def rss_version(self) -> Optional[str]:
         if self._a121_server_info is not None:
             return self._a121_server_info.rss_version
+
+        if self._a2_server_info is not None:
+            return self._a2_server_info.rss_version
 
         return None
 

@@ -289,6 +289,7 @@ def create_app_model(
         args.usb_or_serial_autoconnect,
         args.socket_autoconnect,
         args.simulated_autoconnect,
+        PluginGeneration[args.generation_str.upper()] if args.generation_str is not None else None,
         module_bundle=args.module_bundle or get_module_bundle_path(),
         skip_integrity_check=args.dangerously_skip_integrity_check,
     )
@@ -312,6 +313,9 @@ def _module_bundle_file(value: str) -> Path:
 
 def load_startup_plugin(args: argparse.Namespace, model: AppModel) -> None:
     """Loads the plugin given by '--plugin-key', running '--tasks' once it can."""
+    if args.generation_str is None:
+        return
+
     specified_generation = PluginGeneration[args.generation_str.upper()]
     model.set_plugin_generation(specified_generation)
 
@@ -488,8 +492,8 @@ class _ExptoolArgumentParser(argparse.ArgumentParser):
         startup_group.add_argument(
             "--generation",
             dest="generation_str",
-            choices=[PluginGeneration.A121.value],
-            default="a121",
+            choices=[PluginGeneration.A121.value, PluginGeneration.A2.value],
+            default=None,
             type=str,
             help="Generation that is selected on startup. Also used in conjunction with '--plugin-key' to find plugins.",
         )

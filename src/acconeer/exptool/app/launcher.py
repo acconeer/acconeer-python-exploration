@@ -121,7 +121,7 @@ class CentralWidget(QWidget):
         layout = QHBoxLayout(self)
 
         with as_file(files(et_app_resources) / "new_gui.png") as path:
-            new_app_button = ImageButton("A121", path.as_posix(), QSize(500, 300))
+            new_app_button = ImageButton("A2 & A121", path.as_posix(), QSize(500, 300))
             new_app_button.clicked.connect(self.sig_new_app_clicked)
             layout.addWidget(new_app_button)
 

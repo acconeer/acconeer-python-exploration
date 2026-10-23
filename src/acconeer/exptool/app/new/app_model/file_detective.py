@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -40,7 +40,7 @@ def investigate_file(path: Path) -> Optional[FileFindings]:
     finally:
         f.close()
 
-    if generation != PluginGeneration.A121:
+    if generation == PluginGeneration.A111:
         return None
 
     return FileFindings(

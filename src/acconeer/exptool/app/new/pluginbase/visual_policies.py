@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -19,8 +19,13 @@ def start_button_enabled(app_model: AppModel, *, extra_condition: bool = True) -
     return (
         app_model.plugin_state == PluginState.LOADED_IDLE
         and app_model.connection_state == ConnectionState.CONNECTED
-        and app_model.plugin_generation == PluginGeneration.A121
-        and bool(app_model.connected_sensors)
+        and (
+            (
+                app_model.plugin_generation == PluginGeneration.A121
+                and bool(app_model.connected_sensors)
+            )
+            or (app_model.plugin_generation == PluginGeneration.A2)
+        )
         and app_model.backend_plugin_state is not None
         and getattr(app_model.backend_plugin_state, "ready", True)
         and extra_condition

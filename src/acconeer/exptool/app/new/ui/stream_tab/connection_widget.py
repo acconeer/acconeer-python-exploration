@@ -294,7 +294,7 @@ class GenerationSelection(QComboBox):
         super().__init__(parent)
 
         self.addItem("A121", PluginGeneration.A121)
-        self.setEnabled(False)
+        self.addItem("A2", PluginGeneration.A2)
 
         self.currentIndexChanged.connect(
             lambda _: app_model.set_plugin_generation(self.currentData())
