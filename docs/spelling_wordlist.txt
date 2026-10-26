@@ -48,6 +48,7 @@ cfg
 changelog
 chebval
 chebval2d
+Chebyshev
 cli
 coeffs
 config

@@ -112,3 +112,4 @@ The four heatmap processors are exposed in Exploration Tool with three plot tabs
    Conventional <conventional>
    Capon <capon>
    Robust Capon <robust_capon>
+   Channel corrections <channel_corrections>
