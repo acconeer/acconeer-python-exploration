@@ -20,7 +20,7 @@ IF "%update_timestamp%"=="" (
 
 @echo on
 
-uvx --python=3.12 --exclude-newer="%update_timestamp%" acconeer-exptool[app] --portable
+uv run --python=3.12 --exclude-newer="%update_timestamp%" --with "acconeer-exptool[app]" -m acconeer.exptool.app --portable
 
 @echo off
 
