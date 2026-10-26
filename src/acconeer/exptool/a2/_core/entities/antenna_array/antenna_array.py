@@ -285,6 +285,8 @@ class _AntennaArrayData:
 
 
 class AntennaArray(_AntennaArrayData, Enum):  # type: ignore[misc]
+    """Antenna arrays of the A2 sensor packages, with antenna positions and channel corrections"""
+
     def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
         super().__init__(*args, **kwargs)
 
