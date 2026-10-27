@@ -143,7 +143,7 @@ arises instead of guarding callers against it.
 - `.claude/skills/code-review-local/`: repo review skill with
   signal-processing dimensions.
 - `Jenkinsfile`: three build scopes (sanity / hourly / nightly) differing in
-  Python and RSS versions.
+  Python and RSS versions; only nightly runs the developer site tests.
 - `docker/Dockerfile`: Jenkins builds `ci` via `TARGET_STAGE`. `dev`, the
   default, takes `UID`/`GID` build args for a devcontainer.
 - Published docs: <https://docs.acconeer.com>, built from `docs/`.

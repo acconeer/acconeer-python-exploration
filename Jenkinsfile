@@ -341,6 +341,7 @@ try {
                                                           usernameVariable: 'DEV_USERNAME')])
                         {
                             String versionSelection = '-py=' + pythonVersions.join(',')
+                            String devsiteSelection = buildScope == BuildScope.NIGHTLY ? '--test-devsite' : ''
 
                             def a121_es_binaries = findFiles(glob: (
                                 'stash/a121/*/out/customer/a121/internal_sanitizer_x86_64/out/' +
@@ -385,9 +386,8 @@ try {
                                 --inter-sweep-idle-state-current-limits-path \
                                     ${a121_inter_sweep_idle_state_current_limits_matches[0]} \
                                 --memory-usage-path ${a121_memory_usage_yaml_matches[0]} \
-                                --test-devsite
-                            """ // ^ Here connection tests against the devsite is run in sanity scope.
-                            //       We might want to reduce the frequency in for tests in the future?
+                                ${devsiteSelection}
+                            """
 
                             hatchWrap "run test:coverage html --directory=htmlcov/"
                             archiveArtifacts artifacts: 'htmlcov/', allowEmptyArchive: false
