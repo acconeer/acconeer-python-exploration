@@ -408,7 +408,6 @@ class WallMountSessionAbstractionConfig(AttrsMappingTransformsMixin):
         validation_results.extend(
             self._rate_feasibility_checks(session_config, sensor_installation, detection_volume)
         )
-        validation_results.extend(self._rlg_extrapolation_warning(detection_volume))
         return validation_results
 
     def _rate_feasibility_checks(
@@ -501,35 +500,6 @@ class WallMountSessionAbstractionConfig(AttrsMappingTransformsMixin):
                 f"snr_evaluation_height_m ({self.snr_evaluation_height_m:.2f} m) lies below "
                 f"the floor, {sensor_installation.mount_height_m:.2f} m below the sensor.",
             )
-
-    def _rlg_extrapolation_warning(
-        self, detection_volume: DetectionVolume
-    ) -> list[ValidationResult]:
-        az_lo, az_hi = detection_volume.az_angle_range
-        el_lo, el_hi = detection_volume.el_angle_range
-        meas_az_lo, meas_az_hi = rlg_correction.measured_az_range_deg()
-        meas_el_lo, meas_el_hi = rlg_correction.measured_el_range_deg()
-        if (
-            az_lo >= meas_az_lo
-            and az_hi <= meas_az_hi
-            and el_lo >= meas_el_lo
-            and el_hi <= meas_el_hi
-        ):
-            return []
-        return [
-            ValidationWarning(
-                self,
-                "signal_quality_db",
-                f"az_angle_range ({az_lo:.0f}, {az_hi:.0f}) / el_angle_range "
-                f"({el_lo:.0f}, {el_hi:.0f}) extend beyond the antenna gain pattern's "
-                f"characterized envelope (az [{meas_az_lo:.0f}, {meas_az_hi:.0f}], "
-                f"el [{meas_el_lo:.0f}, {meas_el_hi:.0f}] deg). The RLG correction is "
-                f"modeled (a smooth fitted surface), not measured, outside that range, "
-                f"so signal_quality_db may be less reliable there. Narrow "
-                f"az_angle_range/el_angle_range to stay within the characterized envelope "
-                f"if this matters.",
-            )
-        ]
 
     def validate(
         self, sensor_installation: SensorInstallation, detection_volume: DetectionVolume
