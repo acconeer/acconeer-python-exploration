@@ -14,7 +14,6 @@ from typing_extensions import Literal
 from acconeer.exptool._artifact_repository import module_bundle_packages
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.backend import BackendPlugin, Message
-from acconeer.exptool.app.new.storage import get_module_bundle_path
 from acconeer.exptool.app.new.ui import DataEditor
 
 from .plot_plugin_base import PlotPluginBase
@@ -48,8 +47,9 @@ class BundledPluginSpec(PluginSpecBase):
 
         msg = (
             f"The module bundle has no plugin {self.key!r}, so it is likely older than "
-            f"the Exploration Tool. Delete {get_module_bundle_path()} and select the "
-            "plugin again to download the latest bundle."
+            'the Exploration Tool. Click "installed" next to the plugin to delete the '
+            "bundle, restart the Exploration Tool and select the plugin again to download "
+            "the latest bundle."
         )
         raise ValueError(msg)
 

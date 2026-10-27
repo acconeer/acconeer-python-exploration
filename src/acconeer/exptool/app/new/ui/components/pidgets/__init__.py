@@ -2,7 +2,13 @@
 # All rights reserved
 
 from . import hooks
-from .pidget_groups import CollapsiblePidgetGroup, FlatPidgetGroup, PidgetGroup, WidgetHook
+from .pidget_groups import (
+    CollapsiblePidgetGroup,
+    FlatPidgetGroup,
+    HorizontalPidgetGroup,
+    PidgetGroup,
+    WidgetHook,
+)
 from .pidgets import (
     WIDGET_WIDTH,
     CheckboxPidget,

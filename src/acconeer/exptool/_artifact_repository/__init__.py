@@ -6,9 +6,11 @@ from ._interface import Artifact, ArtifactRepository, ArtifactRepositoryError, L
 from ._module_bundle import (
     ACCEPTED_DIGESTS,
     UnexpectedModuleBundleError,
+    describe_module_bundle,
     extract_module_bundle,
     import_module_bundle,
     install_module_bundle,
+    module_bundle_modified,
     module_bundle_packages,
 )
 from ._plugins import (
@@ -30,11 +32,13 @@ __all__ = [
     "LoginRequiredError",
     "UnexpectedModuleBundleError",
     "create_artifact_repository",
+    "describe_module_bundle",
     "extract_module_bundle",
     "get_plugin_manager",
     "hookimpl",
     "import_module_bundle",
     "install_module_bundle",
     "load_plugin_file",
+    "module_bundle_modified",
     "module_bundle_packages",
 ]

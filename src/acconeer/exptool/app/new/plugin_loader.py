@@ -68,6 +68,12 @@ def load_default_plugins() -> list[PluginSpec]:
     from acconeer.exptool.a2.algo._plugin_specs.conventional_heatmap import (
         CONVENTIONAL_HEATMAP_PLUGIN as CONVENTIONAL_HEATMAP,
     )
+    from acconeer.exptool.a2.algo._plugin_specs.motion_detection import (
+        MOTION_DETECTION_PLUGIN,
+    )
+    from acconeer.exptool.a2.algo._plugin_specs.presence_tracking_wall_mount import (
+        PRESENCE_TRACKING_WALL_MOUNT_PLUGIN,
+    )
     from acconeer.exptool.a2.algo._plugin_specs.robust_capon_heatmap import (
         ROBUST_CAPON_HEATMAP_PLUGIN as ROBUST_CAPON_HEATMAP,
     )
@@ -119,6 +125,8 @@ def load_default_plugins() -> list[PluginSpec]:
         CAPON_HEATMAP,
         ROBUST_CAPON_HEATMAP,
         CONVENTIONAL_HEATMAP,
+        MOTION_DETECTION_PLUGIN,
+        PRESENCE_TRACKING_WALL_MOUNT_PLUGIN,
     ]
 
 

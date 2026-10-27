@@ -250,6 +250,8 @@ class AppModel(QObject):
     module_bundle: Path
     """The zip this launch installs, whether given by '--module-bundle' or downloaded"""
     module_bundle_available: bool
+    module_bundle_restart_needed: bool
+    """The packages of a deleted bundle stay imported, so another one can't be installed"""
 
     backend_plugin_state: Any
 
@@ -303,6 +305,7 @@ class AppModel(QObject):
         self.module_bundle = module_bundle
         self._skip_integrity_check = skip_integrity_check
         self.module_bundle_available = False
+        self.module_bundle_restart_needed = False
 
         self.backend_plugin_state = None
 
@@ -945,21 +948,54 @@ class AppModel(QObject):
                 accepted_digests=None if self._skip_integrity_check else ACCEPTED_DIGESTS,
             )
         except (ValueError, zipfile.BadZipFile) as e:
-            msg = f"Could not install the module bundle: {e}"
-            if isinstance(e, UnexpectedModuleBundleError) and self.module_bundle_is_developers:
-                msg += ". Pass --dangerously-skip-integrity-check to use a bundle of your own"
             self.module_bundle_available = False
-            self.emit_error(HandledException(msg))
+            self.emit_error(HandledException(self._module_bundle_install_error(e)))
         else:
             Model.import_module_bundle.rpc(self.put_task, extract_dir=extract_dir)
             self.module_bundle_available = True
 
         self.broadcast()
 
+    def _module_bundle_install_error(self, e: Exception) -> str:
+        if not isinstance(e, UnexpectedModuleBundleError):
+            msg = f"Could not install the module bundle: {e}."
+            if not self.module_bundle_is_developers:
+                msg += '\n\nTo delete the bundle, click "delete" next to a plugin that needs it.'
+            return msg
+
+        if self.module_bundle_is_developers:
+            remedy = "Pass --dangerously-skip-integrity-check to use a bundle of your own."
+        else:
+            remedy = (
+                'Upgrade ET, or click "delete" next to a plugin that needs the bundle '
+                "and download it again."
+            )
+        return (
+            "Could not install the module bundle, "
+            "since this ET release expects a different one.\n\n"
+            f"{remedy}\n\n"
+            f"Bundle: {e.zip_path}\n"
+            f"SHA-256:\n{e.digest}"
+        )
+
     @property
     def module_bundle_is_developers(self) -> bool:
         """Given by '--module-bundle' rather than downloaded"""
         return self.module_bundle != get_module_bundle_path()
+
+    def delete_module_bundle(self) -> None:
+        """Deletes the downloaded bundle, whether it installed or not."""
+        assert not self.module_bundle_is_developers, "A developer's bundle is never deleted"
+        if self.plugin is not None and self.plugin.requires_module_bundle_artifact:
+            self.load_plugin(None)
+
+        self.module_bundle.unlink(missing_ok=True)
+        shutil.rmtree(get_module_bundle_extract_dir(), ignore_errors=True)
+        if self.module_bundle_available:
+            self.module_bundle_available = False
+            self.module_bundle_restart_needed = True
+
+        self.broadcast()
 
     def set_plugin_preset(self, preset_id: Enum) -> None:
         BackendPlugin.set_preset.rpc(self.put_task, preset_id=preset_id.value)

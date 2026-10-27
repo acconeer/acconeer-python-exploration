@@ -7,6 +7,8 @@ import typing as t
 
 import pytest
 
+from PySide6.QtWidgets import QWidget
+
 from acconeer.exptool.app.new.ui.components import pidgets
 
 
@@ -86,3 +88,43 @@ class TestPidgets:
 
         # the group also needs to be hashable (designed to be used as keys in a dict)
         hash(group)
+
+
+@pytest.mark.usefixtures("qapplication")
+class TestOptionalFloatRangeSliderPidget:
+    @pytest.fixture
+    def pidget(self) -> t.Iterator[pidgets.OptionalFloatRangeSliderPidget]:
+        parent = QWidget()
+        factory = pidgets.OptionalFloatRangeSliderPidgetFactory(
+            name_label_text="Bounds:",
+            name_label_tooltip="Bounds.",
+            limits=(-10.0, 10.0),
+            init_set_value=(-2.0, 0.5),
+            decimals=2,
+        )
+        yield factory.create(parent)
+
+    def test_checking_starts_from_the_unset_value(
+        self, pidget: pidgets.OptionalFloatRangeSliderPidget
+    ) -> None:
+        pidget.set_data(None)
+        updates: list[t.Any] = []
+        pidget.sig_update.connect(updates.append)
+
+        pidget.set_unset_value((-1.0, 1.5))
+
+        assert updates == []
+        assert pidget.get_data() is None
+
+        pidget._none_checkbox.setChecked(True)
+
+        assert updates == [(-1.0, 1.5)]
+
+    def test_unset_value_is_ignored_while_set(
+        self, pidget: pidgets.OptionalFloatRangeSliderPidget
+    ) -> None:
+        pidget.set_data((-1.0, 1.0))
+
+        pidget.set_unset_value((-2.0, 0.5))
+
+        assert pidget.get_data() == (-1.0, 1.0)

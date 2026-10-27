@@ -96,6 +96,7 @@ def main():
     INIT_SDK_VERSION_PATTERN = rf'SDK_VERSION\s*=\s*"{SEMVER_PATTERN}"'
     A111_SEMVER_PATTERN = r"[aA]111-" + SEMVER_PATTERN
     A121_SEMVER_PATTERN = r"[aA]121-" + SEMVER_PATTERN
+    A2_SEMVER_PATTERN = r"[aA]2-" + SEMVER_PATTERN
 
     a111_init_file = EXPTOOL_ROOT / "src" / "acconeer" / "exptool" / "a111" / "__init__.py"
     a111_sdk_version = get_single_match_in_file(INIT_SDK_VERSION_PATTERN, a111_init_file)
@@ -103,8 +104,12 @@ def main():
     a121_init_file = EXPTOOL_ROOT / "src" / "acconeer" / "exptool" / "a121" / "__init__.py"
     a121_sdk_version = get_single_match_in_file(INIT_SDK_VERSION_PATTERN, a121_init_file)
 
+    a2_init_file = EXPTOOL_ROOT / "src" / "acconeer" / "exptool" / "a2" / "__init__.py"
+    a2_sdk_version = get_single_match_in_file(INIT_SDK_VERSION_PATTERN, a2_init_file)
+
     check_docs_against_sdk_version(a111_sdk_version, pattern_for_docs=A111_SEMVER_PATTERN)
     check_docs_against_sdk_version(a121_sdk_version, pattern_for_docs=A121_SEMVER_PATTERN)
+    check_docs_against_sdk_version(a2_sdk_version, pattern_for_docs=A2_SEMVER_PATTERN)
 
 
 if __name__ == "__main__":

@@ -7,7 +7,7 @@ import logging
 from enum import Enum
 from functools import partial
 from importlib.resources import as_file, files
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 import qtawesome as qta
 
@@ -21,19 +21,31 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
     QLabel,
+    QMessageBox,
     QPushButton,
     QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
 
+from acconeer.exptool._artifact_repository import describe_module_bundle, module_bundle_modified
 from acconeer.exptool.app import resources
 from acconeer.exptool.app.new._enums import PluginFamily, PluginGeneration, PluginState
+from acconeer.exptool.app.new._exceptions import HandledException
 from acconeer.exptool.app.new.app_model import AppModel, PluginPresetSpec, PluginSpec
 from acconeer.exptool.app.new.pluginbase import PlotPluginBase, PluginSpecBase
+from acconeer.exptool.app.new.storage import get_module_bundle_path
 from acconeer.exptool.app.new.ui.components.devsite import download_module_bundle
 from acconeer.exptool.app.new.ui.components.group_box import GroupBox
-from acconeer.exptool.app.new.ui.icons import ARROW_LEFT_BOLD, DOWNLOAD, EXTERNAL_LINK, TEXT_GREY
+from acconeer.exptool.app.new.ui.icons import (
+    ARROW_LEFT_BOLD,
+    CHECKMARK,
+    COG,
+    DOWNLOAD,
+    EXTERNAL_LINK,
+    REMOVE,
+    TEXT_GREY,
+)
 from acconeer.exptool.app.new.ui.utils import (
     HorizontalSeparator,
     LayoutWrapper,
@@ -140,6 +152,86 @@ class PluginPresetPlaceholder(QWidget):
         self.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
 
 
+def _module_bundle_downloaded() -> str | None:
+    path = get_module_bundle_path()
+    return module_bundle_modified(path) if path.is_file() else None
+
+
+def _confirm_module_bundle_deletion(parent: QWidget, *, installed: bool) -> bool:
+    text = "Delete the downloaded module bundle?"
+    if installed:
+        text += (
+            "\n\nPlugins that need it are unloaded. "
+            "Restart ET before you download the module bundle again."
+        )
+    answer = QMessageBox.question(parent, "Delete Module Bundle", text)
+    return answer == QMessageBox.StandardButton.Yes
+
+
+class ModuleBundleBadge(QPushButton):
+    """Shows the state of the module bundle next to a plugin that needs it"""
+
+    def __init__(self, app_model: AppModel, parent: QWidget) -> None:
+        super().__init__(parent)
+
+        self.app_model = app_model
+
+        self.setObjectName("module_bundle_badge")
+        self.setStyleSheet(f"QPushButton {{color: {TEXT_GREY}}}")
+        self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.clicked.connect(self._on_click)
+        # Hashing on every update would be slow, and the zip may be rebuilt
+        # after the install, which this should still describe
+        self._developer_bundle_description: str | None = None
+
+    def update_state(self, *, downloaded: str | None) -> None:
+        """``downloaded`` is when the stored bundle was downloaded, None if there is none"""
+        installed = self.app_model.module_bundle_available
+        if self.app_model.module_bundle_is_developers:
+            if self._developer_bundle_description is None:
+                self._developer_bundle_description = describe_module_bundle(
+                    self.app_model.module_bundle
+                )
+            outcome = "was installed" if installed else "failed to install"
+            self._show(
+                COG,
+                "developer",
+                f"The module bundle {self._developer_bundle_description} {outcome}.",
+            )
+            self.setEnabled(False)
+        elif installed:
+            self._show(
+                CHECKMARK,
+                "installed",
+                f"Module bundle downloaded {downloaded}. Click to delete it.",
+            )
+            self.setEnabled(True)
+        elif downloaded is not None:
+            self._show(
+                REMOVE,
+                "delete",
+                f"The module bundle downloaded {downloaded} didn't install. Click to delete it.",
+            )
+            self.setEnabled(True)
+        else:
+            self._show(
+                DOWNLOAD,
+                "download",
+                "This plugin needs a one-time download before it can be loaded.",
+            )
+            self.setEnabled(False)
+
+    def _show(self, icon: Callable[..., QtGui.QIcon], text: str, tooltip: str) -> None:
+        self.setIcon(QtGui.QIcon(icon(color=TEXT_GREY)))
+        self.setText(text)
+        self.setToolTip(tooltip)
+
+    def _on_click(self) -> None:
+        installed = self.app_model.module_bundle_available
+        if _confirm_module_bundle_deletion(self, installed=installed):
+            self.app_model.delete_module_bundle()
+
+
 class PluginSelection(QWidget):
     PLUGIN_FAMILY_ORDER = [
         PluginFamily.EXTERNAL_PLUGIN,
@@ -175,7 +267,7 @@ class PluginSelection(QWidget):
         self.button_group = PluginSelectionButtonGroup(self)
         self.button_group.buttonClicked.connect(self._on_load_click)
 
-        self._download_badges: list[QPushButton] = []
+        self._module_bundle_badges: list[ModuleBundleBadge] = []
 
         for plugin in plugins:
             assert isinstance(plugin, PluginSpecBase)
@@ -209,16 +301,10 @@ class PluginSelection(QWidget):
                 button_layout.addWidget(info_button)
 
             if plugin.requires_module_bundle_artifact:
-                download_badge = QPushButton(QtGui.QIcon(DOWNLOAD(color=TEXT_GREY)), "download")
-                download_badge.setStyleSheet(f"QPushButton {{color: {TEXT_GREY}}}")
-                download_badge.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-                download_badge.setToolTip(
-                    "This plugin needs a one-time download before it can be loaded."
-                )
-                download_badge.setEnabled(False)
-                download_badge.setVisible(not app_model.module_bundle_available)
-                button_layout.addWidget(download_badge)
-                self._download_badges.append(download_badge)
+                badge = ModuleBundleBadge(app_model, group_box)
+                badge.update_state(downloaded=_module_bundle_downloaded())
+                button_layout.addWidget(badge)
+                self._module_bundle_badges.append(badge)
         self.setLayout(layout)
 
     def layout(self) -> QVBoxLayout:
@@ -229,6 +315,11 @@ class PluginSelection(QWidget):
 
         plugin = self.button_group.checkedButton().plugin
         if plugin.requires_module_bundle_artifact and not self.app_model.module_bundle_available:
+            if self.app_model.module_bundle_restart_needed:
+                msg = "Restart ET before you download the module bundle again."
+                self.app_model.emit_error(HandledException(msg))
+                self._on_app_model_update(self.app_model)
+                return
             if download_module_bundle(self) is None:
                 self._on_app_model_update(self.app_model)
                 return
@@ -255,8 +346,10 @@ class PluginSelection(QWidget):
             else:
                 button_to_check.setChecked(True)
 
-        for download_badge in self._download_badges:
-            download_badge.setVisible(not app_model.module_bundle_available)
+        if self._module_bundle_badges:
+            downloaded = _module_bundle_downloaded()
+            for badge in self._module_bundle_badges:
+                badge.update_state(downloaded=downloaded)
         self.setEnabled(app_model.plugin_state.is_steady)
 
 

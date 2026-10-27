@@ -10,17 +10,25 @@ import shutil
 import sys
 import zipfile
 from collections.abc import Collection
+from datetime import datetime
 from pathlib import Path, PurePosixPath
 
 
 # SHA-256 of the module bundle zips that this release accepts
-ACCEPTED_DIGESTS: frozenset[str] = frozenset()
+ACCEPTED_DIGESTS: frozenset[str] = frozenset(
+    {"6e3e10b05d92c782b31bd04345b13096c3a437eaee929042a5bf294a41c9bd66"}
+)
 
 _PACKAGES: list[str] = []
 
 
 class UnexpectedModuleBundleError(ValueError):
     """The module bundle's SHA-256 is not one this release accepts"""
+
+    def __init__(self, zip_path: Path, digest: str) -> None:
+        super().__init__(f"This ET release expects a different module bundle than {zip_path}")
+        self.zip_path = zip_path
+        self.digest = digest
 
 
 def install_module_bundle(
@@ -65,14 +73,25 @@ def module_bundle_packages() -> list[str]:
     return list(_PACKAGES)
 
 
+def module_bundle_digest(zip_path: Path) -> str:
+    return hashlib.sha256(zip_path.read_bytes()).hexdigest()
+
+
+def module_bundle_modified(zip_path: Path) -> str:
+    """When ``zip_path`` was last written, as local time"""
+    return datetime.fromtimestamp(zip_path.stat().st_mtime).strftime("%Y-%m-%d %H:%M:%S")
+
+
+def describe_module_bundle(zip_path: Path) -> str:
+    """Tells builds of the module bundle apart, which no metadata in the zip does"""
+    digest = module_bundle_digest(zip_path)
+    return f"{zip_path} (modified {module_bundle_modified(zip_path)}, SHA-256 {digest[:12]})"
+
+
 def _raise_if_unexpected(zip_path: Path, accepted_digests: Collection[str]) -> None:
-    digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
+    digest = module_bundle_digest(zip_path)
     if digest not in accepted_digests:
-        msg = (
-            f"This ET release expects a different module bundle than {zip_path} "
-            f"(SHA-256 {digest}). Upgrade ET, or delete the bundle and download it again"
-        )
-        raise UnexpectedModuleBundleError(msg)
+        raise UnexpectedModuleBundleError(zip_path, digest)
 
 
 def _raise_if_shadowed(name: str, extract_dir: Path) -> None:

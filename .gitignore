@@ -30,6 +30,7 @@ docs/_build
 # Data
 *.h5
 !tests/processing/**/*.h5
+!docs/_static/processing/**/*.h5
 *.npy
 *.npz
 *.pickle

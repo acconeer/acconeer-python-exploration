@@ -17,7 +17,7 @@ from acconeer.exptool import a2, a121, opser
 from acconeer.exptool.a121._core_ext import ReplaySessionsExhaustedError, _StopReplay
 
 from .a2 import data_files as data_files_a2
-from .a2 import heatmap_test
+from .a2 import heatmap_test, motion_detection_test
 from .a121 import (
     breathing_test,
     cargo_test,
@@ -428,6 +428,73 @@ def test_heatmap_processor(
         assert len(expected_results) == len(heatmaps)
         for expected, actual in zip(expected_results, heatmaps):
             np.testing.assert_allclose(expected, actual, atol=1e-7)
+
+
+@pytest.mark.parametrize(
+    ("resource_name", "processor_factory"),
+    [
+        (
+            "motion_detection_processor.h5",
+            motion_detection_test.motion_detection_default,
+        ),
+    ],
+)
+def test_motion_detection_processor(
+    resource_name: str,
+    processor_factory: t.Callable[
+        [a2.H5Record], "a2.algo.motion_detection.MotionDetectionProcessor"
+    ],
+    should_update_outputs: bool,
+) -> None:
+    with (
+        as_file(files(data_files_a2.recorded_data) / resource_name) as input_path,
+        a2.open_record(input_path) as record,
+    ):
+        processor = processor_factory(record)
+
+        # Skip the first few frames: while the Capon covariance matrix warms up
+        # it is near-singular, so its matrix inversion amplifies float-rounding
+        # differences enough to diverge across numpy/BLAS/CPU environments.
+        # Steady-state frames are the only reproducible target.
+        warmup = 4
+
+        HeatmapType: te.TypeAlias = npt.NDArray[np.float64]
+        ThresholdMapType: te.TypeAlias = npt.NDArray[np.float64]
+        DetectionsType: te.TypeAlias = t.List[t.Tuple[float, float, float]]
+        MotionDetectionResultsType: te.TypeAlias = t.List[
+            t.Tuple[HeatmapType, ThresholdMapType, DetectionsType]
+        ]
+
+        actual: MotionDetectionResultsType = []
+        for result in record.results:
+            md_result = processor.process(result)
+            detections: DetectionsType = [
+                (
+                    float(p.spherical_position[1]),
+                    float(p.spherical_position[0]),
+                    float(p.amplitude),
+                )
+                for p in md_result.peaks
+            ]
+            actual.append((md_result.heatmap, md_result.threshold_map, detections))
+
+        output_path = get_output_path(input_path, "motion_detection_processor")
+        if should_update_outputs:
+            with contextlib.suppress(FileNotFoundError):
+                output_path.unlink()
+            with h5py.File(output_path, "w") as expected_out:
+                opser.serialize(actual, expected_out, override_type=MotionDetectionResultsType)
+        with h5py.File(output_path, "r") as expected_out:
+            expected = opser.deserialize(expected_out, MotionDetectionResultsType)
+
+        assert len(expected) == len(actual)
+
+        for (e_h, _, _), (a_h, _, _) in zip(expected[warmup:], actual[warmup:]):
+            np.testing.assert_allclose(e_h, a_h, atol=1e-7)
+        for (_, e_t, _), (_, a_t, _) in zip(expected[warmup:], actual[warmup:]):
+            np.testing.assert_allclose(e_t, a_t, atol=1e-7)
+        for (_, _, e_d), (_, _, a_d) in zip(expected[warmup:], actual[warmup:]):
+            np.testing.assert_allclose(np.array(e_d), np.array(a_d), atol=1e-7)
 
 
 def test_ap212_angle_prevalency() -> None:

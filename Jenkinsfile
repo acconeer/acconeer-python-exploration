@@ -14,6 +14,13 @@ def pythonVersionsForBuildScope = [
 ]
 
 @Field
+def integrationTestA2RssVersionsForBuildScope = [
+    (BuildScope.SANITY)  : [branch: 'master'],
+    (BuildScope.HOURLY)  : [branch: 'master'],
+    (BuildScope.NIGHTLY) : [branch: 'master'],
+]
+
+@Field
 def integrationTestA121RssVersionsForBuildScope = [
     (BuildScope.SANITY)  : [branch: 'master'],
     (BuildScope.HOURLY)  : [tag: 'a121-v1.13.0'],
@@ -25,13 +32,6 @@ def integrationTestA111RssVersionsForBuildScope = [
     (BuildScope.SANITY)  : [],
     (BuildScope.HOURLY)  : [branch: 'master'],
     (BuildScope.NIGHTLY) : [branch: 'master', tag: 'a111-v2.15.5'],
-]
-
-@Field
-def integrationTestA2RssVersionsForBuildScope = [
-    (BuildScope.SANITY)  : [branch: 'master'],
-    (BuildScope.HOURLY)  : [branch: 'master'],
-    (BuildScope.NIGHTLY) : [branch: 'master'],
 ]
 
 // Entries are [branch: ...], [tag: ...] or, for a build that carries no tag,
@@ -290,25 +290,6 @@ try {
                     }
                 }
 
-                stage("Fetch A2 stashes (${integrationTestA2RssVersions})") {
-                    integrationTestA2RssVersions.each { rssVersion ->
-                        def rssVersionName = rssVersion.getValue()
-                        def stashFolder = "stash/a2/${rssVersionName}"
-
-                        sh "mkdir -p ${stashFolder}"
-
-                        findBuildAndCopyArtifacts(
-                            [
-                                projectName: 'sw-main',
-                                artifactNames: ['out/internal_stash_binaries_x86_64_a2r2.tgz'],
-                                // e.g. (branch): 'master' or (tag): 'a2-vX.Y.Z'
-                                (rssVersion.getKey()): rssVersion.getValue(),
-                            ]
-                        )
-                        sh "tar -xzf out/internal_stash_binaries_x86_64_a2r2.tgz -C ${stashFolder}"
-                    }
-                }
-
                 stage("Fetch A121 model regression stashes ${modelTestA121RssVersion}") {
                     modelTestA121RssVersion.each { rssVersion ->
                         def rssVersionType = rssVersion.getKey()
@@ -341,6 +322,23 @@ try {
                     }
                 }
 
+                stage("Fetch A2 stashes (${integrationTestA2RssVersions})") {
+                    integrationTestA2RssVersions.each { rssVersion ->
+                        def rssVersionName = rssVersion.getValue()
+                        def stashFolder = "stash/a2/${rssVersionName}"
+
+                        sh "mkdir -p ${stashFolder}"
+
+                        findBuildAndCopyArtifacts(
+                            [
+                                projectName: 'sw-main',
+                                artifactNames: ["out/internal_stash_binaries_x86_64_a2r2.tgz"],
+                            ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a2-vX.Y.Z']
+                        )
+                        sh "tar -xzf out/internal_stash_binaries_x86_64_a2r2.tgz -C ${stashFolder}"
+                    }
+                }
+
                 stage("Fetch A2 model stashes (${modelTestA2RssVersion})") {
                     modelTestA2RssVersion.each { rssVersion ->
                         def rssVersionType = rssVersion.getKey()
@@ -366,6 +364,20 @@ try {
                         sh "tar -xzf out/internal_stash_python_libs_a2.tgz -C ${stashFolder}"
                         sh "tar -xzf out/internal_stash_tests_a2r2.tgz -C ${stashFolder}"
                         sh "tar -xzf out/internal_stash_walle_project_a2r2.tgz -C ${stashFolder}"
+                    }
+                }
+
+                String moduleBundleZip
+                stage('Fetch module bundle') {
+                    // The module bundle build the tests marked module_bundle run on: its
+                    // build storage folder, which ends in its commit. Its plugins' code
+                    // must match this commit's, but every build reads the same
+                    // credential, so moving it moves the pin of all of them.
+                    withCredentials([string(credentialsId: 'et_module_bundle_folder',
+                                            variable: 'MODULE_BUNDLE_FOLDER')])
+                    {
+                        moduleBundleZip = "dist/algo_${MODULE_BUNDLE_FOLDER.tokenize('/').last()}.zip"
+                        retrieveArtifacts(folder: MODULE_BUNDLE_FOLDER, stage: 'build', artifacts: [moduleBundleZip])
                     }
                 }
 
@@ -420,7 +432,6 @@ try {
 
                             echo "a121_es_binaries=${a121_es_binaries}"
                             echo "a111_es_binaries=${a111_es_binaries}"
-                            echo "a2_es_binaries=${a2_es_binaries}"
                             echo "a121_sensor_current_limits_matches=${a121_sensor_current_limits_matches}"
                             echo "a121_module_current_limits_matches=${a121_module_current_limits_matches}"
                             echo "a121_inter_sweep_idle_state_current_limits_matches=${a121_inter_sweep_idle_state_current_limits_matches}"
@@ -431,23 +442,26 @@ try {
                             echo "a2_computation_limits_matches=${a2_computation_limits_matches}"
                             echo "a2_memory_usage_yaml_matches=${a2_memory_usage_yaml_matches}"
 
-                            // The A2 reference yamls are passed as --option=value: pytest
+                            // The reference yamls are passed as --option=value: pytest
                             // parses the arguments before the conftest that defines the
                             // options, so a separate value is taken for a test path and
                             // collects the RSS repo's own conftest next to the yaml.
+                            // The exploration server options take several values, which
+                            // that form cannot express; they point at out/ directories
+                            // with no conftest to pick up.
                             hatchWrap """test ${versionSelection} --parallel --cover tests/ src/ \
                                 --a121-exploration-server-paths ${a121_es_binaries.join(' ')} \
                                 --a111-exploration-server-paths ${a111_es_binaries.join(' ')} \
-                                --a2-exploration-server-paths ${a2_es_binaries.join(' ')} \
-                                --sensor-current-limits-path ${a121_sensor_current_limits_matches[0]} \
-                                --module-current-limits-path ${a121_module_current_limits_matches[0]} \
-                                --inter-sweep-idle-state-current-limits-path \
-                                    ${a121_inter_sweep_idle_state_current_limits_matches[0]} \
-                                --memory-usage-path ${a121_memory_usage_yaml_matches[0]} \
+                                --a2-exploration-server-paths ${a2_es_binaries.join(" ")} \
+                                --sensor-current-limits-path=${a121_sensor_current_limits_matches[0]} \
+                                --module-current-limits-path=${a121_module_current_limits_matches[0]} \
+                                --inter-sweep-idle-state-current-limits-path=${a121_inter_sweep_idle_state_current_limits_matches[0]} \
+                                --memory-usage-path=${a121_memory_usage_yaml_matches[0]} \
                                 --a2-sensor-current-limits-path=${a2_sensor_current_limits_matches[0]} \
                                 --a2-timing-limits-path=${a2_timing_limits_matches[0]} \
                                 --a2-computation-time-limits-path=${a2_computation_limits_matches[0]} \
                                 --a2-memory-usage-path=${a2_memory_usage_yaml_matches[0]} \
+                                --module-bundle=${moduleBundleZip} \
                                 ${devsiteSelection}
                             """
 

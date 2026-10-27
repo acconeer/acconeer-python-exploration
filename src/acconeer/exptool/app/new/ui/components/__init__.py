@@ -9,6 +9,7 @@ from .devsite import LicenseDialog, LicenseWidget, LoginDialog, LoginFormWidget
 from .goto_resource_tab_button import GotoResourceTabButton
 from .group_box import GroupBox
 from .json_save_load_buttons import PresentationType, PresenterFunc
+from .list_widget import ListWidget
 from .misc_error_view import MiscErrorView
 from .overlay import Overlay
 from .range_help_view import RangeHelpView

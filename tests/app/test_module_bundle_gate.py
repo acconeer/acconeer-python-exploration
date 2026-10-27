@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import logging
 import typing as t
 from collections.abc import Collection
@@ -119,7 +120,9 @@ def test_recording_of_plugin_needing_missing_module_bundle_is_not_loaded(
     monkeypatch.setattr(
         app_model_module,
         "investigate_file",
-        lambda _path: FileFindings(generation=PluginGeneration.A121, key="needs_module_bundle"),
+        lambda _path: FileFindings(
+            generation=PluginGeneration.A121, key="needs_module_bundle", et_version=None
+        ),
     )
     monkeypatch.setattr(app_model_module, "SelectPluginToReplayInDialog", _AcceptedReplayDialog)
     backend = _RecordingBackend()
@@ -318,6 +321,17 @@ def test_skip_option_warns(caplog: pytest.LogCaptureFixture) -> None:
     assert "integrity" in caplog.text
 
 
+def test_skip_option_logs_the_digest_of_the_unchecked_bundle(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    get_module_bundle_path().write_bytes(b"downloaded")
+
+    with caplog.at_level(logging.WARNING):
+        _install_at_startup("--dangerously-skip-integrity-check")
+
+    assert hashlib.sha256(b"downloaded").hexdigest()[:12] in caplog.text
+
+
 def test_skip_option_is_hidden_from_help() -> None:
     assert "--dangerously-skip-integrity-check" not in _ExptoolArgumentParser().format_help()
 
@@ -349,3 +363,98 @@ def test_failed_check_of_downloaded_bundle_keeps_the_skip_option_hidden(
 
     (error,) = errors
     assert "--dangerously-skip-integrity-check" not in str(error)
+
+
+def _store_and_install(app_model: AppModel) -> None:
+    get_module_bundle_path().write_bytes(b"module")
+    get_module_bundle_extract_dir().mkdir()
+    app_model.try_install_module_bundle()
+
+
+def test_deleting_the_module_bundle_removes_its_files() -> None:
+    app_model = _app_model(_RecordingBackend())
+    _store_and_install(app_model)
+
+    app_model.delete_module_bundle()
+
+    assert not get_module_bundle_path().exists()
+    assert not get_module_bundle_extract_dir().exists()
+
+
+def test_deleting_the_module_bundle_unloads_the_plugin_that_needs_it() -> None:
+    app_model = _app_model(_RecordingBackend())
+    _store_and_install(app_model)
+    app_model.load_plugin(_PluginNeedingModuleBundle())  # type: ignore[arg-type]
+
+    app_model.delete_module_bundle()
+
+    assert app_model.plugin is None
+    assert not app_model.module_bundle_available
+
+
+def test_deleting_an_installed_module_bundle_needs_a_restart_before_the_next() -> None:
+    app_model = _app_model(_RecordingBackend())
+    _store_and_install(app_model)
+
+    app_model.delete_module_bundle()
+
+    assert app_model.module_bundle_restart_needed
+
+
+def test_deleting_a_module_bundle_that_failed_to_install_needs_no_restart() -> None:
+    get_module_bundle_path().write_bytes(b"corrupt")
+    app_model = _app_model(_RecordingBackend())
+
+    app_model.delete_module_bundle()
+
+    assert not app_model.module_bundle_restart_needed
+
+
+def test_failed_install_points_to_the_delete_badge(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(app_model_module, "install_module_bundle", install_module_bundle)
+    get_module_bundle_path().write_bytes(b"corrupt")
+    app_model = _app_model(_RecordingBackend())
+    errors = _record_errors(app_model)
+
+    app_model.try_install_module_bundle()
+
+    (error,) = errors
+    assert '"delete"' in str(error)
+
+
+def _unexpected_bundle_error(monkeypatch: pytest.MonkeyPatch) -> str:
+    monkeypatch.setattr(app_model_module, "install_module_bundle", install_module_bundle)
+    get_module_bundle_path().write_bytes(b"corrupt")
+    app_model = _app_model(_RecordingBackend())
+    errors = _record_errors(app_model)
+
+    app_model.try_install_module_bundle()
+
+    (error,) = errors
+    return str(error)
+
+
+def test_unexpected_bundle_error_opens_with_what_went_wrong(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    error = _unexpected_bundle_error(monkeypatch)
+
+    assert error.split("\n\n")[0] == (
+        "Could not install the module bundle, since this ET release expects a different one."
+    )
+
+
+def test_unexpected_bundle_error_gives_the_digest_a_line_of_its_own(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    error = _unexpected_bundle_error(monkeypatch)
+
+    assert hashlib.sha256(b"corrupt").hexdigest() in error.splitlines()
+
+
+def test_unexpected_bundle_error_suggests_deleting_once(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    error = _unexpected_bundle_error(monkeypatch)
+
+    assert error.count("delete") == 1

@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import uuid
 
 import attrs
 
-from PySide6.QtWidgets import QVBoxLayout, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
 from acconeer.exptool.app.new.ui.components.collapsible_widget import CollapsibleWidget
 
@@ -47,6 +47,14 @@ class FlatPidgetGroup(PidgetGroup):
 
 
 @attrs.frozen(kw_only=True, slots=False)
+class HorizontalPidgetGroup(PidgetGroup):
+    """A pidget group that only groups widgets hierarchically, horizontally"""
+
+    def get_container(self, pidgets: t.Iterable[Pidget]) -> QWidget:
+        return _in_a_hboxed_widget(pidgets)
+
+
+@attrs.frozen(kw_only=True, slots=False)
 class CollapsiblePidgetGroup(PidgetGroup):
     """A pidget group that is collapsible"""
 
@@ -61,6 +69,19 @@ class CollapsiblePidgetGroup(PidgetGroup):
 
 def _in_a_vboxed_widget(widgets: t.Iterable[QWidget]) -> QWidget:
     layout = QVBoxLayout()
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setSpacing(11)
+
+    for widget in widgets:
+        layout.addWidget(widget)
+
+    dummy = QWidget()
+    dummy.setLayout(layout)
+    return dummy
+
+
+def _in_a_hboxed_widget(widgets: t.Iterable[QWidget]) -> QWidget:
+    layout = QHBoxLayout()
     layout.setContentsMargins(0, 0, 0, 0)
     layout.setSpacing(11)
 

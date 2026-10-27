@@ -82,29 +82,30 @@ def python_files_in_folder(relative_path: str) -> list[str]:
 class ClientOpenAlwaysMockTrue(ast.NodeTransformer):
     """
     Always transforms the source code
-        a121.Client.open(<something>)
+        (a121|a2).Client.open(<something>)
     into
-        a121.Client.open(mock=True)
+        (a121|a2).Client.open(mock=True)
     """
 
     @staticmethod
-    def is_a121_client_open(node: ast.Call) -> bool:
+    def is_a121_or_a2_client_open(node: ast.Call) -> bool:
         return (
             isinstance(node.func, ast.Attribute)
             and isinstance(node.func.value, ast.Attribute)
             and isinstance(node.func.value.value, ast.Name)
-            and node.func.value.value.id == "a121"
+            and node.func.value.value.id in ["a121", "a2"]
             and node.func.value.attr == "Client"
             and node.func.attr == "open"
         )
 
     def visit_Call(self, node: ast.Call) -> ast.Call:
-        if self.is_a121_client_open(node):
+        if self.is_a121_or_a2_client_open(node):
             return ast.Call(
                 func=node.func,
                 args=[],
                 keywords=[ast.keyword(arg="mock", value=ast.Constant(value=True))],
             )
+
         return node
 
 
@@ -211,11 +212,26 @@ _EXAMPLES: dict[str, ExampleRun] = {
     "examples/a121/algo/vibration/example_app.py": ExampleRun(args=("--mock",)),
     "examples/a121/algo/vibration/processor.py": ExampleRun(args=("--mock",)),
     "examples/a121/algo/waste_level/processor.py": ExampleRun(args=("--mock",)),
+    "examples/a2/load_data_with_antenna_masks_and_sub_sampling.py": ExampleRun(
+        args=("--input-file", "tests/processing/a2/data_files/recorded_data/small_sparse_iq.h5")
+    ),
+    "examples/a2/multiple_modules.py": ExampleRun(modifications=AstModifications.CLIENT_OPEN),
+    "examples/a2/reuse_calibration.py": ExampleRun(modifications=AstModifications.CLIENT_OPEN),
+    "examples/a2/record_data/barebones.py": ExampleRun(
+        modifications=AstModifications.CLIENT_OPEN | AstModifications.FILENAME_VARIABLE
+    ),
+    "examples/a2/algo/heatmap/heatmap_processor.py": ExampleRun(
+        modifications=AstModifications.CLIENT_OPEN
+    ),
+    "examples/a2/algo/heatmap/heatmap_visualization.py": ExampleRun(
+        args=("--input-file", "tests/processing/a2/data_files/recorded_data/small_sparse_iq.h5")
+    ),
 }
 
 
 def test_every_example_is_run() -> None:
-    assert sorted(python_files_in_folder("examples/a121")) == sorted(_EXAMPLES)
+    examples = python_files_in_folder("examples/a121") + python_files_in_folder("examples/a2")
+    assert sorted(examples) == sorted(_EXAMPLES)
 
 
 def _example_command(example_script: str, run: ExampleRun, tmp_path: Path) -> list[str]:

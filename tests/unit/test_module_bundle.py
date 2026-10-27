@@ -11,7 +11,14 @@ from pathlib import Path
 
 import pytest
 
-from acconeer.exptool._artifact_repository import _module_bundle, install_module_bundle
+from acconeer.exptool._artifact_repository import (
+    UnexpectedModuleBundleError,
+    _module_bundle,
+    install_module_bundle,
+)
+from acconeer.exptool.a2.algo._plugin_specs.presence_tracking_wall_mount import (
+    PRESENCE_TRACKING_WALL_MOUNT_PLUGIN,
+)
 from acconeer.exptool.app.new import PluginFamily, PluginGeneration, PluginPresetBase
 from acconeer.exptool.app.new.pluginbase import BundledPluginSpec
 
@@ -44,7 +51,7 @@ def _test__install_module_bundle(zip_path: Path, extract_dir: Path) -> None:
 def test_bundle_of_an_unexpected_digest_is_refused(tmp_path: Path) -> None:
     zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_PACKAGE}/__init__.py": ""})
 
-    with pytest.raises(ValueError, match="Upgrade ET, or delete the bundle and download it again"):
+    with pytest.raises(UnexpectedModuleBundleError):
         install_module_bundle(zip_path, tmp_path / "extracted", accepted_digests={"0" * 64})
 
     assert not (tmp_path / "extracted").exists()
@@ -104,6 +111,10 @@ def test_rejects_package_shadowed_by_one_on_the_path(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="shadow"):
         _test__install_module_bundle(zip_path, tmp_path / "extracted")
+
+
+def test_presence_tracking_wall_mount_needs_the_module_bundle() -> None:
+    assert PRESENCE_TRACKING_WALL_MOUNT_PLUGIN.requires_module_bundle_artifact
 
 
 _BUNDLED_SPEC_MODULE = """

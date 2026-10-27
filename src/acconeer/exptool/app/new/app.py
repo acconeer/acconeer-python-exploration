@@ -34,6 +34,7 @@ try:
     from acconeer.exptool._artifact_repository import (
         ArtifactRepositoryError,
         create_artifact_repository,
+        describe_module_bundle,
         load_plugin_file,
     )
     from acconeer.exptool.app.desktop_integration import (
@@ -296,11 +297,16 @@ def create_app_model(
 
 
 def install_startup_module_bundle(args: argparse.Namespace, model: AppModel) -> None:
-    if args.dangerously_skip_integrity_check:
-        _LOG.warning("Skipping the integrity check of the module bundle")
-
     if model.module_bundle.is_file():
+        if args.dangerously_skip_integrity_check:
+            _warn_of_skipped_integrity_check(model.module_bundle)
         model.try_install_module_bundle()
+
+
+def _warn_of_skipped_integrity_check(zip_path: Path) -> None:
+    _LOG.warning(
+        f"Skipping the integrity check of the module bundle {describe_module_bundle(zip_path)}"
+    )
 
 
 def _module_bundle_file(value: str) -> Path:

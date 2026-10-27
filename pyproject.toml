@@ -115,6 +115,7 @@ dependencies = [
     "pyqtgraph==0.14.0",
     "types-beautifulsoup4",
     "hypothesis==6.128.2",
+    "numpy==2.5.3",
 ]
 
 [[tool.hatch.envs.mypy.matrix]]
@@ -232,12 +233,12 @@ lint-check = [
     "python internal_tools/check_sdk_mentions.py",
     "python internal_tools/check_changelog.py",
     "python internal_tools/check_copyright.py",
-    "python docs/generate_example_script_pages.py check",
+    "python docs/generate_example_script_pages.py check a121 --example-script-output-folder docs/exploration_tool/example_scripts/a121",
     "python -m ruff check .",
 ]
 lint-fix = [
     "python internal_tools/check_copyright.py --update-year",
-    "python docs/generate_example_script_pages.py fix",
+    "python docs/generate_example_script_pages.py fix a121 --example-script-output-folder docs/exploration_tool/example_scripts/a121",
     "python -m ruff check --fix .",
     "lint-check"
 ]
@@ -454,7 +455,11 @@ include = [
 ]
 
 [tool.check_sdk_mentions]
-ignore_lines = []
+ignore_lines = [
+    "Jenkinsfile:48",
+    "Jenkinsfile:49",
+    "Jenkinsfile:50",
+]
 include = [
     "README.md",
     "docs/**/*.rst",

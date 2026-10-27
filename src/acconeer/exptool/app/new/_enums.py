@@ -73,8 +73,8 @@ class PluginFamily(Enum):
     SERVICE = "Services"
     DETECTOR = "Detectors"
     PROCESSORS = "Processors"
-    REF_APP = "Reference apps"
-    EXAMPLE_APP = "Example apps"
+    REF_APP = "Reference Applications"
+    EXAMPLE_APP = "Example Applications"
     EXTERNAL_PLUGIN = "External Plugins"
 
 

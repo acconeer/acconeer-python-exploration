@@ -395,6 +395,31 @@ def cartesian_to_spherical(x: Any, y: Any, z: Any) -> tuple[Any, Any, Any]:
     )
 
 
+def spherical_to_cartesian_jacobian(x: float, y: float, z: float) -> npt.NDArray[np.float64]:
+    """Jacobian of :func:`spherical_to_cartesian` at the Cartesian point (x, y, z).
+
+    Returns the 3x3 matrix with columns ``d/d(length)``, ``d/d(az)`` and
+    ``d/d(el)`` of ``(x, y, z)``. It is built from ``(x, y, z)`` directly,
+    using ``sin(az) = x / length``, ``cos(az) = rho / length``,
+    ``sin(el) = z / rho`` and ``cos(el) = y / rho`` with ``rho = hypot(y, z)``.
+
+    :raises ValueError: If ``rho`` is zero, as elevation is undefined on the
+        x-axis.
+    """
+    rho = math.hypot(y, z)
+    if rho == 0.0:
+        msg = "spherical_to_cartesian_jacobian is undefined on the x-axis"
+        raise ValueError(msg)
+    length = math.hypot(x, rho)
+    return np.array(
+        [
+            [x / length, rho, 0.0],
+            [y / length, -x * y / rho, -z],
+            [z / length, -x * z / rho, y],
+        ]
+    )
+
+
 def _draw_outgoing_polar_line(plot, deg, length):
     """Plots a line in the 'polar grid'
 

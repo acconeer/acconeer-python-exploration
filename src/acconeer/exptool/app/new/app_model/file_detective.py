@@ -8,6 +8,7 @@ from typing import Optional
 
 import attrs
 import h5py
+from packaging.version import Version
 
 from acconeer.exptool.app.new._enums import PluginGeneration
 
@@ -16,6 +17,7 @@ from acconeer.exptool.app.new._enums import PluginGeneration
 class FileFindings:
     generation: PluginGeneration
     key: Optional[str]
+    et_version: Optional[Version]
 
 
 def investigate_file(path: Path) -> Optional[FileFindings]:
@@ -37,6 +39,11 @@ def investigate_file(path: Path) -> Optional[FileFindings]:
             key = bytes(f["algo"]["key"][()]).decode()
         except KeyError:
             key = None
+
+        try:
+            et_version = Version(bytes(f["lib_version"][()]).decode())
+        except KeyError:
+            et_version = None
     finally:
         f.close()
 
@@ -46,4 +53,5 @@ def investigate_file(path: Path) -> Optional[FileFindings]:
     return FileFindings(
         generation=generation,
         key=key,
+        et_version=et_version,
     )

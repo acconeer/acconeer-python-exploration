@@ -32,7 +32,14 @@ from .json_save_load_buttons import (
     PresenterFunc,
     create_json_save_load_buttons_from_type,
 )
-from .pidgets import FlatPidgetGroup, Pidget, PidgetGroup, PidgetHook, WidgetHook
+from .pidgets import (
+    FlatPidgetGroup,
+    OptionalFloatRangeSliderPidget,
+    Pidget,
+    PidgetGroup,
+    PidgetHook,
+    WidgetHook,
+)
 from .types import PidgetFactoryMapping, PidgetGroupFactoryMapping
 
 
@@ -223,6 +230,16 @@ class AttrsConfigEditor(DataEditor[Optional[T]]):
         if (pidget := self._pidget_mapping.get(aspect)) is None:
             return
         pidget.setEnabled(enabled)
+
+    def set_pidget_unset_value(self, aspect: str, value: Any) -> None:
+        """Have ``aspect``'s optional range slider show ``value`` while the aspect
+        is unset (see ``OptionalFloatRangeSliderPidget.set_unset_value``)."""
+        if (pidget := self._pidget_mapping.get(aspect)) is None:
+            return
+        if not isinstance(pidget, OptionalFloatRangeSliderPidget):
+            msg = f"{aspect!r} has no optional range slider to show an unset value in."
+            raise TypeError(msg)
+        pidget.set_unset_value(value)
 
 
 class JoinedPartialAttrsConfigEditors(DataEditor[Optional[T]]):

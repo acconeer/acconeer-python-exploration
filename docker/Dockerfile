@@ -36,6 +36,7 @@ RUN apt-get update -qq \
     texlive-plain-generic \
     texlive-publishers \
     wget \
+    zip \
     && rm -rf /var/lib/apt/lists/*
 
 ENV QT_QPA_PLATFORM=offscreen

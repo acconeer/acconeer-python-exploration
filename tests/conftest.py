@@ -68,7 +68,8 @@ def pytest_configure(config: pytest.Config) -> None:
             )
         except UnexpectedModuleBundleError as e:
             msg = (
-                f"{e}.\nA new bundle release needs its SHA-256 in ACCEPTED_DIGESTS of "
+                f"{e} (SHA-256 {e.digest}).\n"
+                "A new bundle release needs its SHA-256 in ACCEPTED_DIGESTS of "
                 f"{_module_bundle.__file__}. "
                 "To test a bundle of your own, pass --dangerously-skip-integrity-check"
             )

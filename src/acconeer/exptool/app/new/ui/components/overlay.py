@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2024
+# Copyright (c) Acconeer AB, 2024-2026
 # All rights reserved
 
 # Copyright (c) Acconeer AB, 2022-2023
@@ -27,8 +27,11 @@ class Overlay(QWidget):
     """
 
     @staticmethod
-    def positioner_top_right(base_rect: QRect, overlay_size: QSize) -> QRect:
-        top_left = base_rect.topRight() - QPoint(overlay_size.width() + 7, 0)
+    def positioner_top_right(
+        base_rect: QRect, overlay_size: QSize, *, margin_x: int = 7, margin_y: int = 0
+    ) -> QRect:
+        """Inset ``margin_x`` from the right edge and ``margin_y`` from the top."""
+        top_left = base_rect.topRight() + QPoint(-overlay_size.width() - margin_x, margin_y)
         return QRect(top_left, overlay_size)
 
     def __init__(
@@ -52,6 +55,10 @@ class Overlay(QWidget):
 
     def resizeEvent(self, event: QResizeEvent) -> None:
         super().resizeEvent(event)
+        self.reposition_overlays()
+
+    def reposition_overlays(self) -> None:
+        """Re-run every positioner, e.g. after an overlay's size hint changed."""
         for widget, positioner in self._overlays:
             positioned = positioner(self._base.rect(), widget.sizeHint())
             widget.setGeometry(positioned)

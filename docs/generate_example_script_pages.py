@@ -84,6 +84,7 @@ def main() -> None:
         help="ET repo root. The directory where pyproject.toml lives.",
     )
     parser.add_argument("verb", choices={"check", "fix"})
+    parser.add_argument("examples", choices={"a121", "a2"})
     parser.add_argument(
         "--example-script-output-folder",
         type=Path,
@@ -99,7 +100,12 @@ def main() -> None:
 
     docpages_root = args.et_root / args.example_script_output_folder
     handwritten_example_index = docpages_root / "index.rst"
-    example_scripts = list(args.et_root.glob("examples/**/*.py"))
+
+    if args.examples == "a121":
+        example_scripts = list(args.et_root.glob("examples/a121/**/*.py"))
+        example_scripts.append(Path("examples/app/new/plugins/my_plugin.py"))
+    elif args.examples == "a2":
+        example_scripts = list(args.et_root.glob("examples/a2/**/*.py"))
 
     needed_category_indexes = {
         docpages_root / example_script_category(script) / "index.rst" for script in example_scripts
