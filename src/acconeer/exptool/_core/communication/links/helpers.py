@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -21,12 +21,14 @@ from acconeer.exptool._core.entities import (
 from . import (
     BufferedLink,
     ExploreSerialLink,
+    LegacyUSBLink,
     LinkError,
     NullLink,
     NullLinkError,
     SocketLink,
     USBLink,
 )
+from .usb_link import legacy_usb_requested
 
 
 def link_factory(client_info: ClientInfo) -> BufferedLink:
@@ -51,7 +53,8 @@ def link_factory(client_info: ClientInfo) -> BufferedLink:
             usb_device = get_one_usb_device()
 
         if usb_device is not None:
-            return USBLink(
+            usb_link_class = LegacyUSBLink if legacy_usb_requested() else USBLink
+            return usb_link_class(
                 vid=usb_device.vid,
                 pid=usb_device.pid,
                 serial=usb_device.serial,

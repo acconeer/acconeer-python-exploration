@@ -39,6 +39,12 @@
   catch the interrupt, so scripts no longer need to print their own. Pass
   `prompt=None` to print nothing.
 - Replaying A121 H5 recordings, or iterating over their results, is much faster.
+- The USB link keeps reading from the device while the application or the
+  PC is busy. Before, a busy PC made the device wait for it, and under load
+  frames could be delayed by seconds or not measured at all. The link uses
+  the new `libusb1` dependency, with the libusb library from
+  `libusb_package` as before. Set the environment variable
+  `ET_LEGACY_USB=1` to use the previous implementation.
 
 ### Fixed
 - The Exploration Tool no longer shows a busy mouse pointer for several

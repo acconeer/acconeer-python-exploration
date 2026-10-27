@@ -87,6 +87,29 @@ Python related
 
    Then you can try installing that version (``pip install acconeer-exptool==<the ET version that created the h5-file>``) and replaying the file.
 
+#) Problems with an EVK connected over USB
+
+   The Exploration Tool reads from USB devices in the background, so that a busy PC does not make
+   the sensor wait. If you have problems connecting to or streaming from your EVK over USB, try
+   the previous USB implementation by setting the environment variable ``ET_LEGACY_USB`` to ``1``
+   before starting the Exploration Tool. Expect frames to go missing more often under load with
+   it, especially on Windows.
+
+   On Linux and macOS:
+
+   .. code-block::
+
+      ET_LEGACY_USB=1 python -m acconeer.exptool.app
+
+   On Windows (Command Prompt):
+
+   .. code-block::
+
+      set ET_LEGACY_USB=1
+      python -m acconeer.exptool.app
+
+   Please also open an issue on GitHub describing the problem.
+
 #) Exploration Tool fail to connect to the SparkFun XM125 board on macOS**
 
 The SparkFun board does not work reliably with the USB-to-UART driver included in macOS.
