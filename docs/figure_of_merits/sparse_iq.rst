@@ -1,10 +1,4 @@
-**************************
-Sparse IQ Figures of Merit
-**************************
-
-The definitions below apply to any of Acconeer's products implementing the Sparse IQ service.
-
-.. _fom-rlg:
+.. _fom-rlg-SENSOR_PLACEHOLDER_LOWER:
 
 Radar Loop Gain (RLG)
 =====================
@@ -23,7 +17,7 @@ RCS is the :term:`radar cross-section<Radar cross section>`,
 and
 :math:`d` is the distance to the target with the given RCS.
 
-.. _fom-base-rlg:
+.. _fom-base-rlg-SENSOR_PLACEHOLDER_LOWER:
 
 Base Radar Loop Gain (Base RLG)
 ===============================
@@ -47,6 +41,6 @@ To account for it, we define the *Radar Loop Gain per time (RLG/t)* as
     - 10 \log_{10}(\tau_\text{sample})
 
 where
-:math:`(\text{RLG}_{dB}\ |\ \text{HWAAS} = 1)` is the :ref:`base RLG<fom-base-rlg>`,
+:math:`(\text{RLG}_{dB}\ |\ \text{HWAAS} = 1)` is the :ref:`base RLG<fom-base-rlg-SENSOR_PLACEHOLDER_LOWER>`,
 and
 :math:`\tau_\text{sample}` is the sample duration.

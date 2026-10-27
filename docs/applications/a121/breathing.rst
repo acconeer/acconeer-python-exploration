@@ -1,7 +1,7 @@
-Breathing Reference Application
-===============================
+Breathing Application
+=====================
 
-This reference application shows how the breathing rate of a stationary person can be estimated using the A121 sensor.
+This :term:`Reference Application` shows how the breathing rate of a stationary person can be estimated using the A121 sensor.
 
 The algorithm consists of the following key concepts:
 
@@ -132,8 +132,8 @@ This section outlines a number of practical considerations when getting started 
 - When running the breathing reference application, aim the sensor towards the chest and stomach of the person for best performance.
 - Use a lens when measuring at distances greater than 1 meter.
 
-Tests
------
+Verification
+------------
 This section presents results from testing the algorithm in various scenarios.
 
 Test setup
@@ -181,8 +181,11 @@ The results from the testing are reported in the following table.
      - 18.0
 
 
-Configuration parameters
--------------------------
+Exploration Tool Python API
+---------------------------
+
+Reference Application Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. autoclass:: acconeer.exptool.a121.algo.breathing._ref_app.RefAppConfig
    :members:
 
@@ -192,7 +195,7 @@ Configuration parameters
 .. autoclass:: acconeer.exptool.a121.algo.breathing._processor.AppState
    :members:
 
-Reference application result
-----------------------------
+Reference Application Result
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. autoclass:: acconeer.exptool.a121.algo.breathing._ref_app.RefAppResult
    :members:

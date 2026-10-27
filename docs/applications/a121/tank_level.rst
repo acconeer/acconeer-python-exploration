@@ -1,7 +1,7 @@
-Tank Level Reference Application
-================================
+Tank Level Application
+======================
 
-The tank level reference application shows the liquid level in a tank with an A121 sensor mounted at the top.
+The tank level :term:`Reference Application` shows the liquid level in a tank with an A121 sensor mounted at the top.
 This reference application is built on top of the distance detector (see :doc:`/detectors/a121/distance_detector`) with some additional configurations specific to the tank level application.
 
 Measurement range
@@ -46,8 +46,8 @@ The bottom plot shows the tank size, the subsweeps, and the threshold used by th
 .. image:: /images/processing/a121_tank_level.png
     :align: center
 
-Testing
--------
+Verification
+------------
 
 Test setup
     The level estimation performance of the reference application is tested using the three different setups shown below, which correspond to small (left), medium (middle), and large (right) tanks.
@@ -146,13 +146,16 @@ Results
           - 0.100
           - 0.085
 
-Configuration parameters
--------------------------
+Exploration Tool Python API
+---------------------------
+
+Reference Application Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. autoclass:: acconeer.exptool.a121.algo.tank_level._ref_app.RefAppConfig
    :members:
 
-Results
--------
+Reference Application Result
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. autoclass:: acconeer.exptool.a121.algo.tank_level._ref_app.RefAppResult
    :members:
 

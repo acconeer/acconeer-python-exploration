@@ -110,11 +110,12 @@ Glossary
    Reference Application
       A nearly complete use case specific package-offering.
       Unlike :term:`Detectors<Detector>`, these packages are targeting more specific
-      use cases, such as *Tank Level* or *Parking*.
+      use cases, such as *Tank Level* or *Parking*. Well tested to meet the needs of
+      the use case.
 
    Example Application
-      A use case specific proof-of-concept signal processing algorithm
-      that haven't undergone significant testing, but works quite well in the scenarios tested.
+      A use case specific proof-of-concept signal processing algorithm that in most cases
+      has not undergone significant testing, but works quite well in the scenarios tested.
 
    Exploration Tool
       Acconeer's graphical sensor evaluation application.

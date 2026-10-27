@@ -1,7 +1,7 @@
-Touchless Button Reference Application
-======================================
+Touchless Button Application
+============================
 
-The purpose of the touchless button reference application is to employ the A121 sensor as a contactless button. This algorithm proves useful in scenarios where registering a button press is needed without physically touching a surface. A prime example would be in public spaces.
+The purpose of the touchless button :term:`Reference Application` is to employ the A121 sensor as a contactless button. This algorithm proves useful in scenarios where registering a button press is needed without physically touching a surface. A prime example would be in public spaces.
 
 Moreover, the algorithm is designed to automatically recalibrate itself when static objects obstruct the sensor, preventing prolonged and erroneous detections. An initial calibration of the background is performed before starting to detect button presses. As long as no presses are detected the background will be continuously updated. If a button press is detected for a long period of time (:attr:`~acconeer.exptool.a121.algo.touchless_button.ProcessorConfig.calibration_interval_s` seconds), the background will be reset since this is considered a change in the environment. If the initial calibration is done with something in front of the sensor, this will most likely cause false detects when removed, but the calibration will be reset and a new calibration will be performed. The algorithm is very dynamic to be able to adapt to changes in the environment.
 
@@ -61,8 +61,9 @@ The bottom plot displays the detection score for each distance point in each ran
 
     Example of the touchless button GUI. Detection is found in both the close and far range. The threshold for each range and the detection score for each distance is shown in the lower plot.
 
-Tests
---------
+Verification
+------------
+
 The following section presents the results from various tests on the algorithm.
 
 Presets range test
@@ -203,13 +204,16 @@ Comments regarding changes in temperature
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Changing temperature will affect the SNR of the signal. At lower temperatures the SNR is increased and at higher temperatures the SNR is decreased. Some actions will therefore trigger detection easier at lower temperatures and the sensitivity can therefore be set lower at these temperatures. It is therefore favorable to set the sensitivity according to the desired responsiveness at the highest estimated temperature for the intended integration. The sensitivities selected for the presets were chosen to minimize missed detections and false detections in the range -10°C and 50°C. The evaluation was made using 8 different sensors at three different temperatures: -10°C, 25°C and 50°C.
 
-Processor Configuration
---------------------------
+Exploration Tool Python API
+---------------------------
+
+Reference Application Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. autoclass:: acconeer.exptool.a121.algo.touchless_button.ProcessorConfig
    :members:
 
-Result
-------------------
+Reference Application Result
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. autoclass:: acconeer.exptool.a121.algo.touchless_button.ProcessorResult
    :members:
 

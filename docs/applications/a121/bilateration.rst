@@ -1,8 +1,8 @@
 Bilateration
 ============
 
-The bilateration algorithm estimates the distance and angle to objects, utilizing distance
-estimates from two sensors.
+The bilateration :term:`Example Application` algorithm estimates the distance and angle to objects,
+utilizing distance estimates from two sensors.
 It can be used in various scenarios, where the most obvious use cases are related to obstacle
 detection and object tracking.
 
@@ -164,5 +164,16 @@ sensor.
 .. image:: /images/processing/a121_bilateration_capture.png
     :align: center
 
+Verification
+------------
+
+This application has not been verified with a systematic testing procedure, but works quite well
+for the basic use case (see :term:`Example Application`).
+
+Exploration Tool Python API
+---------------------------
+
+Example Application Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. autoclass:: acconeer.exptool.a121.algo.bilateration.ProcessorConfig
    :members:

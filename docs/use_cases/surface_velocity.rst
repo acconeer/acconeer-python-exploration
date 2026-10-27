@@ -15,6 +15,6 @@ These use cases highlight the diverse applications of surface velocity measureme
 Acconeer Offering
 =================
 
-We have created an :term:`Example Application` to showcase how you can utilize Acconeer's :term:`PCR` technology to accurately measure the surface velocity of a moving fluid:
+We have created an application to showcase how you can utilize Acconeer's :term:`PCR` technology to accurately measure the surface velocity of a moving fluid:
 
-- :doc:`Surface Velocity Example Application</applications/a121/surface_velocity>`: This Example Application uses the A121 sensor to estimate the surface velocity and direction of a moving fluid.
+- :doc:`Surface Velocity Application</applications/a121/surface_velocity>`: This :term:`Example Application` uses the A121 sensor to estimate the surface velocity and direction of a moving fluid.

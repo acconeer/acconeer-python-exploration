@@ -6,7 +6,7 @@ Obstacle Detection
 Introduction
 ------------
 
-The purpose of the Obstacle detection example application is to detect objects and estimate their distance and angle from a moving platform, such as a robot.
+The purpose of the Obstacle detection :term:`Example Application` is to detect objects and estimate their distance and angle from a moving platform, such as a robot.
 The algorithm is built on top of the Sparse IQ service and has various configuration parameters available to tailor the application to specific use cases.
 
 The application can be seen as a combination of the :doc:`/detectors/a121/distance_detector` and :doc:`/detectors/a121/speed_detector` to measure both the distance to and speed of an object simultaneously.
@@ -66,8 +66,11 @@ With subsweeps, the profile, HWAAS and step length can be adjusted along the ran
 The optimal subsweep configuration varies so this has to be done manually. The Obstacle detection example application in the Exploration Tool GUI does not support subsweep, please see *acconeer-python-exploration/examples/algo/a121/obstacle/detector.py* for an example on running the application with subsweeps.
 
 
-Configuration parameters
-------------------------
+Exploration Tool Python API
+---------------------------
+
+Example Application Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 The configuration parameters of the Obstacle detection example application can be divided into two parts, sensor parameters and threshold parameters.
 
 The sensor parameters are similar to the parameters used by the underlying Sparse IQ service with a few exceptions; :attr:`~acconeer.exptool.a121.algo.obstacle._detector.DetectorConfig.start_m` and :attr:`~acconeer.exptool.a121.algo.obstacle._detector.DetectorConfig.end_m` set suitable sweep range and :attr:`~acconeer.exptool.a121.algo.obstacle._detector.DetectorConfig.max_robot_speed` controls the sweep rate.
@@ -77,16 +80,15 @@ During application calibration, :attr:`~acconeer.exptool.a121.algo.obstacle._det
 .. autoclass:: acconeer.exptool.a121.algo.obstacle._detector.DetectorConfig
    :members:
 
-Detector result
----------------
+Detector Result
+^^^^^^^^^^^^^^^
 .. autoclass:: acconeer.exptool.a121.algo.obstacle._detector.DetectorResult
    :members:
 
-Processor result
-----------------
+Processor Result
+^^^^^^^^^^^^^^^^
 .. autoclass:: acconeer.exptool.a121.algo.obstacle._processors.ProcessorResult
    :members:
-
 
 A121 Improvements Compared to A111
 ----------------------------------

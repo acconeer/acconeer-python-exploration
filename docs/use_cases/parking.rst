@@ -17,4 +17,4 @@ This innovation benefits municipal authorities, parking operators, and businesse
 Acconeer Offering
 =================
 
-- :doc:`Parking Reference Application </applications/a121/parking>`: A121 Reference Application for ground- and pole mounted integration.
+- :doc:`Parking Application </applications/a121/parking>`: A121 :term:`Reference Application` for ground- and pole mounted integration.

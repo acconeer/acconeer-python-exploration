@@ -162,16 +162,16 @@ The algorithm uses the :ref:`exploration_tool-a121-distance_detector` and the :r
 
 .. _sec_cargo_test_results:
 
-Test Results
+Verification
 ************
-The tests were performed in a 20-foot container.
+The verification tests were performed in a 20-foot container.
 Two different setups were tested, both using lens:
 
 * Sensor placed flat on about 70 cm height on the door.
 * Sensor placed at an angle at the top of the door.
 
-*Utilization Level*
-
+Utilization Level
+=================
 Utilization level was tested using a plywood board as cargo at different distances.
 For each distance, 30 frames were measured.
 The detection score was calculated as the percentage of the frames that correctly detected the distance.
@@ -186,8 +186,8 @@ The angled sensor does not detect the plywood board when the distance becomes cl
 | Angled          | 0%                  | 0%                  | 100%                |
 +-----------------+---------------------+---------------------+---------------------+
 
-*Presence Detection*
-
+Presence Detection
+==================
 Presence detection was tested with a person standing in different positions inside the container, creating a detection grid.
 For each position, the detection score was calculated as the percentage of correctly detected frames.
 To avoid false detections due to the high noise floor, the thresholds were set to 4 for inter presence and 2.75 for intra presence.

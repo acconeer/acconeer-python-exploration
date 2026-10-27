@@ -1,7 +1,7 @@
 Hand Motion Detection
 =====================
 
-The purpose of the hand motion detection algorithm is to detect the presence of a pair of hands in front of the faucet in a sink.
+The purpose of the hand motion :term:`Example Application` detection algorithm is to detect the presence of a pair of hands in front of the faucet in a sink.
 In the typical application, the goal is to minimize the water consumption by turning the faucet on and off, based on the output of the algorithm.
 
 To achieve low power consumption, thereby enabling the usage of battery, the hand motion detection algorithm is paired with the
@@ -110,8 +110,17 @@ But more importantly, it also contains the two following members
    - :attr:`~acconeer.exptool.a121.algo.hand_motion.DetectionState.DETECTION` - Hand is currently being detected.
    - :attr:`~acconeer.exptool.a121.algo.hand_motion.DetectionState.RETENTION` - Hand has previously been detected. Retaining detection for :attr:`~acconeer.exptool.a121.algo.hand_motion.ExampleAppConfig.detection_retention_duration` seconds.
 
-Configuration classes
----------------------
+Verification
+------------
+
+This application has not been verified with a systematic testing procedure, but works quite well
+for the basic use case (see :term:`Example Application`).
+
+Exploration Tool Python API
+---------------------------
+
+Example Application Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: acconeer.exptool.a121.algo.hand_motion.ModeHandlerConfig
    :members:
@@ -119,14 +128,14 @@ Configuration classes
 .. autoclass:: acconeer.exptool.a121.algo.hand_motion.ExampleAppConfig
    :members:
 
-Result class
-------------
+Example Application Result
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: acconeer.exptool.a121.algo.hand_motion.ModeHandlerResult
    :members:
 
-Application classes
--------------------
+Example Application Classes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: acconeer.exptool.a121.algo.hand_motion.AppMode
    :members:

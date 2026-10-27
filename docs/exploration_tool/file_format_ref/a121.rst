@@ -1,5 +1,5 @@
-File format reference - A121
-============================
+A121 File format reference
+==========================
 
 This page explains the format of A121 data files saved from Exploration Tool using the application or :ref:`recorders in the API <api_a121_recorders>`.
 A121 records are currently only stored in HDF5 (``.h5``).

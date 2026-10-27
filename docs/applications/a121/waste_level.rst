@@ -1,8 +1,8 @@
 Waste Level
 ===========
 
-This waste level example application uses the A121 radar sensor to measure the fill level in a waste bin.
-Some waste materials are bad reflectors, such as paper and plastic. Hence, the :doc:`Tank Level</applications/a121/tank_level>` reference application,
+This waste level :term:`Example Application` uses the A121 radar sensor to measure the fill level in a waste bin.
+Some waste materials are bad reflectors, such as paper and plastic. Hence, the :doc:`Tank Level</applications/a121/tank_level>` :term:`Reference Application`,
 which is built on top of the :doc:`/detectors/a121/distance_detector`,
 cannot be used as the received signal in this case does not typically yield a distinct peak.
 Instead, a metric based on the phase stability is utilized.
@@ -65,14 +65,14 @@ The top right plot shows the history of the detected fill level in meters.
 .. image:: /images/processing/waste_level_gui.png
     :align: center
 
-Sanity Testing
---------------
+Verification
+------------
 The testing performed with this application was made in a plastic waste bin with height 1 m, width 0.5 m and depth 0.5 m, and with waste consisting of plastic.
 The FZP lens from the Acconeer lens kit was used together with an EVK.
 The fill levels tested together with the estimated levels can be found in :numref:`tab_a121_waste_level_test_result`.
 
 .. _tab_a121_waste_level_test_result:
-.. table:: Sanity test results.
+.. table:: Verification test results.
    :align: center
    :widths: auto
 
@@ -95,13 +95,19 @@ In the test with the empty waste bin, the reason for the higher level is because
 For the full waste bin, the estimated fill level was alternating between 93% and 100%.
 For the other tests, the estimated fill level was static.
 
-Configuration Parameters
-------------------------
+This application has not been verified with a systematic testing procedure, but works quite well
+for the basic use case (see :term:`Example Application`).
+
+Exploration Tool Python API
+---------------------------
+
+Example Application Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: acconeer.exptool.a121.algo.waste_level._processor.ProcessorConfig
    :members:
 
-Detector Result
---------------------
+Example Application Result
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. autoclass:: acconeer.exptool.a121.algo.waste_level._processor.ProcessorResult
    :members:

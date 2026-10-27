@@ -14,6 +14,6 @@ Acconeer Offering
 
 Acconeer's sensors are designed to deliver the high precision needed for these applications, using state-of-the-art :term:`PCR` technology to detect even the smallest movements reliably. To address these use cases we have created several :term:`Reference <Reference Application>` and :term:`Example Applications<Example Application>` that could be used as a reference on how to utilize the PCR technology:
 
-- :doc:`Breathing Reference Application</applications/a121/breathing>`: This Reference Application shows how the breathing rate of a stationary person can be estimated using the A121 sensor.
-- :doc:`Vibration Example Application</applications/a121/vibration>`: This Example Application illustrates how the A121 sensor can be used to estimate the frequency content of a vibrating object, measured at a distance.
-- :doc:`Phase Tracking Example Application</applications/a121/phase_tracking>`: This Example Application shows how a single object can be tracked using only the phase information of the A121 data.
+- :doc:`Breathing Application</applications/a121/breathing>`: This :term:`Reference Application` shows how the breathing rate of a stationary person can be estimated using the A121 sensor.
+- :doc:`Vibration Application</applications/a121/vibration>`: This :term:`Example Application` illustrates how the A121 sensor can be used to estimate the frequency content of a vibrating object, measured at a distance.
+- :doc:`Phase Tracking Application</applications/a121/phase_tracking>`: This :term:`Example Application` shows how a single object can be tracked using only the phase information of the A121 data.

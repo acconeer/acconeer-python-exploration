@@ -8,7 +8,5 @@ The following sections will go through the definitions of our *Figures of Merit*
 
 .. toctree::
    :maxdepth: 1
-   :caption: Sections
 
-   Sparse IQ<sparse_iq>
    A121<a121>

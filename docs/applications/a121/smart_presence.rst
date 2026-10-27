@@ -1,7 +1,7 @@
-Smart Presence Reference Application
-====================================
+Smart Presence Application
+==========================
 
-Smart presence is based on the presence detector, see :ref:`exploration_tool-a121-presence_detection`.
+The Smart Presence :term:`Reference Application` is based on the presence detector, see :ref:`exploration_tool-a121-presence_detection`.
 The algorithm divides the presence detection range into multiple zones.
 Furthermore, it has the possibility to change configuration based on detection, as well as configure how many zones that need to have detection before switching configuration.
 This is perfect to utilize when a low power configuration is wanted for scanning and a more robust configuration is wanted to, e.g., track a person walking through the zones.
@@ -64,8 +64,9 @@ The lower plot displays the range which is set to 1-3 m and that slow motions ar
 
     Example of the smart presence GUI. Inter presence is detecting presence in the middle zone, while intra presence is not detecting movement.
 
-Tests
------
+Verification
+------------
+
 Test cases
 ^^^^^^^^^^
 **1. Human walking from Zone 3 -> Zone 1 (1-3 meters range)**
@@ -301,8 +302,11 @@ Results
      - OK
      - OK
 
-Configuration parameters
-------------------------
+Exploration Tool Python API
+---------------------------
+
+Reference Application Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: acconeer.exptool.a121.algo.smart_presence._ref_app.RefAppConfig
     :members:
@@ -322,7 +326,7 @@ Configuration parameters
     :undoc-members:
     :exclude-members: validate, from_dict, from_json, to_dict, to_json
 
-Reference app result
---------------------
+Reference Application Result
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. autoclass:: acconeer.exptool.a121.algo.smart_presence._ref_app.RefAppResult
    :members:

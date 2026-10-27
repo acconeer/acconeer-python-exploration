@@ -1,7 +1,7 @@
 Surface Velocity
 ================
 
-This example uses the A121 to measure the surface velocity of a water flow.
+This :term:`Example Application` uses the A121 to measure the surface velocity of a water flow.
 Both direction and velocity are estimated.
 
 Setup
@@ -70,13 +70,22 @@ The frequencies have been converted to velocities and the colored middle section
 .. image:: /images/processing/surface_velocity_gui.png
     :align: center
 
-Configuration parameters
-------------------------
+Verification
+------------
+
+This application has not been verified with a systematic testing procedure, but works quite well
+for the basic use case (see :term:`Example Application`).
+
+Exploration Tool Python API
+---------------------------
+
+Example Application Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: acconeer.exptool.a121.algo.surface_velocity._example_app.ExampleAppConfig
    :members:
 
-Detector result
---------------------
+Example Application Result
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. autoclass:: acconeer.exptool.a121.algo.surface_velocity._example_app.ExampleAppResult
    :members:

@@ -1,7 +1,7 @@
 Vibration Measurement
 =====================
 
-This example application illustrates how the A121 sensor can be used to estimate the
+This :term:`Example Application` illustrates how the A121 sensor can be used to estimate the
 frequency content of a vibrating object, measured at a distance.
 
 The Sparse IQ service produces complex data samples where the amplitude reflects the amount of
@@ -151,15 +151,21 @@ The last reported result is the
 :attr:`~acconeer.exptool.a121.algo.vibration._example_app.ExampleAppConfig.time_series_std`,
 which is the standard deviation of the last processed time series.
 
+Verification
+------------
+
+This application has not been verified with a systematic testing procedure, but works quite well
+for the basic use case (see :term:`Example Application`).
+
 Exploration Tool Python API
 ---------------------------
 
-Configuration Parameters
-^^^^^^^^^^^^^^^^^^^^^^^^
+Example Application Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. autoclass:: acconeer.exptool.a121.algo.vibration._example_app.ExampleAppConfig
    :members:
 
-Example App Result
-^^^^^^^^^^^^^^^^^^
+Example Application Result
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. autoclass:: acconeer.exptool.a121.algo.vibration._example_app.ExampleAppResult
    :members:

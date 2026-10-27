@@ -3,7 +3,7 @@ Phase Tracking
 
 Phase Tracking is an example of how a single object can be tracked using only the phase information of the Sparse IQ service.
 
-The algorithm calculates the change in phase between consecutive frames and converts it to the corresponding increment in distance, using the known wavelength of the transmitted pulse.
+The Phase Tracking :term:`Example Application` algorithm calculates the change in phase between consecutive frames and converts it to the corresponding increment in distance, using the known wavelength of the transmitted pulse.
 See :ref:`rdac-a121-interpreting-radar-data` for more information on the conversion between phase change and distance.
 The change in distance is accumulated over multiple frames, resulting in a highly accurate estimate of the movement, relative the starting points.
 
@@ -15,3 +15,17 @@ Note, as this example use a simple peak tracking strategy (highest peak), it mig
 
 .. image:: /images/processing/a121_phase_tracking.png
     :align: center
+
+Verification
+------------
+
+This application has not been verified with a systematic testing procedure, but works quite well
+for the basic use case (see :term:`Example Application`).
+
+Exploration Tool Python API
+---------------------------
+
+Example Application Configuration
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+.. autoclass:: acconeer.exptool.a121.algo.phase_tracking.ProcessorConfig
+   :members:

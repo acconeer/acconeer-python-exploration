@@ -1,9 +1,10 @@
+.. _fom-a121:
+
 *********************
 A121 Figures of Merit
 *********************
 
-The :doc:`sparse_iq` applies to A121 sensors.
-The definitions below apply **only** to the A121 sensor.
+.. include:: sparse_iq.rst
 
 .. _rdac-a121-fom-radial-resolution:
 

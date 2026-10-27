@@ -1,6 +1,6 @@
-#############################
-Parking Reference Application
-#############################
+###################
+Parking Application
+###################
 
 Introduction
 ************
@@ -199,7 +199,7 @@ The table below shows the average current in mA using an XM125 for the two prese
  0.075         1.075
 ============= ===========
 
-Test Results
+Verification
 ************
 
 Three different cases have been tested: Ground, Pole and Curb mounted.

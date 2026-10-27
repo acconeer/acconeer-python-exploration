@@ -11,6 +11,6 @@ Waste level measurements are crucial for efficiently managing waste collection a
 Acconeer Offering
 =================
 
-To address these use cases we have created an :term:`Example Application` which utilize the phase information available in the data provided by Acconeer's sensors to handle less reflective materials that are common in waste applications:
+To address these use cases we have created an application which utilize the phase information available in the data provided by Acconeer's sensors to handle less reflective materials that are common in waste applications:
 
-- :doc:`Waste Level Example Application</applications/a121/waste_level>`: This Example Application uses the A121 radar sensor to measure the fill level in a waste bin. It is designed to handle less reflective material.
+- :doc:`Waste Level Application</applications/a121/waste_level>`: This :term:`Example Application` uses the A121 radar sensor to measure the fill level in a waste bin. It is designed to handle less reflective material.

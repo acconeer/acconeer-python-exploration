@@ -11,10 +11,10 @@ Tank level measurements are essential for monitoring and managing the amount of 
 Acconeer Offering
 =================
 
-Acconeer's state-of-the-art :term:`PCR` technology can be utilized to make power efficient and accurate tank level measurements. To showcase this we have created a :term:`Reference Application` specifically designed for tank level measurement:
+Acconeer's state-of-the-art :term:`PCR` technology can be utilized to make power efficient and accurate tank level measurements. To showcase this we have created an application specifically designed for tank level measurement:
 
-- :doc:`Tank Level Reference Application</applications/a121/tank_level>`: This Reference Application shows how the A121 sensor can be used to determine the liquid level in a tank.
+- :doc:`Tank Level Application</applications/a121/tank_level>`: This :term:`Reference Application` shows how the A121 sensor can be used to determine the liquid level in a tank.
 
 For tanks that are filled with less reflective materials such as grains, have a look at our Waste Level :term:`Example Application` instead:
 
-- :doc:`Waste Level Example Application</applications/a121/waste_level>`: This Example Application uses the A121 radar sensor to measure the fill level in a waste bin. It is designed to handle less reflective material.
+- :doc:`Waste Level Application</applications/a121/waste_level>`: This :term:`Example Application` uses the A121 radar sensor to measure the fill level in a waste bin. It is designed to handle less reflective material.

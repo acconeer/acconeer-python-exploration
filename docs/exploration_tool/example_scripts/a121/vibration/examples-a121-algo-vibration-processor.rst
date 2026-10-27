@@ -6,3 +6,5 @@ examples/a121/algo/vibration/processor.py
 
 .. literalinclude:: ../../../../../examples/a121/algo/vibration/processor.py
    :linenos:
+
+View this example on GitHub: `<https://github.com/acconeer/acconeer-python-exploration/tree/master/examples/a121/algo/vibration/processor.py>`_
