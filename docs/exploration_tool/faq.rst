@@ -98,6 +98,37 @@ Please note that macOS is not officially supported by the Exploration Tool.
 For supported operation and better performance, we recommend using the `XE125 <https://www.acconeer.com/products/>`_
 evaluation board on Windows 11 or Ubuntu 24.04.
 
+USB connection related
+----------------------
+
+#) Exploration Tool shows no device although Windows detects the board (XE212, XC120)
+
+   Boards that connect over native USB (WinUSB) can fail to show up in
+   Exploration Tool even though they enumerate correctly in the Device Manager.
+   This happens when the USB device scan in Exploration Tool fails, typically
+   with ``[Errno 22] Invalid parameter`` in the console output. Two known
+   triggers:
+
+   * Another USB device on the PC (a USB-C docking station, USB-C monitor,
+     USB bridge, or hub) interferes with the scan, even when the board itself
+     is plugged directly into the PC.
+   * Another process is already holding the board's USB interface (a second
+     Exploration Tool instance, or another tool communicating with the board).
+     Only one process can access the board at a time.
+
+   Close all programs that may access the board, disconnect all other USB
+   devices, connect the board directly to a port on the PC, and restart
+   Exploration Tool. See also :ref:`xe212_setup`.
+
+#) XE212 stuck in bootloader (DFU) mode after flashing
+
+   Flashing while another process has the board's USB interface open can fail
+   and leave the board in bootloader mode. In this state the board enumerates
+   with product ID ``A560`` or ``A562`` instead of ``A561``
+   (Device Manager > Properties > Details > Hardware Ids). To recover, close
+   all programs that access the board, disconnect all other USB devices, and
+   run the flashing process again from Exploration Tool.
+
 Sensor related
 --------------
 

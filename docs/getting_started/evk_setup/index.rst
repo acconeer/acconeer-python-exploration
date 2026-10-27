@@ -7,6 +7,7 @@ The following sections are step-by-step setup guides for each EVK/module:
    :caption: Setup Guides
    :maxdepth: 1
 
+   XE212 <xe212>
    XC120 + XE121 <xc120_xe121>
    RPi + XE121 <raspberry_a121_xe121>
    XM125/XE125 <xm125>

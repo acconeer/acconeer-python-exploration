@@ -9,3 +9,4 @@ Example Scripts
    :caption: Sections
 
    A121<a121/index>
+   A212<a212/index>

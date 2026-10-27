@@ -9,4 +9,5 @@ sphinx-notfound-page>=1.0.0
 sphinx-book-theme==1.1.2
 sphinxcontrib-youtube
 sphinxcontrib-spelling
+sphinxcontrib-images
 doc8>=1.1.1

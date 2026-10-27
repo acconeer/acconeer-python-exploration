@@ -1,0 +1,112 @@
+A212 API reference
+==================
+
+This page provides an auto-generated summary of Acconeer Exploration Tool's A212 API.
+
+.. _api_a212_configs:
+
+Configurations
+--------------
+
+Session
+^^^^^^^
+
+.. autoclass:: acconeer.exptool.a2.SessionConfig
+    :members:
+
+Sensor
+^^^^^^
+
+.. autoclass:: acconeer.exptool.a2.SensorConfig
+    :members:
+
+Subsweep
+^^^^^^^^
+
+.. autoclass:: acconeer.exptool.a2.SubsweepConfig
+    :members:
+
+Parameter enums
+^^^^^^^^^^^^^^^
+
+.. autoclass:: acconeer.exptool.a2.Profile
+    :members:
+    :undoc-members:
+
+.. autoclass:: acconeer.exptool.a2.PRF
+    :members:
+    :undoc-members:
+
+.. autoclass:: acconeer.exptool.a2.IdleState
+    :members:
+    :undoc-members:
+
+Entities
+--------
+
+RSS representations
+^^^^^^^^^^^^^^^^^^^
+
+.. autoclass:: acconeer.exptool.a2.Result(...)
+    :members:
+    :undoc-members:
+    :exclude-members: temperature
+
+Other
+^^^^^
+
+.. autoclass:: acconeer.exptool.a2.Metadata
+    :members:
+    :undoc-members:
+
+.. autoclass:: acconeer.exptool.a2.GroupResult
+    :members:
+    :undoc-members:
+    :exclude-members: temperature
+
+.. autoclass:: acconeer.exptool.a2.AntennaArray
+    :inherited-members:
+
+    .. autoattribute:: AP212
+        :annotation: ...
+
+Client
+------
+
+.. autoclass:: acconeer.exptool.a2.Client
+    :members:
+    :undoc-members:
+    :member-order: groupwise
+    :inherited-members:
+    :exclude-members: attach_recorder, detach_recorder
+
+Recording
+---------
+
+.. _api_a212_recorders:
+
+Recorder
+^^^^^^^^
+
+.. autoclass:: acconeer.exptool.a2.H5Recorder
+    :members:
+    :undoc-members:
+
+Record
+^^^^^^
+
+.. autoclass:: acconeer.exptool.a2.H5Record
+    :members:
+    :undoc-members:
+
+.. _api_a212_open_save:
+
+Open Record
+^^^^^^^^^^^
+
+.. autofunction:: acconeer.exptool.a2.open_record
+
+Save Record
+^^^^^^^^^^^
+
+.. autofunction:: acconeer.exptool.a2.save_record

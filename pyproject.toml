@@ -234,11 +234,13 @@ lint-check = [
     "python internal_tools/check_changelog.py",
     "python internal_tools/check_copyright.py",
     "python docs/generate_example_script_pages.py check a121 --example-script-output-folder docs/exploration_tool/example_scripts/a121",
+    "python docs/generate_example_script_pages.py check a2 --example-script-output-folder docs/exploration_tool/example_scripts/a212",
     "python -m ruff check .",
 ]
 lint-fix = [
     "python internal_tools/check_copyright.py --update-year",
     "python docs/generate_example_script_pages.py fix a121 --example-script-output-folder docs/exploration_tool/example_scripts/a121",
+    "python docs/generate_example_script_pages.py fix a2 --example-script-output-folder docs/exploration_tool/example_scripts/a212",
     "python -m ruff check --fix .",
     "lint-check"
 ]

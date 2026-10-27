@@ -32,3 +32,15 @@ span.caption-number::after {
 caption > .caption-number::after {
     content: "\00a0";  /* Unicode non-breaking space */
 }
+
+table.hw-figure-table,
+table.hw-figure-table td {
+    background-color: white;
+    border: 2px solid lightblue;
+}
+
+.lightbox .lb-image {
+    max-width: 70vw;
+    max-height: 70vh;
+    object-fit: contain;
+}

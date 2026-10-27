@@ -1,0 +1,9 @@
+.. _fom-a212:
+
+*********************
+A212 Figures of Merit
+*********************
+
+**This section is under construction.**
+
+.. include:: sparse_iq.rst

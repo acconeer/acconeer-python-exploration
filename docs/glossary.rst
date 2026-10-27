@@ -4,8 +4,25 @@ Glossary
 
 .. glossary::
 
+   CFAR
+      Constant False Alarm Rate. An adaptive thresholding technique that
+      sets the detection threshold from local noise / clutter statistics so
+      that the false-alarm probability stays roughly constant even when the
+      background level varies across the scene.
+
    Direct leakage
       Direct leakage refers to the transmission of the radar signal directly from the transmitter to the receiver without reflecting off a target. The length of the direct leakage varies with the transmitted pulse length. The transmitted pulse length is set using :term:`Profiles<Profile>`.
+
+   DOA
+      Direction of Arrival. The angular direction (in azimuth and/or
+      elevation) from which a received radar signal originates. Estimating
+      DOA is the primary purpose of the heatmap beamformers in the
+      :ref:`A212 Heatmap section <a212_heatmap>`.
+
+   FWHM
+      Full Width at Half Maximum. For a spectrum or main lobe, the width
+      between the two points where the magnitude drops to half of its peak
+      value. Used to characterise both radial and angular resolution.
 
    PCR
       Pulsed Coherent Radar.
@@ -81,6 +98,14 @@ Glossary
       - :math:`𝑑` is the radial distance to the target,
       - :math:`𝑘` is the Boltzmann constant,
       - :math:`𝑇_s` is the system noise temperature.
+
+   Steering vector
+      For a multi-channel array, the vector of complex amplitudes the
+      channels observe for a plane wave arriving from
+      a given direction :math:`(\theta, \phi)`. It encodes the geometric
+      phase relationship between channels for that direction. Beamformers
+      use it to project channel data onto candidate angles; see the
+      :ref:`A212 Heatmap section <a212_heatmap>`.
 
    Reflectivity
       A property of physical materials.

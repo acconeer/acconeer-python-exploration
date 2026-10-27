@@ -5,4 +5,5 @@ Detectors
 .. toctree::
    :maxdepth: 1
 
-   a121/index
+   A121 <a121/index>
+   A212 <a212/index>

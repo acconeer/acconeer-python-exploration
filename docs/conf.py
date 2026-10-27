@@ -37,10 +37,13 @@ extensions = [
     "notfound.extension",
     "sphinxcontrib.youtube",
     "sphinxcontrib.spelling",
+    "sphinxcontrib.images",
 ]
 
 suppress_warnings = [
     "ref.python",  # https://github.com/sphinx-doc/sphinx/issues/4961
+    # Rendered without content, see autodoc_mock_imports
+    "autodoc.mocked_object",
 ]
 
 pygments_style = None
@@ -51,6 +54,8 @@ pygments_style = None
 autodoc_member_order = "bysource"
 autodoc_typehints_format = "short"
 python_use_unqualified_type_names = True
+# Shipped in the module bundle, not in this repository
+autodoc_mock_imports = ["acconeer_algo"]
 
 # extlinks
 extlinks = {
@@ -191,7 +196,7 @@ def _update_sensor_placeholder(
 
     if placeholder_lower not in content[0] and placeholder_upper not in content[0]:
         return
-    for sensor in ("a121",):
+    for sensor in ("a121", "a212"):
         if sensor in parent_docname:
             content[0] = content[0].replace(placeholder_lower, sensor)
             content[0] = content[0].replace(placeholder_upper, sensor.upper())

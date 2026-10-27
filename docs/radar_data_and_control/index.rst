@@ -13,3 +13,4 @@ affect the radar data.
    :caption: Choose the sensor you are working with:
 
    A121 <a121/index>
+   A212 <a212/index>

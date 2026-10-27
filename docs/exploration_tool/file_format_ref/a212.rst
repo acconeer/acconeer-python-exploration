@@ -1,0 +1,96 @@
+A212 File format reference
+==========================
+
+This page explains the format of A212 data files saved from Exploration Tool using the application
+or :ref:`recorders in the API <api_a212_recorders>`. A212 records are currently only stored in
+HDF5 (``.h5``).
+
+.. tip::
+   We recommend loading and saving records using the :ref:`built in functions <api_a212_open_save>`
+   in the ``acconeer.exptool.a2`` module.
+
+See `examples/a2/load_data_with_antenna_masks_and_sub_sampling.py <https://github.com/acconeer/acconeer-python-exploration/blob/master/examples/a2/load_data_with_antenna_masks_and_sub_sampling.py>`__
+for an example of loading data,
+and `examples/a2/record_data/barebones.py <https://github.com/acconeer/acconeer-python-exploration/blob/master/examples/a2/record_data/barebones.py>`__
+for saving data.
+
+Examples of loading
+-------------------
+
+Some minimal examples of loading the session config from a data file:
+
+Using :func:`acconeer.exptool.a2.open_record` (recommended):
+
+.. code-block:: python
+
+   from acconeer.exptool import a2
+   record = a2.open_record("data.h5")
+   print(record.session_config)
+   # SessionConfig(
+   #     sensor_configs=[SensorConfig(subsweeps=[SubsweepConfig(start_point=80, num_points=3, step_length=1, profile=<Profile.PROFILE_3: 3>, prf=<PRF.PRF_20_8_MHZ: 3>, tx_antenna_mask=3, rx_antenna_mask=15
+   # ...
+
+Using ``h5py``:
+
+.. code-block:: python
+
+   import json
+   import h5py
+   with h5py.File("data.h5") as f:
+      print(json.loads(f["session/session_config"][()]))
+   # {'sensor_configs':
+   #     [{'subsweeps': [{'start_point': 80, 'num_points': 3, 'step_length': 1, 'profile': 'PROFILE_3', 'tx_antenna_mask': 3, 'rx_antenna_mask': 15
+   #     ...
+
+HDF5 structure
+--------------
+
+``client_info``
+   JSON string representation of :class:`~acconeer.exptool._core.entities.client_info.ClientInfo`.
+
+``generation``
+   String containing the *sensor generation*, i.e., "a2".
+
+``lib_version``
+   String containing the Exploration Tool version used to record.
+
+``server_info``
+   JSON string representation of :class:`~acconeer.exptool.a2.ServerInfo`.
+
+``session``
+   A *soft link* to ``sessions/session_0``. Used for backwards-compatibility.
+
+``sessions/session_X``
+   HDF5 group containing all data related to the recorded session. *X* is an integer starting from 0.
+
+   ``group_Y/``
+      HDF5 configuration group *Y*. *Y* is an integer starting from 0.
+
+      ``result/``
+         HDF5 group with a dataset for every field in the :class:`~acconeer.exptool.a2.Result`.
+
+         ``frame``
+            3D array with dimensions (frame, sweep, distance) of the **original** complex data from the session.
+
+            The data type is a structured type with fields ``real`` and ``imag``, both 16 bit signed integers (``int16``).
+
+            .. note::
+               Not the same type as :attr:`~acconeer.exptool.a2.Result.frame`.
+
+         ``data_saturated``
+            1D boolean array with dimension (frame) of the :attr:`~acconeer.exptool.a2.Result.data_saturated` flags.
+
+         ``...``
+            See fields in :class:`~acconeer.exptool.a2.Result`.
+
+      ``tick_period``
+         Integer representing the tick period.
+
+   ``session_config``
+      JSON string representation of :class:`~acconeer.exptool.a2.SessionConfig`.
+
+``timestamp``
+   String containing an ISO 8601 formatted timestamp at the time of creating the :class:`~acconeer.exptool.a2.H5Recorder`.
+
+``uuid``
+   String containing a randomly generated `version 4 UUID <https://en.wikipedia.org/wiki/Universally_unique_identifier#Version_4_(random)>`__.
