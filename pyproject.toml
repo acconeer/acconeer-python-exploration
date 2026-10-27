@@ -180,7 +180,8 @@ linkcheck = "default-sphinx-build -b linkcheck docs docs/_build/linkcheck"
 spelling = "default-sphinx-build -b spelling docs docs/_build/spelling"
 rediraffe-write = "default-sphinx-build -b rediraffewritediff docs docs/_build/rediraffewritediff"
 rediraffe-check = "default-sphinx-build -b rediraffecheckdiff docs docs/_build/rediraffecheckdiff"
-build = ["clean", "lint", "html", "spelling", "rediraffe-check"]
+datasheet-redirect-check = "python docs/check_html_redirects.py docs/_build/html --source-dir docs/datasheet"
+build = ["clean", "lint", "html", "datasheet-redirect-check", "spelling", "rediraffe-check"]
 
 # We've found that .. toctree:: with :glob: can be a foot gun in some scenarios. Let's not use it!
 globlint = """
