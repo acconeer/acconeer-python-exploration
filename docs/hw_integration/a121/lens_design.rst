@@ -1,4 +1,4 @@
-.. _integration-a121-lenses:
+.. _integration-lenses:
 
 ============
 Lens design
@@ -8,7 +8,7 @@ Lens design
 
 Since many common thermoplastics used in the product design also have low :term:`permittivity<Permittivity>` and low loss, a lens can often be incorporated into the same encapsulation material with little additional cost. 3D printing technology allows for rapid prototyping and can often resemble the performance of the final product. :term:`Dielectric` lenses are generally more compact and less expensive to fabricate than corresponding horn antennas and reflectors.
 
-To quickly get started using a lens, Acconeer provides two example lenses, one plano-convex and one FZP type lens, :numref:`fig_module_plano-convex` and :numref:`fig_module_FZP`. Both lenses can be used with all module evaluation kits. The FZP lens is similar to the example lens in :ref:`integration-a121-lenses_example_FZP`. The user guide and performance of these lenses can be found in `A121 Lenses Getting Started Guide <a121_lens_guide_>`_.
+To quickly get started using a lens, Acconeer provides two example lenses, one plano-convex and one FZP type lens, :numref:`fig_module_plano-convex` and :numref:`fig_module_FZP`. Both lenses can be used with all module evaluation kits. The FZP lens is similar to the example lens in :ref:`integration-lenses_example_FZP`. The user guide and performance of these lenses can be found in `A121 Lenses Getting Started Guide <a121_lens_guide_>`_.
 
 .. grid:: 2
    :gutter: 2
@@ -209,7 +209,7 @@ The radius :math:`r_{i}` of the rings and the step thickness :math:`s` can be ca
 
 Here :math:`F` is the focal point, :math:`P` is the number of sub-zones, or steps, :math:`\lambda_{0}` is the wavelength in free space ( 5 mm at 60 GHz), and :math:`\varepsilon_r`, is the :term:`relative dielectric constant<Permittivity>`. For small diameter lenses, we can choose one zone and 4 or 8 steps. For larger diameter lenses, additional sub-zones can be added for increased gain. Notice that contrary to the :term:`refracting<Refraction>` type lenses, the ring thickness and hence the total thickness is independent of the lens radius. This allows us to construct large diameter lenses without increasing the thickness.
 
-.. _integration-a121-lenses_example_FZP:
+.. _integration-lenses_example_FZP:
 
 Example FZP lens calculation
 ----------------------------
