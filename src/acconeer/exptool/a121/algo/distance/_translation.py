@@ -45,6 +45,10 @@ _HWAAS_MIN_DISTANCE = 1.0
 _MAX_HWAAS = 511
 _MIN_HWAAS = 1
 _BREAKPOINT_DENSITY_EXPONENT = 0.65
+# A sensor config beyond the first costs a prepare and a measurement start on every update, so
+# the far range takes a second one only when its finer HWAAS steps save at least this much
+# averaging time
+_MIN_SECOND_CONFIG_SAVING_NS = 400_000
 
 
 class RangeTypes(Flag):
@@ -209,6 +213,57 @@ def _max_profile_layout(
         spans[-1][1] += margins[1]
 
     return [(start, int((end - start) / step_length)) for start, end in spans]
+
+
+def _max_profile_subsweeps(
+    config: DetectorConfig,
+    start_m: float,
+    end_m: float,
+    step_length: int,
+    margins: tuple[int, int],
+    preceding_num_points: list[int],
+    num_subsweeps: int,
+) -> list[tuple[int, int, int]]:
+    """Start point, number of points and HWAAS of at most num_subsweeps max profile subsweeps."""
+    breakpoints_m = _calc_max_profile_breakpoints_m(
+        start_m,
+        end_m,
+        num_subsweeps + 1,
+        config.max_profile,
+        step_length,
+        config.signal_quality,
+        config.reflector_shape.exponent,
+    )
+    breakpoints = remove_dup([_m_to_point(start_m, bp, step_length) for bp in breakpoints_m])
+
+    def hwaas_at(point: int) -> int:
+        return _calc_hwaas(
+            config.max_profile,
+            step_length,
+            point * APPROX_BASE_STEP_LENGTH_M,
+            config.signal_quality,
+            config.reflector_shape.exponent,
+        )
+
+    breakpoints = _merge_equal_hwaas(
+        breakpoints,
+        hwaas_at,
+        lambda candidate: _fits_sensor_configs(
+            preceding_num_points
+            + [n for _, n in _max_profile_layout(candidate, margins, step_length)]
+        ),
+    )
+    return [
+        (start_point, num_points, hwaas_at(marginless_end_point))
+        for (start_point, num_points), marginless_end_point in zip(
+            _max_profile_layout(breakpoints, margins, step_length), breakpoints[1:]
+        )
+    ]
+
+
+def _num_averaged_samples(spans: list[tuple[int, int, int]]) -> int:
+    """Samples the subsweeps measure, over all their points and HWAAS."""
+    return sum(num_points * hwaas for _, num_points, hwaas in spans)
 
 
 def _fits_sensor_configs(num_points: list[int]) -> bool:
@@ -601,52 +656,34 @@ def detector_config_to_session_config(
         else:
             cfar_margin = 0
 
-        num_max_profile_subsweeps = _NUM_FAR_RANGE_GROUPS * _NUM_SUBSWEEPS_IN_SENSOR_CONFIG - len(
-            range_types & RangeTypes.ANY_TRANSITION
-        )
-
-        breakpoints_m = _calc_max_profile_breakpoints_m(
-            start_m,
-            end_m,
-            num_max_profile_subsweeps + 1,
-            config.max_profile,
-            step_length,
-            config.signal_quality,
-            config.reflector_shape.exponent,
-        )
-
-        breakpoints = [_m_to_point(start_m, bp, step_length) for bp in breakpoints_m]
-
+        num_transitions = len(range_types & RangeTypes.ANY_TRANSITION)
         margins = (left_filter_margin + cfar_margin, right_filter_margin + cfar_margin)
         preceding_num_points = [subsweep.num_points for subsweep in far_subsweeps]
 
-        breakpoints = remove_dup(breakpoints)
-        breakpoints = _merge_equal_hwaas(
-            breakpoints,
-            lambda point: _calc_hwaas(
-                config.max_profile,
+        def layout(num_subsweeps: int) -> list[tuple[int, int, int]]:
+            return _max_profile_subsweeps(
+                config,
+                start_m,
+                end_m,
                 step_length,
-                point * APPROX_BASE_STEP_LENGTH_M,
-                config.signal_quality,
-                config.reflector_shape.exponent,
-            ),
-            lambda candidate: _fits_sensor_configs(
-                preceding_num_points
-                + [n for _, n in _max_profile_layout(candidate, margins, step_length)]
-            ),
-        )
-
-        for (start_point, num_points), marginless_end_point in zip(
-            _max_profile_layout(breakpoints, margins, step_length), breakpoints[1:]
-        ):
-            hwaas = _calc_hwaas(
-                config.max_profile,
-                step_length,
-                marginless_end_point * APPROX_BASE_STEP_LENGTH_M,
-                config.signal_quality,
-                config.reflector_shape.exponent,
+                margins,
+                preceding_num_points,
+                num_subsweeps,
             )
 
+        spans = layout(_NUM_FAR_RANGE_GROUPS * _NUM_SUBSWEEPS_IN_SENSOR_CONFIG - num_transitions)
+        if num_transitions + len(spans) > _NUM_SUBSWEEPS_IN_SENSOR_CONFIG:
+            one_config = layout(_NUM_SUBSWEEPS_IN_SENSOR_CONFIG - num_transitions)
+            saved_samples = _num_averaged_samples(one_config) - _num_averaged_samples(spans)
+            # the table holds whole nanoseconds, so this compares exactly, as in C
+            sample_ns = round(a121.get_sample_duration(prf, config.max_profile) * 1e9)
+            if (
+                _fits_sensor_configs(preceding_num_points + [n for _, n, _ in one_config])
+                and saved_samples * sample_ns < _MIN_SECOND_CONFIG_SAVING_NS
+            ):
+                spans = one_config
+
+        for start_point, num_points, hwaas in spans:
             far_subsweeps.append(
                 a121.SubsweepConfig(
                     start_point=start_point,

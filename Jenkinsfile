@@ -38,9 +38,9 @@ def integrationTestA111RssVersionsForBuildScope = [
 // [commit: '<build storage folder>'].
 @Field
 def modelTestA121RssVersionForBuildScope = [
-    (BuildScope.SANITY)  : [commit: 'interim/sw-main/master/2026/2026-09-22/a2-v1.1.0-rc1-25-g4984fc76c6'],
-    (BuildScope.HOURLY)  : [commit: 'interim/sw-main/master/2026/2026-09-22/a2-v1.1.0-rc1-25-g4984fc76c6'],
-    (BuildScope.NIGHTLY) : [commit: 'interim/sw-main/master/2026/2026-09-22/a2-v1.1.0-rc1-25-g4984fc76c6'],
+    (BuildScope.SANITY)  : [commit: 'interim/sw-main/master/2026/2026-10-29/a2-v1.2.0-rc3-26-gfe1467084c'],
+    (BuildScope.HOURLY)  : [commit: 'interim/sw-main/master/2026/2026-10-29/a2-v1.2.0-rc3-26-gfe1467084c'],
+    (BuildScope.NIGHTLY) : [commit: 'interim/sw-main/master/2026/2026-10-29/a2-v1.2.0-rc3-26-gfe1467084c'],
 ]
 
 @Field

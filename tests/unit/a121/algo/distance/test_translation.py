@@ -10,8 +10,10 @@ from acconeer.exptool.a121.algo.distance import (
     ReflectorShape,
     ThresholdMethod,
     carry_over_signal_quality,
+    detector_config_to_processor_specs,
     detector_config_to_session_config,
 )
+from acconeer.exptool.a121.algo.distance._translation import get_num_far_subsweeps
 
 
 def _subsweeps(session_config):
@@ -61,46 +63,7 @@ def _subsweeps(session_config):
                                 ),
                                 a121.SubsweepConfig(
                                     start_point=264,
-                                    num_points=26,
-                                    step_length=24,
-                                    profile=a121.Profile.PROFILE_5,
-                                    hwaas=5,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_15_6_MHz,
-                                ),
-                                a121.SubsweepConfig(
-                                    start_point=888,
-                                    num_points=4,
-                                    step_length=24,
-                                    profile=a121.Profile.PROFILE_5,
-                                    hwaas=7,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_15_6_MHz,
-                                ),
-                            ],
-                            sweeps_per_frame=1,
-                            sweep_rate=None,
-                            frame_rate=None,
-                            continuous_sweep_mode=False,
-                            double_buffering=False,
-                            inter_frame_idle_state=a121.IdleState.DEEP_SLEEP,
-                            inter_sweep_idle_state=a121.IdleState.READY,
-                        ),
-                    },
-                    {
-                        1: a121.SensorConfig(
-                            subsweeps=[
-                                a121.SubsweepConfig(
-                                    start_point=984,
-                                    num_points=2,
+                                    num_points=32,
                                     step_length=24,
                                     profile=a121.Profile.PROFILE_5,
                                     hwaas=8,
@@ -113,33 +76,7 @@ def _subsweeps(session_config):
                                 ),
                                 a121.SubsweepConfig(
                                     start_point=1032,
-                                    num_points=2,
-                                    step_length=24,
-                                    profile=a121.Profile.PROFILE_5,
-                                    hwaas=10,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_15_6_MHz,
-                                ),
-                                a121.SubsweepConfig(
-                                    start_point=1080,
-                                    num_points=3,
-                                    step_length=24,
-                                    profile=a121.Profile.PROFILE_5,
-                                    hwaas=13,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_15_6_MHz,
-                                ),
-                                a121.SubsweepConfig(
-                                    start_point=1152,
-                                    num_points=18,
+                                    num_points=23,
                                     step_length=24,
                                     profile=a121.Profile.PROFILE_5,
                                     hwaas=15,
@@ -501,46 +438,7 @@ def _subsweeps(session_config):
                                 ),
                                 a121.SubsweepConfig(
                                     start_point=264,
-                                    num_points=26,
-                                    step_length=24,
-                                    profile=a121.Profile.PROFILE_5,
-                                    hwaas=5,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_15_6_MHz,
-                                ),
-                                a121.SubsweepConfig(
-                                    start_point=888,
-                                    num_points=4,
-                                    step_length=24,
-                                    profile=a121.Profile.PROFILE_5,
-                                    hwaas=7,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_15_6_MHz,
-                                ),
-                            ],
-                            sweeps_per_frame=1,
-                            sweep_rate=None,
-                            frame_rate=None,
-                            continuous_sweep_mode=False,
-                            double_buffering=False,
-                            inter_frame_idle_state=a121.IdleState.DEEP_SLEEP,
-                            inter_sweep_idle_state=a121.IdleState.READY,
-                        ),
-                    },
-                    {
-                        1: a121.SensorConfig(
-                            subsweeps=[
-                                a121.SubsweepConfig(
-                                    start_point=984,
-                                    num_points=2,
+                                    num_points=32,
                                     step_length=24,
                                     profile=a121.Profile.PROFILE_5,
                                     hwaas=8,
@@ -553,33 +451,7 @@ def _subsweeps(session_config):
                                 ),
                                 a121.SubsweepConfig(
                                     start_point=1032,
-                                    num_points=2,
-                                    step_length=24,
-                                    profile=a121.Profile.PROFILE_5,
-                                    hwaas=10,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_15_6_MHz,
-                                ),
-                                a121.SubsweepConfig(
-                                    start_point=1080,
-                                    num_points=3,
-                                    step_length=24,
-                                    profile=a121.Profile.PROFILE_5,
-                                    hwaas=13,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_15_6_MHz,
-                                ),
-                                a121.SubsweepConfig(
-                                    start_point=1152,
-                                    num_points=18,
+                                    num_points=23,
                                     step_length=24,
                                     profile=a121.Profile.PROFILE_5,
                                     hwaas=15,
@@ -683,46 +555,7 @@ def _subsweeps(session_config):
                                 ),
                                 a121.SubsweepConfig(
                                     start_point=264,
-                                    num_points=26,
-                                    step_length=24,
-                                    profile=a121.Profile.PROFILE_5,
-                                    hwaas=5,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_15_6_MHz,
-                                ),
-                                a121.SubsweepConfig(
-                                    start_point=888,
-                                    num_points=4,
-                                    step_length=24,
-                                    profile=a121.Profile.PROFILE_5,
-                                    hwaas=7,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_15_6_MHz,
-                                ),
-                            ],
-                            sweeps_per_frame=1,
-                            sweep_rate=None,
-                            frame_rate=None,
-                            continuous_sweep_mode=False,
-                            double_buffering=False,
-                            inter_frame_idle_state=a121.IdleState.DEEP_SLEEP,
-                            inter_sweep_idle_state=a121.IdleState.READY,
-                        ),
-                    },
-                    {
-                        1: a121.SensorConfig(
-                            subsweeps=[
-                                a121.SubsweepConfig(
-                                    start_point=984,
-                                    num_points=2,
+                                    num_points=32,
                                     step_length=24,
                                     profile=a121.Profile.PROFILE_5,
                                     hwaas=8,
@@ -735,33 +568,7 @@ def _subsweeps(session_config):
                                 ),
                                 a121.SubsweepConfig(
                                     start_point=1032,
-                                    num_points=2,
-                                    step_length=24,
-                                    profile=a121.Profile.PROFILE_5,
-                                    hwaas=10,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_15_6_MHz,
-                                ),
-                                a121.SubsweepConfig(
-                                    start_point=1080,
-                                    num_points=3,
-                                    step_length=24,
-                                    profile=a121.Profile.PROFILE_5,
-                                    hwaas=13,
-                                    receiver_gain=10,
-                                    enable_tx=True,
-                                    enable_loopback=False,
-                                    phase_enhancement=True,
-                                    iq_imbalance_compensation=True,
-                                    prf=a121.PRF.PRF_15_6_MHz,
-                                ),
-                                a121.SubsweepConfig(
-                                    start_point=1152,
-                                    num_points=18,
+                                    num_points=23,
                                     step_length=24,
                                     profile=a121.Profile.PROFILE_5,
                                     hwaas=15,
@@ -1358,21 +1165,23 @@ def test_signal_quality_offset_follows_the_profile_reaching_furthest():
 
 
 def test_carry_over_signal_quality_reproduces_the_hwaas_from_before_the_gain_fix():
-    # what the old default configuration measured while only a tenth of the gain was used
+    # what the old default configuration measured in its transitions and at its far end while
+    # only a tenth of the gain was used; the subsweeps in between follow the far range layout
     old_default = DetectorConfig(signal_quality=15.0)
-    expected_hwaas = [2, 5, 5, 7, 8, 10, 13, 15]
 
     session_config = detector_config_to_session_config(carry_over_signal_quality(old_default), [1])
+    hwaas = [subsweep.hwaas for subsweep in _subsweeps(session_config)]
 
-    assert [subsweep.hwaas for subsweep in _subsweeps(session_config)] == expected_hwaas
+    assert hwaas[:2] == [2, 5]
+    assert hwaas[-1] == 15
 
 
 def test_transition_keeps_its_subsweep_at_equal_hwaas():
     # A transition carries a profile and a step length of its own, so it stays a
     # subsweep of its own even where it lands on the HWAAS of its neighbour.
-    subsweeps = _subsweeps(detector_config_to_session_config(DetectorConfig(), [1]))
+    subsweeps = _subsweeps(detector_config_to_session_config(DetectorConfig(end_m=2.5), [1]))
 
-    assert len(subsweeps) == 8
+    assert len(subsweeps) == 4
     assert subsweeps[1].profile == a121.Profile.PROFILE_3
     assert subsweeps[2].profile == a121.Profile.PROFILE_5
     assert subsweeps[1].hwaas == subsweeps[2].hwaas
@@ -1466,3 +1275,45 @@ def test_merging_never_overfills_a_sensor_config(start_m, end_m, max_profile, si
     )
 
     detector_config_to_session_config(config, [1]).validate()
+
+
+def test_second_far_range_sensor_config_only_when_it_saves_sensor_time():
+    # Finer HWAAS steps would save too little sensor time to make up for a second sensor config
+    assert len(detector_config_to_session_config(DetectorConfig(end_m=3.5), [1]).groups) == 1
+    assert len(detector_config_to_session_config(DetectorConfig(end_m=4.0), [1]).groups) == 2
+
+    # Every subsweep is at HWAAS 1, but the points do not fit one sensor config
+    config = DetectorConfig(start_m=0.05, end_m=7.0, max_step_length=1, signal_quality=0.0)
+    assert len(detector_config_to_session_config(config, [1]).groups) == 2
+
+
+@pytest.mark.parametrize(
+    "max_profile", [a121.Profile.PROFILE_1, a121.Profile.PROFILE_3, a121.Profile.PROFILE_5]
+)
+@pytest.mark.parametrize("start_m", [0.05, 0.25, 1.0])
+def test_processor_specs_reference_existing_subsweeps_around_the_second_sensor_config(
+    start_m, max_profile
+):
+    # Whether the far range takes a second sensor config follows the sensor time it saves, so
+    # sweep end_m over ranges where that decision changes
+    num_groups_seen = set()
+
+    for end_mm in range(1500, 8001, 10):
+        config = DetectorConfig(start_m=start_m, end_m=end_mm / 1000, max_profile=max_profile)
+        session_config = detector_config_to_session_config(config, [1])
+        specs = detector_config_to_processor_specs(
+            config, get_num_far_subsweeps(session_config, config)
+        )
+
+        existing = [
+            (group_index, subsweep_index)
+            for group_index, group in enumerate(session_config.groups)
+            for subsweep_index in range(group[1].num_subsweeps)
+        ]
+        referenced = [
+            tuple(reference) for spec in specs for reference in spec.subsweep_references or []
+        ]
+        assert sorted(referenced) == existing
+        num_groups_seen.add(len(session_config.groups))
+
+    assert num_groups_seen == {1, 2}

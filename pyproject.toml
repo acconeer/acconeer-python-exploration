@@ -461,6 +461,9 @@ include = [
 
 [tool.check_sdk_mentions]
 ignore_lines = [
+    "Jenkinsfile:41",
+    "Jenkinsfile:42",
+    "Jenkinsfile:43",
     "Jenkinsfile:48",
     "Jenkinsfile:49",
     "Jenkinsfile:50",
