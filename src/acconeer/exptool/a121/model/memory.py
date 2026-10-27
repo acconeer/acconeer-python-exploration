@@ -144,9 +144,8 @@ def distance_external_heap_memory(config: DistanceConfig) -> int:
             det_calib_buffer += SIZE_OF_FLOAT
         else:
             assert proc_spec.subsweep_references is not None
-            sensor_cfg = sensor_cfgs[proc_spec.subsweep_references[0].group_index]
             subsweep_cfgs = [
-                sensor_cfg.subsweeps[ss_ref.subsweep_index]
+                sensor_cfgs[ss_ref.group_index].subsweeps[ss_ref.subsweep_index]
                 for ss_ref in proc_spec.subsweep_references
             ]
             det_calib_buffer += len(subsweep_cfgs) * SIZE_OF_FLOAT
@@ -173,8 +172,8 @@ def distance_external_heap_memory(config: DistanceConfig) -> int:
             proc_calib_buffer += sensor_cfg.sweeps_per_frame * num_points * SIZE_OF_FLOAT
             proc_calib_buffer += sensor_cfg.sweeps_per_frame * SIZE_OF_FLOAT
 
-        # The aggregator reuses one work buffer for every processor.
-        aggr_work_buffer = max(aggr_work_buffer, proc_work_buffer)
+        # Every processor has a work buffer of its own.
+        aggr_work_buffer += proc_work_buffer
         aggr_calib_buffer += proc_calib_buffer
 
     work_buffer = max(noise_work_buffer, aggr_work_buffer)

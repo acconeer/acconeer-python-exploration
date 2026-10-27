@@ -47,6 +47,9 @@
   `ET_LEGACY_USB=1` to use the previous implementation.
 
 ### Fixed
+- The resource tab's heap estimate for the A121 Distance Detector reads
+  a far range that spans two sensor configs from both of them, and counts
+  a work buffer for every processor, as the detector allocates them.
 - The Exploration Tool no longer shows a busy mouse pointer for several
   seconds on startup and when loading apps on GNOME (Wayland).
 
