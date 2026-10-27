@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 """
 This module defines the primitives of an event system.
@@ -100,6 +100,11 @@ class IdentifiedServiceUninstalledEvent:
 class ChangeIdEvent:
     old_id: str
     new_id: str
+
+
+@attrs.frozen
+class BreakdownToggleEvent:
+    enabled: bool
 
 
 class EventBroker:

@@ -415,6 +415,7 @@ module = [
     "requests.*",
     "scipy.*",
     "serial.*",
+    "yaml.*",
 ]
 ignore_missing_imports = true
 

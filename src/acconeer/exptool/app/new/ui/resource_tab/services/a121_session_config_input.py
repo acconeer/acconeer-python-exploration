@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2024
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -67,11 +67,11 @@ class SessionConfigInput(ScrollAreaDecorator):
         layout.addWidget(wrapped_power_state_selection)
         layout.addWidget(self.editor)
 
-        self.id_ = broker.install_identified_service(self, "sparse-iq")
+        self.id_ = broker.install_identified_service(self, "a121-sparse-iq")
         self.uninstall_function = lambda: broker.uninstall_identified_service(self, self.id_)
         self._offer_event_if_config_is_valid()
-        self.window_title = f"<b><code>[{self.id_}]</code></b> Sparse IQ config"
-        self.fixed_title = "Sparse IQ config"
+        self.window_title = f"<b><code>[{self.id_}]</code></b> A121 Sparse IQ config"
+        self.fixed_title = "A121 Sparse IQ config"
 
     def _display_validation_results(self) -> None:
         config = self.editor.get_data()

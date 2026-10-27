@@ -30,21 +30,40 @@ from PySide6.QtWidgets import (
 )
 
 import acconeer.exptool
-from acconeer.exptool import a121
+from acconeer.exptool import a2, a121
+from acconeer.exptool.a2.algo.heatmap.capon import (
+    HeatmapAndSessionConfig as HeatmapCaponAndSessionConfig,
+)
+from acconeer.exptool.a2.algo.heatmap.coherent import (
+    HeatmapAndSessionConfig as HeatmapCoherentAndSessionConfig,
+)
+from acconeer.exptool.a2.algo.heatmap.conventional import (
+    HeatmapAndSessionConfig as HeatmapConventionalAndSessionConfig,
+)
+from acconeer.exptool.a2.algo.heatmap.robust_capon import (
+    HeatmapAndSessionConfig as HeatmapRobustCaponAndSessionConfig,
+)
+from acconeer.exptool.a2.model import power as a2_power
 from acconeer.exptool.a121.algo import distance, presence
 from acconeer.exptool.app.new.storage import get_config_dir
 from acconeer.exptool.app.new.ui.icons import CHART_BAR, CHART_LINE, CLOSE, COG, EDIT, INFO, MEMORY
 from acconeer.exptool.utils import get_module_version
 
 from .animation import run_blink_animation
-from .event_system import ChangeIdEvent, EventBroker
+from .event_system import BreakdownToggleEvent, ChangeIdEvent, EventBroker
 from .services import (
+    a2_heatmap_capon_config_input,
+    a2_heatmap_coherent_config_input,
+    a2_heatmap_conventional_config_input,
+    a2_heatmap_robust_capon_config_input,
+    a2_session_config_input,
+    a121_session_config_input,
     distance_config_input,
     memory_breakdown_output,
     power_consumption_vs_rate_output,
     power_curve_output,
+    power_state_summary_output,
     presence_config_input,
-    session_config_input,
 )
 
 
@@ -358,21 +377,30 @@ class ResourceMainWidget(QMainWindow):
         )
         self._compare_cb.setChecked(False)
 
+        self._breakdown_cb = QCheckBox("Current breakdown")
+        self._breakdown_cb.setChecked(True)
+        self._breakdown_cb.toggled.connect(
+            lambda checked: self._broker.offer_event(BreakdownToggleEvent(checked))
+        )
+        # The current YAML may not carry broken-down data (public branch).
+        # In that case the checkbox is useless, so hide it.
+        self._breakdown_cb.setVisible(a2_power.SensorConstants.default().has_current_breakdown)
+
         self._populate_palette(toolbar)
         self.setCentralWidget(toolbar)
 
-        # Default loadout
+        # Default loadout, A2 for now
         power_curve = self._create_power_curve_output()
         self._add_dock_widget(power_curve)
         self._add_dock_widget_below_target(
             target=power_curve,
-            new_widget=self._create_memory_breakdown_output(),
+            new_widget=self._create_power_state_summary_output(),
         )
         self._add_dock_widget_right_of_target(
             target=power_curve,
             new_widget=self._create_power_consumption_vs_rate_output(),
         )
-        self.spawn_input_block(a121.SessionConfig(), animate=False)
+        self.spawn_input_block(a2.SessionConfig.default(), animate=False)
 
     def showEvent(self, *args: t.Any, **kwargs: t.Any) -> None:
         super().showEvent(*args, **kwargs)
@@ -397,7 +425,17 @@ class ResourceMainWidget(QMainWindow):
         self._broker.offer_event(_SpawnInputEvent(self._compare_cb.isChecked()))
 
         if isinstance(config, a121.SessionConfig):
-            dock_widget = self._create_session_config_input(config)
+            dock_widget = self._create_a121_session_config_input(config)
+        elif isinstance(config, a2.SessionConfig):
+            dock_widget = self._create_a2_session_config_input(config)
+        elif isinstance(config, HeatmapCaponAndSessionConfig):
+            dock_widget = self._create_heatmap_capon_config_input(config)
+        elif isinstance(config, HeatmapCoherentAndSessionConfig):
+            dock_widget = self._create_heatmap_coherent_config_input(config)
+        elif isinstance(config, HeatmapConventionalAndSessionConfig):
+            dock_widget = self._create_heatmap_conventional_config_input(config)
+        elif isinstance(config, HeatmapRobustCaponAndSessionConfig):
+            dock_widget = self._create_heatmap_robust_capon_config_input(config)
         elif isinstance(config, distance.DetectorConfig):
             dock_widget = self._create_distance_config_input(config)
         elif isinstance(config, presence.DetectorConfig):
@@ -434,7 +472,7 @@ class ResourceMainWidget(QMainWindow):
         toolbar.addAction(
             self._create_action(
                 COG(),
-                button_label="New Sparse IQ config",
+                button_label="New A121 Sparse IQ config",
                 on_trigger=lambda: self.spawn_input_block(a121.SessionConfig(), animate=False),
             )
         )
@@ -453,6 +491,51 @@ class ResourceMainWidget(QMainWindow):
                 "New Presence config",
                 on_trigger=lambda: self.spawn_input_block(
                     presence.DetectorConfig(), animate=False
+                ),
+            )
+        )
+        toolbar.addAction(
+            self._create_action(
+                COG(),
+                button_label="New A2 Sparse IQ config",
+                on_trigger=lambda: self.spawn_input_block(
+                    a2.SessionConfig.default(), animate=False
+                ),
+            )
+        )
+        toolbar.addAction(
+            self._create_action(
+                COG(),
+                "New Capon config",
+                on_trigger=lambda: self.spawn_input_block(
+                    HeatmapCaponAndSessionConfig.default(), animate=False
+                ),
+            )
+        )
+        toolbar.addAction(
+            self._create_action(
+                COG(),
+                "New Coherent config",
+                on_trigger=lambda: self.spawn_input_block(
+                    HeatmapCoherentAndSessionConfig.default(), animate=False
+                ),
+            )
+        )
+        toolbar.addAction(
+            self._create_action(
+                COG(),
+                "New Conventional config",
+                on_trigger=lambda: self.spawn_input_block(
+                    HeatmapConventionalAndSessionConfig.default(), animate=False
+                ),
+            )
+        )
+        toolbar.addAction(
+            self._create_action(
+                COG(),
+                "New Robust Capon config",
+                on_trigger=lambda: self.spawn_input_block(
+                    HeatmapRobustCaponAndSessionConfig.default(), animate=False
                 ),
             )
         )
@@ -478,9 +561,27 @@ class ResourceMainWidget(QMainWindow):
         )
         toolbar.addAction(
             self._create_action(
+                CHART_BAR(),
+                button_label="State summary",
+                on_trigger=lambda: self._add_dock_widget(
+                    self._create_power_state_summary_output()
+                ),
+            )
+        )
+        toolbar.addAction(
+            self._create_action(
                 MEMORY(),
                 button_label="Memory breakdown",
                 on_trigger=lambda: self._add_dock_widget(self._create_memory_breakdown_output()),
+            )
+        )
+        toolbar.addAction(
+            self._create_action(
+                CHART_BAR(),
+                button_label="A2 State summary",
+                on_trigger=lambda: self._add_dock_widget(
+                    self._create_power_state_summary_output()
+                ),
             )
         )
 
@@ -496,10 +597,83 @@ class ResourceMainWidget(QMainWindow):
 
         toolbar.addSeparator()
 
+        toolbar.addWidget(self._breakdown_cb)
         toolbar.addWidget(self._compare_cb)
 
-    def _create_session_config_input(self, config: a121.SessionConfig) -> _DockWidget:
-        service = session_config_input.SessionConfigInput(self._broker, config)
+    def _create_a121_session_config_input(self, config: a121.SessionConfig) -> _DockWidget:
+        service = a121_session_config_input.SessionConfigInput(self._broker, config)
+        return _InputDockWidget(
+            service.id_,
+            service.fixed_title,
+            service.description,
+            service,
+            service.uninstall_function,
+            self._broker,
+            parent=self,
+        )
+
+    def _create_a2_session_config_input(self, config: a2.SessionConfig) -> _DockWidget:
+        service = a2_session_config_input.SessionConfigInput(self._broker, config)
+        return _InputDockWidget(
+            service.id_,
+            service.fixed_title,
+            service.description,
+            service,
+            service.uninstall_function,
+            self._broker,
+            parent=self,
+        )
+
+    def _create_heatmap_capon_config_input(
+        self, config: HeatmapCaponAndSessionConfig
+    ) -> _DockWidget:
+        service = a2_heatmap_capon_config_input.HeatmapCaponConfigInput(self._broker, config)
+        return _InputDockWidget(
+            service.id_,
+            service.fixed_title,
+            service.description,
+            service,
+            service.uninstall_function,
+            self._broker,
+            parent=self,
+        )
+
+    def _create_heatmap_coherent_config_input(
+        self, config: HeatmapCoherentAndSessionConfig
+    ) -> _DockWidget:
+        service = a2_heatmap_coherent_config_input.HeatmapCoherentConfigInput(self._broker, config)
+        return _InputDockWidget(
+            service.id_,
+            service.fixed_title,
+            service.description,
+            service,
+            service.uninstall_function,
+            self._broker,
+            parent=self,
+        )
+
+    def _create_heatmap_conventional_config_input(
+        self, config: HeatmapConventionalAndSessionConfig
+    ) -> _DockWidget:
+        service = a2_heatmap_conventional_config_input.HeatmapConventionalConfigInput(
+            self._broker, config
+        )
+        return _InputDockWidget(
+            service.id_,
+            service.fixed_title,
+            service.description,
+            service,
+            service.uninstall_function,
+            self._broker,
+            parent=self,
+        )
+
+    def _create_heatmap_robust_capon_config_input(
+        self, config: HeatmapRobustCaponAndSessionConfig
+    ) -> _DockWidget:
+        service = a2_heatmap_robust_capon_config_input.HeatmapRobustCaponConfigInput(
+            self._broker, config
+        )
         return _InputDockWidget(
             service.id_,
             service.fixed_title,
@@ -522,6 +696,16 @@ class ResourceMainWidget(QMainWindow):
 
     def _create_power_consumption_vs_rate_output(self) -> _DockWidget:
         service = power_consumption_vs_rate_output.PowerConsumptionVsRateOutput(self._broker)
+        return _DockWidget(
+            service.window_title,
+            service.description,
+            service,
+            service.uninstall_function,
+            parent=self,
+        )
+
+    def _create_power_state_summary_output(self) -> _DockWidget:
+        service = power_state_summary_output.PowerStateSummaryOutput(self._broker)
         return _DockWidget(
             service.window_title,
             service.description,

@@ -44,6 +44,13 @@ def modelTestA121RssVersionForBuildScope = [
 ]
 
 @Field
+def modelTestA2RssVersionForBuildScope = [
+    (BuildScope.SANITY)  : [commit: 'interim/sw-main/master/2026/2026-09-11/a2-v1.0.0-rc2-441-gc50b8af62f'],
+    (BuildScope.HOURLY)  : [commit: 'interim/sw-main/master/2026/2026-09-11/a2-v1.0.0-rc2-441-gc50b8af62f'],
+    (BuildScope.NIGHTLY) : [commit: 'interim/sw-main/master/2026/2026-09-11/a2-v1.0.0-rc2-441-gc50b8af62f'],
+]
+
+@Field
 String dockerArgs = '--mount type=volume,src=uv-cache,dst=/home/ci/.cache/uv'
 
 boolean messageOnFailure = true
@@ -150,6 +157,7 @@ try {
     def integrationTestA111RssVersions = integrationTestA111RssVersionsForBuildScope[buildScope]
     def integrationTestA2RssVersions = integrationTestA2RssVersionsForBuildScope[buildScope]
     def modelTestA121RssVersion = modelTestA121RssVersionForBuildScope[buildScope]
+    def modelTestA2RssVersion = modelTestA2RssVersionForBuildScope[buildScope]
 
     if (env.BRANCH_NAME =~ /[0-9]+\/[0-9]+\/[0-9]+/) {
         buildType = 'change'
@@ -333,6 +341,34 @@ try {
                     }
                 }
 
+                stage("Fetch A2 model stashes (${modelTestA2RssVersion})") {
+                    modelTestA2RssVersion.each { rssVersion ->
+                        def rssVersionType = rssVersion.getKey()
+                        def rssVersionName = rssVersion.getValue()
+                        def stashFolder = "stash/model_a2/${rssVersionName}"
+
+                        sh "mkdir -p ${stashFolder}"
+
+                        if (rssVersionType == 'commit') {
+                            retrieveArtifacts(
+                                folder: rssVersionName,
+                                stage: 'compile',
+                                artifacts: ['out/internal_stash_python_libs_a2.tgz', 'out/internal_stash_tests_a2r2.tgz', 'out/internal_stash_walle_project_a2r2.tgz']
+                            )
+                        } else {
+                            findBuildAndCopyArtifacts(
+                                [
+                                    projectName: 'sw-main',
+                                    artifactNames: ['out/internal_stash_python_libs_a2.tgz', 'out/internal_stash_tests_a2r2.tgz', 'out/internal_stash_walle_project_a2r2.tgz'],
+                                ] << rssVersion // e.g. [branch: 'master'] or [tag: 'a2-vX.Y.Z']
+                            )
+                        }
+                        sh "tar -xzf out/internal_stash_python_libs_a2.tgz -C ${stashFolder}"
+                        sh "tar -xzf out/internal_stash_tests_a2r2.tgz -C ${stashFolder}"
+                        sh "tar -xzf out/internal_stash_walle_project_a2r2.tgz -C ${stashFolder}"
+                    }
+                }
+
                 stage("Run tests (${pythonVersions})") {
                     printNodeInfo()
                     buildDocker(path: 'docker').inside(dockerArgs) {
@@ -369,6 +405,19 @@ try {
                                 glob: 'stash/model_a121/**/tests/a121/**/memory_usage.yaml'
                             )
 
+                            def a2_sensor_current_limits_matches = findFiles(
+                                glob: 'stash/model_a2/**/python_libs/**/sensor_current_limits.yaml'
+                            )
+                            def a2_timing_limits_matches = findFiles(
+                                glob: 'stash/model_a2/**/python_libs/**/timing_limits.yaml'
+                            )
+                            def a2_computation_limits_matches = findFiles(
+                                glob: 'stash/model_a2/**/walle/**/computation_test/asserts.yaml'
+                            )
+                            def a2_memory_usage_yaml_matches = findFiles(
+                                glob: 'stash/model_a2/**/tests/a2/**/memory_usage.yaml'
+                            )
+
                             echo "a121_es_binaries=${a121_es_binaries}"
                             echo "a111_es_binaries=${a111_es_binaries}"
                             echo "a2_es_binaries=${a2_es_binaries}"
@@ -377,6 +426,15 @@ try {
                             echo "a121_inter_sweep_idle_state_current_limits_matches=${a121_inter_sweep_idle_state_current_limits_matches}"
                             echo "a121_memory_usage_yaml_matches=${a121_memory_usage_yaml_matches}"
 
+                            echo "a2_sensor_current_limits_matches=${a2_sensor_current_limits_matches}"
+                            echo "a2_timing_limits_matches=${a2_timing_limits_matches}"
+                            echo "a2_computation_limits_matches=${a2_computation_limits_matches}"
+                            echo "a2_memory_usage_yaml_matches=${a2_memory_usage_yaml_matches}"
+
+                            // The A2 reference yamls are passed as --option=value: pytest
+                            // parses the arguments before the conftest that defines the
+                            // options, so a separate value is taken for a test path and
+                            // collects the RSS repo's own conftest next to the yaml.
                             hatchWrap """test ${versionSelection} --parallel --cover tests/ src/ \
                                 --a121-exploration-server-paths ${a121_es_binaries.join(' ')} \
                                 --a111-exploration-server-paths ${a111_es_binaries.join(' ')} \
@@ -386,6 +444,10 @@ try {
                                 --inter-sweep-idle-state-current-limits-path \
                                     ${a121_inter_sweep_idle_state_current_limits_matches[0]} \
                                 --memory-usage-path ${a121_memory_usage_yaml_matches[0]} \
+                                --a2-sensor-current-limits-path=${a2_sensor_current_limits_matches[0]} \
+                                --a2-timing-limits-path=${a2_timing_limits_matches[0]} \
+                                --a2-computation-time-limits-path=${a2_computation_limits_matches[0]} \
+                                --a2-memory-usage-path=${a2_memory_usage_yaml_matches[0]} \
                                 ${devsiteSelection}
                             """
 
