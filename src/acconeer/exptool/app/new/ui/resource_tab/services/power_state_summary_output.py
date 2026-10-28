@@ -99,7 +99,7 @@ class PowerStateSummaryOutput(QScrollArea):
         "Shows per-state duration, average current, energy and optional "
         "current-breakdown for A2 configurations."
     )
-    window_title = "A2 State summary"
+    window_title = "State summary"
 
     def __init__(self, broker: EventBroker) -> None:
         super().__init__()
@@ -110,7 +110,7 @@ class PowerStateSummaryOutput(QScrollArea):
         self._content = QWidget()
         self._layout = QVBoxLayout(self._content)
         self._layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        self._placeholder = QLabel("Nothing to show (add an A2 configuration)")
+        self._placeholder = QLabel("Nothing to show (add a configuration)")
         self._placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._layout.addWidget(self._placeholder)
 
@@ -219,7 +219,7 @@ class PowerStateSummaryOutput(QScrollArea):
         self._clear_layout()
 
         if not self._entries:
-            self._placeholder = QLabel("Nothing to show (add an A2 configuration)")
+            self._placeholder = QLabel("Nothing to show (add a configuration)")
             self._placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self._layout.addWidget(self._placeholder)
             return

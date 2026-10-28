@@ -138,9 +138,9 @@ class _PagedLayout(QSplitter):
             tooltip=rc_tooltip,
         )
         # The resource tab needs Config definitions, which are lazily loaded (not at import time)
-        from .resource_tab import ResourceMainWidget
+        from .resource_tab import ResourceTab
 
-        self._resource_main_widget = ResourceMainWidget()
+        self._resource_main_widget = ResourceTab(self.app_model)
         self._index_button_group.addButton(rc_index_button, id=self._ButtonId.RESOURCE_CALCULATOR)
         self._index_button_layout.addWidget(rc_index_button)
         self._page_widget.addWidget(self._resource_main_widget)

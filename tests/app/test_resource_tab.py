@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import typing as t
+from uuid import UUID, uuid4
 
 import pytest
 
@@ -14,6 +15,9 @@ from PySide6.QtWidgets import QDockWidget, QLabel, QWidget
 from acconeer.exptool import a2, a121
 from acconeer.exptool.a2.algo.heatmap import capon, coherent, conventional, robust_capon
 from acconeer.exptool.a121.algo import distance, presence
+from acconeer.exptool.app.new._enums import PluginGeneration
+from acconeer.exptool.app.new.app_model import AppModel
+from acconeer.exptool.app.new.storage import get_algo_bundle_path
 from acconeer.exptool.app.new.ui.resource_tab.event_system import (
     BreakdownToggleEvent,
     ChangeIdEvent,
@@ -35,7 +39,8 @@ from acconeer.exptool.app.new.ui.resource_tab.services import (
     power_state_summary_output,
     presence_config_input,
 )
-from acconeer.exptool.app.new.ui.resource_tab.widgets import ResourceMainWidget
+from acconeer.exptool.app.new.ui.resource_tab.widgets import ResourceMainWidget, ResourceTab
+from acconeer.exptool.app.new.ui.stream_tab.connection_widget import GenerationSelection
 
 
 pytestmark = pytest.mark.usefixtures("qapplication")
@@ -128,9 +133,14 @@ A2_INPUTS = [
     if service_id.startswith("a2-")
 ]
 
+
+def _generation(service_id: str) -> PluginGeneration:
+    return PluginGeneration.A2 if service_id.startswith("a2-") else PluginGeneration.A121
+
+
 SPAWNABLE_CONFIGS = [
-    pytest.param(config_factory, title, id=name)
-    for name, config_factory, _, _, title in _INPUT_BLOCKS
+    pytest.param(config_factory, title, _generation(service_id), id=name)
+    for name, config_factory, _, service_id, title in _INPUT_BLOCKS
 ]
 
 assert len(A2_INPUTS) == 5, "the A2 inputs are the ones the power model covers"
@@ -284,21 +294,23 @@ def test_an_output_added_late_catches_up(broker: EventBroker) -> None:
     assert _memory_row(late_output, service.id_) is not None
 
 
-@pytest.mark.parametrize(("config_factory", "title"), SPAWNABLE_CONFIGS)
+@pytest.mark.parametrize(("config_factory", "title", "generation"), SPAWNABLE_CONFIGS)
 def test_spawning_an_input_block_adds_a_dock(
-    config_factory: t.Callable[[], t.Any], title: str
+    config_factory: t.Callable[[], t.Any], title: str, generation: PluginGeneration
 ) -> None:
     """Covers the dispatch behind the toolbar buttons"""
-    main_widget = ResourceMainWidget()
+    main_widget = ResourceMainWidget(generation, QWidget())
 
     main_widget.spawn_input_block(config_factory(), animate=False)
 
     assert title in _dock_titles(main_widget)
 
 
-@pytest.mark.parametrize(("config_factory", "title"), SPAWNABLE_CONFIGS)
-def test_closing_a_spawned_input_block(config_factory: t.Callable[[], t.Any], title: str) -> None:
-    main_widget = ResourceMainWidget()
+@pytest.mark.parametrize(("config_factory", "title", "generation"), SPAWNABLE_CONFIGS)
+def test_closing_a_spawned_input_block(
+    config_factory: t.Callable[[], t.Any], title: str, generation: PluginGeneration
+) -> None:
+    main_widget = ResourceMainWidget(generation, QWidget())
     main_widget.spawn_input_block(config_factory(), animate=False)
     matching = [d for d in _visible_docks(main_widget) if d.windowTitle() == title]
 
@@ -385,17 +397,20 @@ def test_every_power_selection_reaches_the_listener() -> None:
     assert len(updates) == 3
 
 
-def test_every_toolbar_config_action_spawns_a_block() -> None:
+@pytest.mark.parametrize("generation", [PluginGeneration.A121, PluginGeneration.A2])
+def test_every_toolbar_config_action_spawns_a_block(generation: PluginGeneration) -> None:
     """The toolbar is the only place that names the blocks the user can add
 
     The output actions are left out, and so is Info, which opens a modal dialog.
     """
-    main_widget = ResourceMainWidget()
+    main_widget = ResourceMainWidget(generation, QWidget())
     toolbar = main_widget.centralWidget()
 
     actions = [action for action in toolbar.actions() if action.text().startswith("New ")]
 
-    assert len(actions) == len(SPAWNABLE_CONFIGS)
+    assert len(actions) == len(
+        [param for param in SPAWNABLE_CONFIGS if param.values[2] == generation]
+    )
 
     for action in actions:
         action.trigger()
@@ -437,3 +452,45 @@ def test_a_heatmap_with_an_invalid_session_config_is_offered_to_nobody(
     )
 
     assert _memory_row(memory_output, service.id_) is None
+
+
+@pytest.mark.parametrize("generation", [PluginGeneration.A121, PluginGeneration.A2])
+def test_default_loadout_follows_the_generation(generation: PluginGeneration) -> None:
+    titles = _dock_titles(ResourceMainWidget(generation, QWidget()))
+
+    if generation == PluginGeneration.A2:
+        assert "A2 Sparse IQ config" in titles
+        assert "State summary" in titles
+        assert not any(title.startswith("A121") for title in titles)
+    else:
+        assert "A121 Sparse IQ config" in titles
+        assert "Memory breakdown" in titles
+        assert not any(title.startswith("A2") for title in titles)
+
+
+class _NullBackend:
+    def put_task(self, task: t.Any) -> UUID:
+        return uuid4()
+
+
+def test_switching_generation_keeps_each_calculator() -> None:
+    app_model = AppModel(
+        _NullBackend(),  # type: ignore[arg-type]
+        [],
+        use_port_updater=False,
+        plugin_generation=PluginGeneration.A121,
+        algo_bundle=get_algo_bundle_path(),
+    )
+    tab = ResourceTab(app_model)
+    a121_widget = tab.current_main_widget()
+    selection = tab.findChild(GenerationSelection)
+    assert selection is not None
+
+    selection.setCurrentIndex(selection.findData(PluginGeneration.A2))
+    a2_widget = tab.current_main_widget()
+    app_model.set_plugin_generation(PluginGeneration.A121)
+
+    assert app_model.plugin_generation == PluginGeneration.A121
+    assert a2_widget is not a121_widget
+    assert selection.currentData() == PluginGeneration.A121
+    assert tab.current_main_widget() is a121_widget

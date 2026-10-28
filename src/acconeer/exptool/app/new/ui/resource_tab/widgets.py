@@ -24,6 +24,7 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QPushButton,
+    QStackedWidget,
     QToolBar,
     QToolButton,
     QWidget,
@@ -45,8 +46,11 @@ from acconeer.exptool.a2.algo.heatmap.robust_capon import (
 )
 from acconeer.exptool.a2.model import power as a2_power
 from acconeer.exptool.a121.algo import distance, presence
+from acconeer.exptool.app.new._enums import PluginGeneration
+from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.storage import get_config_dir
 from acconeer.exptool.app.new.ui.icons import CHART_BAR, CHART_LINE, CLOSE, COG, EDIT, INFO, MEMORY
+from acconeer.exptool.app.new.ui.stream_tab.connection_widget import GenerationSelection
 from acconeer.exptool.utils import get_module_version
 
 from .animation import run_blink_animation
@@ -76,7 +80,8 @@ _ALLOWED_DOCK_AREA = Qt.DockWidgetArea.BottomDockWidgetArea
 
 _DATA_IS_APPROXIMATE_DESCRIPTION = "<br><br>".join(
     [
-        "All data and numbers presented in this tab are approximations based on RSS A121-v1.14.0, <b>not measurements</b>.",
+        "All data and numbers presented in this tab are approximations based on "
+        + "RSS A121-v1.14.0 and RSS A2-v1.2.0, <b>not measurements</b>.",
         "The goal is to let you experiment with configurations and do comparisons.",
         "Use this tool as a way to quickly narrow down which configuration could satisfy your "
         + "constraints before you do measurements to get real numbers.",
@@ -354,9 +359,12 @@ class _InputDockWidget(_DockWidget):
 
 
 class ResourceMainWidget(QMainWindow):
-    def __init__(self) -> None:
+    """The Resource Calculator for the configurations of a single sensor generation"""
+
+    def __init__(self, generation: PluginGeneration, generation_selection: QWidget) -> None:
         super().__init__()
 
+        self._generation = generation
         self._broker = EventBroker()
 
         # default is AnimatedDocks | AllowTabbedDocks
@@ -382,25 +390,37 @@ class ResourceMainWidget(QMainWindow):
         self._breakdown_cb.toggled.connect(
             lambda checked: self._broker.offer_event(BreakdownToggleEvent(checked))
         )
-        # The current YAML may not carry broken-down data (public branch).
-        # In that case the checkbox is useless, so hide it.
-        self._breakdown_cb.setVisible(a2_power.SensorConstants.default().has_current_breakdown)
 
+        # The theme makes the toolbar's direct children transparent, which strips
+        # the combo box of its field. A container takes that instead.
+        container = QWidget()
+        container_layout = QHBoxLayout(container)
+        container_layout.setContentsMargins(0, 0, 0, 0)
+        container_layout.addWidget(generation_selection)
+        toolbar.addWidget(container)
+        toolbar.addSeparator()
         self._populate_palette(toolbar)
         self.setCentralWidget(toolbar)
 
-        # Default loadout, A2 for now
+        # Default loadout
         power_curve = self._create_power_curve_output()
         self._add_dock_widget(power_curve)
-        self._add_dock_widget_below_target(
-            target=power_curve,
-            new_widget=self._create_power_state_summary_output(),
-        )
         self._add_dock_widget_right_of_target(
             target=power_curve,
             new_widget=self._create_power_consumption_vs_rate_output(),
         )
-        self.spawn_input_block(a2.SessionConfig.default(), animate=False)
+        if generation == PluginGeneration.A2:
+            self._add_dock_widget_below_target(
+                target=power_curve,
+                new_widget=self._create_power_state_summary_output(),
+            )
+            self.spawn_input_block(a2.SessionConfig.default(), animate=False)
+        else:
+            self._add_dock_widget_below_target(
+                target=power_curve,
+                new_widget=self._create_memory_breakdown_output(),
+            )
+            self.spawn_input_block(a121.SessionConfig(), animate=False)
 
     def showEvent(self, *args: t.Any, **kwargs: t.Any) -> None:
         super().showEvent(*args, **kwargs)
@@ -469,6 +489,69 @@ class ResourceMainWidget(QMainWindow):
         return action
 
     def _populate_palette(self, toolbar: QToolBar) -> None:
+        if self._generation == PluginGeneration.A2:
+            self._populate_a2_input_palette(toolbar)
+        else:
+            self._populate_a121_input_palette(toolbar)
+
+        toolbar.addSeparator()
+
+        toolbar.addAction(
+            self._create_action(
+                CHART_BAR(),
+                button_label="Power curve",
+                on_trigger=lambda: self._add_dock_widget(self._create_power_curve_output()),
+            )
+        )
+        toolbar.addAction(
+            self._create_action(
+                CHART_LINE(),
+                button_label="Power consumption vs. Rate",
+                on_trigger=lambda: self._add_dock_widget(
+                    self._create_power_consumption_vs_rate_output()
+                ),
+            )
+        )
+        if self._generation == PluginGeneration.A2:
+            toolbar.addAction(
+                self._create_action(
+                    CHART_BAR(),
+                    button_label="State summary",
+                    on_trigger=lambda: self._add_dock_widget(
+                        self._create_power_state_summary_output()
+                    ),
+                )
+            )
+        toolbar.addAction(
+            self._create_action(
+                MEMORY(),
+                button_label="Memory breakdown",
+                on_trigger=lambda: self._add_dock_widget(self._create_memory_breakdown_output()),
+            )
+        )
+
+        toolbar.addSeparator()
+
+        toolbar.addAction(
+            self._create_action(
+                INFO(),
+                button_label="Info",
+                on_trigger=self._show_info_popup,
+            )
+        )
+
+        toolbar.addSeparator()
+
+        # The current YAML may not carry broken-down data (public branch).
+        # In that case the checkbox is useless, so leave it out.
+        if (
+            self._generation == PluginGeneration.A2
+            and a2_power.SensorConstants.default().has_current_breakdown
+        ):
+            toolbar.addWidget(self._breakdown_cb)
+        toolbar.addWidget(self._compare_cb)
+
+    def _populate_a121_input_palette(self, toolbar: QToolBar) -> None:
         toolbar.addAction(
             self._create_action(
                 COG(),
@@ -494,6 +577,8 @@ class ResourceMainWidget(QMainWindow):
                 ),
             )
         )
+
+    def _populate_a2_input_palette(self, toolbar: QToolBar) -> None:
         toolbar.addAction(
             self._create_action(
                 COG(),
@@ -539,66 +624,6 @@ class ResourceMainWidget(QMainWindow):
                 ),
             )
         )
-
-        toolbar.addSeparator()
-
-        toolbar.addAction(
-            self._create_action(
-                CHART_BAR(),
-                button_label="Power curve",
-                on_trigger=lambda: self._add_dock_widget(self._create_power_curve_output()),
-            )
-        )
-
-        toolbar.addAction(
-            self._create_action(
-                CHART_LINE(),
-                button_label="Power consumption vs. Rate",
-                on_trigger=lambda: self._add_dock_widget(
-                    self._create_power_consumption_vs_rate_output()
-                ),
-            )
-        )
-        toolbar.addAction(
-            self._create_action(
-                CHART_BAR(),
-                button_label="State summary",
-                on_trigger=lambda: self._add_dock_widget(
-                    self._create_power_state_summary_output()
-                ),
-            )
-        )
-        toolbar.addAction(
-            self._create_action(
-                MEMORY(),
-                button_label="Memory breakdown",
-                on_trigger=lambda: self._add_dock_widget(self._create_memory_breakdown_output()),
-            )
-        )
-        toolbar.addAction(
-            self._create_action(
-                CHART_BAR(),
-                button_label="A2 State summary",
-                on_trigger=lambda: self._add_dock_widget(
-                    self._create_power_state_summary_output()
-                ),
-            )
-        )
-
-        toolbar.addSeparator()
-
-        toolbar.addAction(
-            self._create_action(
-                INFO(),
-                button_label="Info",
-                on_trigger=self._show_info_popup,
-            )
-        )
-
-        toolbar.addSeparator()
-
-        toolbar.addWidget(self._breakdown_cb)
-        toolbar.addWidget(self._compare_cb)
 
     def _create_a121_session_config_input(self, config: a121.SessionConfig) -> _DockWidget:
         service = a121_session_config_input.SessionConfigInput(self._broker, config)
@@ -754,3 +779,38 @@ class ResourceMainWidget(QMainWindow):
         txt += "<h2>Disclaimer</h2>"
         txt += _DATA_IS_APPROXIMATE_DESCRIPTION
         QMessageBox.information(self, "Resource Calculator", txt)
+
+
+class ResourceTab(QStackedWidget):
+    """Shows the Resource Calculator of the selected sensor generation
+
+    The generation selection is the app's, shared with the stream tab.
+    Each generation keeps its own calculator, so switching back and forth keeps the blocks.
+    """
+
+    def __init__(self, app_model: AppModel) -> None:
+        super().__init__()
+        self._main_widgets: dict[PluginGeneration, ResourceMainWidget] = {}
+
+        self._app_model = app_model
+
+        self._set_generation(app_model.plugin_generation)
+        app_model.sig_notify.connect(lambda am: self._set_generation(am.plugin_generation))
+
+    def _set_generation(self, generation: PluginGeneration) -> None:
+        if generation not in self._main_widgets:
+            # Each calculator's toolbar carries a selection, as a widget has one parent
+            self._main_widgets[generation] = ResourceMainWidget(
+                generation, GenerationSelection(self._app_model, self)
+            )
+            self.addWidget(self._main_widgets[generation])
+
+        self.setCurrentWidget(self._main_widgets[generation])
+
+    def current_main_widget(self) -> ResourceMainWidget:
+        current = self.currentWidget()
+        assert isinstance(current, ResourceMainWidget)
+        return current
+
+    def spawn_input_block(self, config: t.Any) -> None:
+        self.current_main_widget().spawn_input_block(config)

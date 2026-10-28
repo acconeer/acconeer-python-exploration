@@ -5,6 +5,9 @@
 ### Added
 - The flash tab can download the XE212 exploration server from
   developer.acconeer.com.
+- The Resource Calculator estimates power and memory for A2 configurations
+  as well. An A121/A2 selector, shared with the stream tab, picks which
+  generation's configurations and estimates it shows.
 
 ### Changed
 - The A2 apps pick the sensor's roll and pan with picture buttons, and
