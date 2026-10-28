@@ -8,3 +8,4 @@ A212 Applications
 
    Heatmap <heatmap/index>
    Motion Detection <motion_detection>
+   Presence Tracking Wall Mount <presence_tracking_wall_mount>

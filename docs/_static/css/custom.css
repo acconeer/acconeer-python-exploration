@@ -44,3 +44,13 @@ table.hw-figure-table td {
     max-height: 70vh;
     object-fit: contain;
 }
+
+/* A verification showcase page (e.g. in
+   applications/a212/presence_tracking_wall_mount/showcases/) is raw HTML with no
+   sections, so it has no secondary sidebar, but sphinx-book-theme still
+   reserves the sidebar's width: give it to the showcase. */
+@media (min-width: 1200px) {
+    .bd-main .bd-content:has(.showcase):not(:has(.bd-sidebar-secondary)) .bd-article-container {
+        max-width: 100%;
+    }
+}

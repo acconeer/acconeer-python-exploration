@@ -9,6 +9,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from docutils import nodes
 from sphinx.application import Sphinx
 from sphinx.util import logging
 
@@ -349,8 +350,69 @@ def _build_single_page_guides(app: Sphinx, exception: Exception | None) -> None:
             Path(outdir, guide_dir, "single_page.html").write_text(page, encoding="utf-8")
 
 
+def _add_page_pdf(app: Sphinx, doctree: nodes.document) -> None:
+    """
+    Add the PDF that a page names in its ``:pdf:`` field (file-wide metadata,
+    a path relative to the page) to the build's downloads, as :download: would.
+
+    _link_page_pdf links the page's download button to it.
+    """
+    docname = app.env.current_document.docname
+    pdf = app.env.metadata[docname].get("pdf")
+    if pdf is None:
+        return
+    rel_filename, filename = app.env.relfn2path(pdf, docname)
+    app.env.note_dependency(rel_filename)
+    if not os.access(filename, os.R_OK):
+        logger.warning("PDF not readable: %s", filename, location=docname)
+        return
+    app.env.dlfiles.add_file(docname, rel_filename)
+
+
+def _link_page_pdf(
+    app: Sphinx,
+    pagename: str,
+    templatename: str,
+    context: dict[str, Any],
+    doctree: nodes.document | None,
+) -> None:
+    """
+    Make the .pdf entry of sphinx_book_theme's download button, which prints
+    the page, download the PDF that the page names in its ``:pdf:`` field
+    instead (see _add_page_pdf).
+    """
+    pdf = (context.get("meta") or {}).get("pdf")
+    if pdf is None:
+        return
+    rel_filename, _ = app.env.relfn2path(pdf, pagename)
+    download = app.env.dlfiles.get(Path(rel_filename))
+    if download is None:  # Not readable: _add_page_pdf warned
+        return
+    url = context["pathto"](f"_downloads/{download[1].as_posix()}", 1)
+    for group in context.get("header_buttons", []):
+        buttons = group.get("buttons", [])
+        for i, button in enumerate(buttons):
+            if button["label"] == "download-pdf-button":
+                # The theme renders each button with all its keys as arguments,
+                # so the print button's "javascript" must go.
+                buttons[i] = {
+                    "type": "link",
+                    "url": url,
+                    "text": button["text"],
+                    "tooltip": "Download PDF",
+                    "icon": button["icon"],
+                    "label": button["label"],
+                }
+                return
+    logger.warning("No .pdf download button to link %s to", pdf, location=pagename)
+
+
 def setup(app: Sphinx) -> None:
     app.connect("include-read", _update_sensor_placeholder)
     # After sphinx_book_theme's add_header_buttons, at 501, has built the header buttons
     app.connect("html-page-context", _add_header_buttons, priority=502)
     app.connect("build-finished", _build_single_page_guides)
+    # After Sphinx's metadata collector (500), which reads the :pdf: field
+    app.connect("doctree-read", _add_page_pdf, priority=600)
+    # After sphinx_book_theme's add_header_buttons (501), which adds the button
+    app.connect("html-page-context", _link_page_pdf, priority=600)

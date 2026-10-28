@@ -41,6 +41,7 @@ docs/_build
 *.fls
 *.log
 *.pdf
+!docs/applications/**/*.pdf
 *.gz
 
 # Jupyter

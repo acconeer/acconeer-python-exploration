@@ -296,3 +296,4 @@ radar_data_and_control/a121/in_depth_topics/fom.rst figure_of_merits/a121.rst
 "exploration_tool/example_scripts/python_api/examples-a2-record_data-barebones.rst" "exploration_tool/example_scripts/a212/python_api/examples-a2-record_data-barebones.rst"
 "example_apps/a212/index.rst" "applications/a212/index.rst"
 "example_apps/a212/heatmap.rst" "applications/a212/heatmap/index.rst"
+"applications/a212/presence_tracking.rst" "applications/a212/presence_tracking_wall_mount.rst"
