@@ -55,7 +55,7 @@ autodoc_member_order = "bysource"
 autodoc_typehints_format = "short"
 python_use_unqualified_type_names = True
 # Shipped in the algo bundle, not in this repository
-autodoc_mock_imports = ["acconeer_algo"]
+autodoc_mock_imports = ["acconeer.algo_bundle"]
 
 # extlinks
 extlinks = {

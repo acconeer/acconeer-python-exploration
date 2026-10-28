@@ -23,12 +23,17 @@ from acconeer.exptool.app.new import PluginFamily, PluginGeneration, PluginPrese
 from acconeer.exptool.app.new.pluginbase import BundledPluginSpec
 
 
-_PACKAGE = "bundled_test_package"
+_PACKAGE = "acconeer.algo_bundle"
+_PACKAGE_DIR = "acconeer/algo_bundle"
 
 
 @pytest.fixture(autouse=True)
-def _restore_import_state(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(sys, "path", list(sys.path))
+def _restore_import_state(monkeypatch: pytest.MonkeyPatch, algo_bundle_extract_dir: Path | None):
+    # The bundle installed by --algo-bundle holds the package these tests fake
+    monkeypatch.setattr(sys, "path", [p for p in sys.path if p != str(algo_bundle_extract_dir)])
+    for name in [n for n in sys.modules if n == _PACKAGE or n.startswith(f"{_PACKAGE}.")]:
+        monkeypatch.delitem(sys.modules, name)
+    monkeypatch.delattr(sys.modules["acconeer"], "algo_bundle", raising=False)
     monkeypatch.setattr(_algo_bundle, "_PACKAGES", [])
     modules_before = set(sys.modules)
     yield
@@ -49,7 +54,7 @@ def _test__install_algo_bundle(zip_path: Path, extract_dir: Path) -> None:
 
 
 def test_bundle_of_an_unexpected_digest_is_refused(tmp_path: Path) -> None:
-    zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_PACKAGE}/__init__.py": ""})
+    zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_PACKAGE_DIR}/__init__.py": ""})
 
     with pytest.raises(UnexpectedAlgoBundleError):
         install_algo_bundle(zip_path, tmp_path / "extracted", accepted_digests={"0" * 64})
@@ -58,7 +63,7 @@ def test_bundle_of_an_unexpected_digest_is_refused(tmp_path: Path) -> None:
 
 
 def test_bundle_is_checked_against_the_digests_of_this_release(tmp_path: Path) -> None:
-    zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_PACKAGE}/__init__.py": ""})
+    zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_PACKAGE_DIR}/__init__.py": ""})
 
     with pytest.raises(ValueError, match="expects a different algo bundle"):
         install_algo_bundle(zip_path, tmp_path / "extracted")
@@ -67,7 +72,7 @@ def test_bundle_is_checked_against_the_digests_of_this_release(tmp_path: Path) -
 def test_installed_package_is_importable(tmp_path: Path) -> None:
     zip_path = _write_zip(
         tmp_path / "bundle.zip",
-        {f"{_PACKAGE}/__init__.py": "", f"{_PACKAGE}/module.py": "name = 'bundled'"},
+        {f"{_PACKAGE_DIR}/__init__.py": "", f"{_PACKAGE_DIR}/module.py": "name = 'bundled'"},
     )
 
     _test__install_algo_bundle(zip_path, tmp_path / "extracted")
@@ -75,8 +80,15 @@ def test_installed_package_is_importable(tmp_path: Path) -> None:
     assert importlib.import_module(f"{_PACKAGE}.module").name == "bundled"
 
 
+def test_bundle_without_the_algo_bundle_package_is_refused(tmp_path: Path) -> None:
+    zip_path = _write_zip(tmp_path / "bundle.zip", {"other_package/__init__.py": ""})
+
+    with pytest.raises(ValueError, match=f"no package {_PACKAGE}"):
+        _test__install_algo_bundle(zip_path, tmp_path / "extracted")
+
+
 def test_installing_again_adds_the_directory_once(tmp_path: Path) -> None:
-    zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_PACKAGE}/__init__.py": ""})
+    zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_PACKAGE_DIR}/__init__.py": ""})
 
     _test__install_algo_bundle(zip_path, tmp_path / "extracted")
     _test__install_algo_bundle(zip_path, tmp_path / "extracted")
@@ -87,7 +99,7 @@ def test_installing_again_adds_the_directory_once(tmp_path: Path) -> None:
 def test_install_leaves_no_stale_files_behind(tmp_path: Path) -> None:
     extract_dir = tmp_path / "extracted"
     (extract_dir / "stale_package").mkdir(parents=True)
-    zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_PACKAGE}/__init__.py": ""})
+    zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_PACKAGE_DIR}/__init__.py": ""})
 
     _test__install_algo_bundle(zip_path, extract_dir)
 
@@ -95,7 +107,9 @@ def test_install_leaves_no_stale_files_behind(tmp_path: Path) -> None:
 
 
 def test_keeps_members_inside_its_directory(tmp_path: Path) -> None:
-    zip_path = _write_zip(tmp_path / "bundle.zip", {"../evil.py": ""})
+    zip_path = _write_zip(
+        tmp_path / "bundle.zip", {f"{_PACKAGE_DIR}/__init__.py": "", "../evil.py": ""}
+    )
 
     _test__install_algo_bundle(zip_path, tmp_path / "extracted")
 
@@ -104,12 +118,22 @@ def test_keeps_members_inside_its_directory(tmp_path: Path) -> None:
 
 def test_rejects_package_shadowed_by_one_on_the_path(tmp_path: Path) -> None:
     shadowing_dir = tmp_path / "shadowing"
-    (shadowing_dir / _PACKAGE).mkdir(parents=True)
-    (shadowing_dir / _PACKAGE / "__init__.py").write_text("")
+    (shadowing_dir / _PACKAGE_DIR).mkdir(parents=True)
+    (shadowing_dir / _PACKAGE_DIR / "__init__.py").write_text("")
     sys.path.insert(0, str(shadowing_dir))
-    zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_PACKAGE}/__init__.py": ""})
+    zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_PACKAGE_DIR}/__init__.py": ""})
 
-    with pytest.raises(ValueError, match="shadow"):
+    with pytest.raises(ValueError, match=f"shadow {_PACKAGE!r}"):
+        _test__install_algo_bundle(zip_path, tmp_path / "extracted")
+
+
+def test_rejects_bundle_whose_acconeer_is_no_namespace(tmp_path: Path) -> None:
+    zip_path = _write_zip(
+        tmp_path / "bundle.zip",
+        {"acconeer/__init__.py": "", f"{_PACKAGE_DIR}/__init__.py": ""},
+    )
+
+    with pytest.raises(ValueError, match="shadow 'acconeer'"):
         _test__install_algo_bundle(zip_path, tmp_path / "extracted")
 
 
@@ -159,8 +183,8 @@ def _install_fake_bundle(tmp_path: Path) -> None:
     zip_path = _write_zip(
         tmp_path / "bundle.zip",
         {
-            f"{_PACKAGE}/__init__.py": "",
-            f"{_PACKAGE}/plugin_specs.py": _BUNDLED_SPEC_MODULE,
+            f"{_PACKAGE_DIR}/__init__.py": "",
+            f"{_PACKAGE_DIR}/plugin_specs.py": _BUNDLED_SPEC_MODULE,
             # Sorts first, so the lookup passes it before finding the spec
             "a_package_without_plugins/__init__.py": "",
         },

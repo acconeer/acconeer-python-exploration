@@ -4,8 +4,8 @@
 from __future__ import annotations
 
 import hashlib
+import importlib
 import importlib.machinery
-import pkgutil
 import shutil
 import sys
 import zipfile
@@ -16,10 +16,11 @@ from pathlib import Path, PurePosixPath
 
 # SHA-256 of the algo bundle zips that this release accepts
 ACCEPTED_DIGESTS: frozenset[str] = frozenset(
-    {"6e3e10b05d92c782b31bd04345b13096c3a437eaee929042a5bf294a41c9bd66"}
+    {"5cef55760420336eefcd63319576b0f7d4c13c6b63cb6d039e08273a43b5e67c"}
 )
 
 _PACKAGES: list[str] = []
+_REQUIRED_PACKAGE = "acconeer.algo_bundle"
 
 
 class UnexpectedAlgoBundleError(ValueError):
@@ -45,13 +46,18 @@ def install_algo_bundle(
         _raise_if_unexpected(zip_path, accepted_digests)
     extract_algo_bundle(zip_path, extract_dir)
     import_algo_bundle(extract_dir)
+    try:
+        importlib.import_module(_REQUIRED_PACKAGE)
+    except ImportError as e:
+        msg = f"{zip_path} has no package {_REQUIRED_PACKAGE} that imports: {e}"
+        raise ValueError(msg) from e
 
 
 def extract_algo_bundle(zip_path: Path, extract_dir: Path) -> None:
     """Extracts ``zip_path`` into ``extract_dir``, refusing packages found elsewhere."""
     with zipfile.ZipFile(zip_path) as zf:
-        top_level = {PurePosixPath(name).parts[0].split(".")[0] for name in zf.namelist()}
-        for name in filter(str.isidentifier, top_level):
+        files = [info.filename for info in zf.infolist() if not info.is_dir()]
+        for name in _importable_names(files):
             _raise_if_shadowed(name, extract_dir)
         # Files left by an earlier extraction would be imported with the bundle
         shutil.rmtree(extract_dir, ignore_errors=True)
@@ -63,9 +69,10 @@ def import_algo_bundle(extract_dir: Path) -> None:
     """Makes the packages extracted by ``extract_algo_bundle`` importable."""
     if str(extract_dir) not in sys.path:
         sys.path.append(str(extract_dir))
-    for module in pkgutil.iter_modules([str(extract_dir)]):
-        if module.ispkg and module.name not in _PACKAGES:
-            _PACKAGES.append(module.name)
+    files = [p.relative_to(extract_dir).as_posix() for p in extract_dir.rglob("*") if p.is_file()]
+    for name, is_package in sorted(_importable_names(files).items()):
+        if is_package and name not in _PACKAGES:
+            _PACKAGES.append(name)
 
 
 def algo_bundle_packages() -> list[str]:
@@ -94,11 +101,36 @@ def _raise_if_unexpected(zip_path: Path, accepted_digests: Collection[str]) -> N
         raise UnexpectedAlgoBundleError(zip_path, digest)
 
 
+def _importable_names(files: Collection[str]) -> dict[str, bool]:
+    """The dotted names of the packages and modules that ``files`` hold, to whether each
+    is a package. A directory without an ``__init__.py`` is a namespace package, such as
+    ``acconeer``, which other directories on sys.path share, so the names reach into it.
+    """
+    package_dirs = {
+        PurePosixPath(f).parent for f in files if PurePosixPath(f).name == "__init__.py"
+    }
+    names: dict[str, bool] = {}
+    for f in files:
+        parts = PurePosixPath(f).parts
+        for i in range(1, len(parts)):
+            if PurePosixPath(*parts[:i]) in package_dirs:
+                names[".".join(parts[:i])] = True
+                break
+        else:
+            names[".".join((*parts[:-1], parts[-1].split(".")[0]))] = False
+    return {
+        name: is_package
+        for name, is_package in names.items()
+        if all(part.isidentifier() for part in name.split("."))
+    }
+
+
 def _raise_if_shadowed(name: str, extract_dir: Path) -> None:
     # The bundle's directory is last on sys.path, so a package of the same name
     # anywhere else on it is imported instead.
-    other_dirs = [p for p in sys.path if p != str(extract_dir)]
-    spec = importlib.machinery.PathFinder.find_spec(name, other_dirs)
+    *parents, last = name.split(".")
+    other_dirs = [str(Path(p, *parents)) for p in sys.path if p != str(extract_dir)]
+    spec = importlib.machinery.PathFinder.find_spec(last, other_dirs)
     if spec is not None:
         msg = (
             f"{spec.origin or spec.submodule_search_locations} would shadow {name!r} "

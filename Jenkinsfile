@@ -376,7 +376,7 @@ try {
                     withCredentials([string(credentialsId: 'et_module_bundle_folder',
                                             variable: 'ALGO_BUNDLE_FOLDER')])
                     {
-                        algoBundleZip = "dist/algo_${ALGO_BUNDLE_FOLDER.tokenize('/').last()}.zip"
+                        algoBundleZip = "dist/acconeer_algo_bundle_${ALGO_BUNDLE_FOLDER.tokenize('/').last()}.zip"
                         retrieveArtifacts(folder: ALGO_BUNDLE_FOLDER, stage: 'build', artifacts: [algoBundleZip])
                     }
                 }
