@@ -243,10 +243,6 @@ class BackendPlugin(A2BackendPluginBase[SharedState]):
 
         self.client.stop_session()
 
-        recorder = self.client.detach_recorder()
-        if recorder is not None:
-            recorder.close()
-
         self.processor = None
 
     @is_task

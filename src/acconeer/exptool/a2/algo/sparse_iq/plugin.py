@@ -88,10 +88,6 @@ class BackendPlugin(A2BackendPluginBase[SharedState]):
 
         self.client.stop_session()
 
-        recorder = self.client.detach_recorder()
-        if recorder is not None:
-            recorder.close()
-
     @is_task
     def update_session_config(self, session_config: a2.SessionConfig) -> None:
         self.shared_state.session_config = session_config

@@ -212,10 +212,6 @@ class BackendPlugin(
 
         self.client.stop_session()
 
-        recorder = self.client.detach_recorder()
-        if recorder is not None:
-            recorder.close()
-
     def record_noise(self) -> NoiseNormalizationRecording:
         assert self.client is not None
         try:

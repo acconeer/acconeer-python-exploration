@@ -28,12 +28,19 @@ from acconeer.exptool.a2.algo._plugin_specs.presence_tracking_wall_mount import 
     PRESENCE_TRACKING_WALL_MOUNT_PLUGIN,
 )
 from acconeer.exptool.a2.algo._plugin_specs.sparse_iq import SPARSE_IQ_PLUGIN
+from acconeer.exptool.a2.algo._plugins import a2_plugin_base
 from acconeer.exptool.a2.algo.noise_normalization.processor import NOISE_NORMALIZATION_GROUP_NAME
 from acconeer.exptool.a2.algo.sparse_iq import plugin as sparse_iq
-from acconeer.exptool.app.new import PluginPresetBase
+from acconeer.exptool.app.new import HandledException, PluginPresetBase
 from acconeer.exptool.app.new._enums import ConnectionState, PluginGeneration, PluginState
 from acconeer.exptool.app.new.app_model import PluginSpec
-from acconeer.exptool.app.new.backend import BackendLogger, LogMessage, Message, StatusMessage
+from acconeer.exptool.app.new.backend import (
+    BackendLogger,
+    GeneralMessage,
+    LogMessage,
+    Message,
+    StatusMessage,
+)
 from acconeer.exptool.app.new.plugin_loader import load_default_plugins
 
 
@@ -332,3 +339,70 @@ def test_the_preset_box_height_follows_the_mount_height(plugin: PluginSpec) -> N
     # The box keeps the room's height, from the new floor up, and the
     # sensor configuration covers it.
     assert state.session_config != preset_session_config
+
+
+def _recording_plugin(
+    plugin: PluginSpec, messages: list[Message], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> t.Any:
+    """A backend plugin of a mock client, recording to tmp_path / 'recording.h5'"""
+    monkeypatch.setattr(a2_plugin_base, "get_temp_h5_path", lambda: tmp_path / "recording.h5")
+    backend_plugin = _create_backend_plugin(plugin, messages)
+    backend_plugin.attach_client(client=a2.Client.open(mock=True))
+    return backend_plugin
+
+
+def _saveable_files(messages: list[Message]) -> list[Path]:
+    return [
+        m.data
+        for m in messages
+        if isinstance(m, GeneralMessage) and m.name == "saveable_file" and m.data is not None
+    ]
+
+
+@pytest.mark.parametrize("plugin", [SPARSE_IQ_PLUGIN, CONVENTIONAL_HEATMAP_PLUGIN])
+def test_what_was_recorded_before_a_failed_stop_can_be_saved(
+    plugin: PluginSpec, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    messages: list[Message] = []
+    backend_plugin = _recording_plugin(plugin, messages, tmp_path, monkeypatch)
+    backend_plugin.start_session()
+    for _ in range(3):
+        backend_plugin.idle()
+
+    def lost_link() -> None:
+        msg = "Lost the link"
+        raise a2.ClientError(msg)
+
+    monkeypatch.setattr(backend_plugin.client, "stop_session", lost_link)
+    with pytest.raises(HandledException):
+        backend_plugin.stop_session()
+
+    (saveable_file,) = _saveable_files(messages)
+    with a2.open_record(saveable_file) as record:
+        assert record.num_frames == 3
+
+
+def test_a_failed_start_closes_the_recording(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Recording the noise fails before the recorder is attached to the client"""
+    backend_plugin = _recording_plugin(CONVENTIONAL_HEATMAP_PLUGIN, [], tmp_path, monkeypatch)
+    recorders: list[a2.H5Recorder] = []
+    h5_recorder = a2.H5Recorder
+
+    def recorder(*args: t.Any) -> a2.H5Recorder:
+        recorders.append(h5_recorder(*args))
+        return recorders[-1]
+
+    monkeypatch.setattr(a2, "H5Recorder", recorder)
+
+    def fail() -> None:
+        msg = "Device error"
+        raise RuntimeError(msg)
+
+    monkeypatch.setattr(backend_plugin, "record_noise", fail)
+    with pytest.raises(HandledException):
+        backend_plugin.start_session()
+
+    (recorder,) = recorders
+    assert not recorder.file.id.valid

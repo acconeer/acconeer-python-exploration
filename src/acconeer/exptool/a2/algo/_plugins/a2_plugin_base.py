@@ -201,9 +201,9 @@ class A2BackendPluginBase(Generic[T], BackendPlugin[T]):
         try:
             self._start_session(self._recorder)
         except Exception as exc:
-            recorder = self.client.detach_recorder()
-            if recorder is not None:
-                recorder.close()
+            # Also when it failed before the recorder was attached
+            self._close_recorder()
+            self._recorder = None
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
             msg = "Could not start"
             raise HandledException(msg) from exc
@@ -229,6 +229,8 @@ class A2BackendPluginBase(Generic[T], BackendPlugin[T]):
             raise HandledException(msg) from exc
         finally:
             if self._recorder is not None:
+                # Also when the session ended badly, so that what was recorded can be saved
+                self._close_recorder()
                 assert self._recorder.path is not None
                 path = Path(self._recorder.path)
                 self.callback(GeneralMessage(name="saveable_file", data=path))
@@ -243,6 +245,17 @@ class A2BackendPluginBase(Generic[T], BackendPlugin[T]):
             self._opened_record = None
             self._replaying_client = None
             self._sync_sensor_ids()
+
+    def _close_recorder(self) -> None:
+        """Writes the recording to its file and closes it, detaching it if it is attached"""
+        if self._recorder is None:
+            return
+
+        try:
+            self._recorder.close()
+        except Exception:
+            # The file is closed regardless, only detaching it from a failed client failed
+            self._logger.debug(traceback.format_exc())
 
     def teardown(self) -> None:
         try:
