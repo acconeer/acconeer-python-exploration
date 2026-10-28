@@ -15,7 +15,7 @@ from acconeer.exptool._artifact_repository import (
     LoginRequiredError,
     create_artifact_repository,
 )
-from acconeer.exptool.app.new.storage import get_module_bundle_path, get_temp_dir
+from acconeer.exptool.app.new.storage import get_algo_bundle_path, get_temp_dir
 from acconeer.exptool.app.new.ui.background_task import BGTask
 from acconeer.exptool.app.new.ui.components.devsite._utils import (
     get_internet_related_error_message,
@@ -26,7 +26,7 @@ from acconeer.exptool.app.new.ui.utils import FeedbackStyleSheet
 
 
 class _DownloadDialog(QDialog):
-    """Downloads the module bundle in the background, modally.
+    """Downloads the algo bundle in the background, modally.
 
     ``exec()`` returns ``Accepted`` with ``downloaded_path`` set, or
     ``Rejected`` with ``error`` set.
@@ -48,7 +48,7 @@ class _DownloadDialog(QDialog):
 
         BGTask.create_task(
             repository.download,
-            (Artifact.MODULE_BUNDLE, str(get_temp_dir())),
+            (Artifact.ALGO_BUNDLE, str(get_temp_dir())),
             return_cb=self._handle_success,
             exception_cb=self._handle_exception,
         )
@@ -79,8 +79,8 @@ def _log_in(repository: ArtifactRepository, parent: QWidget, feedback: str | Non
     return login_dialog.exec() == QDialog.DialogCode.Accepted
 
 
-def download_module_bundle(parent: QWidget) -> Path | None:
-    """Walks the user through login, license and download of the module bundle.
+def download_algo_bundle(parent: QWidget) -> Path | None:
+    """Walks the user through login, license and download of the algo bundle.
 
     Returns where the downloaded file is stored, or None if the user
     cancelled or the download failed (reported via a message box).
@@ -97,7 +97,7 @@ def download_module_bundle(parent: QWidget) -> Path | None:
         download_dialog = _DownloadDialog(repository, parent)
         if download_dialog.exec() == QDialog.DialogCode.Accepted:
             assert download_dialog.downloaded_path is not None
-            return Path(shutil.move(download_dialog.downloaded_path, get_module_bundle_path()))
+            return Path(shutil.move(download_dialog.downloaded_path, get_algo_bundle_path()))
 
         if not isinstance(download_dialog.error, LoginRequiredError):
             assert download_dialog.error is not None

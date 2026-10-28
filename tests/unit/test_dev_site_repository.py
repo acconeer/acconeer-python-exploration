@@ -103,8 +103,8 @@ def test_download_keeps_using_cookies_cleared_from_under_it_mid_call(
     assert os.path.exists(bin_path)
 
 
-def test_download_of_module_bundle_says_its_location_is_unknown(tmp_path: Path) -> None:
+def test_download_of_algo_bundle_says_its_location_is_unknown(tmp_path: Path) -> None:
     repo = DevSiteRepository(cookies=requests.cookies.RequestsCookieJar())
 
-    with pytest.raises(NotImplementedError, match="module bundle"):
-        repo.download(Artifact.MODULE_BUNDLE, path=str(tmp_path))
+    with pytest.raises(NotImplementedError, match="algo bundle"):
+        repo.download(Artifact.ALGO_BUNDLE, path=str(tmp_path))

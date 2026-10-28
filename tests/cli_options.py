@@ -105,15 +105,15 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption("--test-devsite", action="store_true")
 
     parser.addoption(
-        "--module-bundle",
+        "--algo-bundle",
         type=_existing_path,
-        help="Installs this module bundle zip, for the tests marked module_bundle.",
+        help="Installs this algo bundle zip, for the tests marked algo_bundle.",
     )
 
     parser.addoption(
         "--dangerously-skip-integrity-check",
         action="store_true",
-        help="Installs a '--module-bundle' zip that this release doesn't expect.",
+        help="Installs a '--algo-bundle' zip that this release doesn't expect.",
     )
 
     parser.addoption(

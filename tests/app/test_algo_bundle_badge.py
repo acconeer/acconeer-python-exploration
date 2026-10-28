@@ -17,7 +17,7 @@ from PySide6.QtWidgets import QPushButton, QWidget
 from acconeer.exptool.app.new import PluginFamily, PluginGeneration, PluginPresetBase
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.pluginbase import BundledPluginSpec
-from acconeer.exptool.app.new.storage import get_module_bundle_path
+from acconeer.exptool.app.new.storage import get_algo_bundle_path
 from acconeer.exptool.app.new.ui.stream_tab import plugin_widget
 from acconeer.exptool.app.new.ui.stream_tab.plugin_widget import PluginSelection
 
@@ -29,10 +29,10 @@ class _PresetId(Enum):
     DEFAULT = auto()
 
 
-_PLUGIN_NEEDING_MODULE_BUNDLE = BundledPluginSpec(
+_PLUGIN_NEEDING_ALGO_BUNDLE = BundledPluginSpec(
     generation=PluginGeneration.A121,
-    key="needs_module_bundle",
-    title="Needs Module Bundle",
+    key="needs_algo_bundle",
+    title="Needs Algo Bundle",
     family=PluginFamily.REF_APP,
     presets=[PluginPresetBase(name="Default", preset_id=_PresetId.DEFAULT)],
     default_preset_id=_PresetId.DEFAULT,
@@ -52,22 +52,22 @@ class _RecordingBackend:
 def app_model() -> AppModel:
     return AppModel(
         _RecordingBackend(),  # type: ignore[arg-type]
-        [_PLUGIN_NEEDING_MODULE_BUNDLE],
+        [_PLUGIN_NEEDING_ALGO_BUNDLE],
         use_port_updater=False,
-        module_bundle=get_module_bundle_path(),
+        algo_bundle=get_algo_bundle_path(),
     )
 
 
 @pytest.fixture
 def selection(app_model: AppModel) -> t.Iterator[PluginSelection]:
     parent = QWidget()
-    yield PluginSelection(app_model, [_PLUGIN_NEEDING_MODULE_BUNDLE], parent)
+    yield PluginSelection(app_model, [_PLUGIN_NEEDING_ALGO_BUNDLE], parent)
     parent.deleteLater()
 
 
 def _badge(app_model: AppModel, selection: PluginSelection) -> QPushButton:
     app_model.broadcast()
-    badge = selection.findChild(QPushButton, "module_bundle_badge")
+    badge = selection.findChild(QPushButton, "algo_bundle_badge")
     assert badge is not None
     return badge
 
@@ -84,8 +84,8 @@ def test_badge_without_a_stored_bundle_says_download(
 def test_badge_of_an_installed_bundle_says_installed(
     app_model: AppModel, selection: PluginSelection
 ) -> None:
-    get_module_bundle_path().write_bytes(b"module")
-    app_model.module_bundle_available = True
+    get_algo_bundle_path().write_bytes(b"module")
+    app_model.algo_bundle_available = True
 
     badge = _badge(app_model, selection)
 
@@ -96,7 +96,7 @@ def test_badge_of_an_installed_bundle_says_installed(
 def test_badge_of_a_stored_bundle_that_failed_to_install_says_delete(
     app_model: AppModel, selection: PluginSelection
 ) -> None:
-    get_module_bundle_path().write_bytes(b"corrupt")
+    get_algo_bundle_path().write_bytes(b"corrupt")
 
     badge = _badge(app_model, selection)
 
@@ -107,7 +107,7 @@ def test_badge_of_a_stored_bundle_that_failed_to_install_says_delete(
 def test_badge_of_a_developer_bundle_tells_where_it_is(
     app_model: AppModel, selection: PluginSelection, tmp_path: Path
 ) -> None:
-    app_model.module_bundle = _write_bundle(tmp_path / "bundle.zip")
+    app_model.algo_bundle = _write_bundle(tmp_path / "bundle.zip")
 
     badge = _badge(app_model, selection)
 
@@ -129,8 +129,8 @@ def _write_bundle(path: Path, content: bytes = b"module") -> Path:
 def test_badge_of_an_installed_bundle_tells_when_it_was_downloaded(
     app_model: AppModel, selection: PluginSelection
 ) -> None:
-    _write_bundle(get_module_bundle_path())
-    app_model.module_bundle_available = True
+    _write_bundle(get_algo_bundle_path())
+    app_model.algo_bundle_available = True
 
     badge = _badge(app_model, selection)
 
@@ -140,7 +140,7 @@ def test_badge_of_an_installed_bundle_tells_when_it_was_downloaded(
 def test_badge_of_a_bundle_that_failed_to_install_tells_when_it_was_downloaded(
     app_model: AppModel, selection: PluginSelection
 ) -> None:
-    _write_bundle(get_module_bundle_path())
+    _write_bundle(get_algo_bundle_path())
 
     badge = _badge(app_model, selection)
 
@@ -150,7 +150,7 @@ def test_badge_of_a_bundle_that_failed_to_install_tells_when_it_was_downloaded(
 def test_badge_of_a_developer_bundle_tells_when_it_was_built(
     app_model: AppModel, selection: PluginSelection, tmp_path: Path
 ) -> None:
-    app_model.module_bundle = _write_bundle(tmp_path / "bundle.zip")
+    app_model.algo_bundle = _write_bundle(tmp_path / "bundle.zip")
 
     badge = _badge(app_model, selection)
 
@@ -160,7 +160,7 @@ def test_badge_of_a_developer_bundle_tells_when_it_was_built(
 def test_badge_of_a_developer_bundle_tells_its_digest(
     app_model: AppModel, selection: PluginSelection, tmp_path: Path
 ) -> None:
-    app_model.module_bundle = _write_bundle(tmp_path / "bundle.zip")
+    app_model.algo_bundle = _write_bundle(tmp_path / "bundle.zip")
 
     badge = _badge(app_model, selection)
 
@@ -174,15 +174,13 @@ def test_clicking_the_badge_deletes_the_bundle_once_confirmed(
     monkeypatch: pytest.MonkeyPatch,
     confirmed: bool,
 ) -> None:
-    monkeypatch.setattr(
-        plugin_widget, "_confirm_module_bundle_deletion", lambda *_, **__: confirmed
-    )
-    get_module_bundle_path().write_bytes(b"corrupt")
+    monkeypatch.setattr(plugin_widget, "_confirm_algo_bundle_deletion", lambda *_, **__: confirmed)
+    get_algo_bundle_path().write_bytes(b"corrupt")
     badge = _badge(app_model, selection)
 
     badge.click()
 
-    assert get_module_bundle_path().exists() != confirmed
+    assert get_algo_bundle_path().exists() != confirmed
     assert badge.text() == ("download" if confirmed else "delete")
 
 
@@ -190,14 +188,14 @@ def test_plugin_is_not_downloaded_again_before_a_restart(
     app_model: AppModel, selection: PluginSelection, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     downloads: list[t.Any] = []
-    monkeypatch.setattr(plugin_widget, "download_module_bundle", downloads.append)
+    monkeypatch.setattr(plugin_widget, "download_algo_bundle", downloads.append)
     errors: list[BaseException] = []
     app_model.sig_error.connect(lambda exception, _traceback: errors.append(exception))
-    app_model.module_bundle_restart_needed = True
+    app_model.algo_bundle_restart_needed = True
 
     (button,) = selection.button_group.buttons()
     button.click()
 
     assert downloads == []
     (error,) = errors
-    assert "Restart ET before you download the module bundle again" in str(error)
+    assert "Restart ET before you download the algo bundle again" in str(error)

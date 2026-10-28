@@ -367,17 +367,17 @@ try {
                     }
                 }
 
-                String moduleBundleZip
-                stage('Fetch module bundle') {
-                    // The module bundle build the tests marked module_bundle run on: its
+                String algoBundleZip
+                stage('Fetch algo bundle') {
+                    // The algo bundle build the tests marked algo_bundle run on: its
                     // build storage folder, which ends in its commit. Its plugins' code
                     // must match this commit's, but every build reads the same
                     // credential, so moving it moves the pin of all of them.
                     withCredentials([string(credentialsId: 'et_module_bundle_folder',
-                                            variable: 'MODULE_BUNDLE_FOLDER')])
+                                            variable: 'ALGO_BUNDLE_FOLDER')])
                     {
-                        moduleBundleZip = "dist/algo_${MODULE_BUNDLE_FOLDER.tokenize('/').last()}.zip"
-                        retrieveArtifacts(folder: MODULE_BUNDLE_FOLDER, stage: 'build', artifacts: [moduleBundleZip])
+                        algoBundleZip = "dist/algo_${ALGO_BUNDLE_FOLDER.tokenize('/').last()}.zip"
+                        retrieveArtifacts(folder: ALGO_BUNDLE_FOLDER, stage: 'build', artifacts: [algoBundleZip])
                     }
                 }
 
@@ -461,7 +461,7 @@ try {
                                 --a2-timing-limits-path=${a2_timing_limits_matches[0]} \
                                 --a2-computation-time-limits-path=${a2_computation_limits_matches[0]} \
                                 --a2-memory-usage-path=${a2_memory_usage_yaml_matches[0]} \
-                                --module-bundle=${moduleBundleZip} \
+                                --algo-bundle=${algoBundleZip} \
                                 ${devsiteSelection}
                             """
 

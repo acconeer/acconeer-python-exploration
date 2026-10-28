@@ -94,7 +94,7 @@ def test_plugin_runs_startup_tasks(
     plugin_spec: plugin_loader.PluginSpec,
     qapp: QApplication,
     monkeypatch: pytest.MonkeyPatch,
-    module_bundle_extract_dir: Path | None,
+    algo_bundle_extract_dir: Path | None,
 ) -> None:
     """Runs a session of each plugin as the app would with '--tasks', but in-process."""
     et_opts = et_options(plugin_spec)
@@ -118,15 +118,15 @@ def test_plugin_runs_startup_tasks(
         monkeypatch.setattr(sys, "excepthook", model.excepthook)
         # Stops at the first error, rather than once the unloaded plugin's tasks time out.
         model.sig_error.connect(lambda *_: qapp.exit(1))
-        if plugin_spec.requires_module_bundle_artifact:
+        if plugin_spec.requires_algo_bundle_artifact:
             # As the app does at startup, but this process has extracted the bundle already
-            monkeypatch.setattr(app_model_module, "install_module_bundle", lambda *_, **__: None)
+            monkeypatch.setattr(app_model_module, "install_algo_bundle", lambda *_, **__: None)
             monkeypatch.setattr(
                 app_model_module,
-                "get_module_bundle_extract_dir",
-                lambda: module_bundle_extract_dir,
+                "get_algo_bundle_extract_dir",
+                lambda: algo_bundle_extract_dir,
             )
-            model.try_install_module_bundle()
+            model.try_install_algo_bundle()
 
         load_startup_plugin(args, model)
         model.broadcast()

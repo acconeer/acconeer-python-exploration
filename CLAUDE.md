@@ -38,7 +38,7 @@ Test-running traps:
   test env's `--doctest-modules` makes the examples in `type_migration`'s module
   docstring tests, collected only when `src/` is passed, as CI does.
 - `tests/flash/test_devsite.py` needs `--test-devsite` and credentials.
-- Tests of plugins that need the module bundle skip without `--module-bundle <zip>`.
+- Tests of plugins that need the algo bundle skip without `--algo-bundle <zip>`.
   A zip whose SHA-256 the release doesn't pin aborts the run unless
   `--dangerously-skip-integrity-check` is also passed.
 

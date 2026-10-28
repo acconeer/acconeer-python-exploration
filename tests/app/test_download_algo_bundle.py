@@ -12,12 +12,12 @@ import requests
 from PySide6.QtWidgets import QDialog, QWidget
 
 from acconeer.exptool._artifact_repository import Artifact, LoginRequiredError
-from acconeer.exptool.app.new.storage import get_module_bundle_path
+from acconeer.exptool.app.new.storage import get_algo_bundle_path
 
 
 # The package re-exports a function by the module's name, hiding the module
 download_module = importlib.import_module(
-    "acconeer.exptool.app.new.ui.components.devsite.download_module_bundle"
+    "acconeer.exptool.app.new.ui.components.devsite.download_algo_bundle"
 )
 pytestmark = pytest.mark.usefixtures("qapplication")
 
@@ -32,7 +32,7 @@ class _PluginRepository:
 
     def download(self, artifact: Artifact, path: str) -> tuple[str, str]:
         self.downloads.append(artifact)
-        downloaded_path = Path(path) / "module_bundle.bin"
+        downloaded_path = Path(path) / "algo_bundle.bin"
         downloaded_path.write_bytes(b"module")
         return str(downloaded_path), "1.0.0"
 
@@ -117,33 +117,33 @@ def critical_messages(monkeypatch: pytest.MonkeyPatch) -> list[str]:
     return messages
 
 
-def test_module_bundle_is_downloaded_from_the_plugin_repository(
+def test_algo_bundle_is_downloaded_from_the_plugin_repository(
     plugin_repository: _PluginRepository,
 ) -> None:
     plugin_repository.logged_in = True
 
-    downloaded_path = download_module.download_module_bundle(QWidget())
+    downloaded_path = download_module.download_algo_bundle(QWidget())
 
     assert downloaded_path is not None
-    assert plugin_repository.downloads == [Artifact.MODULE_BUNDLE]
+    assert plugin_repository.downloads == [Artifact.ALGO_BUNDLE]
 
 
-def test_downloaded_module_bundle_is_stored_for_later_starts(
+def test_downloaded_algo_bundle_is_stored_for_later_starts(
     plugin_repository: _PluginRepository,
 ) -> None:
     plugin_repository.logged_in = True
 
-    stored_path = download_module.download_module_bundle(QWidget())
+    stored_path = download_module.download_algo_bundle(QWidget())
 
-    assert stored_path == get_module_bundle_path()
+    assert stored_path == get_algo_bundle_path()
     assert stored_path.read_bytes() == b"module"
 
 
 def test_login_happens_in_the_plugin_repository(plugin_repository: _PluginRepository) -> None:
-    downloaded_path = download_module.download_module_bundle(QWidget())
+    downloaded_path = download_module.download_algo_bundle(QWidget())
 
     assert downloaded_path is not None
-    assert plugin_repository.downloads == [Artifact.MODULE_BUNDLE]
+    assert plugin_repository.downloads == [Artifact.ALGO_BUNDLE]
 
 
 def test_offline_download_failure_suggests_checking_the_connection(
@@ -156,7 +156,7 @@ def test_offline_download_failure_suggests_checking_the_connection(
         raising=False,
     )
 
-    assert download_module.download_module_bundle(None) is None  # type: ignore[arg-type]
+    assert download_module.download_algo_bundle(None) is None  # type: ignore[arg-type]
 
     (message,) = critical_messages
     assert "Do you have an internet connection?" in message
@@ -167,7 +167,7 @@ def test_expired_login_is_explained_before_logging_in_again(
 ) -> None:
     monkeypatch.setattr(_FailingDownloadDialog, "error", LoginRequiredError(), raising=False)
 
-    download_module.download_module_bundle(None)  # type: ignore[arg-type]
+    download_module.download_algo_bundle(None)  # type: ignore[arg-type]
 
     (login_dialog,) = _CancelledLoginDialog.shown
     (feedback,) = login_dialog.login_widget.feedback

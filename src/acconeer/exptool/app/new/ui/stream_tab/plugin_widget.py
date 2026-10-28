@@ -28,14 +28,14 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from acconeer.exptool._artifact_repository import describe_module_bundle, module_bundle_modified
+from acconeer.exptool._artifact_repository import algo_bundle_modified, describe_algo_bundle
 from acconeer.exptool.app import resources
 from acconeer.exptool.app.new._enums import PluginFamily, PluginGeneration, PluginState
 from acconeer.exptool.app.new._exceptions import HandledException
 from acconeer.exptool.app.new.app_model import AppModel, PluginPresetSpec, PluginSpec
 from acconeer.exptool.app.new.pluginbase import PlotPluginBase, PluginSpecBase
-from acconeer.exptool.app.new.storage import get_module_bundle_path
-from acconeer.exptool.app.new.ui.components.devsite import download_module_bundle
+from acconeer.exptool.app.new.storage import get_algo_bundle_path
+from acconeer.exptool.app.new.ui.components.devsite import download_algo_bundle
 from acconeer.exptool.app.new.ui.components.group_box import GroupBox
 from acconeer.exptool.app.new.ui.icons import (
     ARROW_LEFT_BOLD,
@@ -152,31 +152,31 @@ class PluginPresetPlaceholder(QWidget):
         self.setEnabled(app_model.plugin_state == PluginState.LOADED_IDLE)
 
 
-def _module_bundle_downloaded() -> str | None:
-    path = get_module_bundle_path()
-    return module_bundle_modified(path) if path.is_file() else None
+def _algo_bundle_downloaded() -> str | None:
+    path = get_algo_bundle_path()
+    return algo_bundle_modified(path) if path.is_file() else None
 
 
-def _confirm_module_bundle_deletion(parent: QWidget, *, installed: bool) -> bool:
-    text = "Delete the downloaded module bundle?"
+def _confirm_algo_bundle_deletion(parent: QWidget, *, installed: bool) -> bool:
+    text = "Delete the downloaded algo bundle?"
     if installed:
         text += (
             "\n\nPlugins that need it are unloaded. "
-            "Restart ET before you download the module bundle again."
+            "Restart ET before you download the algo bundle again."
         )
-    answer = QMessageBox.question(parent, "Delete Module Bundle", text)
+    answer = QMessageBox.question(parent, "Delete Algo Bundle", text)
     return answer == QMessageBox.StandardButton.Yes
 
 
-class ModuleBundleBadge(QPushButton):
-    """Shows the state of the module bundle next to a plugin that needs it"""
+class AlgoBundleBadge(QPushButton):
+    """Shows the state of the algo bundle next to a plugin that needs it"""
 
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
         self.app_model = app_model
 
-        self.setObjectName("module_bundle_badge")
+        self.setObjectName("algo_bundle_badge")
         self.setStyleSheet(f"QPushButton {{color: {TEXT_GREY}}}")
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.clicked.connect(self._on_click)
@@ -186,31 +186,31 @@ class ModuleBundleBadge(QPushButton):
 
     def update_state(self, *, downloaded: str | None) -> None:
         """``downloaded`` is when the stored bundle was downloaded, None if there is none"""
-        installed = self.app_model.module_bundle_available
-        if self.app_model.module_bundle_is_developers:
+        installed = self.app_model.algo_bundle_available
+        if self.app_model.algo_bundle_is_developers:
             if self._developer_bundle_description is None:
-                self._developer_bundle_description = describe_module_bundle(
-                    self.app_model.module_bundle
+                self._developer_bundle_description = describe_algo_bundle(
+                    self.app_model.algo_bundle
                 )
             outcome = "was installed" if installed else "failed to install"
             self._show(
                 COG,
                 "developer",
-                f"The module bundle {self._developer_bundle_description} {outcome}.",
+                f"The algo bundle {self._developer_bundle_description} {outcome}.",
             )
             self.setEnabled(False)
         elif installed:
             self._show(
                 CHECKMARK,
                 "installed",
-                f"Module bundle downloaded {downloaded}. Click to delete it.",
+                f"Algo bundle downloaded {downloaded}. Click to delete it.",
             )
             self.setEnabled(True)
         elif downloaded is not None:
             self._show(
                 REMOVE,
                 "delete",
-                f"The module bundle downloaded {downloaded} didn't install. Click to delete it.",
+                f"The algo bundle downloaded {downloaded} didn't install. Click to delete it.",
             )
             self.setEnabled(True)
         else:
@@ -227,9 +227,9 @@ class ModuleBundleBadge(QPushButton):
         self.setToolTip(tooltip)
 
     def _on_click(self) -> None:
-        installed = self.app_model.module_bundle_available
-        if _confirm_module_bundle_deletion(self, installed=installed):
-            self.app_model.delete_module_bundle()
+        installed = self.app_model.algo_bundle_available
+        if _confirm_algo_bundle_deletion(self, installed=installed):
+            self.app_model.delete_algo_bundle()
 
 
 class PluginSelection(QWidget):
@@ -267,7 +267,7 @@ class PluginSelection(QWidget):
         self.button_group = PluginSelectionButtonGroup(self)
         self.button_group.buttonClicked.connect(self._on_load_click)
 
-        self._module_bundle_badges: list[ModuleBundleBadge] = []
+        self._algo_bundle_badges: list[AlgoBundleBadge] = []
 
         for plugin in plugins:
             assert isinstance(plugin, PluginSpecBase)
@@ -300,11 +300,11 @@ class PluginSelection(QWidget):
                 )
                 button_layout.addWidget(info_button)
 
-            if plugin.requires_module_bundle_artifact:
-                badge = ModuleBundleBadge(app_model, group_box)
-                badge.update_state(downloaded=_module_bundle_downloaded())
+            if plugin.requires_algo_bundle_artifact:
+                badge = AlgoBundleBadge(app_model, group_box)
+                badge.update_state(downloaded=_algo_bundle_downloaded())
                 button_layout.addWidget(badge)
-                self._module_bundle_badges.append(badge)
+                self._algo_bundle_badges.append(badge)
         self.setLayout(layout)
 
     def layout(self) -> QVBoxLayout:
@@ -314,16 +314,16 @@ class PluginSelection(QWidget):
         self.layout().addStretch(1)
 
         plugin = self.button_group.checkedButton().plugin
-        if plugin.requires_module_bundle_artifact and not self.app_model.module_bundle_available:
-            if self.app_model.module_bundle_restart_needed:
-                msg = "Restart ET before you download the module bundle again."
+        if plugin.requires_algo_bundle_artifact and not self.app_model.algo_bundle_available:
+            if self.app_model.algo_bundle_restart_needed:
+                msg = "Restart ET before you download the algo bundle again."
                 self.app_model.emit_error(HandledException(msg))
                 self._on_app_model_update(self.app_model)
                 return
-            if download_module_bundle(self) is None:
+            if download_algo_bundle(self) is None:
                 self._on_app_model_update(self.app_model)
                 return
-            self.app_model.try_install_module_bundle()
+            self.app_model.try_install_algo_bundle()
 
         self.app_model.load_plugin(plugin)
 
@@ -346,9 +346,9 @@ class PluginSelection(QWidget):
             else:
                 button_to_check.setChecked(True)
 
-        if self._module_bundle_badges:
-            downloaded = _module_bundle_downloaded()
-            for badge in self._module_bundle_badges:
+        if self._algo_bundle_badges:
+            downloaded = _algo_bundle_downloaded()
+            for badge in self._algo_bundle_badges:
                 badge.update_state(downloaded=downloaded)
         self.setEnabled(app_model.plugin_state.is_steady)
 

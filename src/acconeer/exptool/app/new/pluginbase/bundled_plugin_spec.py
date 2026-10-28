@@ -11,7 +11,7 @@ from typing import Any, Callable, Optional
 import attrs
 from typing_extensions import Literal
 
-from acconeer.exptool._artifact_repository import module_bundle_packages
+from acconeer.exptool._artifact_repository import algo_bundle_packages
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.backend import BackendPlugin, Message
 from acconeer.exptool.app.new.ui import DataEditor
@@ -23,7 +23,7 @@ from .view_plugin_base import ViewPluginBase
 
 @attrs.frozen(kw_only=True)
 class BundledPluginSpec(PluginSpecBase):
-    """Lists a plugin whose implementation ships in the module bundle.
+    """Lists a plugin whose implementation ships in the algo bundle.
 
     A package in the bundle provides it in its ``plugin_specs`` module as
     ``PLUGIN_SPECS``, a mapping from plugin key to a ``PluginSpecBase``
@@ -31,10 +31,10 @@ class BundledPluginSpec(PluginSpecBase):
     the fields of this spec, so they are kept in one place.
     """
 
-    requires_module_bundle_artifact: bool = attrs.field(default=True, init=False)
+    requires_algo_bundle_artifact: bool = attrs.field(default=True, init=False)
 
     def _bundled(self) -> PluginSpecBase:
-        for package in module_bundle_packages():
+        for package in algo_bundle_packages():
             module = f"{package}.plugin_specs"
             if importlib.util.find_spec(module) is None:
                 continue
@@ -46,7 +46,7 @@ class BundledPluginSpec(PluginSpecBase):
                 return spec_classes[self.key](**fields)  # type: ignore[no-any-return]
 
         msg = (
-            f"The module bundle has no plugin {self.key!r}, so it is likely older than "
+            f"The algo bundle has no plugin {self.key!r}, so it is likely older than "
             'the Exploration Tool. Click "installed" next to the plugin to delete the '
             "bundle, restart the Exploration Tool and select the plugin again to download "
             "the latest bundle."

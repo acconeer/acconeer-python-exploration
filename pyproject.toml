@@ -436,7 +436,7 @@ doctest_optionflags = [
 ]
 markers = [
     "devsite: Tests related to devsite",
-    "module_bundle: Tests of what the module bundle holds, pass --module-bundle <zip>",
+    "algo_bundle: Tests of what the algo bundle holds, pass --algo-bundle <zip>",
 ]
 
 [tool.coverage.run]

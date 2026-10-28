@@ -12,9 +12,9 @@ from pathlib import Path
 import pytest
 
 from acconeer.exptool._artifact_repository import (
-    UnexpectedModuleBundleError,
-    _module_bundle,
-    install_module_bundle,
+    UnexpectedAlgoBundleError,
+    _algo_bundle,
+    install_algo_bundle,
 )
 from acconeer.exptool.a2.algo._plugin_specs.presence_tracking_wall_mount import (
     PRESENCE_TRACKING_WALL_MOUNT_PLUGIN,
@@ -29,7 +29,7 @@ _PACKAGE = "bundled_test_package"
 @pytest.fixture(autouse=True)
 def _restore_import_state(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(sys, "path", list(sys.path))
-    monkeypatch.setattr(_module_bundle, "_PACKAGES", [])
+    monkeypatch.setattr(_algo_bundle, "_PACKAGES", [])
     modules_before = set(sys.modules)
     yield
     for name in set(sys.modules) - modules_before:
@@ -43,16 +43,16 @@ def _write_zip(path: Path, members: dict[str, str]) -> Path:
     return path
 
 
-def _test__install_module_bundle(zip_path: Path, extract_dir: Path) -> None:
+def _test__install_algo_bundle(zip_path: Path, extract_dir: Path) -> None:
     digest = hashlib.sha256(zip_path.read_bytes()).hexdigest()
-    install_module_bundle(zip_path, extract_dir, accepted_digests={digest})
+    install_algo_bundle(zip_path, extract_dir, accepted_digests={digest})
 
 
 def test_bundle_of_an_unexpected_digest_is_refused(tmp_path: Path) -> None:
     zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_PACKAGE}/__init__.py": ""})
 
-    with pytest.raises(UnexpectedModuleBundleError):
-        install_module_bundle(zip_path, tmp_path / "extracted", accepted_digests={"0" * 64})
+    with pytest.raises(UnexpectedAlgoBundleError):
+        install_algo_bundle(zip_path, tmp_path / "extracted", accepted_digests={"0" * 64})
 
     assert not (tmp_path / "extracted").exists()
 
@@ -60,8 +60,8 @@ def test_bundle_of_an_unexpected_digest_is_refused(tmp_path: Path) -> None:
 def test_bundle_is_checked_against_the_digests_of_this_release(tmp_path: Path) -> None:
     zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_PACKAGE}/__init__.py": ""})
 
-    with pytest.raises(ValueError, match="expects a different module bundle"):
-        install_module_bundle(zip_path, tmp_path / "extracted")
+    with pytest.raises(ValueError, match="expects a different algo bundle"):
+        install_algo_bundle(zip_path, tmp_path / "extracted")
 
 
 def test_installed_package_is_importable(tmp_path: Path) -> None:
@@ -70,7 +70,7 @@ def test_installed_package_is_importable(tmp_path: Path) -> None:
         {f"{_PACKAGE}/__init__.py": "", f"{_PACKAGE}/module.py": "name = 'bundled'"},
     )
 
-    _test__install_module_bundle(zip_path, tmp_path / "extracted")
+    _test__install_algo_bundle(zip_path, tmp_path / "extracted")
 
     assert importlib.import_module(f"{_PACKAGE}.module").name == "bundled"
 
@@ -78,8 +78,8 @@ def test_installed_package_is_importable(tmp_path: Path) -> None:
 def test_installing_again_adds_the_directory_once(tmp_path: Path) -> None:
     zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_PACKAGE}/__init__.py": ""})
 
-    _test__install_module_bundle(zip_path, tmp_path / "extracted")
-    _test__install_module_bundle(zip_path, tmp_path / "extracted")
+    _test__install_algo_bundle(zip_path, tmp_path / "extracted")
+    _test__install_algo_bundle(zip_path, tmp_path / "extracted")
 
     assert sys.path.count(str(tmp_path / "extracted")) == 1
 
@@ -89,7 +89,7 @@ def test_install_leaves_no_stale_files_behind(tmp_path: Path) -> None:
     (extract_dir / "stale_package").mkdir(parents=True)
     zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_PACKAGE}/__init__.py": ""})
 
-    _test__install_module_bundle(zip_path, extract_dir)
+    _test__install_algo_bundle(zip_path, extract_dir)
 
     assert not (extract_dir / "stale_package").exists()
 
@@ -97,7 +97,7 @@ def test_install_leaves_no_stale_files_behind(tmp_path: Path) -> None:
 def test_keeps_members_inside_its_directory(tmp_path: Path) -> None:
     zip_path = _write_zip(tmp_path / "bundle.zip", {"../evil.py": ""})
 
-    _test__install_module_bundle(zip_path, tmp_path / "extracted")
+    _test__install_algo_bundle(zip_path, tmp_path / "extracted")
 
     assert not (tmp_path / "evil.py").exists()
 
@@ -110,11 +110,11 @@ def test_rejects_package_shadowed_by_one_on_the_path(tmp_path: Path) -> None:
     zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_PACKAGE}/__init__.py": ""})
 
     with pytest.raises(ValueError, match="shadow"):
-        _test__install_module_bundle(zip_path, tmp_path / "extracted")
+        _test__install_algo_bundle(zip_path, tmp_path / "extracted")
 
 
-def test_presence_tracking_wall_mount_needs_the_module_bundle() -> None:
-    assert PRESENCE_TRACKING_WALL_MOUNT_PLUGIN.requires_module_bundle_artifact
+def test_presence_tracking_wall_mount_needs_the_algo_bundle() -> None:
+    assert PRESENCE_TRACKING_WALL_MOUNT_PLUGIN.requires_algo_bundle_artifact
 
 
 _BUNDLED_SPEC_MODULE = """
@@ -165,7 +165,7 @@ def _install_fake_bundle(tmp_path: Path) -> None:
             "a_package_without_plugins/__init__.py": "",
         },
     )
-    _test__install_module_bundle(zip_path, tmp_path / "extracted")
+    _test__install_algo_bundle(zip_path, tmp_path / "extracted")
 
 
 def test_bundled_plugin_spec_creates_plugins_of_the_bundled_spec(tmp_path: Path) -> None:

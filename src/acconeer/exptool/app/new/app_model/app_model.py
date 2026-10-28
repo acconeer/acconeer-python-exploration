@@ -40,8 +40,8 @@ from acconeer.exptool import _core as core
 from acconeer.exptool import a2, a121
 from acconeer.exptool._artifact_repository import (
     ACCEPTED_DIGESTS,
-    UnexpectedModuleBundleError,
-    install_module_bundle,
+    UnexpectedAlgoBundleError,
+    install_algo_bundle,
 )
 from acconeer.exptool._core.communication.comm_devices import CommDevice, SerialDevice, USBDevice
 from acconeer.exptool.app.new._enums import (
@@ -71,9 +71,9 @@ from acconeer.exptool.app.new.backend import (
     _RateStats,
 )
 from acconeer.exptool.app.new.storage import (
+    get_algo_bundle_extract_dir,
+    get_algo_bundle_path,
     get_config_dir,
-    get_module_bundle_extract_dir,
-    get_module_bundle_path,
     remove_temp_dir,
 )
 from acconeer.exptool.app.new.ui.components.data_editor import DataEditor
@@ -109,7 +109,7 @@ class PluginSpec(Protocol):
     presets: List[PluginPresetSpec]
     title: str
     default_preset_id: Enum
-    requires_module_bundle_artifact: bool
+    requires_algo_bundle_artifact: bool
 
     def create_backend_plugin(
         self, callback: Callable[[Message], None], key: str
@@ -247,10 +247,10 @@ class AppModel(QObject):
 
     plugins: list[PluginSpec]
     plugin: Optional[PluginSpec]
-    module_bundle: Path
-    """The zip this launch installs, whether given by '--module-bundle' or downloaded"""
-    module_bundle_available: bool
-    module_bundle_restart_needed: bool
+    algo_bundle: Path
+    """The zip this launch installs, whether given by '--algo-bundle' or downloaded"""
+    algo_bundle_available: bool
+    algo_bundle_restart_needed: bool
     """The packages of a deleted bundle stay imported, so another one can't be installed"""
 
     backend_plugin_state: Any
@@ -271,7 +271,7 @@ class AppModel(QObject):
         simulated_autocconnect: bool = False,
         plugin_generation: Optional[PluginGeneration] = None,
         *,
-        module_bundle: Path,
+        algo_bundle: Path,
         skip_integrity_check: bool = False,
     ) -> None:
         super().__init__()
@@ -302,10 +302,10 @@ class AppModel(QObject):
 
         self.plugins = plugins
         self.plugin = None
-        self.module_bundle = module_bundle
+        self.algo_bundle = algo_bundle
         self._skip_integrity_check = skip_integrity_check
-        self.module_bundle_available = False
-        self.module_bundle_restart_needed = False
+        self.algo_bundle_available = False
+        self.algo_bundle_restart_needed = False
 
         self.backend_plugin_state = None
 
@@ -901,7 +901,7 @@ class AppModel(QObject):
         if plugin == self.plugin:
             return
 
-        if self._refuse_without_module_bundle(plugin):
+        if self._refuse_without_algo_bundle(plugin):
             return
 
         log.debug("AppModel is unloading its current plugin")
@@ -925,45 +925,45 @@ class AppModel(QObject):
         self.broadcast()
         self.broadcast_backend_state()
 
-    def _refuse_without_module_bundle(self, plugin: Optional[PluginSpec]) -> bool:
-        if plugin is None or not plugin.requires_module_bundle_artifact:
+    def _refuse_without_algo_bundle(self, plugin: Optional[PluginSpec]) -> bool:
+        if plugin is None or not plugin.requires_algo_bundle_artifact:
             return False
-        if self.module_bundle_available:
+        if self.algo_bundle_available:
             return False
 
         msg = (
-            f"{plugin.title} needs the module bundle. "
+            f"{plugin.title} needs the algo bundle. "
             "Select it in the plugin list to download the module."
         )
         self.emit_error(HandledException(msg))
         return True
 
-    def try_install_module_bundle(self) -> None:
+    def try_install_algo_bundle(self) -> None:
         """Call once the UI listens to sig_error, which is how a failed install is reported."""
-        extract_dir = get_module_bundle_extract_dir()
+        extract_dir = get_algo_bundle_extract_dir()
         try:
-            install_module_bundle(
-                self.module_bundle,
+            install_algo_bundle(
+                self.algo_bundle,
                 extract_dir,
                 accepted_digests=None if self._skip_integrity_check else ACCEPTED_DIGESTS,
             )
         except (ValueError, zipfile.BadZipFile) as e:
-            self.module_bundle_available = False
-            self.emit_error(HandledException(self._module_bundle_install_error(e)))
+            self.algo_bundle_available = False
+            self.emit_error(HandledException(self._algo_bundle_install_error(e)))
         else:
-            Model.import_module_bundle.rpc(self.put_task, extract_dir=extract_dir)
-            self.module_bundle_available = True
+            Model.import_algo_bundle.rpc(self.put_task, extract_dir=extract_dir)
+            self.algo_bundle_available = True
 
         self.broadcast()
 
-    def _module_bundle_install_error(self, e: Exception) -> str:
-        if not isinstance(e, UnexpectedModuleBundleError):
-            msg = f"Could not install the module bundle: {e}."
-            if not self.module_bundle_is_developers:
+    def _algo_bundle_install_error(self, e: Exception) -> str:
+        if not isinstance(e, UnexpectedAlgoBundleError):
+            msg = f"Could not install the algo bundle: {e}."
+            if not self.algo_bundle_is_developers:
                 msg += '\n\nTo delete the bundle, click "delete" next to a plugin that needs it.'
             return msg
 
-        if self.module_bundle_is_developers:
+        if self.algo_bundle_is_developers:
             remedy = "Pass --dangerously-skip-integrity-check to use a bundle of your own."
         else:
             remedy = (
@@ -971,7 +971,7 @@ class AppModel(QObject):
                 "and download it again."
             )
         return (
-            "Could not install the module bundle, "
+            "Could not install the algo bundle, "
             "since this ET release expects a different one.\n\n"
             f"{remedy}\n\n"
             f"Bundle: {e.zip_path}\n"
@@ -979,21 +979,21 @@ class AppModel(QObject):
         )
 
     @property
-    def module_bundle_is_developers(self) -> bool:
-        """Given by '--module-bundle' rather than downloaded"""
-        return self.module_bundle != get_module_bundle_path()
+    def algo_bundle_is_developers(self) -> bool:
+        """Given by '--algo-bundle' rather than downloaded"""
+        return self.algo_bundle != get_algo_bundle_path()
 
-    def delete_module_bundle(self) -> None:
+    def delete_algo_bundle(self) -> None:
         """Deletes the downloaded bundle, whether it installed or not."""
-        assert not self.module_bundle_is_developers, "A developer's bundle is never deleted"
-        if self.plugin is not None and self.plugin.requires_module_bundle_artifact:
+        assert not self.algo_bundle_is_developers, "A developer's bundle is never deleted"
+        if self.plugin is not None and self.plugin.requires_algo_bundle_artifact:
             self.load_plugin(None)
 
-        self.module_bundle.unlink(missing_ok=True)
-        shutil.rmtree(get_module_bundle_extract_dir(), ignore_errors=True)
-        if self.module_bundle_available:
-            self.module_bundle_available = False
-            self.module_bundle_restart_needed = True
+        self.algo_bundle.unlink(missing_ok=True)
+        shutil.rmtree(get_algo_bundle_extract_dir(), ignore_errors=True)
+        if self.algo_bundle_available:
+            self.algo_bundle_available = False
+            self.algo_bundle_restart_needed = True
 
         self.broadcast()
 
@@ -1041,7 +1041,7 @@ class AppModel(QObject):
 
         plugin = d.selected_plugin_option
 
-        if self._refuse_without_module_bundle(plugin):
+        if self._refuse_without_algo_bundle(plugin):
             return
 
         try:

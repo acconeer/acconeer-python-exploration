@@ -34,7 +34,7 @@ try:
     from acconeer.exptool._artifact_repository import (
         ArtifactRepositoryError,
         create_artifact_repository,
-        describe_module_bundle,
+        describe_algo_bundle,
         load_plugin_file,
     )
     from acconeer.exptool.app.desktop_integration import (
@@ -54,7 +54,7 @@ from .backend import Backend, GenBackend, MpBackend
 from .plugin_loader import import_and_register_plugin_module, load_plugins
 from .storage import (
     DEFAULT_ET_DIR,
-    get_module_bundle_path,
+    get_algo_bundle_path,
     remove_config_dir,
     remove_temp_dir,
     set_et_dir,
@@ -175,7 +175,7 @@ def main() -> None:
     app.aboutToQuit.connect(model.stop)
     app.aboutToQuit.connect(backend.stop)
 
-    install_startup_module_bundle(args, model)
+    install_startup_algo_bundle(args, model)
 
     if args.amv:
         app_model_viewer = AppModelViewer(model)
@@ -291,28 +291,28 @@ def create_app_model(
         args.socket_autoconnect,
         args.simulated_autoconnect,
         PluginGeneration[args.generation_str.upper()] if args.generation_str is not None else None,
-        module_bundle=args.module_bundle or get_module_bundle_path(),
+        algo_bundle=args.algo_bundle or get_algo_bundle_path(),
         skip_integrity_check=args.dangerously_skip_integrity_check,
     )
 
 
-def install_startup_module_bundle(args: argparse.Namespace, model: AppModel) -> None:
-    if model.module_bundle.is_file():
+def install_startup_algo_bundle(args: argparse.Namespace, model: AppModel) -> None:
+    if model.algo_bundle.is_file():
         if args.dangerously_skip_integrity_check:
-            _warn_of_skipped_integrity_check(model.module_bundle)
-        model.try_install_module_bundle()
+            _warn_of_skipped_integrity_check(model.algo_bundle)
+        model.try_install_algo_bundle()
 
 
 def _warn_of_skipped_integrity_check(zip_path: Path) -> None:
     _LOG.warning(
-        f"Skipping the integrity check of the module bundle {describe_module_bundle(zip_path)}"
+        f"Skipping the integrity check of the algo bundle {describe_algo_bundle(zip_path)}"
     )
 
 
-def _module_bundle_file(value: str) -> Path:
+def _algo_bundle_file(value: str) -> Path:
     path = Path(value)
     if not path.is_file():
-        msg = f"No module bundle at '{path}'"
+        msg = f"No algo bundle at '{path}'"
         raise argparse.ArgumentTypeError(msg)
     return path
 
@@ -455,14 +455,14 @@ class _ExptoolArgumentParser(argparse.ArgumentParser):
             help=argparse.SUPPRESS,  # makes option hidden
         )
 
-        # A module bundle zip used instead of the one downloaded from the
+        # An algo bundle zip used instead of the one downloaded from the
         # artifact repository. Internal use only.
         self.add_argument(
-            "--module-bundle",
-            type=_module_bundle_file,
+            "--algo-bundle",
+            type=_algo_bundle_file,
             help=argparse.SUPPRESS,  # makes option hidden
         )
-        # Installs the module bundle of this launch without checking that this
+        # Installs the algo bundle of this launch without checking that this
         # release expects it. Internal use only.
         self.add_argument(
             "--dangerously-skip-integrity-check",
