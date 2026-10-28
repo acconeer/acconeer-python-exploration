@@ -24,6 +24,7 @@ classifiers = [
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
     "attrs>=22.1.0",
@@ -145,7 +146,7 @@ QT_QPA_PLATFORM = "offscreen"
 COVERAGE_CORE = "sysmon"
 
 [[tool.hatch.envs.hatch-test.matrix]]
-python = ["3.12", "3.13"]
+python = ["3.12", "3.13", "3.14"]
 
 [tool.hatch.envs.hatch-test.scripts]
 run = "pytest{env:HATCH_TEST_ARGS:} {args}"  # default
