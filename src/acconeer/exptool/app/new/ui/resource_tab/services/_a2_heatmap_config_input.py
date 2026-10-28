@@ -138,6 +138,7 @@ class HeatmapConfigInput(ScrollAreaDecorator, t.Generic[_HeatmapConfigT, _EventT
             return
 
         try:
+            session_config.validate()
             heatmap_config.validate(session_config)
         except ValidationResult:
             return

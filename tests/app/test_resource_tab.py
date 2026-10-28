@@ -416,3 +416,24 @@ def test_a2_power_vs_rate_leaves_the_offered_config_alone() -> None:
 
     assert evolved.sensor_config.inter_frame_idle_state == a2.IdleState.READY
     assert config.sensor_config.inter_frame_idle_state == a2.IdleState.ARMED
+
+
+def test_a_heatmap_with_an_invalid_session_config_is_offered_to_nobody(
+    broker: EventBroker,
+    outputs: list[t.Any],
+    memory_output: memory_breakdown_output.MemoryBreakdownOutput,
+) -> None:
+    session_config = a2.SessionConfig.default()
+    session_config.update_rate = 5.0
+    session_config.sensor_config.frame_rate = 10.0
+    with pytest.raises(a2.ValidationError):
+        session_config.validate()
+
+    service = a2_heatmap_capon_config_input.HeatmapCaponConfigInput(
+        broker,
+        capon.HeatmapAndSessionConfig(
+            session_config=session_config, heatmap_config=capon.HeatmapConfig.default()
+        ),
+    )
+
+    assert _memory_row(memory_output, service.id_) is None
