@@ -115,6 +115,12 @@ class TestBackendPlugins:
         yield b
         b.stop()
 
+    def test_stopping_without_a_session_does_nothing(
+        self, backend: Backend, assert_messages: t.Callable[..., None], tasks: t.Any
+    ) -> None:
+        backend.put_task(tasks.STOP_SESSION_TASK)
+        assert_messages(backend, received=[tasks.SUCCESSFULLY_CLOSED_TASK])
+
     def test_session_lifecycle(
         self,
         backend: Backend,

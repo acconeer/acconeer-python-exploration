@@ -217,7 +217,9 @@ class A2BackendPluginBase(Generic[T], BackendPlugin[T]):
     @is_task
     def stop_session(self) -> None:
         if not self._started:
-            raise RuntimeError
+            # Such as when a replay has just ended on its own
+            log.debug("Not stopping. Session was not started")
+            return
 
         self.callback(PluginStateMessage(state=PluginState.LOADED_STOPPING))
         try:
