@@ -13,7 +13,10 @@ from acconeer.exptool.a121.algo.distance import (
     detector_config_to_processor_specs,
     detector_config_to_session_config,
 )
-from acconeer.exptool.a121.algo.distance._translation import get_num_far_subsweeps
+from acconeer.exptool.a121.algo.distance._translation import (
+    _calc_leakage_free_min_dist,
+    get_num_far_subsweeps,
+)
 
 
 def _subsweeps(session_config):
@@ -1317,3 +1320,27 @@ def test_processor_specs_reference_existing_subsweeps_around_the_second_sensor_c
         num_groups_seen.add(len(session_config.groups))
 
     assert num_groups_seen == {1, 2}
+
+
+@pytest.mark.parametrize("threshold_method", [ThresholdMethod.CFAR, ThresholdMethod.FIXED])
+@pytest.mark.parametrize("max_profile", list(a121.Profile))
+@pytest.mark.parametrize("boundary_profile", list(a121.Profile))
+def test_a_single_point_range_on_a_profile_boundary_translates(
+    threshold_method: ThresholdMethod, max_profile: a121.Profile, boundary_profile: a121.Profile
+) -> None:
+    """Where a profile becomes leakage free, the ranges of two profiles meet"""
+    min_dist_m = _calc_leakage_free_min_dist(
+        DetectorConfig(threshold_method=threshold_method, max_profile=max_profile)
+    )
+    if boundary_profile not in min_dist_m:
+        pytest.skip("Profiles above max_profile have no boundary")
+    point_m = min_dist_m[boundary_profile]
+    config = DetectorConfig(
+        start_m=point_m,
+        end_m=point_m,
+        threshold_method=threshold_method,
+        max_profile=max_profile,
+    )
+
+    config.validate()
+    detector_config_to_session_config(config, sensor_ids=[1]).validate()

@@ -94,7 +94,12 @@ def _range_overlap(a: tuple[float, float], b: tuple[float, float]) -> t.Optional
     (b_start, b_end) = sorted(b)
     overlap_start = _clamp(a_start, b_start, b_end)
     overlap_end = _clamp(a_end, b_start, b_end)
-    ranges_overlapping = not (a_start >= b_end or b_start >= a_end)
+    if b_start == b_end:
+        # A single point lies in the range it starts, so it lies in exactly one of two
+        # ranges that meet at it.
+        ranges_overlapping = a_start <= b_start < a_end
+    else:
+        ranges_overlapping = not (a_start >= b_end or b_start >= a_end)
     return abs(overlap_end - overlap_start) if ranges_overlapping else None
 
 
@@ -319,7 +324,11 @@ def _get_range_types(config: DetectorConfig) -> RangeTypes:
         if range_overlap is not None and range_overlap >= min_overlap:
             range_types |= RangeTypes.TRANSITION_P3
 
-    if min_dist_m[config.max_profile] < config.end_m:
+    # Also when the range is the single point where max_profile becomes leakage free
+    max_profile_min_dist_m = min_dist_m[config.max_profile]
+    if max_profile_min_dist_m < config.end_m or (
+        config.start_m == config.end_m == max_profile_min_dist_m
+    ):
         range_types |= RangeTypes.MAX_PROFILE
 
     return range_types
