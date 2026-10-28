@@ -5,11 +5,19 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 from acconeer.exptool import a2
 from acconeer.exptool._core.entities.validation_result import ValidationError
-from acconeer.exptool.a2.algo.heatmap import capon, coherent, conventional, robust_capon
+from acconeer.exptool.a2.algo.heatmap import (
+    capon,
+    coherent,
+    config_legacy,
+    conventional,
+    robust_capon,
+)
 from acconeer.exptool.a2.algo.heatmap.config_common import HeatmapConfigCommon
 
 
@@ -60,3 +68,35 @@ def test_multiple_subsweeps_keeps_the_other_checks(
     aspects = {result.aspect for result in config._collect_validation_results(session_config)}
 
     assert aspects == {"subsweeps", "az_angle_range"}
+
+
+@pytest.mark.parametrize(
+    "timeline",
+    [
+        pytest.param(capon.heatmap_config_timeline, id="capon"),
+        pytest.param(coherent.heatmap_config_timeline, id="coherent"),
+        pytest.param(conventional.heatmap_config_timeline, id="conventional"),
+        pytest.param(robust_capon.heatmap_config_timeline, id="robust_capon"),
+    ],
+)
+def test_a_legacy_config_migrates(timeline: Any) -> None:
+    """As recordings and caches of the first heatmap plugin hold it"""
+    legacy = config_legacy.HeatmapConfigLegacy(
+        antenna_array=a2.AntennaArray.AP212,
+        heatmap_mode="MOVEMENT",
+        covariance_matrix_smoothing_factor=0.9,
+        high_pass_filter_smoothing_factor=0.9,
+        beamforming_method="GENERAL",
+        update_count=5,
+        az_angle_range=(-30, 30),
+        el_angle_range=(0, 0),
+        num_az_angles=11,
+        num_el_angles=1,
+        normalized_heat_cutoff=0.5,
+    )
+
+    config = timeline.migrate(legacy.to_json())
+
+    assert (config.az_angle_range, config.num_az_angles) == ((-30, 30), 11)
+    if hasattr(config, "heatmap_mode"):
+        assert config.heatmap_mode.name == "MOVEMENT"

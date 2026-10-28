@@ -166,7 +166,7 @@ def migrate_legacy(old: config_legacy.HeatmapConfigLegacy) -> HeatmapConfig_v0:
         num_az_angles=old.num_az_angles,
         num_el_angles=old.num_el_angles,
         antenna_array=old.antenna_array,
-        heatmap_mode=old.heatmap_mode,
+        heatmap_mode=old.heatmap_mode.name,
         covariance_matrix_smoothing_factor=old.covariance_matrix_smoothing_factor,
         high_pass_filter_smoothing_factor=old.high_pass_filter_smoothing_factor,
         # Beamformingmethod is removed
