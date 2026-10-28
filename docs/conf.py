@@ -82,6 +82,8 @@ linkcheck_exclude_documents = [
 linkcheck_ignore = [
     "https://math.stackexchange.com/.*",  # Causes 403 error
     "https://ftdichip.com/.*",  # Causes 403 error
+    # TODO: Remove once the A212 examples are released on GitHub
+    "https://github.com/acconeer/acconeer-python-exploration/blob/master/examples/a2/.*",
 ]
 
 # rediraffe
