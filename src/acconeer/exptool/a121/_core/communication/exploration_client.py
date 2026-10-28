@@ -113,7 +113,7 @@ class ExplorationClient(Client, register=True):
 
         self._protocol = ExplorationProtocol
 
-        (self._link, self._client_info) = ensure_connected_link(self.client_info)
+        (self._link, self._client_info) = ensure_connected_link(self.client_info, "a121")
         self._server_stream = MessageStream(
             self._link,
             self._protocol,

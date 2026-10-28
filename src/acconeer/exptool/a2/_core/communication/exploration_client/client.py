@@ -94,7 +94,7 @@ class ExplorationClient(A2Client, register=True):
         self._tick_unwrapper = TickUnwrapper()
         self._log_queue: list[messages.ServerLog] = []
 
-        (self._link, self._client_info) = ensure_connected_link(self.client_info)
+        (self._link, self._client_info) = ensure_connected_link(self.client_info, "a2")
         self._server_stream = MessageStream(
             self._link, self._protocol, self._handle_messages, self._close_before_reraise
         )

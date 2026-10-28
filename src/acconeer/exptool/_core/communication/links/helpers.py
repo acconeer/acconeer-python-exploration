@@ -9,6 +9,7 @@ from serial.serialutil import SerialException
 import acconeer.exptool
 from acconeer.exptool._core.communication.comm_devices import (
     CommDeviceError,
+    SensorGeneration,
     get_one_serial_device,
     get_one_usb_device,
 )
@@ -31,7 +32,9 @@ from . import (
 from .usb_link import legacy_usb_requested
 
 
-def link_factory(client_info: ClientInfo) -> BufferedLink:
+def link_factory(
+    client_info: ClientInfo, generation: SensorGeneration | None = None
+) -> BufferedLink:
     if client_info.socket is not None:
         return SocketLink(host=client_info.socket.ip_address, port=client_info.socket.tcp_port)
 
@@ -50,7 +53,7 @@ def link_factory(client_info: ClientInfo) -> BufferedLink:
                 )
             )
         else:
-            usb_device = get_one_usb_device()
+            usb_device = get_one_usb_device(generation=generation)
 
         if usb_device is not None:
             usb_link_class = LegacyUSBLink if legacy_usb_requested() else USBLink
@@ -63,12 +66,14 @@ def link_factory(client_info: ClientInfo) -> BufferedLink:
     return NullLink()
 
 
-def autodetermine_client_info(client_info: ClientInfo) -> ClientInfo:
+def autodetermine_client_info(
+    client_info: ClientInfo, generation: SensorGeneration | None = None
+) -> ClientInfo:
     error_message = ""
     try:
         usb_info = client_info.usb
         if usb_info is None:
-            usb_device = get_one_usb_device(only_accessible=True)
+            usb_device = get_one_usb_device(only_accessible=True, generation=generation)
             usb_info = USBInfo(
                 vid=usb_device.vid, pid=usb_device.pid, serial_number=usb_device.serial
             )
@@ -93,21 +98,24 @@ def autodetermine_client_info(client_info: ClientInfo) -> ClientInfo:
     raise LinkError(msg)
 
 
-def ensure_connected_link(client_info: ClientInfo) -> tuple[BufferedLink, ClientInfo]:
+def ensure_connected_link(
+    client_info: ClientInfo, generation: SensorGeneration | None = None
+) -> tuple[BufferedLink, ClientInfo]:
     """
     Tries connecting a link defined by the given ClientInfo
     before trying to autodetermine a link which can be used.
+    A USB device is only autodetermined among those serving sensors of generation, if given.
 
     Returns the connected link and a new ClientInfo that describes the connected link.
     """
-    link = link_factory(client_info)
+    link = link_factory(client_info, generation)
 
     try:
         link.connect()
         return link, client_info
     except NullLinkError:
-        new_client_info = autodetermine_client_info(client_info)
-        return ensure_connected_link(new_client_info)
+        new_client_info = autodetermine_client_info(client_info, generation)
+        return ensure_connected_link(new_client_info, generation)
     except SerialException as exc:
         if "Permission denied" in str(exc):
             text = "\n".join(

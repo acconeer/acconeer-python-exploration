@@ -6,7 +6,7 @@ from __future__ import annotations
 import abc
 import json
 import re
-from typing import Any, Iterator, List, Optional
+from typing import Any, Iterator, List, Literal, Optional
 
 import attrs
 import serial.tools
@@ -23,18 +23,30 @@ class CommDeviceError(Exception):
     pass
 
 
-_USB_IDS = [  # (vid, pid, 'model number', 'Unflashed')
-    (0x0483, 0xA41D, "XC120", True),
-    (0x0483, 0xA42C, "XC120", True),
-    (0x0483, 0xA42D, "XC120", False),
-    (0x0483, 0xA449, "XC120", False),
-    (0x0483, 0xA560, "XE212", True),
-    (0x0483, 0xA561, "XE212", False),
-    (0x0483, 0xA562, "XE212", True),
-    (0xACC0, 0xE121, "XV12X", False),
-    (0xACC0, 0xD211, "XV21X", False),
-    (0xACC0, 0xB211, "XC211", True),
-    (0xACC0, 0xE211, "XC211", False),
+SensorGeneration = Literal["a121", "a2"]
+
+
+@attrs.frozen(kw_only=True)
+class _UsbId:
+    vid: int
+    pid: int
+    model_number: str
+    unflashed: bool
+    generation: SensorGeneration  # Of the sensors the board serves
+
+
+_USB_IDS: list[_UsbId] = [
+    _UsbId(vid=0x0483, pid=0xA41D, model_number="XC120", unflashed=True, generation="a121"),
+    _UsbId(vid=0x0483, pid=0xA42C, model_number="XC120", unflashed=True, generation="a121"),
+    _UsbId(vid=0x0483, pid=0xA42D, model_number="XC120", unflashed=False, generation="a121"),
+    _UsbId(vid=0x0483, pid=0xA449, model_number="XC120", unflashed=False, generation="a121"),
+    _UsbId(vid=0x0483, pid=0xA560, model_number="XE212", unflashed=True, generation="a2"),
+    _UsbId(vid=0x0483, pid=0xA561, model_number="XE212", unflashed=False, generation="a2"),
+    _UsbId(vid=0x0483, pid=0xA562, model_number="XE212", unflashed=True, generation="a2"),
+    _UsbId(vid=0xACC0, pid=0xE121, model_number="XV12X", unflashed=False, generation="a121"),
+    _UsbId(vid=0xACC0, pid=0xD211, model_number="XV21X", unflashed=False, generation="a2"),
+    _UsbId(vid=0xACC0, pid=0xB211, model_number="XC211", unflashed=True, generation="a2"),
+    _UsbId(vid=0xACC0, pid=0xE211, model_number="XC211", unflashed=False, generation="a2"),
 ]
 
 
@@ -114,13 +126,13 @@ class USBDevice(CommDevice):
 
 def serial_device_from_port_object(port_object: serial.Serial) -> SerialDevice:
     # Return USB serial port if existing in _USB_IDS
-    for vid, pid, model_number, unflashed in _USB_IDS:
-        if port_object.vid == vid and port_object.pid == pid:
+    for usb_id in _USB_IDS:
+        if port_object.vid == usb_id.vid and port_object.pid == usb_id.pid:
             return SerialDevice(
-                name=model_number,
+                name=usb_id.model_number,
                 port=port_object.device,
                 serial=port_object.serial_number,
-                unflashed=unflashed,
+                unflashed=usb_id.unflashed,
                 recognized=True,
             )
 
@@ -168,8 +180,12 @@ def serial_device_from_port_object(port_object: serial.Serial) -> SerialDevice:
 
 def _serial_port_originates_from_usb_device(port_object: ListPortInfo) -> bool:
     # Test if this port_object is connected to an exploration server device (unflashed = False)
-    for vid, pid, _, unflashed in _USB_IDS:
-        if port_object.vid == vid and port_object.pid == pid and not unflashed:
+    for usb_id in _USB_IDS:
+        if (
+            port_object.vid == usb_id.vid
+            and port_object.pid == usb_id.pid
+            and not usb_id.unflashed
+        ):
             return True
     return False
 
@@ -239,15 +255,19 @@ class _UsbDeviceFinder:
         return self.device_cache[vid_pid_str]
 
 
-def get_usb_devices(only_accessible: bool = False) -> List[USBDevice]:
+def get_usb_devices(
+    only_accessible: bool = False, generation: SensorGeneration | None = None
+) -> List[USBDevice]:
+    """Lists the recognized USB devices, only those serving sensors of generation if given"""
     usb_devices: List[USBDevice] = []
 
     usb_device_finder = _UsbDeviceFinder()
     for device_vid, device_pid, serial_number in usb_device_finder.iterate_devices():
-        for vid, pid, model_name, unflashed in _USB_IDS:
-            if device_vid == vid and device_pid == pid:
-                device_name = model_name
-                accessible = usb_device_finder.is_accessible(vid, pid)
+        for usb_id in _USB_IDS:
+            if generation is not None and usb_id.generation != generation:
+                continue
+            if device_vid == usb_id.vid and device_pid == usb_id.pid:
+                accessible = usb_device_finder.is_accessible(usb_id.vid, usb_id.pid)
                 if only_accessible and not accessible:
                     continue
 
@@ -256,9 +276,9 @@ def get_usb_devices(only_accessible: bool = False) -> List[USBDevice]:
                         vid=device_vid,
                         pid=device_pid,
                         serial=serial_number,
-                        name=device_name,
+                        name=usb_id.model_number,
                         accessible=accessible,
-                        unflashed=unflashed,
+                        unflashed=usb_id.unflashed,
                         recognized=True,
                     )
                 )
@@ -276,8 +296,10 @@ def get_usb_device_by_serial(serial: str, only_accessible: bool = False) -> USBD
     raise ValueError(msg)
 
 
-def get_one_usb_device(only_accessible: bool = False) -> USBDevice:
-    usb_devices = get_usb_devices(only_accessible=only_accessible)
+def get_one_usb_device(
+    only_accessible: bool = False, generation: SensorGeneration | None = None
+) -> USBDevice:
+    usb_devices = get_usb_devices(only_accessible=only_accessible, generation=generation)
     if not usb_devices:
         msg = "No USB devices detected. Cannot auto detect."
         raise CommDeviceError(msg)
@@ -319,9 +341,9 @@ def tag_serial_ports_objects(
 
         match = re.search(PRODUCT_REGEX, desc)
         if match is None:
-            for vid, pid, model_number, _ in _USB_IDS:
-                if port_object.vid == vid and port_object.pid == pid:
-                    port_tag_tuples.append((port_object, model_number))
+            for usb_id in _USB_IDS:
+                if port_object.vid == usb_id.vid and port_object.pid == usb_id.pid:
+                    port_tag_tuples.append((port_object, usb_id.model_number))
                     break
             else:
                 port_tag_tuples.append((port_object, None))
