@@ -348,13 +348,6 @@ class BackendPlugin(A2BackendPluginBase[SharedState]):
         if context_override is not None:
             self._logger.warning(f"Ignoring context override of type: {type(context_override)}")
 
-        _, default_session_abstraction_config, default_installation, default_volume = (
-            get_walking_detection_configs()
-        )
-        self.update_session_abstraction_config(default_session_abstraction_config)
-        self.shared_state.sensor_installation = default_installation
-        self.shared_state.detection_volume = default_volume
-
         try:
             algo_group = record.require_algo_group(ALGO_GROUP_NAME)
         except KeyError as exc:
@@ -365,6 +358,14 @@ class BackendPlugin(A2BackendPluginBase[SharedState]):
         if noise_normalization_recording is None:
             msg = "Cannot replay: no noise normalization recording found in file."
             raise HandledException(msg)
+
+        # Only once the recording is known to be replayable, as this replaces the user's setup
+        _, default_session_abstraction_config, default_installation, default_volume = (
+            get_walking_detection_configs()
+        )
+        self.update_session_abstraction_config(default_session_abstraction_config)
+        self.shared_state.sensor_installation = default_installation
+        self.shared_state.detection_volume = default_volume
 
         self.shared_state.replaying_record = True
         self.shared_state.noise_normalization_recording = noise_normalization_recording

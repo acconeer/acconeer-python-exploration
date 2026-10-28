@@ -406,3 +406,27 @@ def test_a_failed_start_closes_the_recording(
 
     (recorder,) = recorders
     assert not recorder.file.id.valid
+
+
+def test_a_refused_replay_keeps_the_motion_detection_setup(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    messages: list[Message] = []
+    recording_plugin = _recording_plugin(SPARSE_IQ_PLUGIN, messages, tmp_path, monkeypatch)
+    recording_plugin.start_session()
+    recording_plugin.idle()
+    recording_plugin.stop_session()
+    (sparse_iq_recording,) = _saveable_files(messages)
+
+    backend_plugin = _create_backend_plugin(MOTION_DETECTION_PLUGIN)
+    state = backend_plugin.shared_state
+    state.sensor_installation = attrs.evolve(state.sensor_installation, mount_height_m=3.3)
+    setup = copy.deepcopy(
+        (state.sensor_installation, state.detection_volume, state.session_config)
+    )
+
+    with pytest.raises(HandledException):
+        backend_plugin.load_from_file(path=sparse_iq_recording)
+
+    state = backend_plugin.shared_state
+    assert (state.sensor_installation, state.detection_volume, state.session_config) == setup
