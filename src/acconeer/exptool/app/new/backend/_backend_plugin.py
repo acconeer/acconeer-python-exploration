@@ -96,7 +96,11 @@ class BackendPlugin(abc.ABC, Generic[StateT]):
         pass
 
     def broadcast(self) -> None:
-        self.callback(BackendPluginStateMessage(state=self.shared_state))
+        self.callback(
+            BackendPluginStateMessage(
+                state=self.shared_state, plugin_key=self.key, plugin_generation=self.generation
+            )
+        )
 
     def send_status_file_access_message(self, file_path: str, opened: bool) -> None:
         self.callback(StatusFileAccessMessage(file_path=file_path, opened=opened))

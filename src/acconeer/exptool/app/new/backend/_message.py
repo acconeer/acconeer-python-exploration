@@ -9,7 +9,7 @@ from typing import Any
 import attrs
 from typing_extensions import Literal
 
-from acconeer.exptool.app.new._enums import ConnectionState, PluginState
+from acconeer.exptool.app.new._enums import ConnectionState, PluginGeneration, PluginState
 
 
 _ResultT = t.TypeVar("_ResultT")
@@ -36,6 +36,9 @@ class PluginStateMessage(Message):
 @attrs.frozen(kw_only=True, slots=False)
 class BackendPluginStateMessage(Message):
     state: Any = attrs.field()
+    # Of the plugin that sent it, which may be unloaded by the time it arrives
+    plugin_key: str = attrs.field()
+    plugin_generation: PluginGeneration = attrs.field()
 
 
 @attrs.frozen(kw_only=True, slots=False)

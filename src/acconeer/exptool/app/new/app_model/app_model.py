@@ -483,6 +483,12 @@ class AppModel(QObject):
             self.broadcast()
         elif isinstance(message, BackendPluginStateMessage):
             log.debug("Got backend plugin state message")
+            if self.plugin is None or (message.plugin_key, message.plugin_generation) != (
+                self.plugin.key,
+                self.plugin.generation,
+            ):
+                log.debug("Dropping the state of a plugin that is no longer loaded")
+                return
             self.backend_plugin_state = message.state
             self.broadcast_backend_state()
             self.broadcast()
