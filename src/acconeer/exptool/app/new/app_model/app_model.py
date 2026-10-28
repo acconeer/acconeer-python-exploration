@@ -1022,7 +1022,13 @@ class AppModel(QObject):
             self.emit_error(HandledException("This app cannot load A111 files"))
             return
 
+        current_plugin_generation = None if self.plugin is None else self.plugin.generation
         current_plugin_key = None if self.plugin is None else self.plugin.key
+
+        if current_plugin_generation != findings.generation:
+            # The dialog offers only plugins of the file's generation, which leaves out the
+            # current one
+            current_plugin_key = None
 
         if findings.key is None or self.find_plugin(findings.key, findings.generation) is None:
             record_key = None
