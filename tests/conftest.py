@@ -13,7 +13,6 @@ import acconeer.exptool.testing
 from acconeer.exptool._artifact_repository import (
     ACCEPTED_DIGESTS,
     UnexpectedAlgoBundleError,
-    _algo_bundle,
     install_algo_bundle,
 )
 from acconeer.exptool._processes.start_method import avoid_fork
@@ -68,10 +67,9 @@ def pytest_configure(config: pytest.Config) -> None:
             )
         except UnexpectedAlgoBundleError as e:
             msg = (
-                f"{e} (SHA-256 {e.digest}).\n"
-                "A new bundle release needs its SHA-256 in ACCEPTED_DIGESTS of "
-                f"{_algo_bundle.__file__}. "
-                "To test a bundle of your own, pass --dangerously-skip-integrity-check"
+                f"{e.zip_path} (SHA-256 {e.digest}) is not the algo bundle this "
+                "release accepts. Pass the accepted bundle to --algo-bundle, or pass "
+                "--dangerously-skip-integrity-check to test a bundle of your own"
             )
             raise pytest.UsageError(msg) from e
         config.stash[ALGO_BUNDLE_EXTRACT_DIR] = extract_dir
