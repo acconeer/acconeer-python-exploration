@@ -104,7 +104,7 @@ class SensorConfig(AttrsMappingTransformsMixin):
     inter_sweep_idle_state: IdleState = attrs.field(converter=IdleState)
     """The inter sweep idle state is the state the sensor idles in between each sweep in a frame."""
 
-    jitter_compensation: bool = attrs.field(default=True, converter=bool)
+    jitter_compensation: bool = attrs.field(converter=bool)
     """Enable jitter compensation"""
 
     start_point = subsweep_delegate_field(SubsweepConfig.start_point, type_=int)
@@ -428,8 +428,8 @@ sensor_config_timeline = (
             sweeps_per_frame=old.sweeps_per_frame,
             sweep_rate=old.sweep_rate,
             frame_rate=old.frame_rate,
-            inter_frame_idle_state=IdleState.ARMED,
-            inter_sweep_idle_state=IdleState.ARMED,
+            inter_frame_idle_state=old.inter_frame_idle_state,
+            inter_sweep_idle_state=old.inter_sweep_idle_state,
             jitter_compensation=False,
         ),
         fail=[],

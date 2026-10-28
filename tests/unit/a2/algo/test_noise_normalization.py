@@ -422,6 +422,7 @@ def test_create_multi_subsweep() -> None:
         frame_rate=None,
         inter_frame_idle_state=a2.IdleState.ARMED,
         inter_sweep_idle_state=a2.IdleState.ARMED,
+        jitter_compensation=True,
     )
     session_config = a2.SessionConfig(sensor_configs=[sensor_config], update_rate=None)
 
@@ -471,6 +472,7 @@ def test_create_multi_sensor_config_multi_subsweep() -> None:
         frame_rate=None,
         inter_frame_idle_state=a2.IdleState.ARMED,
         inter_sweep_idle_state=a2.IdleState.ARMED,
+        jitter_compensation=True,
     )
     sensor_config_1 = a2.SensorConfig(
         subsweeps=[subsweep_config_2, subsweep_config_3],
@@ -479,6 +481,7 @@ def test_create_multi_sensor_config_multi_subsweep() -> None:
         frame_rate=None,
         inter_frame_idle_state=a2.IdleState.ARMED,
         inter_sweep_idle_state=a2.IdleState.ARMED,
+        jitter_compensation=True,
     )
     session_config = a2.SessionConfig(
         sensor_configs=[sensor_config_0, sensor_config_1], update_rate=None

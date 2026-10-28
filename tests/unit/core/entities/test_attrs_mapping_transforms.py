@@ -35,6 +35,7 @@ from acconeer.exptool._core.class_creation.mixins import AttrsMappingTransformsM
             frame_rate=14.0,
             inter_frame_idle_state=a2.IdleState.READY,
             inter_sweep_idle_state=a2.IdleState.READY,
+            jitter_compensation=True,
         ),
         a2.SessionConfig(
             sensor_configs=[

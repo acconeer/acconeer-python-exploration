@@ -436,6 +436,7 @@ def _session_config(*subsweeps: a2.SubsweepConfig) -> a2.SessionConfig:
         frame_rate=None,
         inter_frame_idle_state=a2.IdleState.ARMED,
         inter_sweep_idle_state=a2.IdleState.ARMED,
+        jitter_compensation=True,
     )
     return a2.SessionConfig([sensor_config], update_rate=10.0)
 

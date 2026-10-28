@@ -2,11 +2,13 @@
 # All rights reserved
 from __future__ import annotations
 
+import json
 import typing as t
 
 import pytest
 
 from acconeer.exptool import a2
+from acconeer.exptool.a2._core.entities.configs.sensor_config import sensor_config_timeline
 
 
 def test_dyn_hwaas_values() -> None:
@@ -136,3 +138,32 @@ def test_jitter_compensation_needs_a_free_subsweep_slot(
             config.validate()
 
         assert excinfo.value.aspect == "jitter_compensation"
+
+
+def _ready_sensor_config(jitter_compensation: bool) -> a2.SensorConfig:
+    return a2.SensorConfig.single_subsweep(
+        sweeps_per_frame=4,
+        sweep_rate=1000.0,
+        inter_frame_idle_state=a2.IdleState.READY,
+        inter_sweep_idle_state=a2.IdleState.READY,
+        jitter_compensation=jitter_compensation,
+    )
+
+
+@pytest.mark.parametrize("as_json", [False, True])
+def test_a_config_from_before_jitter_compensation_loads_without_it(as_json: bool) -> None:
+    config = _ready_sensor_config(jitter_compensation=True)
+    saved = json.loads(config.to_json()) if as_json else config.to_dict()
+    del saved["jitter_compensation"]
+
+    loaded = sensor_config_timeline.migrate(json.dumps(saved) if as_json else saved)
+
+    assert loaded == _ready_sensor_config(jitter_compensation=False)
+
+
+@pytest.mark.parametrize("jitter_compensation", [False, True])
+def test_a_current_config_loads_as_saved(jitter_compensation: bool) -> None:
+    config = _ready_sensor_config(jitter_compensation)
+
+    assert sensor_config_timeline.migrate(config.to_dict()) == config
+    assert sensor_config_timeline.migrate(config.to_json()) == config
