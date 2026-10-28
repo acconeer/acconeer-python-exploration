@@ -102,17 +102,24 @@ class _A2Extractor(_Extractor):
     @staticmethod
     def get_status_messages(result: Union[a2.GroupResult, a2.Result]) -> list[str]:
         if isinstance(result, a2.GroupResult):
-            saturated_flags = [flag for r in result.results for flag in r.data_saturated]
+            result_list = result.results
         elif isinstance(result, a2.Result):
-            saturated_flags = result.data_saturated
+            result_list = [result]
         else:
             msg = f"Unexpected type for 'result': {type(result)}"
             raise AssertionError(msg)
 
-        if any(saturated_flags):
-            return [_DATA_SATURATED_MESSAGE]
-        else:
-            return []
+        msgs = []
+        if any(flag for r in result_list for flag in r.data_saturated):
+            msgs.append(_DATA_SATURATED_MESSAGE)
+
+        if any(r.calibration_needed for r in result_list):
+            msgs.append(_CALIBRATION_NEEDED_MESSAGE)
+
+        if any(r.frame_delayed for r in result_list):
+            msgs.append(_FRAME_DELAYED_MESSAGE)
+
+        return msgs
 
 
 class ApplicationClient(Generic[ClientT]):
