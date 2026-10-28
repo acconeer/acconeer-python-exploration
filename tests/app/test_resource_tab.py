@@ -403,3 +403,16 @@ def test_every_toolbar_config_action_spawns_a_block() -> None:
         name = action.text()[len("New ") :]
 
         assert any(title.endswith(name) for title in _dock_titles(main_widget)), name
+
+
+def test_a2_power_vs_rate_leaves_the_offered_config_alone() -> None:
+    """The config of an event is shared by every output that handles it"""
+    config = a2.SessionConfig.default()
+    config.sensor_config.inter_frame_idle_state = a2.IdleState.ARMED
+
+    evolved = power_consumption_vs_rate_output._A2PowerConsumptionVsRatePlot._evolve_config(
+        config, inter_frame_idle_state=a2.IdleState.READY
+    )
+
+    assert evolved.sensor_config.inter_frame_idle_state == a2.IdleState.READY
+    assert config.sensor_config.inter_frame_idle_state == a2.IdleState.ARMED

@@ -407,7 +407,7 @@ class _A2PowerConsumptionVsRatePlot(pg.PlotWidget):
             config_copy.sensor_config.frame_rate = frame_rate
 
         if inter_frame_idle_state is not None:
-            config.sensor_config.inter_frame_idle_state = inter_frame_idle_state
+            config_copy.sensor_config.inter_frame_idle_state = inter_frame_idle_state
 
         return config_copy
 
