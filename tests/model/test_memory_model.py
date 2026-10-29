@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2023-2025
+# Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -6,17 +6,23 @@ from __future__ import annotations
 import math
 from pathlib import Path
 from typing import Dict
+from unittest import mock
 
 import pytest
 import yaml
 
-from acconeer.exptool.a121 import SensorConfig, SessionConfig, SubsweepConfig
+from acconeer.exptool.a121 import Profile, SensorConfig, SessionConfig, SubsweepConfig
+from acconeer.exptool.a121.algo import APPROX_BASE_STEP_LENGTH_M, distance
+from acconeer.exptool.a121.algo.distance import (
+    Detector as DistanceDetector,
+)
 from acconeer.exptool.a121.algo.distance import (
     DetectorConfig as DistanceConfig,
 )
 from acconeer.exptool.a121.algo.distance import (
     ThresholdMethod,
 )
+from acconeer.exptool.a121.algo.distance._translation import get_num_far_subsweeps
 from acconeer.exptool.a121.algo.presence import _configs as PresenceConfigs
 from acconeer.exptool.a121.model import memory
 
@@ -150,3 +156,101 @@ def test_distance_memory_model(config, test_case, xm125_memory_usage):
     assert distance_rss_heap_mem + distance_ext_heap_mem == distance_heap_mem
     assert math.isclose(mem_usage["rss_heap"], distance_rss_heap_mem, rel_tol=0.05)
     assert math.isclose(mem_usage["app_heap"], distance_ext_heap_mem, rel_tol=0.05)
+
+
+# Ranges spanning a single base step make the max-profile breakpoints collapse,
+# so the session config holds fewer than four far subsweeps.
+_DEDUPLICATED_BREAKPOINT_CONFIGS = [
+    pytest.param(
+        DistanceConfig(
+            start_m=1.0,
+            end_m=1.0 + APPROX_BASE_STEP_LENGTH_M,
+            max_profile=Profile.PROFILE_1,
+            max_step_length=1,
+            threshold_method=ThresholdMethod.CFAR,
+        ),
+        id="far-cfar-dedup",
+    ),
+    pytest.param(
+        DistanceConfig(
+            start_m=1.0,
+            end_m=1.0 + APPROX_BASE_STEP_LENGTH_M,
+            max_profile=Profile.PROFILE_1,
+            max_step_length=1,
+            threshold_method=ThresholdMethod.RECORDED,
+        ),
+        id="far-recorded-dedup",
+    ),
+    pytest.param(
+        DistanceConfig(
+            start_m=0.05,
+            end_m=0.12 + APPROX_BASE_STEP_LENGTH_M,
+            max_profile=Profile.PROFILE_1,
+            max_step_length=1,
+            close_range_leakage_cancellation=True,
+            threshold_method=ThresholdMethod.RECORDED,
+        ),
+        id="close-far-recorded-dedup",
+    ),
+]
+
+_OTHER_DISTANCE_CONFIGS = [
+    pytest.param(
+        DistanceConfig(start_m=0.1, end_m=3.0, threshold_method=ThresholdMethod.CFAR),
+        id="far-cfar-multisubsweep",
+    ),
+    pytest.param(
+        DistanceConfig(start_m=0.05, end_m=0.2, threshold_method=ThresholdMethod.RECORDED),
+        id="far-recorded-transition",
+    ),
+    pytest.param(
+        DistanceConfig(
+            start_m=0.05,
+            end_m=0.1,
+            close_range_leakage_cancellation=True,
+            threshold_method=ThresholdMethod.RECORDED,
+        ),
+        id="close-only-recorded",
+    ),
+]
+
+
+def _detector_session_config_and_specs(config):
+    # Bypass __init__ (which requires a client) and reuse the Detector's own composition.
+    detector = DistanceDetector.__new__(DistanceDetector)
+    detector.sensor_ids = [1]
+    detector.update_config(config)
+    return detector.session_config, detector.processor_specs
+
+
+@pytest.mark.parametrize("config", _DEDUPLICATED_BREAKPOINT_CONFIGS)
+def test_distance_dedup_configs_have_fewer_far_subsweeps(config):
+    config.validate()
+    session_config, _ = _detector_session_config_and_specs(config)
+
+    num_far_subsweeps = get_num_far_subsweeps(session_config, config)
+
+    assert 0 < num_far_subsweeps < 4
+
+
+@pytest.mark.parametrize("config", _DEDUPLICATED_BREAKPOINT_CONFIGS + _OTHER_DISTANCE_CONFIGS)
+def test_distance_memory_model_uses_detector_processor_specs(config):
+    config.validate()
+    session_config, detector_specs = _detector_session_config_and_specs(config)
+
+    for spec in detector_specs:
+        for ss_ref in spec.subsweep_references or []:
+            sensor_config = session_config.groups[ss_ref.group_index][1]
+            assert ss_ref.subsweep_index < sensor_config.num_subsweeps
+
+    to_processor_specs = distance.detector_config_to_processor_specs
+    with mock.patch.object(
+        distance, "detector_config_to_processor_specs", wraps=to_processor_specs
+    ) as spy:
+        distance_rss_heap_mem = memory.distance_rss_heap_memory(config)
+        distance_ext_heap_mem = memory.distance_external_heap_memory(config)
+
+    assert spy.call_count == 2
+    for call in spy.call_args_list:
+        assert to_processor_specs(*call.args, **call.kwargs) == detector_specs
+    assert distance_rss_heap_mem + distance_ext_heap_mem == memory.distance_heap_memory(config)
