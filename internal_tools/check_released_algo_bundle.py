@@ -33,7 +33,7 @@ def check_released_algo_bundle(
         raise ReleaseGateError(msg)
 
     try:
-        zip_path, _version = repository.download(Artifact.MODULE_BUNDLE, str(download_dir))
+        zip_path, _version = repository.download(Artifact.ALGO_BUNDLE, str(download_dir))
     except NotImplementedError as e:
         msg = (
             "ET can't download the algo bundle from the developer site yet. "

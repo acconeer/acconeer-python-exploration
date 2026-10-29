@@ -20,7 +20,7 @@ class _FakeDevSite:
         self.error = error
 
     def download(self, artifact: Artifact, path: str) -> tuple[str, str]:
-        assert artifact is Artifact.MODULE_BUNDLE
+        assert artifact is Artifact.ALGO_BUNDLE
         if self.error is not None:
             raise self.error
         zip_path = Path(path) / "bundle.zip"
