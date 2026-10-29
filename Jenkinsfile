@@ -91,6 +91,10 @@ BuildTrigger getBuildTrigger() {
 }
 
 BuildScope getBuildScope(BuildTrigger buildTrigger) {
+    if (buildTrigger == BuildTrigger.TAG) {
+        return BuildScope.NIGHTLY
+    }
+
     if (buildTrigger != BuildTrigger.CRON_TIMER) {
         return BuildScope.SANITY
     }
@@ -195,6 +199,7 @@ try {
     // Only matches version on the form "vX.Y.Z" where X, Y, Z are integers
     version_regex = /v\d+\.\d+\.\d+/
 
+    // Release candidates, "vX.Y.Z-rcN", don't match and so are never published.
     boolean isRelease = env.TAG_NAME ==~ version_regex
     boolean isPrepareRelease = env.GERRIT_CHANGE_SUBJECT ==~ /Prepare release ${version_regex}/
 
@@ -212,6 +217,31 @@ try {
                         {
                             hatchWrap 'run app:python internal_tools/check_released_algo_bundle.py'
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    if (isRelease) {
+        stage('Release gate: release candidate on the same commit') {
+            node('docker') {
+                ws('workspace/exptool') {
+                    printNodeInfo()
+                    checkoutAndCleanup()
+
+                    withCredentials([gitUsernamePassword(credentialsId: '1bef2b16-6cd9-4836-a014-421199e7fb0f')]) {
+                        sh 'git fetch --tags origin'
+                    }
+                    String releaseCandidates = sh(
+                        returnStdout: true,
+                        script: "git tag --list --points-at HEAD '${env.TAG_NAME}-rc*'"
+                    ).trim()
+                    if (!releaseCandidates) {
+                        error(
+                            "${env.TAG_NAME} has no release candidate on its commit. Tag the commit " +
+                            "${env.TAG_NAME}-rc<N>, build that tag, then build ${env.TAG_NAME} again."
+                        )
                     }
                 }
             }
