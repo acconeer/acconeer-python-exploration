@@ -23,5 +23,7 @@
   `pip uninstall pyqtdarktheme` before upgrading.
 - The tabs after the first, such as the A2 sensor configuration's later
   subsweeps, set their sections closer to the tab bar than the first did.
+- The A121/A2 selector's list shows "A121" in full, instead of cutting it
+  off behind a blank gap.
 
 ### Removed

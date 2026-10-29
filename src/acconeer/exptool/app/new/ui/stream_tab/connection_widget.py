@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QPushButton,
     QStackedWidget,
+    QStyledItemDelegate,
     QVBoxLayout,
     QWidget,
 )
@@ -295,6 +296,16 @@ class GenerationSelection(QComboBox):
 
         self.addItem("A121", PluginGeneration.A121)
         self.addItem("A2", PluginGeneration.A2)
+
+        # The default delegate draws the items as menu entries, with a blank check mark
+        # column in front that pushes "A121" out of a popup as narrow as the box.
+        self.setItemDelegate(QStyledItemDelegate(self))
+        self.view().setStyleSheet("QListView::item {padding: 4px 8px}")
+        # The popup is no wider than the box, which the padded items outgrow.
+        # The 8 px is the theme's padding of the list.
+        self.view().setMinimumWidth(
+            self.view().sizeHintForColumn(0) + 2 * self.view().frameWidth() + 8
+        )
 
         self.currentIndexChanged.connect(
             lambda _: app_model.set_plugin_generation(self.currentData())
