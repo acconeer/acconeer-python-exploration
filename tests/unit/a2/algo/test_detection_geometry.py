@@ -171,7 +171,7 @@ def test_volume_bounds_default_to_none():
 
 def test_angle_range_defaults_match_processor_defaults():
     volume = _make_volume()
-    assert volume.az_angle_range == (-60.0, 60.0)
+    assert volume.az_angle_range == (-80.0, 80.0)
     assert volume.el_angle_range == (-30.0, 30.0)
 
 
@@ -421,10 +421,21 @@ def test_range_limits_alone_set_the_range():
     assert _required_range_m(_LEVEL_MOUNT, DetectionVolume(start_m=0.5, end_m=5.0)) == (0.5, 5.0)
 
 
-def test_session_config_without_a_box_measures_the_range_limits():
-    volume = DetectionVolume(start_m=1.0, end_m=5.0)
+# A wider az range needs a lower signal quality to stay feasible
+@pytest.mark.parametrize(
+    ("volume_kwargs", "signal_quality_db"),
+    [
+        (dict(az_angle_range=(-60.0, 60.0)), 20.5),
+        (dict(), 16.0),
+    ],
+    ids=["az60", "default_az"],
+)
+def test_session_config_without_a_box_measures_the_range_limits(
+    volume_kwargs: dict[str, tuple[float, float]], signal_quality_db: float
+):
+    volume = DetectionVolume(start_m=1.0, end_m=5.0, **volume_kwargs)
     config = WallMountSessionAbstractionConfig(
-        signal_quality_db=20.5,
+        signal_quality_db=signal_quality_db,
         profile=a2.Profile.PROFILE_3,
         frame_rate=1.0,
         snr_evaluation_height_m=0.7,

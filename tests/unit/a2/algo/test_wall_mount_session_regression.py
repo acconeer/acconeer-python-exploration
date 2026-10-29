@@ -40,9 +40,22 @@ CASES: dict[str, tuple[dict[str, t.Any], float, float, float]] = {
         0.0,
         15.0,
     ),
-    "a180_wide_short_26db": (
-        dict(x_bounds_m=(-4.0, 4.0), y_bounds_m=(0.0, 4.0), y_rotation=180.0, **_LEVEL),
+    # The default az range needs a lower signal quality for this volume
+    "a180_wide_short_26db_az60": (
+        dict(
+            x_bounds_m=(-4.0, 4.0),
+            y_bounds_m=(0.0, 4.0),
+            az_angle_range=(-60.0, 60.0),
+            y_rotation=180.0,
+            **_LEVEL,
+        ),
         26.0,
+        0.0,
+        15.0,
+    ),
+    "a180_wide_short_22db": (
+        dict(x_bounds_m=(-4.0, 4.0), y_bounds_m=(0.0, 4.0), y_rotation=180.0, **_LEVEL),
+        22.0,
         0.0,
         15.0,
     ),
@@ -72,21 +85,27 @@ CASES: dict[str, tuple[dict[str, t.Any], float, float, float]] = {
 # (start_point, num_points, step_length, hwaas_exponent, hwaas_min, hwaas_max, prf)
 EXPECTED_LAYOUTS: dict[str, list[tuple[int, int, int, int, int, int, str]]] = {
     "a0_narrow_deep_21db": [
-        (344, 11, 129, 1, 1, 4, "PRF_20_8_MHZ"),
+        (344, 11, 129, 0, 1, 3, "PRF_20_8_MHZ"),
         (1763, 7, 129, 3, 1, 13, "PRF_15_8_MHZ"),
         (2666, 4, 129, 3, 1, 27, "PRF_12_5_MHZ"),
         (3182, 2, 129, 0, 1, 32, "PRF_12_5_MHZ"),
     ],
-    "a180_wide_short_26db": [
+    "a180_wide_short_26db_az60": [
         (375, 6, 129, 4, 1, 7, "PRF_20_8_MHZ"),
         (1149, 5, 129, 4, 1, 47, "PRF_20_8_MHZ"),
         (1794, 2, 129, 0, 1, 61, "PRF_15_8_MHZ"),
         (2052, 3, 129, 1, 1, 66, "PRF_15_8_MHZ"),
     ],
+    "a180_wide_short_22db": [
+        (375, 5, 129, 3, 1, 7, "PRF_20_8_MHZ"),
+        (1020, 5, 129, 4, 1, 58, "PRF_20_8_MHZ"),
+        (1665, 1, 129, 0, 1, 48, "PRF_20_8_MHZ"),
+        (1794, 5, 129, 0, 1, 29, "PRF_15_8_MHZ"),
+    ],
     "b0_wide_26db": [
-        (348, 11, 129, 3, 1, 40, "PRF_20_8_MHZ"),
-        (1767, 4, 129, 2, 1, 84, "PRF_15_8_MHZ"),
-        (2283, 3, 129, 2, 1, 147, "PRF_15_8_MHZ"),
+        (348, 11, 129, 4, 1, 151, "PRF_20_8_MHZ"),
+        (1767, 3, 129, 0, 1, 72, "PRF_15_8_MHZ"),
+        (2154, 4, 129, 3, 1, 157, "PRF_15_8_MHZ"),
         (2670, 3, 129, 0, 1, 165, "PRF_12_5_MHZ"),
     ],
     "b180_narrow_26db": [

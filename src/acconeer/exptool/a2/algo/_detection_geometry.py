@@ -49,7 +49,7 @@ from acconeer.exptool.a2.algo.nodes._spherical_to_cartesian_nodes import (
 # range and therefore each axis is bounded by ±MAX_RANGE_M.
 MAX_RANGE_M = 10.0
 
-DEFAULT_AZ_ANGLE_RANGE = (-60.0, 60.0)
+DEFAULT_AZ_ANGLE_RANGE = (-80.0, 80.0)
 DEFAULT_EL_ANGLE_RANGE = (-30.0, 30.0)
 # Floor-to-ceiling height of the room the sensor is mounted in. The detection
 # volume's box bounds only x and y; it is taken as high as the room when
