@@ -462,12 +462,12 @@ include = [
 
 [tool.check_sdk_mentions]
 ignore_lines = [
-    "Jenkinsfile:41",
-    "Jenkinsfile:42",
-    "Jenkinsfile:43",
-    "Jenkinsfile:48",
-    "Jenkinsfile:49",
-    "Jenkinsfile:50",
+    "Jenkinsfile:45",
+    "Jenkinsfile:46",
+    "Jenkinsfile:47",
+    "Jenkinsfile:52",
+    "Jenkinsfile:53",
+    "Jenkinsfile:54",
 ]
 include = [
     "README.md",

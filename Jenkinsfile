@@ -6,6 +6,10 @@ enum BuildScope {
     SANITY, HOURLY, NIGHTLY
 }
 
+enum BuildTrigger {
+    CHANGE, CRON_TIMER, TAG
+}
+
 @Field
 def pythonVersionsForBuildScope = [
     (BuildScope.SANITY)  : ['3.12'],
@@ -74,11 +78,20 @@ def hatchWrap(String command) {
     sh "hatch ${command}"
 }
 
-BuildScope getBuildScope() {
-    if (currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').isEmpty()) {
-        // currentBuild was not triggered by a cron timer
-        // => probably triggered by a change
-        // => run sanity scope.
+BuildTrigger getBuildTrigger() {
+    if (env.TAG_NAME) {
+        return BuildTrigger.TAG
+    }
+
+    if (!currentBuild.getBuildCauses('hudson.triggers.TimerTrigger$TimerTriggerCause').isEmpty()) {
+        return BuildTrigger.CRON_TIMER
+    }
+
+    return BuildTrigger.CHANGE
+}
+
+BuildScope getBuildScope(BuildTrigger buildTrigger) {
+    if (buildTrigger != BuildTrigger.CRON_TIMER) {
         return BuildScope.SANITY
     }
 
@@ -150,7 +163,8 @@ try {
         buildDiscarder(logRotator(daysToKeepStr: '14')),
     ])
 
-    def buildScope = getBuildScope()
+    def buildTrigger = getBuildTrigger()
+    def buildScope = getBuildScope(buildTrigger)
 
     def pythonVersions = pythonVersionsForBuildScope[buildScope]
     def integrationTestA121RssVersions = integrationTestA121RssVersionsForBuildScope[buildScope]
@@ -536,7 +550,7 @@ try {
         }
     }
 
-    boolean updateReleaseBranches = buildScope == BuildScope.NIGHTLY
+    boolean updateReleaseBranches = buildTrigger == BuildTrigger.CRON_TIMER && buildScope == BuildScope.NIGHTLY
     boolean pushReleaseBranch = (buildScope == BuildScope.SANITY && isJenkinsMerge
                                  && currentBuild.currentResult == 'SUCCESS')
 
