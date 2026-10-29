@@ -574,6 +574,9 @@ class Detector(Controller[DetectorConfig, dict[int, DetectorResult]]):
     def update_config(self, config: DetectorConfig) -> None:
         """Updates the session config and processor specification based on the detector
         configuration."""
+        if self.started:
+            msg = "Cannot update config while started"
+            raise RuntimeError(msg)
         self.session_config = detector_config_to_session_config(config, self.sensor_ids)
         num_far_subsweeps = get_num_far_subsweeps(self.session_config, config)
         self.processor_specs = detector_config_to_processor_specs(config, num_far_subsweeps)
