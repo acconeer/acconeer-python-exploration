@@ -178,6 +178,32 @@ try {
 
     boolean isJenkinsMerge = false
 
+    // Only matches version on the form "vX.Y.Z" where X, Y, Z are integers
+    version_regex = /v\d+\.\d+\.\d+/
+
+    boolean isRelease = env.TAG_NAME ==~ version_regex
+    boolean isPrepareRelease = env.GERRIT_CHANGE_SUBJECT ==~ /Prepare release ${version_regex}/
+
+    if (isRelease || isPrepareRelease) {
+        stage('Release gate: algo bundle on developer site') {
+            node('docker') {
+                ws('workspace/exptool') {
+                    printNodeInfo()
+                    checkoutAndCleanup()
+
+                    buildDocker(path: 'docker').inside(dockerArgs) {
+                        withCredentials([usernamePassword(credentialsId: 'tools-devsite',
+                                                          passwordVariable: 'DEV_PASSWORD',
+                                                          usernameVariable: 'DEV_USERNAME')])
+                        {
+                            hatchWrap 'run app:python internal_tools/check_released_algo_bundle.py'
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     // Meant to catch common (and fast to detect) errors.
     stage('Lint') {
         node('docker') {
@@ -477,9 +503,6 @@ try {
     parallel_steps['failFast'] = true
 
     parallel parallel_steps
-
-    // Only matches version on the form "vX.Y.Z" where X, Y, Z are integers
-    version_regex = /v\d+\.\d+\.\d+/
 
     if (env.TAG_NAME ==~ version_regex) {
         node('docker') {
