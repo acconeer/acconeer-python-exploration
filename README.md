@@ -88,7 +88,7 @@ Python 3.12 or newer. Older versions have limited or no support.
 
 Tested on:
 
-* Python 3 (developed and tested on 3.12, 3.13 and 3.14)
+* Python 3 (developed and tested on 3.12 and 3.13)
 * Windows 11
 * Ubuntu 24.04
 

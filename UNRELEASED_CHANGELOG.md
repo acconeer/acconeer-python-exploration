@@ -9,7 +9,6 @@
   single press, so an unintentionally long tap won't quit early.
 - Link to Acconeer's security page from the documentation landing page,
   for security information and vulnerability reporting.
-- Support for Python 3.14
 
 ### Changed
 - The app extra now pins PySide6 6.11.2 instead of 6.8.3, so it can be
