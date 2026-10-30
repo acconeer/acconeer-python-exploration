@@ -470,10 +470,11 @@ class PlotPlaceholder(PlotPluginBase):
 
     def _teaser_text(self) -> QLabel:
         teaser_label = QLabel(
-            "More detectors and example applications will\nbe released continuously.", self
+            "More detectors and example applications will be released continuously.", self
         )
         teaser_label.setStyleSheet("font-size: 16px;")
         teaser_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        teaser_label.setWordWrap(True)
 
         return teaser_label
 
