@@ -11,8 +11,6 @@ from typing import Any, Callable, Generic, Sequence, TypeVar
 
 import h5py
 
-from PySide6.QtWidgets import QLabel
-
 from acconeer.exptool import a2
 from acconeer.exptool._core.entities.validation_result import Criticality, ValidationResult
 from acconeer.exptool.a2._core.recording.replaying_client import ReplayingClient
@@ -31,7 +29,7 @@ from acconeer.exptool.app.new import (
     get_temp_h5_path,
     is_task,
 )
-from acconeer.exptool.app.new.ui import icons
+from acconeer.exptool.app.new.ui.components.note_label import NoteLabel
 
 
 log = logging.getLogger(__name__)
@@ -281,11 +279,9 @@ class A2ViewPluginBase(ViewPluginBase):
         super().__init__(app_model)
 
         self._config_is_valid = True
-        self.invalid_config_note = QLabel("Invalid configuration, see the errors below.")
-        self.invalid_config_note.setWordWrap(True)
-        self.invalid_config_note.setContentsMargins(5, 5, 5, 5)
-        self.invalid_config_note.setStyleSheet(
-            f"background-color: {icons.ERROR_RED}; color: white; font: bold italic;"
+        self.invalid_config_note = NoteLabel()
+        self.invalid_config_note.set_note(
+            "Invalid configuration, see the errors below.", Criticality.ERROR
         )
         self.invalid_config_note.hide()
 

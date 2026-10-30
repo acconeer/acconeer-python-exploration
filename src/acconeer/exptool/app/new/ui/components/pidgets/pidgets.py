@@ -42,8 +42,9 @@ from PySide6.QtWidgets import (
 )
 
 from acconeer.exptool._core.entities.validation_result import Criticality
-from acconeer.exptool.app.new.ui import icons, palette
+from acconeer.exptool.app.new.ui import palette
 from acconeer.exptool.app.new.ui.components.data_editor import DataEditor
+from acconeer.exptool.app.new.ui.components.note_label import NoteLabel
 from acconeer.exptool.app.new.ui.utils import LayoutWrapper
 from acconeer.exptool.testing import is_running_in_ci
 
@@ -104,11 +105,8 @@ class PidgetFactory(abc.ABC):
             label.setToolTip(self.name_label_tooltip)
         return label
 
-    def create_note_label(self, parent: QWidget) -> QLabel:
-        label = QLabel(parent=parent)
-        label.setWordWrap(True)
-        label.setContentsMargins(5, 5, 5, 5)
-        return label
+    def create_note_label(self, parent: QWidget) -> NoteLabel:
+        return NoteLabel(parent=parent)
 
 
 class Pidget(DataEditor[Any]):
@@ -202,21 +200,7 @@ class Pidget(DataEditor[Any]):
         self.setLayout(layout)
 
     def set_note_text(self, message: str | None, criticality: Criticality | None = None) -> None:
-        if not message:
-            self.__note_widget.hide()
-            return
-
-        COLOR_MAP = {
-            Criticality.ERROR: icons.ERROR_RED,
-            Criticality.WARNING: icons.WARNING_YELLOW,
-            None: "white",
-        }
-
-        self.__note_widget.show()
-        self.__note_widget.setText(message)
-        self.__note_widget.setStyleSheet(
-            f"background-color: {COLOR_MAP[criticality]}; color: white; font: bold italic;"
-        )
+        self.__note_widget.set_note(message, criticality)
 
     def setEnabled(self, enabled: bool) -> None:
         super(DataEditor, self).setEnabled(enabled)

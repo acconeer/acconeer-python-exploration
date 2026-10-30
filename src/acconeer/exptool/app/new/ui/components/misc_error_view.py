@@ -3,11 +3,12 @@
 
 from __future__ import annotations
 
-from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QVBoxLayout, QWidget
 
-from acconeer.exptool._core.entities.validation_result import Criticality, ValidationResult
+from acconeer.exptool._core.entities.validation_result import ValidationResult
 
 from .group_box import GroupBox
+from .note_label import NoteLabel
 
 
 class MiscErrorView(GroupBox[QVBoxLayout]):
@@ -25,12 +26,6 @@ class MiscErrorView(GroupBox[QVBoxLayout]):
     ) -> list[ValidationResult]:
         self.setVisible(len(validation_results) > 0)
 
-        COLOR_MAP = {
-            Criticality.ERROR: "#E6635A",
-            Criticality.WARNING: "#FCC842",
-            None: "white",
-        }
-
         # Delete all existing error message widgets
         while self.layout().count():
             child = self.layout().takeAt(0)
@@ -42,14 +37,8 @@ class MiscErrorView(GroupBox[QVBoxLayout]):
             widget.deleteLater()
 
         for result in validation_results:
-            error_widget = QLabel(parent=self)
-            error_widget.setWordWrap(True)
-            error_widget.setContentsMargins(5, 5, 5, 5)
-            error_widget.setText(result.message)
-            error_widget.setStyleSheet(
-                f"background-color: {COLOR_MAP[result.criticality]}; "
-                "color: white; font: bold italic;"
-            )
+            error_widget = NoteLabel(parent=self)
+            error_widget.set_note(result.message, result.criticality)
             self.layout().addWidget(error_widget)
 
         return []

@@ -25,6 +25,7 @@ from acconeer.exptool.app.new.ui.components.group_box import GroupBox
 from acconeer.exptool.app.new.ui.components.json_save_load_buttons import (
     create_json_save_load_buttons,
 )
+from acconeer.exptool.app.new.ui.components.note_label import NoteLabel
 from acconeer.exptool.app.new.ui.icons import PLUS, REMOVE
 
 from .sensor_config_editor import SensorConfigEditor
@@ -142,10 +143,7 @@ class _SensorIdsEditor(DataEditor[list[int]]):
         self._add_button.clicked.connect(self._update_visuals)
         self._add_button.clicked.connect(self._emit_current_data)
 
-        self._note_widget = QLabel()
-        self._note_widget.setWordWrap(True)
-        self._note_widget.setContentsMargins(5, 5, 5, 5)
-        self._note_widget.hide()
+        self._note_widget = NoteLabel()
 
         # Static row
         static_combobox = SensorIdCombobox()
@@ -253,21 +251,7 @@ class _SensorIdsEditor(DataEditor[list[int]]):
         self._update_visuals()
 
     def set_note_text(self, message: str | None, criticality: Criticality | None = None) -> None:
-        if not message:
-            self._note_widget.hide()
-            return
-
-        COLOR_MAP = {
-            Criticality.ERROR: "#E6635A",
-            Criticality.WARNING: "#FCC842",
-            None: "white",
-        }
-
-        self._note_widget.show()
-        self._note_widget.setText(message)
-        self._note_widget.setStyleSheet(
-            f"background-color: {COLOR_MAP[criticality]}; color: white; font: bold italic;"
-        )
+        self._note_widget.set_note(message, criticality)
 
     @property
     def is_ready(self) -> bool:

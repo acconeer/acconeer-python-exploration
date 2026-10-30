@@ -43,6 +43,7 @@ CLOSE           = partial(qta.icon, "mdi.close",                    color=BUTTON
 COG             = partial(qta.icon, "fa5s.cog",                     color=BUTTON_ICON_COLOR)
 DOWNLOAD        = partial(qta.icon, "fa5s.download",                color=BUTTON_ICON_COLOR)
 EDIT            = partial(qta.icon, "fa5s.edit",                    color=BUTTON_ICON_COLOR)
+ERROR           = partial(qta.icon, "ph.x-circle-fill",             color=ERROR_RED)
 EXTERNAL_LINK   = partial(qta.icon, "fa5s.external-link-alt",       color=BUTTON_ICON_COLOR)
 FLASH           = partial(qta.icon, "mdi.flash",                    color=BUTTON_ICON_COLOR)
 FOLDER_OPEN     = partial(qta.icon, "fa5s.folder-open",             color=BUTTON_ICON_COLOR)
