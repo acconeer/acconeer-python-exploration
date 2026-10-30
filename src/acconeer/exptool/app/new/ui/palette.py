@@ -34,6 +34,16 @@ class Color:
     def with_alpha(self, a: int) -> Color:
         return attrs.evolve(self, a=a)
 
+    def blend(self, background: Color, opacity: float) -> Color:
+        """This color at ``opacity`` over ``background``, as one opaque color."""
+
+        def mix(channel: int, background_channel: int) -> int:
+            return round(channel * opacity + background_channel * (1 - opacity))
+
+        return Color(
+            mix(self.r, background.r), mix(self.g, background.g), mix(self.b, background.b)
+        )
+
     @property
     def hex(self) -> str:
         """``#rrggbb``, without the opacity."""
@@ -85,18 +95,51 @@ class Palette:
     """The room in the pictures of the sensor's mounting."""
 
 
+class Brand:
+    """Acconeer's blue and grey scales, from the Acconeer Design Guidelines.
+
+    The guidelines pick their steps for a dark background: on a light one,
+    Blue 600 is the brightest blue that text and thin lines can take, and
+    Blue 800 and up only suit large marks."""
+
+    BLUE_50 = Color.from_hex("#071f2c")
+    BLUE_100 = Color.from_hex("#092635")
+    BLUE_200 = Color.from_hex("#0b2e40")
+    BLUE_300 = Color.from_hex("#0e384d")
+    BLUE_400 = Color.from_hex("#12445c")
+    """Deep Blue."""
+    BLUE_500 = Color.from_hex("#16506b")
+    BLUE_600 = Color.from_hex("#1c7396")
+    BLUE_700 = Color.from_hex("#2493bf")
+    BLUE_800 = Color.from_hex("#3aaedb")
+    """Bright Blue."""
+    BLUE_900 = Color.from_hex("#57c9f4")
+    BLUE_950 = Color.from_hex("#7ed5f7")
+
+    GREY_50 = Color.from_hex("#f7f9fc")
+    GREY_100 = Color.from_hex("#eceff5")
+    GREY_200 = Color.from_hex("#d9dee8")
+    GREY_300 = Color.from_hex("#bbc3d1")
+    GREY_400 = Color.from_hex("#9da6b7")
+    GREY_500 = Color.from_hex("#7f899d")
+    GREY_600 = Color.from_hex("#586172")
+    GREY_700 = Color.from_hex("#2b313a")
+    GREY_800 = Color.from_hex("#171c22")
+    GREY_900 = Color.from_hex("#0c1015")
+    GREY_950 = Color.from_hex("#05080b")
+
+
 _WHITE = Color.from_hex("#ffffff")
-_GOOGLE_BLUE = Color.from_hex("#1a73e8")
 _SENSOR_RED = Color(217, 26, 26)
 
 LIGHT = Palette(
-    accent=Color.from_hex("#0081db"),
+    accent=Brand.BLUE_600,
     text=Color.from_hex("#4d5157"),
     text_light=Color.from_hex("#888f99"),
     warning=Color.from_hex("#ff9e00"),
     error=Color.from_hex("#e6635a"),
-    slider_bar=_GOOGLE_BLUE,
-    slider_groove=Color.from_hex("#abc6f6"),
+    slider_bar=Brand.BLUE_600,
+    slider_groove=Brand.BLUE_600.blend(_WHITE, 0.3),
     sensor_body=_SENSOR_RED,
     sensor_pin=_WHITE,
     picture_floor=Color(230, 230, 230),

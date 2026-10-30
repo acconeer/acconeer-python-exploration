@@ -60,6 +60,7 @@ from .storage import (
     remove_temp_dir,
     set_et_dir,
 )
+from .ui import palette
 from .ui.app_model_viewer import AppModelViewer
 from .ui.main_window import MainWindow
 
@@ -80,16 +81,21 @@ _QUIT_MIN_GAP_S = 0.3
 
 def configure_application(app: QApplication) -> None:
     """Set ``app`` up as the Exploration Tool runs it, which its tests share."""
-    # Make sure to wrap urls in single quotation marks to avoid errors parsing stylesheet
-    stylesheet = qdarktheme.load_stylesheet("light")
-    search_pattern = r"url\((.*?)\)"
-    replace_pattern = r"url('\1')"
-    stylesheet = re.sub(search_pattern, replace_pattern, stylesheet)
-
-    app.setStyleSheet(stylesheet)
+    apply_theme(app)
     # Input fields write numbers with a decimal point, as the rest of the app,
     # its configs and the scripts do, not as the system's locale does.
     QtCore.QLocale.setDefault(QtCore.QLocale.c())
+
+
+def apply_theme(app: QApplication) -> None:
+    """Style ``app`` in the palette's colors."""
+    stylesheet = qdarktheme.load_stylesheet(
+        "light", custom_colors={"primary": palette.current().accent.hex}
+    )
+    # Make sure to wrap urls in single quotation marks to avoid errors parsing stylesheet
+    search_pattern = r"url\((.*?)\)"
+    replace_pattern = r"url('\1')"
+    app.setStyleSheet(re.sub(search_pattern, replace_pattern, stylesheet))
 
 
 def main() -> None:
