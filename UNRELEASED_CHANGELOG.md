@@ -57,6 +57,8 @@
 - The resource tab's heap estimate for the A121 Distance Detector reads
   a far range that spans two sensor configs from both of them, and counts
   a work buffer for every processor, as the detector allocates them.
+- Leaving the plots' fullscreen view returns a maximized window to
+  maximized, instead of to its normal size.
 - The Exploration Tool no longer shows a busy mouse pointer for several
   seconds on startup and when loading apps on GNOME (Wayland).
 

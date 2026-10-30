@@ -80,6 +80,9 @@ class WorkingArea(QSplitter):
         super().__init__(parent)
 
         self._is_fullscreen = False
+        # Whether the window was maximized before going fullscreen, to
+        # return to on leaving it.
+        self._was_maximized = False
 
         layout = QHBoxLayout(self)
 
@@ -135,10 +138,16 @@ class WorkingArea(QSplitter):
         self._left_area.setVisible(not self._is_fullscreen)
         self._right_area.setVisible(not self._is_fullscreen)
         self._fullscreen_btn.setIcon(FULLSCREEN_EXIT() if self._is_fullscreen else FULLSCREEN())
+        window = self.window()
         if self._is_fullscreen:
-            self.window().showFullScreen()
+            self._was_maximized = window.isMaximized()
+            window.showFullScreen()
         else:
-            self.window().showNormal()
+            # Back to how the window was before fullscreen.
+            if self._was_maximized:
+                window.showMaximized()
+            else:
+                window.showNormal()
 
     def exit_fullscreen(self) -> None:
         if self._is_fullscreen:
