@@ -40,7 +40,7 @@ from PySide6.QtWidgets import (
 )
 
 from acconeer.exptool._core.entities.validation_result import Criticality
-from acconeer.exptool.app.new.ui import icons
+from acconeer.exptool.app.new.ui import icons, palette
 from acconeer.exptool.app.new.ui.components.data_editor import DataEditor
 from acconeer.exptool.app.new.ui.utils import LayoutWrapper
 from acconeer.exptool.testing import is_running_in_ci
@@ -1371,13 +1371,14 @@ class _PidgetFloatSlider(QSlider):
         return round(x, self.decimals)
 
 
-STYLE_OVERRIDE = """
-QSlider {
+def _range_slider_style() -> str:
+    return f"""
+QSlider {{
     background: none;
-}
-QSlider::groove {
-    background: #abc6f6;
-}
+}}
+QSlider::groove {{
+    background: {palette.current().slider_groove.css};
+}}
 """
 
 
@@ -1403,8 +1404,8 @@ class _PidgetRangeSlider(QRangeSlider):
         self.setRange(0, self.NUM_STEPS)
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.StrongFocus)
 
-        self.barColor = QtGui.QBrush(QtGui.QColor(26, 115, 232, 255))
-        self.setStyleSheet(STYLE_OVERRIDE)
+        self.barColor = QtGui.QBrush(palette.current().slider_bar.qcolor())
+        self.setStyleSheet(_range_slider_style())
 
         self.valueChanged.connect(self.__on_value_changed)
 

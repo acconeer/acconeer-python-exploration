@@ -5,12 +5,14 @@ from functools import partial
 
 import qtawesome as qta
 
+from acconeer.exptool.app.new.ui import palette
 
-BUTTON_ICON_COLOR = "#0081db"
-TEXT_GREY = "#4d5157"
-TEXT_LIGHTGREY = "#888f99"
-WARNING_YELLOW = "#ff9e00"
-ERROR_RED = "#e6635a"
+
+BUTTON_ICON_COLOR = palette.current().accent.hex
+TEXT_GREY = palette.current().text.hex
+TEXT_LIGHTGREY = palette.current().text_light.hex
+WARNING_YELLOW = palette.current().warning.hex
+ERROR_RED = palette.current().error.hex
 
 
 # "partial" is used here as the icons from qtawesome needs a running QApplication

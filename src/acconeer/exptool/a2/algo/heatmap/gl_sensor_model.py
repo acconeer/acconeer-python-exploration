@@ -9,9 +9,8 @@ import numpy.typing as npt
 import pyqtgraph as pg
 import pyqtgraph.opengl as gl
 
+from acconeer.exptool.app.new.ui import palette
 
-_BODY_COLOR = (0.85, 0.1, 0.1, 1.0)
-_PIN_COLOR = (1.0, 1.0, 1.0, 1.0)
 
 # Sensor box in the sensor frame (metres, before _SCALE): centred on the
 # origin in x and z, front face at y=0 facing the boresight (+y).
@@ -78,8 +77,9 @@ class GLSensorModel:
     sensor's -x/-z corner, drawn in the sensor's mounted pose."""
 
     def __init__(self) -> None:
-        self._body = gl.GLMeshItem(meshdata=_body_mesh(), color=_BODY_COLOR)
-        self._pin = gl.GLMeshItem(meshdata=_pin_mesh(), color=_PIN_COLOR)
+        colors = palette.current()
+        self._body = gl.GLMeshItem(meshdata=_body_mesh(), color=colors.sensor_body.rgbaf())
+        self._pin = gl.GLMeshItem(meshdata=_pin_mesh(), color=colors.sensor_pin.rgbaf())
 
     @property
     def items(self) -> list[gl.GLMeshItem]:

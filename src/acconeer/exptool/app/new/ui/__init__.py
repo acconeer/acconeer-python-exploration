@@ -1,7 +1,7 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
-from . import components, icons, utils
+from . import components, icons, palette, utils
 from .components import (
     AttrsConfigEditor,
     DataEditor,
