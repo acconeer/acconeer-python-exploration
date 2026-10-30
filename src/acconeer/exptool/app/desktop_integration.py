@@ -2,6 +2,7 @@
 # All rights reserved
 from __future__ import annotations
 
+import ctypes
 import logging
 import os
 import re
@@ -11,7 +12,7 @@ from importlib.resources import as_file, files
 from pathlib import Path
 
 from PySide6 import QtCore, QtGui
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QWidget
 
 from acconeer.exptool.app import resources
 
@@ -21,6 +22,12 @@ _LOG = logging.getLogger(__name__)
 # Used both as the Qt "desktop file name" (Wayland/X11 app id) and as the
 # installed .desktop file's basename, so they always match up.
 DESKTOP_FILE_ID = "com.acconeer.exptool"
+
+# Win32 indices of a window class's icons, and system metrics of their sizes.
+_GCLP_HICON = -14
+_GCLP_HICONSM = -34
+_SM_CXICON = 11
+_SM_CXSMICON = 49
 
 
 def _quote_exec_arg(arg: str) -> str:
@@ -91,6 +98,27 @@ def ensure_wayland_integration(app: QApplication) -> QtGui.QIcon:
         _ensure_desktop_entry_installed(icon)
 
     return icon
+
+
+def set_window_class_icon(window: QWidget, icon: QtGui.QIcon) -> None:
+    """
+    Gives the native window class of ``window``, which the app's windows
+    share, ``icon``. Does nothing outside Windows.
+
+    The Windows taskbar asks a newly shown window for its icon, and falls
+    back to its window class's icon if the window doesn't answer in time, as
+    it doesn't while the app is busy starting up. Qt takes the class icon
+    from the executable, which for python.exe is a generic one.
+    """
+    if sys.platform != "win32":
+        return
+    user32 = ctypes.windll.user32
+    user32.SetClassLongPtrW.restype = ctypes.c_void_p
+    user32.SetClassLongPtrW.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_void_p]
+    hwnd = int(window.winId())
+    for index, size_metric in ((_GCLP_HICON, _SM_CXICON), (_GCLP_HICONSM, _SM_CXSMICON)):
+        size = user32.GetSystemMetrics(size_metric)
+        user32.SetClassLongPtrW(hwnd, index, icon.pixmap(size, size).toImage().toHICON())
 
 
 def _square_icon(size: int = 256) -> QtGui.QIcon:

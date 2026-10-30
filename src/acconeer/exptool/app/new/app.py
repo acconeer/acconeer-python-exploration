@@ -40,6 +40,7 @@ try:
     from acconeer.exptool.app.desktop_integration import (
         ensure_wayland_integration,
         set_app_id,
+        set_window_class_icon,
     )
 except ImportError:
     traceback.print_exc(file=sys.stdout)
@@ -273,9 +274,10 @@ def build_main_window(
 
     app = QApplication.instance()
     assert isinstance(app, QApplication)
-    ensure_wayland_integration(app)
+    icon = ensure_wayland_integration(app)
 
     mw = MainWindow(model)
+    set_window_class_icon(mw, icon)
     mw.show()
     return model, mw
 
