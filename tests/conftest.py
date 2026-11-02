@@ -75,10 +75,10 @@ def pytest_configure(config: pytest.Config) -> None:
         config.stash[ALGO_BUNDLE_EXTRACT_DIR] = extract_dir
 
 
-def _has_plugin_needing_algo_bundle(item: pytest.Item) -> bool:
+def _algo_bundle_plugin_keys(item: pytest.Item) -> set[str]:
     callspec = getattr(item, "callspec", None)
     params = callspec.params.values() if callspec is not None else []
-    return any(getattr(p, "requires_algo_bundle_artifact", False) is True for p in params)
+    return {p.key for p in params if getattr(p, "requires_algo_bundle_artifact", False) is True}
 
 
 def _validate_parametrization(iterable: t.Sized, err_msg: str) -> t.Sized:
@@ -195,9 +195,20 @@ def pytest_collection_modifyitems(config, items):
     skip_algo_bundle_marker = pytest.mark.skip(
         reason="Needs the algo bundle, pass '--algo-bundle <zip>'"
     )
+    # The algo bundle's plugins are opt-in: ET's CI only has a pinned bundle, which an
+    # ET change can outgrow
+    extra_plugins = {
+        key.strip() for key in os.getenv("ET_TEST_A2_PLUGINS_EXTRA", "").split(",") if key.strip()
+    }
+    skip_extra_marker = pytest.mark.skip(
+        reason="Not tested by default, set ET_TEST_A2_PLUGINS_EXTRA to test it"
+    )
     for item in items:
-        if _has_plugin_needing_algo_bundle(item):
+        plugin_keys = _algo_bundle_plugin_keys(item)
+        if plugin_keys:
             item.add_marker(pytest.mark.algo_bundle)
+            if not plugin_keys <= extra_plugins:
+                item.add_marker(skip_extra_marker)
         if "algo_bundle" in item.keywords and config.getoption("--algo-bundle") is None:
             item.add_marker(skip_algo_bundle_marker)
 
