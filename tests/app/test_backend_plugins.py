@@ -10,7 +10,7 @@ import pytest
 from acconeer.exptool import a2, a121
 from acconeer.exptool.a121.algo._plugin_specs.bilateration import BILATERATION_PLUGIN
 from acconeer.exptool.a121.algo._plugin_specs.speed import SPEED_DETECTOR_PLUGIN
-from acconeer.exptool.app.new import PluginGeneration, PluginState
+from acconeer.exptool.app.new import PluginGeneration, PluginState, get_temp_dir
 from acconeer.exptool.app.new.app_model import PluginSpec
 from acconeer.exptool.app.new.backend import (
     Backend,
@@ -165,6 +165,9 @@ class TestBackendPlugins:
         )
 
         saved_file = t.cast(CaptureSaveableFile, backend).saveable_file_path
+        # In the data directory the tests set, not the user's
+        assert saved_file is not None
+        assert saved_file.parent == get_temp_dir()
 
         if plugin.generation == PluginGeneration.A121:
             with a121.open_record(saved_file) as _:

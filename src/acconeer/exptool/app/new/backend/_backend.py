@@ -10,6 +10,7 @@ import time
 import traceback
 import uuid
 from multiprocessing.synchronize import Event as mp_EventType  # NOTE! this is not mp.Event.
+from pathlib import Path
 from typing import Generator, Optional, Tuple, Union
 
 import attrs
@@ -17,6 +18,7 @@ import psutil
 from typing_extensions import Literal
 
 from acconeer.exptool._processes.sigint_ignoring_process import SigintIgnoringProcess
+from acconeer.exptool.app.new import storage
 
 from ._backend_logger import BackendLogger
 from ._message import GeneralMessage, Message
@@ -55,6 +57,8 @@ class MpBackend:
                 self._send_queue,
                 self._recv_queue,
                 self._stop_event,
+                # A child that isn't forked doesn't see set_et_dir
+                storage.ET_DIR,
             ),
             daemon=True,
         )
@@ -149,7 +153,9 @@ def process_program(
     recv_queue: mp.Queue[ToBackendQueueItem],
     send_queue: mp.Queue[FromBackendQueueItem],
     stop_event: mp_EventType,
+    et_dir: Path,
 ) -> None:
+    storage.set_et_dir(et_dir)
     # Continuously consumes from the generator,
     # making the 'yield' not have any effect
     for _ in process_generator(
