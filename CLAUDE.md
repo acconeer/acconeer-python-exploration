@@ -21,7 +21,7 @@ pin from `docker/Dockerfile`. Pass the date as the flag, not as
 | `hatch run mypy:check` | Pinned mypy on the oldest supported Python (`mypy` env). |
 | `hatch test tests/ src/` | Tests on one interpreter of the matrix in `pyproject.toml`; `-py=<version>` picks it. Without paths, collecting `examples/` fails. Extra args pass to pytest. |
 | `hatch test --update-outputs tests/processing/test_processing.py -k "distance_processor or distance_detector"` | Regenerate one algorithm's regression baselines. `-k` also matches input file names. |
-| `hatch run docs:html` | Build docs. `docs:autobuild` live-reloads; `docs:build` is the CI gate. |
+| `hatch run docs:html` | Build docs. An html build ends by building `SINGLE_PAGE_GUIDES` of `docs/conf.py` as one printable page each. `docs:autobuild` live-reloads; `docs:build` is the CI gate. |
 | `hatch run docs:compress-images <paths>` | Shrink images before committing (`--check` only reports). |
 | `hatch run app:new` | Launch the GUI. |
 

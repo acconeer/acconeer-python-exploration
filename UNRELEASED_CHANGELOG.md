@@ -9,6 +9,8 @@
   single press, so an unintentionally long tap won't quit early.
 - Link to Acconeer's security page from the documentation landing page,
   for security information and vulnerability reporting.
+- Single-page versions of the A121 and A212 hardware integration guides,
+  for printing or saving as PDF, linked from each guide's first page.
 
 ### Changed
 - The app extra now pins PySide6 6.11.2 instead of 6.8.3, so it can be

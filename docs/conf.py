@@ -1,9 +1,16 @@
 # Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 import os
+import posixpath
+import re
+import subprocess
+import sys
+import tempfile
 from pathlib import Path
+from typing import Any
 
 from sphinx.application import Sphinx
+from sphinx.util import logging
 
 
 project = "acconeer-python-exploration"
@@ -46,7 +53,13 @@ suppress_warnings = [
     "autodoc.mocked_object",
 ]
 
+# The single-page builds of _build_single_page_guides are rooted below index.rst
+if tags.has("printable"):  # noqa: F821, Sphinx provides tags
+    suppress_warnings.append("toc.not_included")
+
 pygments_style = None
+
+logger = logging.getLogger(__name__)
 
 ########################## Extensions' configuration ###########################
 
@@ -205,5 +218,139 @@ def _update_sensor_placeholder(
             return
 
 
+def _add_header_buttons(
+    app: Sphinx,
+    pagename: str,
+    templatename: str,
+    context: dict[str, Any],
+    doctree: object,
+) -> None:
+    """
+    Give the single-page guides a button back to the guide and a print button.
+
+    sphinx_book_theme offers "Print to PDF" only in its menu for downloading
+    the page's source, which it leaves out of a page with no single source,
+    so the pages would otherwise lack the button they are for.
+    """
+    if app.builder.name != "singlehtml":
+        return
+
+    context["header_buttons"][:0] = [
+        {
+            "type": "link",
+            # Relative to the output root, like every link on the page until
+            # _build_single_page_guides moves it next to the guide
+            "url": f"{app.config.root_doc}.html",
+            "tooltip": "Back to the guide",
+            "icon": "fas fa-arrow-left",
+            "label": "back-to-guide-button",
+        },
+        {
+            "type": "javascript",
+            "javascript": "window.print()",
+            "tooltip": "Print to PDF",
+            "icon": "fas fa-file-pdf",
+            "label": "print-pdf-button",
+        },
+    ]
+
+
+# Root documents of guides to also build as one page, to print or save as PDF
+SINGLE_PAGE_GUIDES = [
+    "hw_integration/a121/index",
+    "hw_integration/a212/index",
+]
+
+_PRIMARY_SIDEBAR = re.compile(
+    r'<div id="pst-primary-sidebar".*?(?=<main id="main-content")', re.DOTALL
+)
+_RELATIVE_URL = re.compile(
+    r'(?P<attr>\b(?:href|src|action|data-content_root))="(?!#|/|[a-zA-Z][a-zA-Z0-9+.-]*:)'
+    r'(?P<path>[^"?#]*)(?P<rest>[^"]*)"'
+)
+
+
+def _build_single_page_guides(app: Sphinx, exception: Exception | None) -> None:
+    """
+    Build each of SINGLE_PAGE_GUIDES as one page, single_page.html beside its root.
+
+    A multi-page guide printed from the browser prints one page at a time.
+    The singlehtml builder joins a guide into one page, but takes the root
+    document from the configuration, so each guide is a Sphinx run of its own.
+    The runs are subprocesses, as Sphinx keeps global state, and their warnings
+    are reported as this build's, which decides whether they fail it.
+
+    The page is made a page of this site: its links, which singlehtml makes
+    relative to the output root, are made relative to the guide, and it gets
+    the site's left sidebar from the guide's root.
+    """
+    if exception is not None or app.builder.name != "html":
+        return
+
+    outdir = Path(app.outdir)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        runs = {}
+        for root_doc in SINGLE_PAGE_GUIDES:
+            command = [
+                sys.executable,
+                "-m",
+                "sphinx",
+                "--quiet",
+                "--jobs",
+                str(max(app.parallel, 1)),
+                "--doctree-dir",
+                str(Path(tmp, root_doc, "doctrees")),
+                "--builder",
+                "singlehtml",
+                "--tag",
+                "printable",
+                "--define",
+                f"master_doc={root_doc}",
+                str(app.srcdir),
+                str(Path(tmp, root_doc, "html")),
+            ]
+            runs[root_doc] = subprocess.Popen(command, stderr=subprocess.PIPE, text=True)
+
+        for root_doc, run in runs.items():
+            _, stderr = run.communicate()
+            if run.returncode != 0:
+                msg = f"Single-page build of {root_doc} failed:\n{stderr}"
+                raise RuntimeError(msg)
+            for line in stderr.splitlines():
+                logger.warning("%s", line)
+
+        for root_doc in SINGLE_PAGE_GUIDES:
+            guide_dir = posixpath.dirname(root_doc)
+            single_dir = Path(tmp, root_doc, "html")
+            page = Path(single_dir, f"{root_doc}.html").read_text(encoding="utf-8")
+            guide_page = Path(outdir, f"{root_doc}.html").read_text(encoding="utf-8")
+
+            # This site's copy of an image must be the one the page was built with
+            for image in re.findall(r'src="(_images/[^"]+)"', page):
+                if Path(single_dir, image).read_bytes() != Path(outdir, image).read_bytes():
+                    msg = f"{root_doc}: {image} differs from the single-page build's"
+                    raise RuntimeError(msg)
+
+            def relative_to_guide(match: re.Match[str], guide_dir: str = guide_dir) -> str:
+                path = posixpath.relpath(match["path"] or ".", guide_dir)
+                if match["path"] in ("", "./"):
+                    path += "/"
+                return f'{match["attr"]}="{path}{match["rest"]}"'
+
+            page = _RELATIVE_URL.sub(relative_to_guide, page)
+
+            sidebar = _PRIMARY_SIDEBAR.search(guide_page)
+            if sidebar is None or _PRIMARY_SIDEBAR.search(page) is None:
+                msg = "The theme's left sidebar has moved, update _PRIMARY_SIDEBAR"
+                raise RuntimeError(msg)
+            page = _PRIMARY_SIDEBAR.sub(lambda _: sidebar[0], page, count=1)
+
+            Path(outdir, guide_dir, "single_page.html").write_text(page, encoding="utf-8")
+
+
 def setup(app: Sphinx) -> None:
     app.connect("include-read", _update_sensor_placeholder)
+    # After sphinx_book_theme's add_header_buttons, at 501, has built the header buttons
+    app.connect("html-page-context", _add_header_buttons, priority=502)
+    app.connect("build-finished", _build_single_page_guides)
