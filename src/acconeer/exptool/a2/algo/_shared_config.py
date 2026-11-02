@@ -105,7 +105,7 @@ def _required_range_m(
     nearest point is 0 when the sensor is inside the box.
 
     :raises ValidationError: If ``volume`` does not validate, its farthest
-        point exceeds the sensor's maximum range, or the box and
+        point exceeds the application's maximum range, or the box and
         ``start_m``/``end_m`` leave no range.
     """
     volume.validate()
@@ -121,7 +121,7 @@ def _required_range_m(
             volume,
             "end_m",
             f"Farthest corner of the detection volume is {end_m:.2f} m from the sensor, "
-            f"exceeding the sensor's maximum range of {MAX_RANGE_M:.1f} m. Shrink the "
+            f"exceeding the application's maximum range of {MAX_RANGE_M:.1f} m. Shrink the "
             f"box or set end_m.",
         )
     if start_m >= end_m:
@@ -659,7 +659,7 @@ class WallMountSessionAbstractionConfig(AttrsMappingTransformsMixin):
         (see :func:`~acconeer.exptool.a2.algo._subsweep_layout.solve_subsweep_layout`).
 
         :raises ValidationError: If the volume does not validate or exceeds
-            the sensor's maximum range, ``snr_evaluation_height_m`` lies below
+            the application's maximum range, ``snr_evaluation_height_m`` lies below
             the floor, or the plane has no observable point.
         """
         start_point, num_points = self._get_point_grid_bounds(
