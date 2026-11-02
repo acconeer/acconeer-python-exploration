@@ -127,6 +127,23 @@ editors from the pidget factories in `app/new/ui/components/pidgets/` plus
 something is missing, extend the shared module rather than add a private copy
 next to the one caller.
 
+## Changelog entries
+
+`UNRELEASED_CHANGELOG.md` is populated during development and moved to
+`CHANGELOG.md` at release. `CHANGELOG.md` is read by Exploration Tool GUI
+users, in the docs and in the app's update dialog.
+
+- Only what differs from the last release: a bug introduced and fixed
+  between two releases gets no entry.
+- Two lines at most, saying what the user notices. Longer only for a step the
+  user must take, or for a new sensor, which may list its apps.
+- One entry per noticeable outcome; merge related commits.
+- Fixes name the symptom the user saw, not its cause.
+- API changes only when breaking, saying what to change.
+- Install changes only when they change which machines can run ET (Python
+  versions, OS requirements), not dependency pins.
+- Keep a workaround (e.g. an environment variable) in its entry.
+
 ## Conventions
 
 Code you write or change uses native typing (`X | None`, and `Self`,
