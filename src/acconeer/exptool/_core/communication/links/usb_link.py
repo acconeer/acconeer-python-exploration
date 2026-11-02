@@ -255,9 +255,11 @@ class AsyncUsbBulk:
     through it has to wait once that buffer is full.
     """
 
-    # Enough queued reads to cover the host not reading for a couple of seconds
-    TRANSFER_COUNT = 16
-    TRANSFER_SIZE = 64 * 1024
+    # Enough queued reads to cover the host not reading for a couple of seconds. A read of at
+    # most 16 KiB is one TRB in an xHCI ring. Cancelling a larger one on close can leave the
+    # bulk IN endpoint dead until a USB reset on a Raspberry Pi 4 with kernel 6.18.
+    TRANSFER_COUNT = 64
+    TRANSFER_SIZE = 16 * 1024
     # Stop queueing reads above this, so that a caller that stops reading makes the device
     # wait instead of the buffer growing without end
     MAX_BUFFERED = 64 * 1024 * 1024
