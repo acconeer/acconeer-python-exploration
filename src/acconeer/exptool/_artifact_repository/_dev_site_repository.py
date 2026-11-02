@@ -24,6 +24,9 @@ from ._utils import try_get_obfuscated_email_from_cookiejar, version_from_filena
 
 DEFAULT_BASE_URL = "https://developer.acconeer.com"
 
+_ALGO_BUNDLE_PAGE_PATH = "/acconeer-algo-bundle/"
+_ALGO_BUNDLE_LABEL = "Acconeer Algo Bundle"
+
 _ARTIFACT_DEVICE_NAMES = {
     Artifact.XC120_EXPLORATION_SERVER: "xc120",
     Artifact.XM125_EXPLORATION_SERVER: "xm125",
@@ -48,6 +51,48 @@ def _a121_sw_url(base_url: str) -> str:
 
 def _strip_trailing_slash(base_url: str) -> str:
     return base_url.rstrip("/")
+
+
+def _raise_unless_logged_in(session: requests.Session, base_url: str) -> None:
+    response = session.get(url=base_url)
+    verified = response.url != _login_url(base_url) and response.headers.get("Expires") is not None
+    if not verified:
+        msg = "Login has expired or was never established."
+        raise LoginRequiredError(msg)
+
+
+def _accept_terms_and_download(session: requests.Session, url: str) -> tuple[str, bytes]:
+    """POSTs a download's terms form, returning the served file's name and content"""
+    tc = "tc_accepted=1&tc_submit=Download"
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    r = session.post(url, data=tc, allow_redirects=False, headers=headers)
+
+    email_msg = EmailMessage()
+    # EmailMessage.__setitem__ does magic things here
+    email_msg["Content-Disposition"] = r.headers.get("Content-Disposition", "")
+    filename = email_msg.get_filename()
+    if filename is None:
+        msg = f"Response from POST to {url} did not contain a filename."
+        raise Exception(msg)
+    return filename, r.content
+
+
+def _terms_form_url(page: bytes, label: str) -> str:
+    """The terms form action of the row labelled ``label`` in a page's downloads table"""
+    soup = bs4.BeautifulSoup(page, "html.parser")
+    for cell in soup.select("table.downloads-table td:first-child"):
+        if cell.get_text(strip=True).casefold() != label.casefold():
+            continue
+        row = cell.parent
+        assert row is not None
+        form = row.find_next("form", class_="terms-form")
+        assert isinstance(form, bs4.Tag)
+        action = form.get("action")
+        assert isinstance(action, str), "Expected a single action, not a multi-valued attribute"
+        return action
+
+    msg = f"No download labelled '{label}' on the page. Has it been renamed or moved?"
+    raise Exception(msg)
 
 
 def _load_saved_cookies() -> requests.cookies.RequestsCookieJar | None:
@@ -161,21 +206,13 @@ class DevSiteRepository(ArtifactRepository):
 
     def download(self, artifact: Artifact, path: str) -> tuple[str, str]:
         if artifact is Artifact.ALGO_BUNDLE:
-            msg = "The algo bundle has no download location on the developer site yet."
-            raise NotImplementedError(msg)
+            return self._download_algo_bundle(path)
 
         with requests.Session() as session:
             if self.cookies is not None:
                 session.cookies.update(self.cookies)
 
-            response = session.get(url=self.base_url)
-            verified = (
-                response.url != _login_url(self.base_url)
-                and response.headers.get("Expires") is not None
-            )
-            if not verified:
-                msg = "Login has expired or was never established."
-                raise LoginRequiredError(msg)
+            _raise_unless_logged_in(session, self.base_url)
 
             device = _ARTIFACT_DEVICE_NAMES[artifact]
 
@@ -206,26 +243,14 @@ class DevSiteRepository(ArtifactRepository):
 
             log.debug(f"File to download: {zip_url}")
 
-            tc = "tc_accepted=1&tc_submit=Download"
-            headers = {"Content-Type": "application/x-www-form-urlencoded"}
-
-            r = session.post(zip_url, data=tc, allow_redirects=False, headers=headers)
-
-        email_msg = EmailMessage()
-        content_disposition = r.headers["Content-Disposition"]
-        # EmailMessage.__setitem__ does magic things here
-        email_msg["Content-Disposition"] = content_disposition
-        filename = email_msg.get_filename()
-        if filename is None:
-            msg = f"Response from POST to {zip_url} did not contain a filename."
-            raise Exception(msg)
+            filename, content = _accept_terms_and_download(session, zip_url)
 
         version = version_from_filename(filename)
 
         filepath = os.path.join(path, filename)
 
         with open(filepath, "wb") as output_file:
-            output_file.write(r.content)
+            output_file.write(content)
             log.debug(f"Download completed at {filepath}")
 
         log.debug("Extracting files..")
@@ -251,6 +276,20 @@ class DevSiteRepository(ArtifactRepository):
             os.remove(filepath)
 
         return dst_path, version
+
+    def _download_algo_bundle(self, path: str) -> tuple[str, str]:
+        with requests.Session() as session:
+            if self.cookies is not None:
+                session.cookies.update(self.cookies)
+
+            _raise_unless_logged_in(session, self.base_url)
+            page = session.get(url=f"{self.base_url}{_ALGO_BUNDLE_PAGE_PATH}")
+            terms_url = _terms_form_url(page.content, _ALGO_BUNDLE_LABEL)
+            filename, content = _accept_terms_and_download(session, terms_url)
+
+        filepath = Path(path) / filename
+        filepath.write_bytes(content)
+        return str(filepath), version_from_filename(filename)
 
 
 @hookimpl(trylast=True)

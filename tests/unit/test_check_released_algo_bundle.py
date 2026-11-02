@@ -53,13 +53,6 @@ def test_fails_when_the_developer_site_serves_another_algo_bundle(tmp_path: Path
         )
 
 
-def test_fails_when_et_cannot_download_the_algo_bundle_yet(tmp_path: Path) -> None:
-    with pytest.raises(ReleaseGateError, match="can't download the algo bundle"):
-        check_released_algo_bundle(
-            _FakeDevSite(error=NotImplementedError()), frozenset({"digest"}), tmp_path
-        )
-
-
 def test_fails_when_the_developer_site_rejects_the_login(tmp_path: Path) -> None:
     with pytest.raises(ReleaseGateError, match="rejected the login. Check credentials"):
         check_released_algo_bundle(

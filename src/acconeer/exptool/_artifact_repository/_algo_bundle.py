@@ -16,7 +16,7 @@ from pathlib import Path, PurePosixPath
 
 # SHA-256 of the algo bundle zips that this release accepts
 ACCEPTED_DIGESTS: frozenset[str] = frozenset(
-    {"5cef55760420336eefcd63319576b0f7d4c13c6b63cb6d039e08273a43b5e67c"}
+    {"16972fc33197ab4a3e0bd7c683b8e185731d13e7d13f5b6c65dfdb32bd22c8bf"}
 )
 
 _PACKAGES: list[str] = []
