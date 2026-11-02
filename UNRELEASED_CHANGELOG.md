@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+**New sensor: the A212!** Acconeer's multi-channel radar sees not only how
+far away things are, but in which direction. Connect, flash and record from
+the XE212 kit, and estimate power and memory in the resource tab. Get started
+at docs.acconeer.com. A2 apps:
+
+- Sparse IQ
+- Conventional, Capon, robust Capon and coherent heatmaps
+- Motion Detection
+- Presence Tracking Wall Mount
+
 ### Added
 - Quit the Exploration Tool by pressing Ctrl+C three times within five
   seconds in the launching terminal.
