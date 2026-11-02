@@ -144,8 +144,9 @@ arises instead of guarding callers against it.
   signal-processing dimensions.
 - `Jenkinsfile`: three build scopes (sanity / hourly / nightly) differing in
   Python and RSS versions; only nightly runs the developer site tests. Tag
-  builds run nightly. Only a `vX.Y.Z` tag publishes to PyPI, and only from
-  a commit that also carries a `vX.Y.Z-rcN` tag.
+  builds run nightly. A Gerrit change build posts a link to its docs
+  preview. Only a `vX.Y.Z` tag publishes to PyPI, and only from a commit
+  that also carries a `vX.Y.Z-rcN` tag.
 - `docker/Dockerfile`: Jenkins builds `ci` via `TARGET_STAGE`. `dev`, the
   default, takes `UID`/`GID` build args for a devcontainer.
 - Published docs: <https://docs.acconeer.com>, built from `docs/`.

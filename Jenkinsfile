@@ -59,6 +59,14 @@ String dockerArgs = '--mount type=volume,src=uv-cache,dst=/home/ci/.cache/uv'
 
 boolean messageOnFailure = true
 
+@Field
+String previewUrl = null
+
+// Only Gerrit's NN/CCCCC/PP branches are changes.
+boolean isChange() {
+    return env.BRANCH_NAME ==~ /\d+\/\d+\/\d+/
+}
+
 def getCronTriggers(String branchName) {
     def triggers = []
 
@@ -115,7 +123,15 @@ def finishBuild(boolean messageOnFailure) {
             "${currentBuild.currentResult}: ${env.BUILD_URL}, " +
             "Duration: ${currentBuild.durationString - ' and counting'}"
         )
-        gerritReview labels: [Verified: score], message: message
+        if (previewUrl != null) {
+            message += ", Docs preview: ${previewUrl}"
+        }
+
+        try {
+            finishBuildStorage()
+        } finally {
+            gerritReview labels: [Verified: score], message: message
+        }
     }
 
     if (messageOnFailure && (currentBuild.currentResult == 'FAILURE')) {
@@ -177,8 +193,7 @@ try {
     def modelTestA121RssVersion = modelTestA121RssVersionForBuildScope[buildScope]
     def modelTestA2RssVersion = modelTestA2RssVersionForBuildScope[buildScope]
 
-    if (env.BRANCH_NAME =~ /[0-9]+\/[0-9]+\/[0-9]+/) {
-        buildType = 'change'
+    if (isChange()) {
         messageOnFailure = false
     }
 
@@ -292,6 +307,31 @@ try {
                     }
                     archiveArtifacts artifacts: 'dist/*', allowEmptyArchive: true
                     stash includes: 'dist/**', name: 'dist'
+                }
+
+                if (isChange()) {
+                    stage('Docs preview') {
+                        timeout(time: 15, unit: 'MINUTES') {
+                            // The default version is from git describe, and the checkout has no tags.
+                            String version = sh(script: 'git rev-parse --short=8 HEAD',
+                                                returnStdout: true).trim()
+                            createBuildStorage(buildType: 'change',
+                                               version: version,
+                                               archive: false,
+                                               project: 'acconeer-python-exploration')
+
+                            def stageFolder = createAndStore(stageName: env.STAGE_NAME,
+                                                             nodeLabel: 'docker',
+                                                             status: true,
+                                                             artifacts: ['docs/_build/html'])
+
+                            previewUrl = getBuildStorageUrl(stage: stageFolder,
+                                                            path: 'docs/_build/html/index.html')
+
+                            // Reviewers can read the docs before the tests finish.
+                            gerritReview labels: [Verified: 0], message: "Docs preview: ${previewUrl}"
+                        }
+                    }
                 }
             }
         }
