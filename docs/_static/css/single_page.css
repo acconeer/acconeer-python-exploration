@@ -1,0 +1,127 @@
+/* The print layout of the single-page guides, see SINGLE_PAGE_GUIDES in conf.py.
+   Follows Acconeer's printed documents: a cover, a page of document info, and
+   a header and a footer on every page but the cover. _add_print_matter sets the
+   texts that vary by guide. */
+
+.print-cover,
+.print-info,
+.print-contents {
+    display: none;
+}
+
+@media print {
+    /* Replaced by .print-contents */
+    #jb-print-docs-body {
+        display: none !important;
+    }
+
+    @page {
+        size: A4;
+        margin: 25mm 18mm 20mm;
+        font-family: sans-serif;
+
+        @top-left {
+            content: "";
+            background: url("../favicon.png") left center / auto 9mm no-repeat;
+            border-bottom: 0.5pt solid #000;
+        }
+        @top-center {
+            content: "";
+            border-bottom: 0.5pt solid #000;
+        }
+        @top-right {
+            color: #999;
+            font-size: 8pt;
+            vertical-align: middle;
+            border-bottom: 0.5pt solid #000;
+        }
+        @bottom-left {
+            font-size: 8pt;
+        }
+        @bottom-right {
+            content: "Page " counter(page) " of " counter(pages);
+            font-size: 8pt;
+        }
+    }
+
+    @page :first {
+        @top-left { content: none; }
+        @top-center { content: none; }
+        @top-right { content: none; }
+        @bottom-left { content: none; }
+        @bottom-right { content: none; }
+    }
+
+    .print-cover {
+        display: flex;
+        flex-direction: column;
+        height: 245mm;
+        break-after: page;
+    }
+
+    .print-cover-logo {
+        width: 65%;
+        margin: auto;
+    }
+
+    .print-cover-title {
+        text-align: right;
+    }
+
+    .print-cover-title p {
+        margin: 0;
+    }
+
+    .print-title {
+        font-size: 20pt;
+    }
+
+    .print-subtitle {
+        font-size: 10pt;
+    }
+
+    .print-info {
+        display: block;
+        padding-top: 70mm;
+        break-after: page;
+    }
+
+    .print-info-box {
+        width: 60%;
+        padding: 3mm 4mm;
+        border: 0.5pt solid #000;
+        font-size: 9pt;
+    }
+
+    .print-info-box p {
+        margin: 0 0 2mm;
+    }
+
+    /* No break after, as the first chapter breaks before */
+    .print-contents {
+        display: block;
+    }
+
+    .print-contents ul {
+        list-style: none;
+        padding-left: 0;
+    }
+
+    .print-contents ul ul {
+        padding-left: 6mm;
+    }
+
+    /* Each of the guide's documents, its chapters, and the disclaimer */
+    .toctree-wrapper > section,
+    .print-disclaimer {
+        break-before: page;
+    }
+
+    /* The theme hides the first h1 of each parent in print, meaning the page's
+       title. The disclaimer's title gets the size of the guide's documents',
+       which are a level below the guide's own. */
+    .bd-main .bd-content .bd-article .print-disclaimer h1 {
+        display: block;
+        font-size: var(--pst-font-size-h2);
+    }
+}

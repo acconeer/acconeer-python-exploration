@@ -1,5 +1,8 @@
 # Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
+import datetime
+import importlib.metadata
+import json
 import os
 import posixpath
 import re
@@ -11,6 +14,7 @@ from typing import Any
 
 from docutils import nodes
 from sphinx.application import Sphinx
+from sphinx.environment.adapters.toctree import global_toctree_for_doc
 from sphinx.util import logging
 
 
@@ -128,6 +132,8 @@ html_favicon = "images/favicon.png"
 html_logo = "images/logo.svg"
 html_static_path = ["_static"]
 html_css_files = ["css/custom.css"]
+if tags.has("printable"):  # noqa: F821, Sphinx provides tags
+    html_css_files.append("css/single_page.css")
 
 html_theme_options = {
     "external_links": [
@@ -256,11 +262,105 @@ def _add_header_buttons(
     ]
 
 
-# Root documents of guides to also build as one page, to print or save as PDF
-SINGLE_PAGE_GUIDES = [
-    "hw_integration/a121/index",
-    "hw_integration/a212/index",
-]
+# Root documents of guides to also build as one page, to print or save as PDF,
+# with the title and subtitle on the printed cover, and the acconeer.exptool
+# package whose RSS version the guide is printed with
+SINGLE_PAGE_GUIDES = {
+    "hw_integration/a121/index": ("A121", "Hardware Integration Guide", "a121"),
+    "hw_integration/a212/index": ("A212", "Hardware Integration Guide", "a2"),
+}
+
+
+def _rss_version(package: str) -> str:
+    """
+    The RSS version an acconeer.exptool package is made for, as RSS names it.
+
+    Read from the source, as importing the package would import all of acconeer.exptool.
+    """
+    init = Path(__file__).parents[1] / "src" / "acconeer" / "exptool" / package / "__init__.py"
+    match = re.search(r'^SDK_VERSION = "(.+)"$', init.read_text(encoding="utf-8"), re.MULTILINE)
+    if match is None:
+        msg = f"No SDK_VERSION in {init}"
+        raise RuntimeError(msg)
+    return f"{package}-v{match[1]}"
+
+
+def _add_print_matter(
+    app: Sphinx,
+    pagename: str,
+    templatename: str,
+    context: dict[str, Any],
+    doctree: object,
+) -> None:
+    """
+    Frame a single-page guide like Acconeer's other printed documents.
+
+    A cover, a page of document info and the contents go before the guide,
+    and the site's disclaimer after it. single_page.css shows all but the
+    disclaimer only in print, in place of sphinx_book_theme's title and
+    contents, and gives every printed page but the cover a header and a footer.
+    """
+    if app.builder.name != "singlehtml" or pagename != app.config.root_doc:
+        return
+
+    title, subtitle, package = SINGLE_PAGE_GUIDES[app.config.root_doc]
+    # The version the docs were built from, as distributed on PyPI
+    version = importlib.metadata.version("acconeer-exptool")
+    today = datetime.date.today()
+    # Down to subsections, where the theme's contents list only the documents
+    contents = global_toctree_for_doc(
+        app.env, pagename, app.builder, tags=app.tags, collapse=False, maxdepth=3
+    )
+    # singlehtml links a section as "#document-<document>#<section>"
+    for reference in contents.findall(nodes.reference):
+        reference["refuri"] = "#" + reference["refuri"].rpartition("#")[2]
+    # render_partial nests what it renders in a document, which a whole
+    # document would be rendered twice in, so it gets the section
+    disclaimer = app.env.get_and_resolve_doctree("disclaimer", app.builder).next_node(
+        nodes.section
+    )
+
+    front = f"""
+<style>
+@page {{
+    @top-right {{ content: {json.dumps(f"{title} {subtitle}")}; }}
+    @bottom-left {{ content: "© {today.year} by Acconeer AB - All rights reserved"; }}
+}}
+/* As this follows single_page.css, its blank cover can't blank these */
+@page :first {{
+    @top-right {{ content: none; }}
+    @bottom-left {{ content: none; }}
+}}
+</style>
+<section class="print-cover">
+  <img class="print-cover-logo" src="{context["logo_url"]}" alt="Acconeer">
+  <div class="print-cover-title">
+    <p class="print-title">{title}</p>
+    <p class="print-subtitle">{subtitle}</p>
+  </div>
+</section>
+<section class="print-info">
+  <div class="print-info-box">
+    <p>{title}</p>
+    <p>{subtitle}</p>
+    <p>Author: Acconeer AB</p>
+    <p>Exploration Tool version: {version}</p>
+    <p>RSS version: {_rss_version(package)}</p>
+    <p>Acconeer AB {today:%b %d, %Y}</p>
+  </div>
+</section>
+<section class="print-contents">
+  <h2>Contents</h2>
+  {app.builder.render_partial(contents)["fragment"]}
+</section>
+"""
+    back = f"""
+<section class="print-disclaimer">
+{app.builder.render_partial(disclaimer)["fragment"]}
+</section>
+"""
+    context["body"] = front + context["body"] + back
+
 
 _PRIMARY_SIDEBAR = re.compile(
     r'<div id="pst-primary-sidebar".*?(?=<main id="main-content")', re.DOTALL
@@ -411,6 +511,7 @@ def setup(app: Sphinx) -> None:
     app.connect("include-read", _update_sensor_placeholder)
     # After sphinx_book_theme's add_header_buttons, at 501, has built the header buttons
     app.connect("html-page-context", _add_header_buttons, priority=502)
+    app.connect("html-page-context", _add_print_matter)
     app.connect("build-finished", _build_single_page_guides)
     # After Sphinx's metadata collector (500), which reads the :pdf: field
     app.connect("doctree-read", _add_page_pdf, priority=600)
