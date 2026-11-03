@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="740" height="370" viewBox="0 0 740 370">
+<defs>
+<marker id="a" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#6b7280"/></marker>
+<marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#d1495b"/></marker>
+<marker id="ag" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,1 L9,5 L0,9 z" fill="#2e9e5b"/></marker>
+
+<linearGradient id="depthwall" gradientUnits="userSpaceOnUse" x1="185" y1="0" x2="241" y2="0">
+<stop offset="0" stop-color="#d3dbe4" stop-opacity="0"/><stop offset="0.5" stop-color="#d3dbe4"/><stop offset="1" stop-color="#d3dbe4" stop-opacity="0"/>
+</linearGradient>
+<linearGradient id="depthfloor" gradientUnits="userSpaceOnUse" x1="0" y1="280" x2="0" y2="246">
+<stop offset="0" stop-color="#c9d2dc" stop-opacity="0"/><stop offset="0.5" stop-color="#c9d2dc"/><stop offset="1" stop-color="#c9d2dc" stop-opacity="0"/>
+</linearGradient>
+<linearGradient id="endfade" gradientUnits="userSpaceOnUse" x1="620" y1="0" x2="710" y2="0">
+<stop offset="0" stop-color="#ffffff" stop-opacity="0"/><stop offset="1" stop-color="#ffffff"/>
+</linearGradient>
+</defs>
+
+<path d="M185,280 L690,280 L746,246 L241,246 Z" fill="url(#depthfloor)"/>
+<path d="M185,50 L185,280 L241,246 L241,16 Z" fill="url(#depthwall)"/>
+
+<path d="M213.0,93.0 L698.0,27.2 L698.0,263.0 L344.5,263.0 Z" fill="#0b5fa5" fill-opacity="0.12"/>
+<path d="M698.0,27.2 L213.0,93.0 L344.5,263.0" fill="none" stroke="#0b5fa5" stroke-width="1.2" stroke-dasharray="6 4"/>
+<circle cx="628.0" cy="263.0" r="4" fill="#0b5fa5"/>
+<text font-family="system-ui, sans-serif" font-size="16" x="373.0" y="213.0" text-anchor="start" fill="#0b5fa5">Field of view</text>
+<path d="M213.0,93.0 L453.0,93.0" stroke="#6b7280" stroke-width="1" stroke-dasharray="3 3" fill="none"/>
+<path d="M213.0,93.0 L628.0,263.0" stroke="#6b7280" stroke-width="1" stroke-dasharray="3 3" fill="none"/>
+<path d="M323.0,93.0 A110,110 0 0 1 314.8,134.7" stroke="#6b7280" stroke-width="1.2" fill="none" marker-end="url(#a)"/>
+<text font-family="system-ui, sans-serif" font-size="16" x="335.0" y="121.0" text-anchor="start" fill="#2b2b2b">Tilt, entered as −20°</text>
+
+<g transform="translate(213.0,93.0) rotate(20)">
+<path d="M0,-14.0 L9,-14.0 L14,-17.0 L5,-17.0 Z" fill="#0d2a46"/>
+<path d="M9,-14.0 L14,-17.0 L14,11.0 L9,14.0 Z" fill="#0a2238"/>
+<rect x="0" y="-14.0" width="9" height="28" rx="1.5" fill="#143a5e"/>
+</g>
+
+<path d="M135,93.0 L135,263.0" stroke="#6b7280" stroke-width="1.2" fill="none" marker-start="url(#a)" marker-end="url(#a)"/>
+<text font-family="system-ui, sans-serif" font-size="16" x="123" y="183.0" text-anchor="end" fill="#2b2b2b">Mount height h</text>
+<rect x="600" y="0" width="140" height="370" fill="url(#endfade)"/>
+<path d="M213.0,320 L628.0,320" stroke="#6b7280" stroke-width="1.2" fill="none" marker-start="url(#a)" marker-end="url(#a)"/>
+<text font-family="system-ui, sans-serif" font-size="16" x="420.5" y="344" text-anchor="middle" fill="#2b2b2b">Distance d</text>
+
+</svg>

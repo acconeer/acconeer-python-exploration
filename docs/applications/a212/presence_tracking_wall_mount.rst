@@ -10,7 +10,7 @@ The Presence Tracking Wall Mount :term:`Reference Application` shows how the A21
 
 Typical use cases are occupancy detection and people counting in rooms, meeting rooms and offices, and presence-driven control of lighting, climate and displays, where it matters both *whether* someone is present and *where* they are.
 
-In the Exploration Tool, the application shows, continuously:
+In the Exploration Tool, the application continuously shows:
 
 * whether the room is occupied,
 * how many people are in the room,
@@ -41,23 +41,29 @@ If the sensor is mounted in a corner or turned to the side, note the angle by wh
 
 Mount the board with the USB cable pointing down; the application expects this by default. If the USB cable points up, change the roll setting, see :ref:`a212_presence_tracking_wall_mount_sensor_installation`.
 
-.. Add a figure: the sensor board on the wall, with the USB cable pointing down.
-.. Add a figure: side view of the room, with the mount height, the downward tilt and the field of view reaching the floor at the far wall.
-.. Add a figure: top view of the room, with the sensor on the wall, the x and y axes, and the X bounds and Y bounds at the walls.
+.. figure:: /images/applications/a212/presence_tracking_wall_mount/sensor_on_wall.svg
+    :align: center
+
+    The sensor board on the wall, facing into the room, with the USB cable pointing down.
+
+.. figure:: /images/applications/a212/presence_tracking_wall_mount/side_view.svg
+    :align: center
+
+    Side view: the sensor at mount height :math:`h`, tilted down so that it points at the floor at the far end of the area to detect in, :math:`d` from the wall.
 
 
 Starting the Measurement
 ========================
 
 #. Mount the sensor as described in :ref:`a212_presence_tracking_wall_mount_mounting`, connect the Evaluation Kit to your computer and connect to it in the Exploration Tool, see :ref:`Getting started <setting_up_et>`.
-#. Select *Presence Tracking Wall Mount* in the left hand side menu. The first time, log in with your developer site account, accept the license and wait for the module to download.
-#. In the *Sensor Installation* panel, set *X rotation (tilt)* to the tilt, *Mount height* to the sensor's height above the floor, and *Z rotation (pan)* if the sensor is turned to the side (e.g. mounted in a corner).
+#. Select *Presence Tracking Wall Mount* in the left-hand menu. The first time, log in with your developer site account, accept the license and wait for the module to download.
+#. In the *Sensor Installation* panel, set *X rotation (tilt)* to the tilt as a negative angle, e.g. -20° for a sensor tilted 20° down, *Mount height* to the sensor's height above the floor, and *Z rotation (pan)* if the sensor is turned to the side (e.g. mounted in a corner).
 #. In the *Detection Volume* panel, set *X bounds* and *Y bounds* to the floor area to cover, in meters from the sensor: *X bounds* to the side walls, e.g. (-2.5, 2.5) for a room 5 m wide with the sensor in the middle of a wall, and *Y bounds* from 0 to the opposite wall.
 #. Press *Start measurement*.
 
 Before the measurement starts, the application records a short noise reference with the transmitter turned off.
 
-Walk into the room. A track appears within seconds, and the badge in the top right corner of the view changes to *Presence Detected (1 person)*. Stop and sit down: the track stays on you. A person who stays still immediately after entering takes longer to be counted, since a still target is only confirmed as a person after several seconds of consistent observations. When you walk out of the room, the track is removed after a few seconds and the badge returns to *No Presence Detected*.
+Walk into the room. A track appears within seconds, and the badge in the top right corner of the view changes to *Presence Detected (1 person)*. Stop and sit down: the track stays on you. A person who stays still immediately after entering takes longer to be counted, see :ref:`a212_presence_tracking_wall_mount_how_it_works`. When you walk out of the room, the track is removed after a few seconds and the badge returns to *No Presence Detected*.
 
 .. Embedded C: add a subsection here once an embedded implementation is released.
 
@@ -125,20 +131,50 @@ A badge in the top right corner of both tabs shows whether the room is occupied:
 * *Motion Detected* when something moves, but nothing is confirmed to be a person yet,
 * *No Presence Detected* otherwise.
 
-Only confirmed people are drawn as tracks. The *Plot Settings* panel controls the rest of the view:
+.. list-table:: *Motion Detected* and *Presence Detected*
+    :widths: 20 40 40
+    :header-rows: 1
+    :stub-columns: 1
+
+    * -
+      - Motion Detected
+      - Presence Detected
+    * - Means
+      - Something moves in the detection volume, but nothing has yet behaved like a person.
+      - At least one person is counted. The number is how many.
+    * - Appears
+      - As soon as motion is detected.
+      - Within a few seconds if the person is walking. Within several seconds if the person is still. [*]_
+    * - Caused by
+      - People, but also any moving object (e.g. fans, curtains or plants).
+      - People. A moving object can count as presence too, see :ref:`a212_presence_tracking_wall_mount_limitations`.
+    * - Ends
+      - A few seconds after the motion stops.
+      - A few seconds after the last person leaves.
+    * - Use it for
+      - Immediate feedback in your application that something is moving in the scene.
+      - Occupancy and people counting, e.g. climate control, room booking and keeping the lights on while people sit still.
+
+.. [*] Both after the person enters the detection volume and when the person is already in it as the measurement starts.
+
+The *Plot Settings* panel controls the rest of the view:
 
 * *History duration* sets the length of the track trails.
 * *Heatmap display mode* draws a heatmap under the tracks in the 2D view, either in full or masked so that areas below the detection threshold are gray. It is off by default.
 * *Show detections* draws the current frame's detections as dots, in both tabs.
 
-.. Add a GUI screenshot as /_static/processing/a212_presence_tracking_wall_mount.png and reference it here with an image directive.
+.. figure:: /images/applications/a212/presence_tracking_wall_mount/app_view.png
+    :align: center
+    :width: 100%
+
+    The application during a measurement: the 3D view with the detection volume and a confirmed person's track, the badge in its top right corner, and the settings panels to the right.
 
 
 .. _a212_presence_tracking_wall_mount_how_it_works:
 
 How It Works
 ************
-The application detects motion in two ways at once: fast motion, such as a person walking, and slow motion, such as a person sitting still and breathing, detected by comparing each frame with the preceding one, as a moving target indicator (MTI) does. Detections outside the detection volume or inside an :ref:`exclusion zone <a212_presence_tracking_wall_mount_exclusion_zones>` are ignored. This is why the detection volume should end at the walls for best performance: reflections off the walls, people's mirror images in them, and changes in a wall's echo when a person blocks it are then outside the detection volume.
+The application detects motion in two ways at once. Fast motion, such as a person walking, is detected within each frame: the sensor sweeps the room many times per frame, and a person who moves between the sweeps stands out from everything that stays still. Slow motion, such as a person sitting still and breathing, is detected by comparing each frame with the preceding one, as a moving target indicator (MTI) does. Detections outside the detection volume or inside an :ref:`exclusion zone <a212_presence_tracking_wall_mount_exclusion_zones>` are ignored. This is why the detection volume should end at the walls for best performance: reflections off the walls, people's mirror images in them, and changes in a wall's echo when a person blocks it are then outside the detection volume.
 
 A tracker follows each target over time, so a person who stops moving keeps their track. A new track counts as motion until it behaves like a person: a walking person is confirmed within a couple of seconds, a person who sits down without walking first only after several seconds of consistent observations. Only confirmed people are counted and drawn.
 
@@ -169,12 +205,14 @@ In this panel, enter how the sensor is mounted, see :ref:`a212_presence_tracking
     The height of the sensor above the floor.
 
 
+.. _a212_presence_tracking_wall_mount_detection_volume:
+
 Detection Volume
 ================
 This panel sets the volume where people can be tracked.
 
 *Box (world frame)*
-    *X bounds* and *Y bounds* set the floor area to cover, in meters from the sensor, however it is tilted or turned: *X bounds* from side to side, positive to the right as seen from the sensor, and *Y bounds* into the room. Set both, or neither. Detections outside it are ignored, so set the bounds at the walls, see :ref:`a212_presence_tracking_wall_mount_how_it_works`. The distance from the sensor to the far corners of the floor area, including mounting height, must not exceed 10 m.
+    *X bounds* and *Y bounds* set the floor area to cover, in meters from the sensor, however it is tilted or turned: *X bounds* from side to side, positive to the right as seen from the sensor, and *Y bounds* into the room. Set both, or neither. Detections outside it are ignored, so where a bound is a wall, set it at the wall, with a margin of at least 10 cm, see :ref:`a212_presence_tracking_wall_mount_how_it_works`. The bounds need not be walls: in an open area, they set the floor area to cover. The distance from the sensor to the far corners of the floor area, including mounting height, must not exceed 10 m.
 
 *Range and angles (sensor frame)*
     *Start* and *End* limit the distance from the sensor. Without a box, set *End*, so that the detection volume has a far end. Where both the box and *End* limit the distance, the closer one applies.
@@ -184,13 +222,7 @@ This panel sets the volume where people can be tracked.
 
 Presence Tracking Wall Mount
 ============================
-This panel holds the processing settings, in the collapsed *Advanced* and *Tracking* groups. The defaults suit most rooms. Only change them if you understand the implications. The following *Advanced* settings may be useful for specific setups:
-
-*Fast-motion averaging time*
-    How long the fast-motion detection averages over, in seconds. Larger values give steadier detections, smaller values respond faster.
-
-*Slow-motion averaging time*
-    How long the slow-motion detection averages over, in seconds. Larger values give steadier detections and pick up weaker, slower motion, but take longer to settle after the measurement starts.
+This panel holds the processing settings, in the collapsed *Advanced* and *Tracking* groups. The defaults suit most rooms. Leave them at their defaults: other values are not tested, and can degrade detection and counting in ways that are hard to predict.
 
 
 .. _a212_presence_tracking_wall_mount_exclusion_zones:
@@ -207,7 +239,7 @@ Sensor Setup
 This panel adjusts the sensor parameters. The application derives the detailed sensor configuration from it, so that the signal quality is met across the detection area.
 
 *Signal quality (dB)*
-    The signal-to-noise ratio, for a standard reference reflector (0 dBsm), that the sensor setup guarantees at every point of the detection volume at *SNR evaluation height*. Higher values detect people more reliably, also at the far end and at the sides, but each measurement takes longer, which lowers the highest possible frame rate and increases power consumption.
+    The signal-to-noise ratio, for a standard reference reflector (0 dBsm), that the sensor setup is configured to reach at every point of the detection volume at *SNR evaluation height*. Higher values detect people more reliably, also at the far end and at the sides, but each measurement takes longer, which lowers the highest possible frame rate and increases power consumption.
 
 *SNR evaluation height*
     The height above the floor at which *Signal quality (dB)* is met. The default, 1.2 m, is about the chest height of a person.
@@ -221,6 +253,26 @@ Troubleshooting
 ***************
 Start with the mounting and the detection volume; change the processing settings last.
 
+* The whole room cannot be covered:
+
+    The *Detection Volume* panel shows:
+
+    .. warning::
+
+        Detection volume too large for the set signal quality. Shrink the detection volume.
+
+    or the *Sensor Setup* panel:
+
+    .. warning::
+
+        Signal quality too high for the set detection volume. Decrease signal quality.
+
+    Narrow *Az angle range* and *El angle range* to the room. A narrower field of view reaches farther at the same signal quality.
+
+    Decrease *End*, if people need not be detected in the far corners.
+
+    Decrease *Signal quality (dB)*.
+
 * People are missed, at the far end or at the sides of the room:
 
     Check the mounting and the *Sensor Installation* panel: a downward tilt is negative, and the mount height should match.
@@ -228,14 +280,6 @@ Start with the mounting and the detection volume; change the processing settings
     Check that *X bounds*, *Y bounds* and *Az angle range* cover the whole room.
 
     Increase *Signal quality (dB)*.
-
-* The whole room cannot be covered:
-
-    Narrow *Az angle range* and *El angle range* to the room. A narrower field of view reaches farther at the same signal quality.
-
-    Decrease *End*, if people need not be detected in the far corners.
-
-    Decrease *Signal quality (dB)*, as a last resort.
 
 * Presence or motion is shown in an empty room:
 
@@ -251,8 +295,8 @@ Start with the mounting and the detection volume; change the processing settings
 
     Increase *Signal quality (dB)*.
 
-    Increase *Slow-motion averaging time*.
 
+.. _a212_presence_tracking_wall_mount_limitations:
 
 Limitations
 ***********
@@ -264,13 +308,13 @@ Limitations
 * A person hidden behind another person or an object, as seen from the sensor, can be missed.
 * A track's height is the height of its strongest reflection, not the person's height.
 
-.. Add the detection and counting performance from the verification below.
-
 
 .. _a212_presence_tracking_wall_mount_verification:
 
 Verification
 ************
 The application has been tested in the scenarios below. Each page describes the room, the sensor mounting and the test procedure, and shows the results.
+
+In a conference room with a standing fan running, presence was detected 99.8 % of the time someone was in the room, on average 1.7 s after the first person entered, and never in 48 h of the empty room. The number of people was right 89 % of the time, and within one person 99.4 % of the time. In an open lunch area, presence was detected 99.9 % of the time, and the count was right 85 % of the time and within one person 99.8 % of the time. A person standing still was detected in 98.4 % of the visits to the cells of an 8 × 6 m grid, and in every visit to 46 of its 48 cells. These are the results of these tests, not a performance guarantee: in another room, or with another mounting, configuration or scenario, results may differ.
 
 .. include:: presence_tracking_wall_mount/showcases/cards.inc
