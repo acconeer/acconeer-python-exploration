@@ -78,7 +78,6 @@ def test_badge_without_a_stored_bundle_says_download(
     badge = _badge(app_model, selection)
 
     assert badge.text() == "download"
-    assert not badge.isEnabled()
 
 
 def test_badge_of_an_installed_bundle_says_installed(
@@ -199,3 +198,15 @@ def test_plugin_is_not_downloaded_again_before_a_restart(
     assert downloads == []
     (error,) = errors
     assert "Restart ET before you download the algo bundle again" in str(error)
+
+
+def test_clicking_the_download_badge_downloads_like_the_plugin_button(
+    app_model: AppModel, selection: PluginSelection, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    downloads: list[t.Any] = []
+    monkeypatch.setattr(plugin_widget, "download_algo_bundle", downloads.append)
+    badge = _badge(app_model, selection)
+
+    badge.click()
+
+    assert downloads == [selection]

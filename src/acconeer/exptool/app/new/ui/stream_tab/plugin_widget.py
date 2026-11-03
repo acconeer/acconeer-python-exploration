@@ -171,10 +171,13 @@ def _confirm_algo_bundle_deletion(parent: QWidget, *, installed: bool) -> bool:
 class AlgoBundleBadge(QPushButton):
     """Shows the state of the algo bundle next to a plugin that needs it"""
 
+    sig_download_requested = QtCore.Signal()
+
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
         self.app_model = app_model
+        self._downloadable = False
 
         self.setObjectName("algo_bundle_badge")
         self.setStyleSheet(f"QPushButton {{color: {TEXT_GREY}}}")
@@ -187,6 +190,7 @@ class AlgoBundleBadge(QPushButton):
     def update_state(self, *, downloaded: str | None) -> None:
         """``downloaded`` is when the stored bundle was downloaded, None if there is none"""
         installed = self.app_model.algo_bundle_available
+        self._downloadable = False
         if self.app_model.algo_bundle_is_developers:
             if self._developer_bundle_description is None:
                 self._developer_bundle_description = describe_algo_bundle(
@@ -219,7 +223,8 @@ class AlgoBundleBadge(QPushButton):
                 "download",
                 "This plugin needs a one-time download before it can be loaded.",
             )
-            self.setEnabled(False)
+            self._downloadable = True
+            self.setEnabled(True)
 
     def _show(self, icon: Callable[..., QtGui.QIcon], text: str, tooltip: str) -> None:
         self.setIcon(QtGui.QIcon(icon(color=TEXT_GREY)))
@@ -227,6 +232,9 @@ class AlgoBundleBadge(QPushButton):
         self.setToolTip(tooltip)
 
     def _on_click(self) -> None:
+        if self._downloadable:
+            self.sig_download_requested.emit()
+            return
         installed = self.app_model.algo_bundle_available
         if _confirm_algo_bundle_deletion(self, installed=installed):
             self.app_model.delete_algo_bundle()
@@ -302,6 +310,7 @@ class PluginSelection(QWidget):
 
             if plugin.requires_algo_bundle_artifact:
                 badge = AlgoBundleBadge(app_model, group_box)
+                badge.sig_download_requested.connect(button.click)
                 badge.update_state(downloaded=_algo_bundle_downloaded())
                 button_layout.addWidget(badge)
                 self._algo_bundle_badges.append(badge)
