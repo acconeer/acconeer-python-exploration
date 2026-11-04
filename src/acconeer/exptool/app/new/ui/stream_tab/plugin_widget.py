@@ -299,6 +299,13 @@ class PluginSelection(QWidget):
                 label.setWordWrap(True)
                 group_box_layout.addWidget(label)
 
+            if plugin.requires_algo_bundle_artifact:
+                badge = AlgoBundleBadge(app_model, group_box)
+                badge.sig_download_requested.connect(button.click)
+                badge.update_state(downloaded=_algo_bundle_downloaded())
+                button_layout.addWidget(badge)
+                self._algo_bundle_badges.append(badge)
+
             if plugin.docs_link:
                 info_button = QPushButton(QtGui.QIcon(EXTERNAL_LINK(color=TEXT_GREY)), "docs")
                 info_button.setStyleSheet(f"QPushButton {{color: {TEXT_GREY}}}")
@@ -307,13 +314,6 @@ class PluginSelection(QWidget):
                     lambda _=False, p=plugin: QtGui.QDesktopServices.openUrl(p.docs_link)
                 )
                 button_layout.addWidget(info_button)
-
-            if plugin.requires_algo_bundle_artifact:
-                badge = AlgoBundleBadge(app_model, group_box)
-                badge.sig_download_requested.connect(button.click)
-                badge.update_state(downloaded=_algo_bundle_downloaded())
-                button_layout.addWidget(badge)
-                self._algo_bundle_badges.append(badge)
         self.setLayout(layout)
 
     def layout(self) -> QVBoxLayout:

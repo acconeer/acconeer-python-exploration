@@ -10,6 +10,7 @@ from enum import Enum, auto
 from pathlib import Path
 from uuid import UUID, uuid4
 
+import attrs
 import pytest
 
 from PySide6.QtWidgets import QPushButton, QWidget
@@ -210,3 +211,17 @@ def test_clicking_the_download_badge_downloads_like_the_plugin_button(
     badge.click()
 
     assert downloads == [selection]
+
+
+def test_docs_button_comes_last_in_a_row_with_a_download_badge(app_model: AppModel) -> None:
+    plugin = attrs.evolve(_PLUGIN_NEEDING_ALGO_BUNDLE, docs_link="https://docs.acconeer.com")
+    parent = QWidget()
+    selection = PluginSelection(app_model, [plugin], parent)
+    badge = _badge(app_model, selection)
+    row = badge.parentWidget().layout()
+
+    widgets = [row.itemAt(i).widget() for i in range(row.count())]
+
+    assert widgets[-2] is badge
+    assert widgets[-1].text() == "docs"
+    parent.deleteLater()
