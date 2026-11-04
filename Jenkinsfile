@@ -212,7 +212,7 @@ try {
     boolean isJenkinsMerge = false
 
     // Only matches version on the form "vX.Y.Z" where X, Y, Z are integers
-    version_regex = /v\d+\.\d+\.\d+/
+    def version_regex = /v\d+\.\d+\.\d+/
 
     // Release candidates, "vX.Y.Z-rcN", don't match and so are never published.
     boolean isRelease = env.TAG_NAME ==~ version_regex
@@ -285,7 +285,7 @@ try {
         }
     }
 
-    parallel_steps = [:]
+    def parallel_steps = [:]
 
     parallel_steps['Build package & documentation'] = {
         node('docker') {
