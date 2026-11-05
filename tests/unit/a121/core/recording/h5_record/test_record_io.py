@@ -1,12 +1,15 @@
 # Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
+from importlib.resources import as_file, files
 from pathlib import Path
 
 import h5py
 import pytest
 
-from acconeer.exptool import a121
+from acconeer.exptool import a2, a121
+
+from tests.processing.a2.data_files import recorded_data as a2_recorded_data
 
 
 def test_close_h5_record(tmp_file_path: Path) -> None:
@@ -55,13 +58,13 @@ def test_can_save_record(ref_record: a121.Record, tmp_file_path: Path) -> None:
     a121.save_record(tmp_file_path.with_suffix(".copy"), ref_record)
 
 
-@pytest.mark.parametrize("generation", ["a2", "a211"])
-def test_open_record_a2_points_to_a2_loader(tmp_file_path: Path, generation: str) -> None:
-    with h5py.File(tmp_file_path, "x") as file:
-        file.create_dataset("generation", data=generation, dtype=a121._H5PY_STR_DTYPE)
+def test_open_record_a2_points_to_a2_loader() -> None:
+    with as_file(files(a2_recorded_data) / "small_sparse_iq.h5") as path:
+        with pytest.raises(a121.RecordError, match=r"a2\.open_record"):
+            a121.open_record(path)
 
-    with pytest.raises(a121.RecordError, match=r"a2\.open_record"):
-        a121.open_record(tmp_file_path)
+        with a2.open_record(path) as record:
+            assert record.num_sessions > 0
 
 
 def test_open_record_unknown_generation_names_it(tmp_file_path: Path) -> None:
