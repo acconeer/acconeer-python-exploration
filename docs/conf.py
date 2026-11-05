@@ -102,6 +102,8 @@ linkcheck_ignore = [
     "https://ftdichip.com/.*",  # Causes 403 error
     # TODO: Remove once the A212 examples are released on GitHub
     "https://github.com/acconeer/acconeer-python-exploration/blob/master/examples/a2/.*",
+    # Written into the html output by _build_single_page_guides, so not in the sources
+    r"single_page\.html$",
 ]
 
 # rediraffe
