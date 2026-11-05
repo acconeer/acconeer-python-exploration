@@ -44,7 +44,11 @@ class Client(
         generation: str | None = "a121",
     ) -> Self:
         if generation != "a121":
-            raise ClientCreationError
+            msg = (
+                f"a121.Client only opens A121 clients, got generation={generation!r}. "
+                "Leave 'generation' out, or use the Client of that generation's package."
+            )
+            raise ClientCreationError(msg)
 
         return super().open(
             ip_address,
