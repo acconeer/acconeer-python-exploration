@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -44,10 +44,14 @@ def open_record(path_or_file: PathOrH5File) -> PersistentRecord:
     )
     try:
         generation = bytes(file["generation"][()]).decode()
-
-        if generation != "a121":
-            raise record_exc
     except Exception:
+        raise record_exc
+
+    if generation in ["a2", "a211"]:
+        msg = f"The file '{path_or_file}' is an A2 record, try a2.open_record instead"
+        raise RecordError(msg)
+
+    if generation != "a121":
         raise record_exc
 
     return H5Record(file)
