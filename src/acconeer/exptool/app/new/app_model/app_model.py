@@ -1012,14 +1012,20 @@ class AppModel(QObject):
     def load_from_file(self, path: Path) -> None:
         log.debug(f"{self.__class__.__name__} loading from file '{path}'")
 
-        findings = investigate_file(path)
-
-        if findings is None:
-            self.emit_error(HandledException("Cannot load file"))
+        try:
+            findings = investigate_file(path)
+        except HandledException as e:
+            self.emit_error(e)
             return
 
         if findings.generation == PluginGeneration.A111:
-            self.emit_error(HandledException("This app cannot load A111 files"))
+            self.emit_error(
+                HandledException(
+                    "This app cannot load A111 files. "
+                    "Open them in the A111 app: start the Exploration Tool with "
+                    "python -m acconeer.exptool.app and pick A111"
+                )
+            )
             return
 
         current_plugin_generation = None if self.plugin is None else self.plugin.generation

@@ -4,12 +4,16 @@
 from __future__ import annotations
 
 import typing as t
+from importlib.resources import files
 from pathlib import Path
 from uuid import UUID, uuid4
 
 import h5py
 import pytest
+from tests.processing.a121.data_files import expected_output, recorded_data
 
+from acconeer.exptool import a111
+from acconeer.exptool.a111._clients.mock.client import MockClient
 from acconeer.exptool.app.new._enums import PluginGeneration
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.app.new.app_model import app_model as app_model_module
@@ -78,3 +82,56 @@ def test_a_recording_of_the_other_generation_offers_its_own_plugins(
     (offered,) = _AbortedReplaySelection.offered
     assert offered["current_plugin_key"] is None
     assert offered["default_selected"] in [p.key for p in offered["plugin_options"]]
+
+
+def _a111_recording(directory: Path) -> Path:
+    client = MockClient()
+    config = a111.EnvelopeServiceConfig()
+    recorder = a111.recording.Recorder(
+        sensor_config=config, session_info=client.start_session(config)
+    )
+    recorder.sample(*client.get_next())
+    recorder.close()
+    path = directory / "recording.h5"
+    a111.recording.save(path, recorder.record)
+    return path
+
+
+def _processing_output(directory: Path) -> Path:
+    path = directory / "recording.h5"
+    path.write_bytes((files(expected_output) / "presence-default.h5").read_bytes())
+    return path
+
+
+def _truncated_recording(directory: Path) -> Path:
+    recording = (files(recorded_data) / "presence-default.h5").read_bytes()
+    path = directory / "recording.h5"
+    path.write_bytes(recording[: len(recording) // 2])
+    return path
+
+
+def _config(directory: Path) -> Path:
+    path = directory / "config.json"
+    path.write_text("{}")
+    return path
+
+
+@pytest.mark.parametrize(
+    ("make_file", "reason"),
+    [
+        (_a111_recording, "python -m acconeer.exptool.app and pick A111"),
+        (_processing_output, "not an Exploration Tool recording"),
+        (_truncated_recording, "Cannot read recording.h5"),
+        (_config, "only .h5"),
+    ],
+)
+def test_refused_file_tells_why(
+    app_model: AppModel, tmp_path: Path, make_file: t.Callable[[Path], Path], reason: str
+) -> None:
+    errors: list[BaseException] = []
+    app_model.sig_error.connect(lambda exception, _traceback: errors.append(exception))
+
+    app_model.load_from_file(make_file(tmp_path))
+
+    (error,) = errors
+    assert reason in str(error)
