@@ -21,7 +21,7 @@ def pythonVersionsForBuildScope = [
 def integrationTestA2RssVersionsForBuildScope = [
     (BuildScope.SANITY)  : [branch: 'master'],
     (BuildScope.HOURLY)  : [branch: 'master'],
-    (BuildScope.NIGHTLY) : [branch: 'master'],
+    (BuildScope.NIGHTLY) : [branch: 'master', tag: 'a2-v1.2.0'],
 ]
 
 @Field

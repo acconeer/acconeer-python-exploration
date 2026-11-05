@@ -1,7 +1,7 @@
 # Copyright (c) Acconeer AB, 2023-2026
 # All rights reserved
 
-SDK_VERSION = "1.1.0"
+SDK_VERSION = "1.2.0"
 
 
 from acconeer.exptool._core.communication.client import ClientError, ServerError
