@@ -62,3 +62,11 @@ def test_open_record_a2_points_to_a2_loader(tmp_file_path: Path, generation: str
 
     with pytest.raises(a121.RecordError, match=r"a2\.open_record"):
         a121.open_record(tmp_file_path)
+
+
+def test_open_record_unknown_generation_names_it(tmp_file_path: Path) -> None:
+    with h5py.File(tmp_file_path, "x") as file:
+        file.create_dataset("generation", data="a3", dtype=a121._H5PY_STR_DTYPE)
+
+    with pytest.raises(a121.RecordError, match=r"generation 'a3'"):
+        a121.open_record(tmp_file_path)

@@ -52,7 +52,12 @@ def open_record(path_or_file: PathOrH5File) -> PersistentRecord:
         raise RecordError(msg)
 
     if generation != "a121":
-        raise record_exc
+        msg = (
+            f"The file '{path_or_file}' is a record of sensor generation '{generation}', "
+            "which this version of Exploration Tool cannot read. "
+            "Upgrade acconeer-exptool to read it."
+        )
+        raise RecordError(msg)
 
     return H5Record(file)
 
