@@ -20,6 +20,7 @@ at docs.acconeer.com. A2 apps:
   saving as PDF.
 
 ### Changed
+- This release supports A121 SDK v1.14.0.
 - A121 Distance: Measures faster at the same detection performance.
   Configs saved by an older version get a lower HWAAS; raise their
   signal quality by 5-6 dB (up to 17 dB with step length 1) to keep it.
