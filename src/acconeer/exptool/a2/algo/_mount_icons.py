@@ -23,8 +23,6 @@ _SENSOR_DEPTH_PX = 10
 # Pulls a sensor in a corner clear of both walls.
 _SENSOR_OFFSET_PX = 14
 _BEAM_HALF_ANGLE_DEG = 30.0
-# Opacity of the beam, in the sensor's color.
-_BEAM_ALPHA = 89
 # The Custom pan picture's sensor, turned a little to its left, and the
 # double-headed arc around it, level, from 45 to 135 degrees
 # counterclockwise from the picture's right.
@@ -63,7 +61,7 @@ def _draw_room(
 
     painter.save()
     painter.setClipRect(room)
-    painter.setBrush(colors.sensor_body.with_alpha(_BEAM_ALPHA).qcolor())
+    painter.setBrush(colors.sensor_beam.qcolor())
     beam_radius_px = 2 * max(pixmap.width(), pixmap.height())
     # drawPie takes 1/16 degrees, counterclockwise from 3 o'clock on screen.
     painter.drawPie(

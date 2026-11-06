@@ -88,6 +88,8 @@ class Palette:
 
     sensor_body: Color
     """The sensor in the 3D view and in the pictures of its mounting."""
+    sensor_beam: Color
+    """The sensor's beam in the pictures of its mounting."""
     sensor_pin: Color
     """The sensor's pin 0 marker."""
     picture_floor: Color
@@ -130,7 +132,6 @@ class Brand:
 
 
 _WHITE = Color.from_hex("#ffffff")
-_SENSOR_RED = Color(217, 26, 26)
 
 LIGHT = Palette(
     accent=Brand.BLUE_600,
@@ -140,10 +141,11 @@ LIGHT = Palette(
     error=Color.from_hex("#e6635a"),
     slider_bar=Brand.BLUE_600,
     slider_groove=Brand.BLUE_600.blend(_WHITE, 0.3),
-    sensor_body=_SENSOR_RED,
+    sensor_body=Brand.BLUE_400,
+    sensor_beam=Brand.BLUE_800.with_alpha(89),
     sensor_pin=_WHITE,
-    picture_floor=Color(230, 230, 230),
-    picture_wall=Color(90, 90, 90),
+    picture_floor=Brand.GREY_100,
+    picture_wall=Brand.GREY_600,
 )
 
 

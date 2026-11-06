@@ -95,5 +95,5 @@ def _is_lit(image: QtGui.QImage, x: float, y: float) -> bool:
     """Whether the beam covers the point ``x``, ``y``, as fractions of the
     image's width and height, from its top left."""
     color = image.pixelColor(round(x * (image.width() - 1)), round(y * (image.height() - 1)))
-    # The beam tints the grey floor red.
-    return color.red() - color.green() > 40
+    # The beam tints the grey floor blue.
+    return color.blue() - color.red() > 40
