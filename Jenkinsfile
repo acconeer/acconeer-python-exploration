@@ -479,16 +479,23 @@ try {
 
                 String algoBundleZip
                 stage('Fetch algo bundle') {
+                    // A reused workspace still holds the zip of the build before
+                    sh 'rm -f dist/acconeer_algo_bundle_*.zip'
                     // The algo bundle build the tests marked algo_bundle run on: its
-                    // build storage folder, which ends in its commit. Its plugins' code
-                    // must match this commit's, but every build reads the same
-                    // credential, so moving it moves the pin of all of them.
+                    // build storage folder. Its plugins' code must match this commit's,
+                    // but every build reads the same credential, so moving it moves the
+                    // pin of all of them.
                     withCredentials([string(credentialsId: 'et_module_bundle_folder',
                                             variable: 'ALGO_BUNDLE_FOLDER')])
                     {
-                        algoBundleZip = "dist/acconeer_algo_bundle_${ALGO_BUNDLE_FOLDER.tokenize('/').last()}.zip"
-                        retrieveArtifacts(folder: ALGO_BUNDLE_FOLDER, stage: 'build', artifacts: [algoBundleZip])
+                        retrieveArtifacts(folder: ALGO_BUNDLE_FOLDER, stage: 'build', artifacts: ['dist'])
                     }
+                    def zips = findFiles(glob: 'dist/acconeer_algo_bundle_*.zip')
+                    if (zips.size() != 1) {
+                        error("Expected one dist/acconeer_algo_bundle_*.zip in the build that credential " +
+                              "et_module_bundle_folder points to, found: ${zips}")
+                    }
+                    algoBundleZip = zips[0].path
                 }
 
                 stage("Run tests (${pythonVersions})") {
