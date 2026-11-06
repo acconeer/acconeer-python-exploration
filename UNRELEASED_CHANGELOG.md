@@ -9,8 +9,7 @@
   color, instead of bold text on an orange or red bar.
 - Input fields write numbers with a decimal point, as the rest of the app
   does, whatever the system's locale. A typed comma is taken as one too.
-- The Exploration Tool takes on Acconeer's look: its blue as the accent
-  color.
+- The Exploration Tool takes on Acconeer's look: its blue and grays.
 
 ### Fixed
 - Starting an A2 application with recording enabled no longer fails with

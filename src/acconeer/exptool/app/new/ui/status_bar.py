@@ -27,6 +27,7 @@ from acconeer.exptool.app.new import check_package_outdated, get_latest_changelo
 from acconeer.exptool.app.new.app_model import AppModel
 from acconeer.exptool.utils import get_module_version
 
+from . import palette
 from .icons import BUTTON_ICON_COLOR, REFRESH
 
 
@@ -41,7 +42,7 @@ class FrameCountLabel(QLabel):
 
     def _on_app_model_frame_count(self, frame_count: int | None) -> None:
         if frame_count is None:
-            css = "color: #888;"
+            css = f"color: {palette.current().text_light.css};"
             text = "Frames: -    "
         else:
             css = ""
@@ -68,7 +69,7 @@ class RateStatsLabel(QLabel):
 
     def timerEvent(self, event: QtCore.QTimerEvent) -> None:
         if np.isnan(self.rate):
-            css = "color: #888;"
+            css = f"color: {palette.current().text_light.css};"
             text = "     - Hz"
         else:
             css = "color: #FD5200;" if self.rate_warning else ""
@@ -105,7 +106,7 @@ class JitterStatsLabel(QLabel):
 
     def timerEvent(self, event: QtCore.QTimerEvent) -> None:
         if np.isnan(self.jitter):
-            css = "color: #888;"
+            css = f"color: {palette.current().text_light.css};"
             text = "    - ms"
         else:
             css = "color: #FD5200;" if self.jitter_warning else ""
@@ -150,7 +151,7 @@ class RSSVersionLabel(QLabel):
 
     def _on_app_model_update(self, app_model: AppModel) -> None:
         if app_model.rss_version is None:
-            css = "color: #888;"
+            css = f"color: {palette.current().text_light.css};"
             text = "RSS: <not connected>"
             tooltip = ""
         else:
@@ -181,7 +182,7 @@ class VersionButton(QPushButton):
 
         self.setFlat(True)
         self.setText(f"ET: {et_version}")
-        self.setStyleSheet("color: #4d5157;")
+        self.setStyleSheet(f"color: {palette.current().text.css};")
 
         self.clicked.connect(self._on_click)
         self.sig_payload.connect(self._handle_payload)

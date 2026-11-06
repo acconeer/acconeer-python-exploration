@@ -134,8 +134,8 @@ _SENSOR_RED = Color(217, 26, 26)
 
 LIGHT = Palette(
     accent=Brand.BLUE_600,
-    text=Color.from_hex("#4d5157"),
-    text_light=Color.from_hex("#888f99"),
+    text=Brand.GREY_600,
+    text_light=Brand.GREY_500,
     warning=Color.from_hex("#ff9e00"),
     error=Color.from_hex("#e6635a"),
     slider_bar=Brand.BLUE_600,

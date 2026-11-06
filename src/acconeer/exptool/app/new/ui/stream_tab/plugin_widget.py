@@ -35,6 +35,7 @@ from acconeer.exptool.app.new._exceptions import HandledException
 from acconeer.exptool.app.new.app_model import AppModel, PluginPresetSpec, PluginSpec
 from acconeer.exptool.app.new.pluginbase import PlotPluginBase, PluginSpecBase
 from acconeer.exptool.app.new.storage import get_algo_bundle_path
+from acconeer.exptool.app.new.ui import palette
 from acconeer.exptool.app.new.ui.components.devsite import download_algo_bundle
 from acconeer.exptool.app.new.ui.components.group_box import GroupBox
 from acconeer.exptool.app.new.ui.icons import (
@@ -465,7 +466,7 @@ class PlotPlaceholder(PlotPluginBase):
 
         icon_widget = qta.IconWidget()
         icon_widget.setIconSize(QtCore.QSize(36, 36))
-        icon_widget.setIcon(ARROW_LEFT_BOLD(color="#4d5157"))
+        icon_widget.setIcon(ARROW_LEFT_BOLD(color=palette.current().text.hex))
 
         label = QLabel("Select a module to begin", self)
         label.setStyleSheet("font-size: 20px;")

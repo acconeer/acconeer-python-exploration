@@ -89,8 +89,10 @@ def configure_application(app: QApplication) -> None:
 
 def apply_theme(app: QApplication) -> None:
     """Style ``app`` in the palette's colors."""
+    colors = palette.current()
     stylesheet = qdarktheme.load_stylesheet(
-        "light", custom_colors={"primary": palette.current().accent.hex}
+        "light",
+        custom_colors={"primary": colors.accent.hex, "foreground": colors.text.hex},
     )
     # Make sure to wrap urls in single quotation marks to avoid errors parsing stylesheet
     search_pattern = r"url\((.*?)\)"
