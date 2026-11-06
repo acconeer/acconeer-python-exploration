@@ -26,6 +26,10 @@ def test_can_be_instantiated_by_name() -> None:
     assert AntennaArray["AP212"] == AntennaArray.AP212
 
 
+def test_repr_names_the_member_only() -> None:
+    assert repr(AntennaArray.AP212_R2) == "AntennaArray.AP212_R2"
+
+
 def test_can_be_instantiated_from_data() -> None:
     assert (
         AntennaArray(

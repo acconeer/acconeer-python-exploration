@@ -290,6 +290,11 @@ class AntennaArray(_AntennaArrayData, Enum):  # type: ignore[misc]
     def __init__(self, *args: t.Any, **kwargs: t.Any) -> None:
         super().__init__(*args, **kwargs)
 
+    def __repr__(self) -> str:
+        # The default repr prints every correction table: hundreds of thousands of characters,
+        # formatted whenever a config holding the member is logged.
+        return f"{type(self).__name__}.{self.name}"
+
     AP212_R2 = (
         {
             0: Pos(-7.5, 0, 2.5),
