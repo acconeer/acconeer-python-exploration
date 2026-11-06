@@ -22,6 +22,7 @@ from acconeer.exptool.a121.algo._plugin_specs.sparse_iq import (
     SPARSE_IQ_PLUGIN as A121_SPARSE_IQ_PLUGIN,
 )
 from acconeer.exptool.app.new._enums import PluginGeneration
+from acconeer.exptool.app.new.app import configure_application
 from acconeer.exptool.app.new.app_model import PluginSpec
 from acconeer.exptool.app.new.backend import Backend, ClosedTask, Message, Task
 from acconeer.exptool.app.new.storage import set_et_dir
@@ -76,7 +77,9 @@ def qapplication() -> QApplication:
     Not autouse: tests/app/test_backend.py forks, and a QApplication and its
     threads have no business being in the parent when it does.
     """
-    return QApplication.instance() or QApplication()
+    app = QApplication.instance() or QApplication()
+    configure_application(app)
+    return app
 
 
 @pytest.fixture(autouse=True)

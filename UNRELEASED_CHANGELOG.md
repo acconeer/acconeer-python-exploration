@@ -7,6 +7,8 @@
 ### Changed
 - Notes about settings show an icon and plain text on a faint tint of their
   color, instead of bold text on an orange or red bar.
+- Input fields write numbers with a decimal point, as the rest of the app
+  does, whatever the system's locale. A typed comma is taken as one too.
 
 ### Fixed
 - Starting an A2 application with recording enabled no longer fails with

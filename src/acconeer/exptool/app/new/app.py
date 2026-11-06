@@ -78,6 +78,20 @@ _QUIT_WINDOW_S = 5.0
 _QUIT_MIN_GAP_S = 0.3
 
 
+def configure_application(app: QApplication) -> None:
+    """Set ``app`` up as the Exploration Tool runs it, which its tests share."""
+    # Make sure to wrap urls in single quotation marks to avoid errors parsing stylesheet
+    stylesheet = qdarktheme.load_stylesheet("light")
+    search_pattern = r"url\((.*?)\)"
+    replace_pattern = r"url('\1')"
+    stylesheet = re.sub(search_pattern, replace_pattern, stylesheet)
+
+    app.setStyleSheet(stylesheet)
+    # Input fields write numbers with a decimal point, as the rest of the app,
+    # its configs and the scripts do, not as the system's locale does.
+    QtCore.QLocale.setDefault(QtCore.QLocale.c())
+
+
 def main() -> None:
     parser = _ExptoolArgumentParser()
     args = _parse_args(parser)
@@ -139,13 +153,7 @@ def main() -> None:
     # The cast necessitated of a miss in the typing stubs.
     app: QApplication = t.cast(QApplication, QApplication.instance()) or QApplication(sys.argv)
 
-    # Make sure to wrap urls in single quotation marks to avoid errors parsing stylesheet
-    stylesheet = qdarktheme.load_stylesheet("light")
-    search_pattern = r"url\((.*?)\)"
-    replace_pattern = r"url('\1')"
-    stylesheet = re.sub(search_pattern, replace_pattern, stylesheet)
-
-    app.setStyleSheet(stylesheet)
+    configure_application(app)
     app.setAttribute(QtCore.Qt.ApplicationAttribute.AA_UseHighDpiPixmaps)
 
     if args.plugin_modules is not None:

@@ -1506,6 +1506,15 @@ class _PidgetDoubleSpinBox(QDoubleSpinBox):
         if init_set_value is not None:
             self.setValue(init_set_value)
 
+    # A comma, as typed in a locale that writes decimals with one, or with
+    # such a keyboard's keypad, is the decimal point too, not a thousands
+    # separator to drop, which would make "1,5" 15.
+    def validate(self, text: str, pos: int) -> tuple[QtGui.QValidator.State, str, int]:
+        return super().validate(text.replace(",", "."), pos)
+
+    def valueFromText(self, text: str) -> float:
+        return super().valueFromText(text.replace(",", "."))
+
     @classmethod
     def placeholder_dummy(cls, parent: QWidget, placeholder_text: str) -> _PidgetDoubleSpinBox:
         """
