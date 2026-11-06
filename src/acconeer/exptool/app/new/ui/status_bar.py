@@ -130,7 +130,7 @@ class BackendCPUPercentLabel(QLabel):
     def __init__(self, app_model: AppModel, parent: QWidget) -> None:
         super().__init__(parent)
 
-        self.setToolTip("Client process CPU load")
+        self.setToolTip("Backend process CPU load (100% = one core saturated)")
 
         app_model.sig_backend_cpu_percent.connect(self._on_app_model_backend_cpu_percent)
 
