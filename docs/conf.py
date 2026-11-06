@@ -362,6 +362,8 @@ def _add_print_matter(
 </section>
 """
     context["body"] = front + context["body"] + back
+    # Which browsers name the saved PDF after
+    context["title"] = f"{title} {subtitle}"
 
 
 def _link_single_page_references(app: Sphinx, doctree: nodes.document, docname: str) -> None:

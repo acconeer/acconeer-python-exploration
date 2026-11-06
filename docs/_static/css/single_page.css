@@ -44,11 +44,14 @@
         }
     }
 
+    /* Blank boxes rather than none, as the browser prints its own header and
+       footer, with the date and URL, where a page has none */
     @page :first {
         @top-left { content: none; }
-        @top-center { content: none; }
+        @top-center { content: ""; border: none; }
         @top-right { content: none; }
         @bottom-left { content: none; }
+        @bottom-center { content: ""; }
         @bottom-right { content: none; }
     }
 
