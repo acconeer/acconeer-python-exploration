@@ -15,8 +15,6 @@ from PySide6.QtWidgets import (
 )
 
 
-_WRONG_CREDENTIALS_MSG = "<font color='red'>Incorrect username (email) or password</font>"
-
 log = logging.getLogger(__name__)
 
 
