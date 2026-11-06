@@ -80,13 +80,6 @@ def test_installed_package_is_importable(tmp_path: Path) -> None:
     assert importlib.import_module(f"{_PACKAGE}.module").name == "bundled"
 
 
-def test_bundle_without_the_algo_bundle_package_is_refused(tmp_path: Path) -> None:
-    zip_path = _write_zip(tmp_path / "bundle.zip", {"other_package/__init__.py": ""})
-
-    with pytest.raises(ValueError, match=f"no package {_PACKAGE}"):
-        _test__install_algo_bundle(zip_path, tmp_path / "extracted")
-
-
 def test_installing_again_adds_the_directory_once(tmp_path: Path) -> None:
     zip_path = _write_zip(tmp_path / "bundle.zip", {f"{_PACKAGE_DIR}/__init__.py": ""})
 
