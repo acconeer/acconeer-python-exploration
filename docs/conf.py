@@ -364,6 +364,39 @@ def _add_print_matter(
     context["body"] = front + context["body"] + back
 
 
+def _link_single_page_references(app: Sphinx, doctree: nodes.document, docname: str) -> None:
+    """
+    Make a single-page guide's cross-references links that work.
+
+    singlehtml links every document of the site as "#document-<document>", and
+    a target in it as "#document-<document>#<target>", which no browser follows.
+    A target in the guide is linked as itself, being on the page, and one in a
+    document outside the guide, such as the glossary, on that document's page.
+    """
+    if app.builder.name != "singlehtml":
+        return
+
+    in_guide = {app.config.root_doc}
+    unvisited = [app.config.root_doc]
+    while unvisited:
+        for child in app.env.toctree_includes.get(unvisited.pop(), []):
+            if child not in in_guide:
+                in_guide.add(child)
+                unvisited.append(child)
+
+    for reference in doctree.findall(nodes.reference):
+        uri = reference.get("refuri", "")
+        if not uri.startswith("#document-"):
+            continue
+        document, separator, target = uri.removeprefix("#document-").partition("#")
+        if document not in in_guide:
+            # Relative to the output root, like every link on the page until
+            # _build_single_page_guides moves it next to the guide
+            reference["refuri"] = f"{document}.html{separator}{target}"
+        elif target:
+            reference["refuri"] = f"#{target}"
+
+
 _PRIMARY_SIDEBAR = re.compile(
     r'<div id="pst-primary-sidebar".*?(?=<main id="main-content")', re.DOTALL
 )
@@ -514,6 +547,7 @@ def setup(app: Sphinx) -> None:
     # After sphinx_book_theme's add_header_buttons, at 501, has built the header buttons
     app.connect("html-page-context", _add_header_buttons, priority=502)
     app.connect("html-page-context", _add_print_matter)
+    app.connect("doctree-resolved", _link_single_page_references)
     app.connect("build-finished", _build_single_page_guides)
     # After Sphinx's metadata collector (500), which reads the :pdf: field
     app.connect("doctree-read", _add_page_pdf, priority=600)
