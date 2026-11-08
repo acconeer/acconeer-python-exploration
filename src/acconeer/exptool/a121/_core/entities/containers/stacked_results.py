@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022-2024
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
@@ -40,7 +40,7 @@ class StackedResults:
     temperature: NDArrayBool = attrs.field(eq=attrs_ndarray_eq)
     _frame: npt.NDArray[t.Any] = attrs.field(eq=attrs_ndarray_eq)
 
-    tick: NDArrayInt = attrs.field()
+    tick: NDArrayInt = attrs.field(eq=attrs_ndarray_eq)
 
     _context: ResultContext = attrs.field()
 

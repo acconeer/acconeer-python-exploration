@@ -8,4 +8,6 @@
 
 ### Fixed
 
+- Fixed `StackedResults` equality raising on multi-element `tick` arrays
+
 ### Removed
