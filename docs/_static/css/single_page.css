@@ -15,6 +15,12 @@
         display: none !important;
     }
 
+    /* Read the Docs pins these to the window, so print repeats them on every page */
+    readthedocs-flyout,
+    readthedocs-notification {
+        display: none !important;
+    }
+
     @page {
         size: A4;
         margin: 25mm 18mm 20mm;
@@ -76,7 +82,7 @@
     }
 
     .print-title {
-        font-size: 20pt;
+        font-size: 28pt;
     }
 
     .print-subtitle {
