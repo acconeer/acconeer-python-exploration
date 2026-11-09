@@ -126,6 +126,7 @@ class _ConnectSettingsButton(QPushButton):
         self.app_model = app_model
 
         self.setIcon(COG())
+        self.setIconSize(QtCore.QSize(20, 20))
         self.setToolTip("Advanced settings")
 
         self.settings_dialog = _ConnectSettingsDialog(app_model, self)

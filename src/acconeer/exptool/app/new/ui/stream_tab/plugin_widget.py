@@ -39,7 +39,7 @@ from acconeer.exptool.app.new.ui import palette
 from acconeer.exptool.app.new.ui.components.devsite import download_algo_bundle
 from acconeer.exptool.app.new.ui.components.group_box import GroupBox
 from acconeer.exptool.app.new.ui.icons import (
-    ARROW_LEFT_BOLD,
+    ARROW_LEFT,
     CHECKMARK,
     COG,
     DOWNLOAD,
@@ -466,7 +466,7 @@ class PlotPlaceholder(PlotPluginBase):
 
         icon_widget = qta.IconWidget()
         icon_widget.setIconSize(QtCore.QSize(36, 36))
-        icon_widget.setIcon(ARROW_LEFT_BOLD(color=palette.current().text.hex))
+        icon_widget.setIcon(ARROW_LEFT(color=palette.current().text.hex))
 
         label = QLabel("Select a module to begin", self)
         label.setStyleSheet("font-size: 20px;")

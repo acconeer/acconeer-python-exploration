@@ -10,7 +10,7 @@
 - Input fields write numbers with a decimal point, as the rest of the app
   does, whatever the system's locale. A typed comma is taken as one too.
 - The Exploration Tool takes on Acconeer's look: its blue, grays, symbol
-  and typeface.
+  and typeface, and outline icons.
 
 ### Fixed
 - Starting an A2 application with recording enabled no longer fails with

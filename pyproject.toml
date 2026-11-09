@@ -105,6 +105,13 @@ launcher = "python -m acconeer.exptool.app {args}"
 new = "python -m acconeer.exptool.app.new {args}"
 old = "python -m acconeer.exptool.app.old {args}"
 
+[tool.hatch.envs.icons]
+detached = true
+dependencies = ["fonttools==4.68.0"]
+
+[tool.hatch.envs.icons.scripts]
+update = "python internal_tools/update_icons.py {args}"
+
 [tool.hatch.envs.mypy]
 features = ["app"]
 dependencies = [

@@ -23,6 +23,7 @@ pin from `docker/Dockerfile`. Pass the date as the flag, not as
 | `hatch test --update-outputs tests/processing/test_processing.py -k "distance_processor or distance_detector"` | Regenerate one algorithm's regression baselines. `-k` also matches input file names. |
 | `hatch run docs:html` | Build docs. An html build ends by building `SINGLE_PAGE_GUIDES` of `docs/conf.py` as one printable page each. `docs:autobuild` live-reloads; `docs:build` is the CI gate. |
 | `hatch run docs:compress-images <paths>` | Shrink images before committing (`--check` only reports). |
+| `hatch run icons:update <names>` | Add Lucide icons to the app's icon font, cut down to the icons it uses. |
 | `hatch run app:new` | Launch the GUI. |
 
 Test-running traps:
