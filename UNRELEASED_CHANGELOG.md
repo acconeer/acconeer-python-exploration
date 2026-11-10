@@ -16,5 +16,7 @@
 - Installed with pip on Python 3.12 or newer, the app was drawn in an
   outdated theme. In an existing environment, run
   `pip uninstall pyqtdarktheme` before upgrading.
+- The tabs after the first, such as the A2 sensor configuration's later
+  subsweeps, set their sections closer to the tab bar than the first did.
 
 ### Removed

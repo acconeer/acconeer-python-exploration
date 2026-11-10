@@ -142,7 +142,12 @@ class GroupBox(QWidget, t.Generic[_T]):
         top_margin = max(
             [
                 self._min_top_padding,
-                *(frame.rect().center().y() for frame in self._header_frames.values()),
+                # The size the frames get below, not the size they have:
+                # until a second resize, that is still Qt's default.
+                *(
+                    QRect(QPoint(), frame.sizeHint()).center().y()
+                    for frame in self._header_frames.values()
+                ),
             ]
         )
 
