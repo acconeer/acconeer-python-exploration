@@ -46,16 +46,16 @@ Not sure where to go? See our featured content below:
 
       Bought an EVK and ready to *get started*?
 
-      +++
+      .. card-footer::
 
-      .. button-ref:: getting_started/index
-         :color: primary
-         :expand:
-         :outline:
-         :click-parent:
-         :class: sd-font-weight-bold
+         .. button-ref:: getting_started/index
+            :color: primary
+            :expand:
+            :outline:
+            :click-parent:
+            :class: sd-font-weight-bold
 
-         Go to Getting Started
+            Go to Getting Started
 
    .. grid-item-card::
       :class-body: center
@@ -66,16 +66,16 @@ Not sure where to go? See our featured content below:
 
       Wondering how Acconeer's offering can help you solve your Use Case?
 
-      +++
+      .. card-footer::
 
-      .. button-ref:: use_cases
-         :color: primary
-         :expand:
-         :outline:
-         :click-parent:
-         :class: sd-font-weight-bold
+         .. button-ref:: use_cases
+            :color: primary
+            :expand:
+            :outline:
+            :click-parent:
+            :class: sd-font-weight-bold
 
-         Go to Use Cases
+            Go to Use Cases
 
 **************
 External links
@@ -93,16 +93,16 @@ External links
 
       Looking into purchasing Acconeer products?
 
-      +++
+      .. card-footer::
 
-      .. button-link:: https://www.acconeer.com/products
-         :color: primary
-         :expand:
-         :outline:
-         :click-parent:
-         :class: sd-font-weight-bold
+         .. button-link:: https://www.acconeer.com/products
+            :color: primary
+            :expand:
+            :outline:
+            :click-parent:
+            :class: sd-font-weight-bold
 
-         :fas:`up-right-from-square` Visit the Products Page
+            :fas:`up-right-from-square` Visit the Products Page
 
    .. grid-item-card::
       :class-body: center
@@ -113,16 +113,16 @@ External links
 
       Looking for software downloads and additional resources?
 
-      +++
+      .. card-footer::
 
-      .. button-link:: https://developer.acconeer.com
-         :color: primary
-         :expand:
-         :outline:
-         :click-parent:
-         :class: sd-font-weight-bold
+         .. button-link:: https://developer.acconeer.com
+            :color: primary
+            :expand:
+            :outline:
+            :click-parent:
+            :class: sd-font-weight-bold
 
-         :fas:`up-right-from-square` Visit the Developer Site
+            :fas:`up-right-from-square` Visit the Developer Site
 
    .. grid-item-card::
       :class-body: center
@@ -133,16 +133,16 @@ External links
 
       Looking for security information or want to report a vulnerability?
 
-      +++
+      .. card-footer::
 
-      .. button-link:: https://www.acconeer.com/security/
-         :color: primary
-         :expand:
-         :outline:
-         :click-parent:
-         :class: sd-font-weight-bold
+         .. button-link:: https://www.acconeer.com/security/
+            :color: primary
+            :expand:
+            :outline:
+            :click-parent:
+            :class: sd-font-weight-bold
 
-         :fas:`up-right-from-square` Visit the Security Page
+            :fas:`up-right-from-square` Visit the Security Page
 
 
 :doc:`disclaimer`
