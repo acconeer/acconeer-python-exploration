@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import threading
 import typing as t
+from pathlib import Path
 
 import pytest
 import requests
@@ -11,7 +12,11 @@ import requests
 from PySide6.QtCore import QThreadPool
 from PySide6.QtWidgets import QApplication
 
-from acconeer.exptool._artifact_repository import DevSiteRepository, LoginRequiredError
+from acconeer.exptool._artifact_repository import (
+    Artifact,
+    DevSiteRepository,
+    LoginRequiredError,
+)
 from acconeer.exptool._core.communication.comm_devices import USBDevice
 from acconeer.exptool.app.new.ui.components.devsite.license import LicenseWidget
 from acconeer.exptool.app.new.ui.components.devsite.login import LoginFormWidget
@@ -20,9 +25,15 @@ from acconeer.exptool.app.new.ui.flash_tab.widgets import (
     DownloadPage,
     FlashWizard,
     LoginFormPage,
+    SelectLocalFileOrDownloadFromDevsitePage,
+    WizardField,
     _Page,
 )
 from acconeer.exptool.app.new.ui.utils import FeedbackStyleSheet
+from acconeer.exptool.flash._bootloader_tool import (
+    XE212_EXPLORATION_SERVER_WINUSB_PID,
+    XE212_VID,
+)
 
 
 if t.TYPE_CHECKING:
@@ -230,6 +241,54 @@ def test_device_page_skips_a_device_the_flasher_does_not_know(wizard: FlashWizar
     device = USBDevice(name="XC211", vid=0xACC0, pid=0xE211, recognized=True)
 
     assert not device_page.is_currently_selected_module(device)
+
+
+def test_xe212_can_be_downloaded_from_the_devsite(wizard: FlashWizard) -> None:
+    wizard.setField(WizardField.MODULE, "XE212")
+    wizard.setCurrentId(_Page.LOCAL_FILE_OR_DOWNLOAD)
+    page = wizard.currentPage()
+    assert isinstance(page, SelectLocalFileOrDownloadFromDevsitePage)
+
+    # As the wizard does on next(), which setCurrentId() skips
+    page.initializePage()
+
+    assert page._download_btn.isEnabled()
+
+
+def test_downloaded_xe212_image_goes_to_the_flash_page(
+    wizard: FlashWizard,
+    fake_devsite: FakeDevSite,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    bin_path = str(tmp_path / "acconeer_xe212_exploration_server_a2-v1_2_0.bin")
+    downloaded: list[Artifact] = []
+
+    def download(_: DevSiteRepository, artifact: Artifact, path: str) -> tuple[str, str]:
+        downloaded.append(artifact)
+        return bin_path, "acconeer_xe212_exploration_server_a2-v1_2_0"
+
+    monkeypatch.setattr(DevSiteRepository, "download", download)
+    wizard.artifact_repository.cookies = fake_devsite.logged_in_cookies()
+    wizard.set_comm_device(
+        USBDevice(
+            name="XE212",
+            vid=XE212_VID,
+            pid=XE212_EXPLORATION_SERVER_WINUSB_PID,
+            recognized=True,
+        )
+    )
+    wizard.setField(WizardField.MODULE, "XE212")
+    wizard.setCurrentId(_Page.DOWNLOAD)
+    download_page = wizard.currentPage()
+    assert isinstance(download_page, DownloadPage)
+
+    download_page.start_download()
+    _wait_for_background_tasks()
+
+    assert downloaded == [Artifact.XE212_EXPLORATION_SERVER]
+    assert wizard.currentId() == _Page.FLASH
+    assert wizard.field(WizardField.BIN_PATH) == bin_path
 
 
 def test_license_page_takes_the_title_of_the_fetched_license(wizard: FlashWizard) -> None:

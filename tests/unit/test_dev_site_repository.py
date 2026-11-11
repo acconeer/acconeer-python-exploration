@@ -159,3 +159,59 @@ def test_download_of_algo_bundle_accepts_the_terms_of_its_row(
     assert Path(zip_path) == tmp_path / "algo_bundle-1.0.zip"
     assert Path(zip_path).read_bytes() == bundle_bytes
     assert version == "algo_bundle-1.0"
+
+
+def test_download_of_xe212_exploration_server_follows_the_a212_software_page(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The links and the zip's name are those developer.acconeer.com served
+    # on 2026-11-11. The name of the image inside the zip was not seen.
+    device_page_url = f"{DEFAULT_BASE_URL}/home/a212-docs-software/xe212/"
+    zip_url = f"{DEFAULT_BASE_URL}/download/xe212-exploration-server/?tmstv=1794385663"
+    pages = {
+        f"{DEFAULT_BASE_URL}/home/a212-docs-software/": (
+            f'<a href="{DEFAULT_BASE_URL}/home/a212-docs-software/a212-sdk/">A212 SDK</a>'
+            f'<a href="{device_page_url}">XE212</a>'
+        ),
+        device_page_url: (
+            f'<a href="{DEFAULT_BASE_URL}/download/xe212-sdk-a2/?tmstv=1794385663"></a>'
+            f'<a href="{zip_url}" class="dlm-tlc__download-xhr"></a>'
+        ),
+    }
+    posts: list[str] = []
+
+    def fake_get(self: requests.Session, url: str) -> _FakeResponse:
+        if url == DEFAULT_BASE_URL:
+            return _FakeResponse(url=DEFAULT_BASE_URL, headers={"Expires": "some-date"})
+        if url in pages:
+            return _FakeResponse(content=pages[url].encode())
+        msg = f"Unexpected GET {url}"
+        raise AssertionError(msg)
+
+    def fake_post(
+        self: requests.Session,
+        url: str,
+        data: str | None = None,
+        allow_redirects: bool = True,
+        headers: dict[str, str] | None = None,
+    ) -> _FakeResponse:
+        posts.append(url)
+        return _FakeResponse(
+            headers={
+                "Content-Disposition": 'attachment; filename="acconeer_xe212_exploration_server_a2-v1_2_0.zip"'
+            },
+            content=_zip_with_bin(
+                "acconeer_xe212_exploration_server_a2-v1_2_0.bin", b"binary-data"
+            ),
+        )
+
+    monkeypatch.setattr(requests.Session, "get", fake_get)
+    monkeypatch.setattr(requests.Session, "post", fake_post)
+    repo = DevSiteRepository(cookies=requests.cookies.RequestsCookieJar())
+
+    bin_path, version = repo.download(Artifact.XE212_EXPLORATION_SERVER, path=str(tmp_path))
+
+    assert posts == [zip_url]
+    assert Path(bin_path) == tmp_path / "acconeer_xe212_exploration_server_a2-v1_2_0.bin"
+    assert Path(bin_path).read_bytes() == b"binary-data"
+    assert version == "acconeer_xe212_exploration_server_a2-v1_2_0"

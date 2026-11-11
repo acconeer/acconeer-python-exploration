@@ -3,6 +3,8 @@
 ## Unreleased
 
 ### Added
+- The flash tab can download the XE212 exploration server from
+  developer.acconeer.com.
 
 ### Changed
 

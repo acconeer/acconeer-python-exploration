@@ -31,6 +31,14 @@ _ARTIFACT_DEVICE_NAMES = {
     Artifact.XC120_EXPLORATION_SERVER: "xc120",
     Artifact.XM125_EXPLORATION_SERVER: "xm125",
     Artifact.XM126_EXPLORATION_SERVER: "xm126",
+    Artifact.XE212_EXPLORATION_SERVER: "xe212",
+}
+
+_DEVICE_SENSORS = {
+    "xc120": "a121",
+    "xm125": "a121",
+    "xm126": "a121",
+    "xe212": "a212",
 }
 
 ET_DIR = Path(platformdirs.user_data_dir(appname="acconeer_exptool", appauthor="Acconeer AB"))
@@ -45,8 +53,8 @@ def _login_url(base_url: str) -> str:
     return f"{base_url}/log-in/"
 
 
-def _a121_sw_url(base_url: str) -> str:
-    return f"{base_url}/home/a121-docs-software/"
+def _sw_url(base_url: str, sensor: str) -> str:
+    return f"{base_url}/home/{sensor}-docs-software/"
 
 
 def _strip_trailing_slash(base_url: str) -> str:
@@ -220,7 +228,7 @@ class DevSiteRepository(ArtifactRepository):
 
             page_device = page_device_map.get(device, device)
 
-            response = session.get(url=_a121_sw_url(self.base_url))
+            response = session.get(url=_sw_url(self.base_url, _DEVICE_SENSORS[device]))
 
             soup = bs4.BeautifulSoup(response.content, "html.parser")
             link = soup.findAll("a", {"href": lambda l: l and page_device in l})
@@ -233,7 +241,12 @@ class DevSiteRepository(ArtifactRepository):
             soup = bs4.BeautifulSoup(response.content, "html.parser")
 
             zip_url_tags = soup.findAll(
-                "a", {"href": lambda l: l and device in l and "exploration_server" in l}
+                "a",
+                {
+                    "href": lambda l: (
+                        l and device in l and "exploration_server" in l.replace("-", "_")
+                    )
+                },
             )
             if not zip_url_tags:
                 msg = f"No image found for device '{device}'"
