@@ -192,13 +192,6 @@ class ProcessingConfiguration(et.configbase.ProcessingConfig):
         order=170,
     )
 
-    distance_history = et.configbase.BoolParameter(
-        label="Show distance history",
-        default_value=True,
-        category=et.configbase.Category.ADVANCED,
-        order=180,
-    )
-
     velocity_history = et.configbase.BoolParameter(
         label="Show velocity history",
         default_value=True,
