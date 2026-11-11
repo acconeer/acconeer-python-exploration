@@ -215,3 +215,35 @@ def test_invalid_attribute():
 
     with pytest.raises(AttributeError, match="Invalid attribute*"):
         config.update_ratee = 10
+
+
+@pytest.mark.parametrize(
+    ("groups", "message"),
+    [
+        ([], "groups must hold at least one group"),
+        ({}, "a group must hold at least one sensor"),
+        (
+            (a121.SensorConfig(),),
+            "groups must be a SensorConfig, a dict of sensor id to SensorConfig, "
+            "or a list of such dicts; got tuple",
+        ),
+        ({1: "x"}, "sensor 1 maps to str, not SensorConfig"),
+        ([{1: a121.SubsweepConfig()}], "sensor 1 maps to SubsweepConfig, not SensorConfig"),
+    ],
+    ids=["empty-list", "empty-dict", "tuple", "non-sensorconfig", "subsweepconfig"],
+)
+def test_malformed_groups_error_says_what_is_wrong(groups, message):
+    with pytest.raises(ValueError, match=message):
+        a121.SessionConfig(groups)
+
+
+def test_non_int_sensor_id_error_says_what_was_given():
+    with pytest.raises(ValueError, match="sensor id must be an int; got str"):
+        a121.SessionConfig({"1": a121.SensorConfig()})
+
+
+def test_list_of_sensor_configs_error_says_groups_are_dicts():
+    with pytest.raises(
+        ValueError, match="a group must be a dict of sensor id to SensorConfig; got SensorConfig"
+    ):
+        a121.SessionConfig([a121.SensorConfig(), a121.SensorConfig()])

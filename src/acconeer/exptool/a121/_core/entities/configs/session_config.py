@@ -332,24 +332,37 @@ def _unsqueeze_groups(
     if isinstance(arg, list):
         return arg
 
-    raise ValueError
+    msg = (
+        "groups must be a SensorConfig, a dict of sensor id to SensorConfig, "
+        f"or a list of such dicts; got {type(arg).__name__}"
+    )
+    raise ValueError(msg)
 
 
 def _validate_groups_structure(groups: list[dict[int, SensorConfig]]) -> None:
     if len(groups) < 1:
-        raise ValueError
+        msg = "groups must hold at least one group"
+        raise ValueError(msg)
 
     for group in groups:
+        if not isinstance(group, dict):
+            msg = (
+                f"a group must be a dict of sensor id to SensorConfig; got {type(group).__name__}"
+            )
+            raise ValueError(msg)
+
         if len(group) < 1:
-            raise ValueError
+            msg = "a group must hold at least one sensor"
+            raise ValueError(msg)
 
         for sensor_id, entry in group.items():
             if not isinstance(sensor_id, (int, np.int64, np.int32)):
-                msg = f"{type(sensor_id)} not int"
+                msg = f"sensor id must be an int; got {type(sensor_id).__name__}"
                 raise ValueError(msg)
 
             if not isinstance(entry, SensorConfig):
-                raise ValueError
+                msg = f"sensor {sensor_id} maps to {type(entry).__name__}, not SensorConfig"
+                raise ValueError(msg)
 
 
 opser.register_json_presentable(SessionConfig)
