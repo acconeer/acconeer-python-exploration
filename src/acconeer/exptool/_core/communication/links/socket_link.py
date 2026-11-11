@@ -43,7 +43,7 @@ class SocketLink(BufferedLink):
             try:
                 r = self._sock.recv(self._CHUNK_SIZE)
             except OSError as e:
-                raise LinkError from e
+                raise LinkError(str(e)) from e
             self._buf.extend(r)
 
         data = self._buf[:num_bytes]
@@ -68,7 +68,7 @@ class SocketLink(BufferedLink):
             try:
                 r = self._sock.recv(self._CHUNK_SIZE)
             except OSError as e:
-                raise LinkError from e
+                raise LinkError(str(e)) from e
             self._buf.extend(r)
 
         i += 1

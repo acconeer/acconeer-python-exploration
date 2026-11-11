@@ -135,7 +135,7 @@ class ExploreSerialLink(SerialLink):
             try:
                 r = bytearray(self._ser.read(self._SERIAL_READ_PACKET_SIZE))
             except OSError as e:
-                raise LinkError from e
+                raise LinkError(str(e)) from e
             self._buf.extend(r)
 
         data = self._buf[:num_bytes]
@@ -160,7 +160,7 @@ class ExploreSerialLink(SerialLink):
             try:
                 r = bytearray(self._ser.read(self._SERIAL_READ_PACKET_SIZE))
             except OSError as e:
-                raise LinkError from e
+                raise LinkError(str(e)) from e
             self._buf.extend(r)
 
         i += 1

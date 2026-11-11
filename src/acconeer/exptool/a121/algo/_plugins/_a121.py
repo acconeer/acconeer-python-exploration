@@ -159,7 +159,7 @@ class A121BackendPluginBase(BackendPlugin[T]):
                 except Exception:
                     self._logger.exception("Could not stop the session")
 
-                msg = "Failed to get_next"
+                msg = f"Streaming stopped: {exc}"
                 raise HandledException(msg) from exc
 
             return True

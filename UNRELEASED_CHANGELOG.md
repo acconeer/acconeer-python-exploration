@@ -20,5 +20,7 @@
 - A note under a setting no longer flickers while the setting is changed.
 - The flash wizard's title is no longer cut off on a monitor with a different
   scale than the main one.
+- When a plugin stops streaming because of an error, the error dialog
+  tells why instead of only saying "Failed to get_next".
 
 ### Removed

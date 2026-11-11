@@ -581,7 +581,7 @@ class USBLink(BufferedLink):
         try:
             self._port.send_break()
         except usb1.USBError as e:
-            raise LinkError from e
+            raise LinkError(str(e)) from e
         time.sleep(1.0)
         self._port.reset_input_buffer(self.BREAK_QUIET_S)
 
@@ -596,7 +596,7 @@ class USBLink(BufferedLink):
             msg = "recv timeout"
             raise LinkError(msg) from e
         except (usb1.USBError, UsbPortError) as e:
-            raise LinkError from e
+            raise LinkError(str(e)) from e
 
     def recv_until(self, bs: bytes) -> bytes:
         if self._port is None:
@@ -609,7 +609,7 @@ class USBLink(BufferedLink):
             msg = "recv timeout"
             raise LinkError(msg) from e
         except (usb1.USBError, UsbPortError) as e:
-            raise LinkError from e
+            raise LinkError(str(e)) from e
 
     def send(self, data: bytes) -> None:
         if self._port is None:
@@ -618,7 +618,7 @@ class USBLink(BufferedLink):
         try:
             self._port.write(data)
         except (usb1.USBError, UsbPortError) as e:
-            raise LinkError from e
+            raise LinkError(str(e)) from e
 
     def disconnect(self) -> None:
         if self._port is not None:
@@ -682,7 +682,7 @@ class LegacyUSBLink(BufferedLink):
             try:
                 r = bytearray(self._port.read())
             except OSError as e:
-                raise LinkError from e
+                raise LinkError(str(e)) from e
             self._buf.extend(r)
 
         data = self._buf[:num_bytes]
@@ -710,7 +710,7 @@ class LegacyUSBLink(BufferedLink):
             try:
                 r = bytearray(self._port.read())
             except OSError as e:
-                raise LinkError from e
+                raise LinkError(str(e)) from e
             self._buf.extend(r)
 
         i += 1
