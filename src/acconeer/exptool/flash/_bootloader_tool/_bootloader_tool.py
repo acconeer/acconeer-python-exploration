@@ -21,6 +21,8 @@ from ._bootloader_comm import BLCommunication, CommandFailed
 
 log = logging.getLogger(__name__)
 
+ERASE_TIMEOUT = 30
+
 
 class ImageFlasher:
     """A class that handles image flashing"""
@@ -52,7 +54,13 @@ class ImageFlasher:
         """erase image"""
         if not self._comm.is_image_erased(erase_size):
             log.debug("-Flash not erased, erasing...")
-            self._comm.image_erase(erase_size)
+            # The XE212 erases about 10 s/MB, beyond the default timeout.
+            default_timeout = self._comm.PROTOCOL_TIMEOUT
+            self._comm.PROTOCOL_TIMEOUT = ERASE_TIMEOUT
+            try:
+                self._comm.image_erase(erase_size)
+            finally:
+                self._comm.PROTOCOL_TIMEOUT = default_timeout
         else:
             log.debug("-Flash already erased")
 
