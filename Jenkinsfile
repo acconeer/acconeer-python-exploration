@@ -591,7 +591,7 @@ try {
         }
     }
 
-    parallel_steps['failFast'] = true
+    parallel_steps['failFast'] = buildScope != BuildScope.NIGHTLY
 
     parallel parallel_steps
 

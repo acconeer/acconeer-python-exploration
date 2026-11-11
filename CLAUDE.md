@@ -160,7 +160,8 @@ arises instead of guarding callers against it.
 - `.claude/skills/code-review-local/`: repo review skill with
   signal-processing dimensions.
 - `Jenkinsfile`: three build scopes (sanity / hourly / nightly) differing in
-  Python and RSS versions; only nightly runs the developer site tests. Tag
+  Python and RSS versions; only nightly runs the developer site tests, and
+  only nightly lets the other parallel stages finish when one fails. Tag
   builds run nightly. A Gerrit change build posts a link to its docs
   preview. Only a `vX.Y.Z` tag publishes to PyPI, and only from a commit
   that also carries a `vX.Y.Z-rcN` tag.
