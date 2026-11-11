@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import getpass
 import re
+import sys
 import tempfile
 import time
 import typing as t
@@ -430,12 +431,8 @@ def main() -> None:
                 if is_fw_downloadable(args.device):
                     _fetch_and_flash(args)
                 else:
-                    print(f"The image file for {args.device} is not available for download")
+                    sys.exit(f"The image file for {args.device} is not available for download")
             elif args.image:
                 _flash(args)
-        except FlashException as e:
-            print(f"\n{str(e)}\n")
-        except UsbPortError as e:
-            print(f"\n{str(e)}\n")
-        except ArtifactRepositoryError as e:
-            print(f"\n{str(e)}\n")
+        except (FlashException, UsbPortError, ArtifactRepositoryError) as e:
+            sys.exit(f"\n{e}\n")
