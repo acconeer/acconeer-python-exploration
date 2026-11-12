@@ -328,8 +328,7 @@ class Processor:
             self.current_sequence_idle = 0
             self.belongs_to_last_sequence[-1] = True
 
-            if est_vel > self.sequence_vels[-1]:
-                self.sequence_vels[-1] = est_vel
+            self.sequence_vels[-1] = max(self.sequence_vels[-1], est_vel)
 
         # Data for plots
 

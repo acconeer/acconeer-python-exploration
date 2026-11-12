@@ -1,4 +1,4 @@
-# Copyright (c) Acconeer AB, 2022
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 import numpy as np
@@ -176,8 +176,7 @@ class PGUpdater:
         if self.limits_center is not None:
             pc = self.processing_config
             criterion_weight_min = self.limits_center[0] / np.sqrt(pc.weight_ratio_limit)
-            if criterion_weight_min < pc.weight_threshold:
-                criterion_weight_min = pc.weight_threshold
+            criterion_weight_min = max(criterion_weight_min, pc.weight_threshold)
             criterion_weight_max = criterion_weight_min * pc.weight_ratio_limit
 
             criterion_distance_min = self.limits_center[1] - pc.distance_difference_limit / 2

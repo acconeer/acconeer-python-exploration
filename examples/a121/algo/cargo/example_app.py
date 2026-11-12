@@ -332,8 +332,7 @@ class PGUpdater:
                     self.threshold_curves[idx].setData(distances_m, threshold)
 
                     max_val_in_subsweep = max(max(threshold), max(abs_sweep))
-                    if max_val_in_plot < max_val_in_subsweep:
-                        max_val_in_plot = max_val_in_subsweep
+                    max_val_in_plot = max(max_val_in_plot, max_val_in_subsweep)
 
                 self.sweep_plot.setYRange(0, self.sweep_smooth_max.update(max_val_in_plot))
 

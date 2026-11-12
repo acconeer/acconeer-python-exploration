@@ -363,8 +363,7 @@ class PlotPlugin(PgPlotPlugin):
                 is_none_or_threshold(processor_result.far),
             ]
         )
-        if np.nanmax(np.array(threshold, dtype=float)) > max_val:
-            max_val = np.nanmax(np.array(threshold, dtype=float))
+        max_val = max(max_val, np.nanmax(np.array(threshold, dtype=float)))
         self.threshold_history = np.roll(self.threshold_history, -1, axis=1)
         self.threshold_history[:, -1] = threshold
 

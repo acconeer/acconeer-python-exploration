@@ -61,8 +61,7 @@ class Processor(ProcessorBase[ProcessorResult]):
         self.num_segments = processor_config.num_segments
         self.segment_length = sensor_config.sweeps_per_frame // self.num_segments
 
-        if self.segment_length < 2:
-            self.segment_length = 2
+        self.segment_length = max(self.segment_length, 2)
 
         assert sensor_config.sweep_rate is not None
         assert sensor_config.continuous_sweep_mode is not None

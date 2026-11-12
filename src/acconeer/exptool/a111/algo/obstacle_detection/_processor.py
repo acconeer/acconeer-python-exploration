@@ -502,10 +502,8 @@ class Processor:
             for freq_index in moving_range:
                 val = fft_bg[dist_index, freq_index]
                 current_dist_moving_sum += val
-                if val > moving_max:
-                    moving_max = val
-                if val < moving_min:
-                    moving_min = val
+                moving_max = max(moving_max, val)
+                moving_min = min(moving_min, val)
                 moving_sum += val
                 moving_sum_sqr += val * val
 
@@ -546,8 +544,7 @@ class Processor:
             static_pwl_amp.append(pwl_y_max)
 
         for i in range(pwl_static_points):
-            if static_pwl_amp[i] < moving_max:
-                static_pwl_amp[i] = moving_max
+            static_pwl_amp[i] = max(static_pwl_amp[i], moving_max)
 
         bg_params = {
             "static_pwl_dist": [float(i) for i in static_pwl_dist],
@@ -565,13 +562,11 @@ class Processor:
 
         y1 = 0
         for i in range(mid_index):
-            if y1 < data_y[i]:
-                y1 = data_y[i]
+            y1 = max(y1, data_y[i])
 
         y2 = 0
         for i in range(mid_index, int(data_length)):
-            if y2 < data_y[i]:
-                y2 = data_y[i]
+            y2 = max(y2, data_y[i])
 
         # Check the plateau levels and return early if the step is non-decreasing
         if y1 <= y2:
@@ -581,8 +576,7 @@ class Processor:
             return [x1, x2, y1, y2]
 
         intersection_threshold = self.remap(BACKGROUND_PLATEAU_INTERPOLATION, 0, 1, y2, y1)
-        if intersection_threshold > y2 * BACKGROUND_PLATEAU_FACTOR:
-            intersection_threshold = y2 * BACKGROUND_PLATEAU_FACTOR
+        intersection_threshold = min(intersection_threshold, y2 * BACKGROUND_PLATEAU_FACTOR)
 
         intersection_index = mid_index
         while intersection_index > 1 and data_y[intersection_index - 1] < intersection_threshold:
@@ -598,8 +592,7 @@ class Processor:
         max_neg_slope = 0
         for i in range(intersection_index):
             neg_slope = (data_y[i] - y2) / float(intersection_index - i)
-            if max_neg_slope < neg_slope:
-                max_neg_slope = neg_slope
+            max_neg_slope = max(max_neg_slope, neg_slope)
         x1 = x2 - (y1 - y2) / max_neg_slope
 
         return [x1, x2, y1, y2]

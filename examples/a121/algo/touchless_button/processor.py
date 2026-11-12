@@ -221,8 +221,7 @@ class PGUpdater:
                 is_none_or_threshold(processor_result.far),
             ]
         )
-        if np.nanmax(np.array(threshold, dtype=float)) > max_val:
-            max_val = np.nanmax(np.array(threshold, dtype=float))
+        max_val = max(max_val, np.nanmax(np.array(threshold, dtype=float)))
         self.threshold_history = np.roll(self.threshold_history, -1, axis=1)
         self.threshold_history[:, -1] = threshold
 
@@ -240,8 +239,7 @@ class PGUpdater:
                 # Assign x-values so that setData() doesn't give error when y-values are NaN
                 curve.setData(np.arange(0, 100), self.score_history_close[i, :].flatten())
 
-            if np.max(processor_result.close.score) > max_val:
-                max_val = np.max(processor_result.close.score)
+            max_val = max(max_val, np.max(processor_result.close.score))
 
         if self.score_history_far is not None:
             self.score_history_far = np.roll(self.score_history_far, -1, axis=1)
@@ -254,8 +252,7 @@ class PGUpdater:
                 # Assign x-values so that setData() doesn't give error when y-values are NaN
                 curve.setData(np.arange(0, 100), self.score_history_far[i, :].flatten())
 
-            if np.max(processor_result.far.score) > max_val:
-                max_val = np.max(processor_result.far.score)
+            max_val = max(max_val, np.max(processor_result.far.score))
 
         if max_val != 0.0:
             self.score_history_plot.setYRange(0.0, self.score_smooth_max.update(max_val))
