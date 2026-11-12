@@ -403,3 +403,27 @@ class TestPicturedFloatPidget:
         pidget._spin_box.setValue(-10.0)
 
         assert drawn[-1] == -10.0
+
+
+@pytest.mark.parametrize("value", [0.3, 0.2, 5.0])
+def test_log_slider_keeps_the_value_it_is_set_to(qapplication: t.Any, value: float) -> None:
+    factory = pidgets.FloatSliderPidgetFactory(
+        name_label_text="Value:",
+        name_label_tooltip="Value",
+        decimals=4,
+        limits=(0.01, 100.0),
+        log_scale=True,
+    )
+    parent = QWidget()
+    pidget = factory.create(parent)
+    emitted: list[float] = []
+    pidget.sig_update.connect(emitted.append)
+
+    pidget.set_data(value)
+    assert pidget.get_data() == value
+    assert emitted == []
+
+    pidget.set_data(1.0)
+    pidget._FloatSliderPidget__spin_box.setValue(value)  # type: ignore[attr-defined]
+    assert pidget.get_data() == value
+    assert emitted == [value]

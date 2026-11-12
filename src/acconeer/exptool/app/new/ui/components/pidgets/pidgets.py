@@ -650,7 +650,8 @@ class FloatSliderPidget(Pidget):
     def set_data(self, value: Any) -> None:
         assert isinstance(value, (int, float))
 
-        with QtCore.QSignalBlocker(self):
+        # The slider would otherwise write its rounded value back to the spin box.
+        with QtCore.QSignalBlocker(self), QtCore.QSignalBlocker(self._slider):
             self.__spin_box.setValue(value)
             self._slider.wrapped_set_value(value)
 
@@ -658,13 +659,13 @@ class FloatSliderPidget(Pidget):
         return float(self.__spin_box.value())
 
     def __on_spin_box_changed(self, value: float) -> None:
-        with QtCore.QSignalBlocker(self):
+        with QtCore.QSignalBlocker(self._slider):
             self._slider.wrapped_set_value(value)
 
         self.sig_update.emit(value)
 
     def __on_slider_changed(self, value: float) -> None:
-        with QtCore.QSignalBlocker(self):
+        with QtCore.QSignalBlocker(self.__spin_box):
             self.__spin_box.setValue(value)
 
         self.sig_update.emit(value)
