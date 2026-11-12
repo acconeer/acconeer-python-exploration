@@ -19,7 +19,7 @@ ACCEPTED_DIGESTS: frozenset[str] = frozenset(
     {"16972fc33197ab4a3e0bd7c683b8e185731d13e7d13f5b6c65dfdb32bd22c8bf"}
 )
 # The version of that algo bundle, as the developer site writes it next to its download
-ACCEPTED_VERSION = "8.0.0"
+ACCEPTED_VERSION = "8.0.1"
 
 _PACKAGES: list[str] = []
 _REQUIRED_PACKAGE = "acconeer.algo_bundle"
