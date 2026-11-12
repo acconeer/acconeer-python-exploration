@@ -302,9 +302,7 @@ class CartesianHeatmapPlotWithGrid(pg.GraphicsObject):
             # If rotation is in upper two quantiles text should be in one way. The opposite in the two lower.
             if current_rotation in [0, 90]:
                 scale_y = -scale_y
-                scale_x = scale_x
             else:
-                scale_y = scale_y
                 scale_x = -scale_x
 
             scale = np.sqrt(scale_y**2 + scale_x**2)

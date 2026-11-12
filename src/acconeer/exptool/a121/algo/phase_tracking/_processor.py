@@ -164,8 +164,6 @@ class Processor(ProcessorBase[ProcessorResult]):
                 sweeps_at_peak_ampl_dist = np.insert(
                     sweeps_at_peak_ampl_dist, 0, self.last_sweep_prev_frame
                 )
-            else:
-                sweeps_at_peak_ampl_dist = sweeps_at_peak_ampl_dist
 
             delta_angles = np.diff(np.unwrap(np.angle(sweeps_at_peak_ampl_dist)))
             delta_dists = PERCEIVED_WAVELENGTH * delta_angles / (2 * np.pi) * self.M_TO_MM
