@@ -18,6 +18,7 @@ from acconeer.exptool.app.new._enums import PluginGeneration
 from acconeer.exptool.app.new._exceptions import HandledException
 from acconeer.exptool.app.new.app import (
     _ExptoolArgumentParser,
+    _parse_args,
     create_app_model,
     install_startup_algo_bundle,
 )
@@ -223,7 +224,7 @@ def test_algo_bundle_present_at_startup_is_left_for_the_caller_to_install(
 
 
 def _launch(*options: str) -> tuple[argparse.Namespace, AppModel]:
-    args = _ExptoolArgumentParser().parse_args(["--no-port-updater", *options])
+    args = _parse_args(_ExptoolArgumentParser(), ["--no-port-updater", *options])
     plugins = [_PluginNeedingAlgoBundle()]
     return args, create_app_model(args, plugins, _RecordingBackend())  # type: ignore[arg-type]
 
@@ -262,6 +263,60 @@ def test_algo_bundle_option_refuses_a_missing_file(
         _ExptoolArgumentParser().parse_args(["--algo-bundle", str(tmp_path / "missing.zip")])
 
     assert f"No algo bundle at '{tmp_path / 'missing.zip'}'" in capsys.readouterr().err
+
+
+def test_algo_bundle_variable_installs_that_zip_instead_of_the_downloaded_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, installs: list[tuple[Path, Path]]
+) -> None:
+    zip_path = tmp_path / "bundle.zip"
+    zip_path.write_bytes(b"module")
+    get_algo_bundle_path().write_bytes(b"downloaded")
+    monkeypatch.setenv("ET_ALGO_BUNDLE", str(zip_path))
+
+    _install_at_startup()
+
+    assert [installed for installed, _ in installs] == [zip_path]
+
+
+def test_algo_bundle_option_takes_precedence_over_the_variable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, installs: list[tuple[Path, Path]]
+) -> None:
+    zip_path = tmp_path / "bundle.zip"
+    zip_path.write_bytes(b"module")
+    monkeypatch.setenv("ET_ALGO_BUNDLE", str(tmp_path / "missing.zip"))
+
+    _install_at_startup("--algo-bundle", str(zip_path))
+
+    assert [installed for installed, _ in installs] == [zip_path]
+
+
+def test_algo_bundle_variable_refuses_a_missing_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv("ET_ALGO_BUNDLE", str(tmp_path / "missing.zip"))
+
+    with pytest.raises(SystemExit):
+        _parse_args(_ExptoolArgumentParser(), [])
+
+    err = capsys.readouterr().err
+    assert f"No algo bundle at '{tmp_path / 'missing.zip'}'" in err
+    assert "ET_ALGO_BUNDLE" in err
+    assert "--algo-bundle" not in err
+
+
+def test_algo_bundle_option_blames_itself_for_a_missing_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    zip_path = tmp_path / "bundle.zip"
+    zip_path.write_bytes(b"module")
+    monkeypatch.setenv("ET_ALGO_BUNDLE", str(zip_path))
+
+    with pytest.raises(SystemExit):
+        _parse_args(_ExptoolArgumentParser(), ["--algo-bundle", str(tmp_path / "missing.zip")])
+
+    err = capsys.readouterr().err
+    assert "--algo-bundle" in err
+    assert "ET_ALGO_BUNDLE" not in err
 
 
 def test_algo_bundle_option_is_checked_by_default(

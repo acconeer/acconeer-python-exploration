@@ -80,7 +80,7 @@ _QUIT_MIN_GAP_S = 0.3
 
 def main() -> None:
     parser = _ExptoolArgumentParser()
-    args = parser.parse_args()
+    args = _parse_args(parser)
     config_logging(args)
     avoid_fork(preload=["acconeer.exptool.app.new.backend"])
 
@@ -458,7 +458,8 @@ class _ExptoolArgumentParser(argparse.ArgumentParser):
         )
 
         # An algo bundle zip used instead of the one downloaded from the
-        # artifact repository. Internal use only.
+        # artifact repository. Internal use only. Also read from
+        # ET_ALGO_BUNDLE, which this option overrides.
         self.add_argument(
             "--algo-bundle",
             type=_algo_bundle_file,
@@ -561,3 +562,16 @@ class _ExptoolArgumentParser(argparse.ArgumentParser):
             "--quiet",
             action="store_true",
         )
+
+
+def _parse_args(
+    parser: argparse.ArgumentParser, argv: list[str] | None = None
+) -> argparse.Namespace:
+    args = parser.parse_args(argv)
+    env_bundle = os.environ.get("ET_ALGO_BUNDLE")
+    if args.algo_bundle is None and env_bundle:
+        try:
+            args.algo_bundle = _algo_bundle_file(env_bundle)
+        except argparse.ArgumentTypeError as e:
+            parser.error(f"{e}, which ET_ALGO_BUNDLE points to")
+    return args
