@@ -107,9 +107,9 @@ class AttrsConfigEditor(DataEditor[T | None]):
         self._group_hooks: list[Sequence[WidgetHook]] = []
         self._erroneous_aspects = set()
 
-        for pidget_group, factory_mapping in _to_group_factory_mapping(factory_mapping).items():
+        for pidget_group, group_factories in _to_group_factory_mapping(factory_mapping).items():
             pidgets = []
-            for aspect, factory in factory_mapping.items():
+            for aspect, factory in group_factories.items():
                 pidget = factory.create(group_box)
                 pidget.sig_update.connect(partial(self._update_config_aspect, aspect))
 
