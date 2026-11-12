@@ -256,6 +256,11 @@ class A2BackendPluginBase(Generic[T], BackendPlugin[T]):
             # The file is closed regardless, only detaching it from a failed client failed
             self._logger.debug(traceback.format_exc())
 
+        # The client outlives the plugin, and the next one attaches its own recorder.
+        client = self.client
+        if client is not None and client.connected and not client.session_is_started:
+            client.detach_recorder()
+
     def teardown(self) -> None:
         try:
             with self.h5_cache_file(write=True) as file:
