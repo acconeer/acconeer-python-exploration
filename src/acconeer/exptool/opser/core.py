@@ -17,8 +17,6 @@ import numpy as np
 import numpy.typing as npt
 import typing_extensions as te
 
-from . import core
-
 
 _T = t.TypeVar("_T")
 TypeLike: te.TypeAlias = type | t._GenericAlias  # type: ignore[name-defined]
@@ -98,14 +96,14 @@ class Persistor(abc.ABC):
 
     parent_group: h5py.Group
     name: str
-    type_tree: core.Node
+    type_tree: Node
 
     @classmethod
     def from_json_presentable(cls, presentable_type: type[JsonPresentable]) -> type[Persistor]:
         """Generates a Persistor class for the specified JsonPresentable"""
 
-        def _is_applicable(cls: type[Persistor], __type: core.TypeLike) -> bool:
-            return core.is_subclass(__type, presentable_type)
+        def _is_applicable(cls: type[Persistor], __type: TypeLike) -> bool:
+            return is_subclass(__type, presentable_type)
 
         def _save(self: Persistor, data: t.Any) -> None:
             if not isinstance(data, presentable_type):
@@ -135,13 +133,13 @@ class Persistor(abc.ABC):
     def assert_not_empty(dataset_contents: t.Any) -> None:
         """Asserts that the dataset contents is not empty"""
         if isinstance(dataset_contents, h5py.Empty):
-            raise core.LoadError
+            raise LoadError
 
     @staticmethod
     def assert_empty(dataset_contents: t.Any) -> None:
         """Asserts that the dataset contents is not empty"""
         if not isinstance(dataset_contents, h5py.Empty):
-            raise core.LoadError
+            raise LoadError
 
     @property
     def group(self) -> h5py.Group:
@@ -207,7 +205,7 @@ class Persistor(abc.ABC):
 
     @classmethod
     @abc.abstractmethod
-    def is_applicable(cls, __type: core.TypeLike) -> bool:
+    def is_applicable(cls, __type: TypeLike) -> bool:
         pass
 
     @abc.abstractmethod
@@ -229,7 +227,7 @@ class Node:
 
 def is_class(__type: TypeLike) -> te.TypeGuard[type]:
     """Return True if '__type' is a class"""
-    return not core.is_ndarray(__type) and isinstance(__type, type)
+    return not is_ndarray(__type) and isinstance(__type, type)
 
 
 def is_subclass(__type: TypeLike, superclass: type | tuple[type, ...]) -> bool:
