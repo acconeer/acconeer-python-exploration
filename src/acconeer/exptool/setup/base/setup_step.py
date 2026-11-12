@@ -41,7 +41,7 @@ class ShellCommandStep(SetupStep):
 
     def run(self) -> bool:
         print(f">>> {self!s}")
-        completed_process = subprocess.run(self.command)
+        completed_process = subprocess.run(self.command, check=False)
         return completed_process.returncode == 0
 
 

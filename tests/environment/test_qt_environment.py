@@ -48,7 +48,7 @@ def test_trying_to_run_et_without_app_extra_fails_and_mentions_app_extra(
     args: list[str], tmp_path: Path
 ) -> None:
     completed_process = sp.run(
-        [HATCH, "--data-dir", str(tmp_path), *args], stdout=sp.PIPE, text=True
+        [HATCH, "--data-dir", str(tmp_path), *args], stdout=sp.PIPE, text=True, check=False
     )
     assert "[app]" in completed_process.stdout
     assert completed_process.returncode != 0

@@ -66,7 +66,9 @@ def start_example() -> Iterator[StartExample]:
         if sys.platform == "win32":
             # Windows has no process groups, so the example's process tree is killed instead.
             # It fails, harmlessly, for an example that has already exited.
-            subprocess.run(["taskkill", "/F", "/T", "/PID", str(p.pid)], capture_output=True)
+            subprocess.run(
+                ["taskkill", "/F", "/T", "/PID", str(p.pid)], capture_output=True, check=False
+            )
         else:
             with contextlib.suppress(ProcessLookupError):
                 os.killpg(p.pid, signal.SIGKILL)
