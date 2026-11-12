@@ -6,6 +6,7 @@ from __future__ import annotations
 import logging
 import os
 import pickle
+import re
 import shutil
 import tempfile
 import zipfile
@@ -17,7 +18,8 @@ import bs4
 import platformdirs
 import requests
 
-from ._interface import Artifact, ArtifactRepository, LoginRequiredError
+from ._algo_bundle import ACCEPTED_VERSION
+from ._interface import Artifact, ArtifactRepository, ArtifactRepositoryError, LoginRequiredError
 from ._plugins import hookimpl
 from ._utils import try_get_obfuscated_email_from_cookiejar, version_from_filename
 
@@ -85,22 +87,64 @@ def _accept_terms_and_download(session: requests.Session, url: str) -> tuple[str
     return filename, r.content
 
 
-def _terms_form_url(page: bytes, label: str) -> str:
-    """The terms form action of the row labelled ``label`` in a page's downloads table"""
+def _labelled_rows(page: bytes, label: str) -> list[bs4.Tag]:
+    """The rows labelled ``label`` in a page's downloads table"""
     soup = bs4.BeautifulSoup(page, "html.parser")
+    rows = []
     for cell in soup.select("table.downloads-table td:first-child"):
         if cell.get_text(strip=True).casefold() != label.casefold():
             continue
         row = cell.parent
         assert row is not None
-        form = row.find_next("form", class_="terms-form")
-        assert isinstance(form, bs4.Tag)
-        action = form.get("action")
-        assert isinstance(action, str), "Expected a single action, not a multi-valued attribute"
-        return action
+        rows.append(row)
 
-    msg = f"No download labelled '{label}' on the page. Has it been renamed or moved?"
-    raise Exception(msg)
+    if not rows:
+        msg = f"No download labelled '{label}' on the page. Has it been renamed or moved?"
+        raise Exception(msg)
+    return rows
+
+
+def _terms_form_url(row: bs4.Tag) -> str:
+    """The terms form action of a row in a page's downloads table"""
+    form = row.find_next("form", class_="terms-form")
+    assert isinstance(form, bs4.Tag)
+    action = form.get("action")
+    assert isinstance(action, str), "Expected a single action, not a multi-valued attribute"
+    return action
+
+
+def _version_in_row(row: bs4.Tag) -> str | None:
+    """The version, such as 1.2.3, that a row in a page's downloads table shows"""
+    for cell in row.find_all("td"):
+        text: str = cell.get_text(strip=True)
+        if re.fullmatch(r"v?\d+(\.\d+)+", text):
+            return text.removeprefix("v")
+    return None
+
+
+def _row_of_accepted_version(rows: list[bs4.Tag]) -> bs4.Tag:
+    offered = []
+    for row in rows:
+        version = _version_in_row(row)
+        if version == ACCEPTED_VERSION:
+            return row
+        if version is not None:
+            offered.append(version)
+
+    if not offered:
+        msg = (
+            "The developer site shows no algo bundle version next to its download, "
+            f"so it cannot be checked against version {ACCEPTED_VERSION}, "
+            "which this ET release expects. Report this to Acconeer."
+        )
+        raise ArtifactRepositoryError(msg)
+    releases = " or ".join(f"acconeer-exptool=={version}" for version in offered)
+    msg = (
+        f"This ET release expects algo bundle version {ACCEPTED_VERSION}, "
+        f"but the developer site offers only version {', '.join(offered)}. "
+        f"Install a matching ET release ({releases})."
+    )
+    raise ArtifactRepositoryError(msg)
 
 
 def _load_saved_cookies() -> requests.cookies.RequestsCookieJar | None:
@@ -297,7 +341,8 @@ class DevSiteRepository(ArtifactRepository):
 
             _raise_unless_logged_in(session, self.base_url)
             page = session.get(url=f"{self.base_url}{_ALGO_BUNDLE_PAGE_PATH}")
-            terms_url = _terms_form_url(page.content, _ALGO_BUNDLE_LABEL)
+            rows = _labelled_rows(page.content, _ALGO_BUNDLE_LABEL)
+            terms_url = _terms_form_url(_row_of_accepted_version(rows))
             filename, content = _accept_terms_and_download(session, terms_url)
 
         filepath = Path(path) / filename

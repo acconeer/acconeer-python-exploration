@@ -10,8 +10,16 @@ from pathlib import Path
 import pytest
 import requests
 
-from acconeer.exptool._artifact_repository import Artifact, DevSiteRepository
-from acconeer.exptool._artifact_repository._dev_site_repository import DEFAULT_BASE_URL
+from acconeer.exptool._artifact_repository import (
+    Artifact,
+    ArtifactRepositoryError,
+    DevSiteRepository,
+)
+from acconeer.exptool._artifact_repository._algo_bundle import ACCEPTED_VERSION
+from acconeer.exptool._artifact_repository._dev_site_repository import (
+    _ALGO_BUNDLE_PAGE_PATH,
+    DEFAULT_BASE_URL,
+)
 
 
 _COOKIE_NAME = "wordpress_logged_in_test"
@@ -103,10 +111,10 @@ def test_download_keeps_using_cookies_cleared_from_under_it_mid_call(
     assert os.path.exists(bin_path)
 
 
-def _downloads_row(label: str, form_action: str) -> str:
+def _downloads_row(label: str, form_action: str, version: str = "1.0") -> str:
     """One row of a product page's downloads table, as the developer site renders it"""
     return (
-        f"<tr><td>{label}</td><td>Description</td><td>1.0</td><td>2026-07-06</td>"
+        f"<tr><td>{label}</td><td>Description</td><td>{version}</td><td>2026-07-06</td>"
         '<td><a class="download-button">Download</a></td></tr>'
         f'<tr class="hidden"><td colspan="5"><form class="terms-form" action="{form_action}"'
         ' method="post"><input type="checkbox" name="tc_accepted" value="1" />'
@@ -114,24 +122,20 @@ def _downloads_row(label: str, form_action: str) -> str:
     )
 
 
-def test_download_of_algo_bundle_accepts_the_terms_of_its_row(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    other_url = f"{DEFAULT_BASE_URL}/download/other/?tmstv=1"
-    bundle_url = f"{DEFAULT_BASE_URL}/download/bundle/?tmstv=1"
-    page = (
-        '<table class="downloads-table"><tbody>'
-        + _downloads_row("Something else", other_url)
-        + _downloads_row("ACCONEER ALGO BUNDLE", bundle_url)
-        + "</tbody></table>"
-    )
-    bundle_bytes = _zip_with_bin("algo/__init__.py", b"")
+_ALGO_BUNDLE_ZIP = _zip_with_bin("algo/__init__.py", b"")
+
+
+def _serve_algo_bundle_page(
+    monkeypatch: pytest.MonkeyPatch, page: str
+) -> list[tuple[str, str | None]]:
+    """Serves ``page`` as the algo bundle page and ``_ALGO_BUNDLE_ZIP`` behind
+    every terms form, returning the URLs and data POSTed to"""
     posts: list[tuple[str, str | None]] = []
 
     def fake_get(self: requests.Session, url: str) -> _FakeResponse:
         if url == DEFAULT_BASE_URL:
             return _FakeResponse(url=DEFAULT_BASE_URL, headers={"Expires": "some-date"})
-        if url == f"{DEFAULT_BASE_URL}/acconeer-algo-bundle/":
+        if url == f"{DEFAULT_BASE_URL}{_ALGO_BUNDLE_PAGE_PATH}":
             return _FakeResponse(content=page.encode())
         msg = f"Unexpected GET {url}"
         raise AssertionError(msg)
@@ -146,19 +150,125 @@ def test_download_of_algo_bundle_accepts_the_terms_of_its_row(
         posts.append((url, data))
         return _FakeResponse(
             headers={"Content-Disposition": 'attachment; filename="algo_bundle-1.0.zip"'},
-            content=bundle_bytes,
+            content=_ALGO_BUNDLE_ZIP,
         )
 
     monkeypatch.setattr(requests.Session, "get", fake_get)
     monkeypatch.setattr(requests.Session, "post", fake_post)
+    return posts
+
+
+def test_download_of_algo_bundle_accepts_the_terms_of_its_row(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    other_url = f"{DEFAULT_BASE_URL}/download/other/?tmstv=1"
+    bundle_url = f"{DEFAULT_BASE_URL}/download/bundle/?tmstv=1"
+    page = (
+        '<table class="downloads-table"><tbody>'
+        + _downloads_row("Something else", other_url)
+        + _downloads_row("ACCONEER ALGO BUNDLE", bundle_url, ACCEPTED_VERSION)
+        + "</tbody></table>"
+    )
+    posts = _serve_algo_bundle_page(monkeypatch, page)
     repo = DevSiteRepository(cookies=requests.cookies.RequestsCookieJar())
 
     zip_path, version = repo.download(Artifact.ALGO_BUNDLE, path=str(tmp_path))
 
     assert posts == [(bundle_url, "tc_accepted=1&tc_submit=Download")]
     assert Path(zip_path) == tmp_path / "algo_bundle-1.0.zip"
-    assert Path(zip_path).read_bytes() == bundle_bytes
+    assert Path(zip_path).read_bytes() == _ALGO_BUNDLE_ZIP
     assert version == "algo_bundle-1.0"
+
+
+def test_download_of_algo_bundle_refuses_another_version_on_the_site(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    offered = f"{ACCEPTED_VERSION}.1"
+    bundle_url = f"{DEFAULT_BASE_URL}/download/bundle/?tmstv=1"
+    page = (
+        '<table class="downloads-table"><tbody>'
+        + _downloads_row("Acconeer Algo Bundle", bundle_url, offered)
+        + "</tbody></table>"
+    )
+    posts = _serve_algo_bundle_page(monkeypatch, page)
+    repo = DevSiteRepository(cookies=requests.cookies.RequestsCookieJar())
+
+    with pytest.raises(ArtifactRepositoryError) as exc_info:
+        repo.download(Artifact.ALGO_BUNDLE, path=str(tmp_path))
+
+    assert ACCEPTED_VERSION in str(exc_info.value)
+    assert offered in str(exc_info.value)
+    assert posts == []
+
+
+def test_download_of_algo_bundle_names_the_et_release_to_install(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    bundle_url = f"{DEFAULT_BASE_URL}/download/bundle/?tmstv=1"
+    page = (
+        '<table class="downloads-table"><tbody>'
+        + _downloads_row("Acconeer Algo Bundle", bundle_url, "v9.0.0")
+        + "</tbody></table>"
+    )
+    _serve_algo_bundle_page(monkeypatch, page)
+    repo = DevSiteRepository(cookies=requests.cookies.RequestsCookieJar())
+
+    with pytest.raises(ArtifactRepositoryError, match=r"acconeer-exptool==9\.0\.0\b"):
+        repo.download(Artifact.ALGO_BUNDLE, path=str(tmp_path))
+
+
+def test_download_of_algo_bundle_accepts_its_version_written_with_a_v(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    bundle_url = f"{DEFAULT_BASE_URL}/download/bundle/?tmstv=1"
+    page = (
+        '<table class="downloads-table"><tbody>'
+        + _downloads_row("Acconeer Algo Bundle", bundle_url, f"v{ACCEPTED_VERSION}")
+        + "</tbody></table>"
+    )
+    posts = _serve_algo_bundle_page(monkeypatch, page)
+    repo = DevSiteRepository(cookies=requests.cookies.RequestsCookieJar())
+
+    repo.download(Artifact.ALGO_BUNDLE, path=str(tmp_path))
+
+    assert [url for url, _data in posts] == [bundle_url]
+
+
+def test_download_of_algo_bundle_picks_its_version_among_others_on_the_site(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    newer_url = f"{DEFAULT_BASE_URL}/download/bundle-newer/?tmstv=1"
+    bundle_url = f"{DEFAULT_BASE_URL}/download/bundle/?tmstv=1"
+    page = (
+        '<table class="downloads-table"><tbody>'
+        + _downloads_row("Acconeer Algo Bundle", newer_url, f"{ACCEPTED_VERSION}.1")
+        + _downloads_row("Acconeer Algo Bundle", bundle_url, ACCEPTED_VERSION)
+        + "</tbody></table>"
+    )
+    posts = _serve_algo_bundle_page(monkeypatch, page)
+    repo = DevSiteRepository(cookies=requests.cookies.RequestsCookieJar())
+
+    repo.download(Artifact.ALGO_BUNDLE, path=str(tmp_path))
+
+    assert [url for url, _data in posts] == [bundle_url]
+
+
+def test_download_of_algo_bundle_refuses_a_row_without_a_version(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    bundle_url = f"{DEFAULT_BASE_URL}/download/bundle/?tmstv=1"
+    page = (
+        '<table class="downloads-table"><tbody>'
+        + _downloads_row("Acconeer Algo Bundle", bundle_url, "")
+        + "</tbody></table>"
+    )
+    posts = _serve_algo_bundle_page(monkeypatch, page)
+    repo = DevSiteRepository(cookies=requests.cookies.RequestsCookieJar())
+
+    with pytest.raises(ArtifactRepositoryError, match="no algo bundle version"):
+        repo.download(Artifact.ALGO_BUNDLE, path=str(tmp_path))
+
+    assert posts == []
 
 
 def test_download_of_xe212_exploration_server_follows_the_a212_software_page(
