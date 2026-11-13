@@ -16,6 +16,7 @@ import pytest
 
 import acconeer.exptool.app.new.ui.components as pc
 from acconeer.exptool import a121
+from acconeer.exptool._core.entities.validation_result import Criticality, ValidationResult
 
 
 T = t.TypeVar("T")
@@ -404,3 +405,39 @@ class TestState:
         original_value = any_editor_fixt.read_ui(editor)
         editor.set_data(any_editor_fixt.data)
         assert original_value != any_editor_fixt.read_ui(editor)
+
+
+class TestAttrsConfigEditorNotes:
+    @staticmethod
+    def _editor() -> pc.AttrsConfigEditor:
+        editor = pc.AttrsConfigEditor(
+            title="title",
+            factory_mapping={
+                "a": pc.pidgets.IntPidgetFactory(name_label_text="", name_label_tooltip="tt")
+            },
+            config_type=StubAttrsClass,
+        )
+        editor.set_data(StubAttrsClass(1))
+        return editor
+
+    @staticmethod
+    def _note_is_shown(editor: pc.AttrsConfigEditor) -> bool:
+        return not editor._pidget_mapping["a"]._Pidget__note_widget.isHidden()
+
+    def test_a_validation_note_stays_while_an_edit_awaits_validation(self) -> None:
+        editor = self._editor()
+        warning = ValidationResult(StubAttrsClass(1), "a", "warning", Criticality.WARNING)
+        editor.handle_validation_results([warning])
+
+        editor._update_config_aspect(aspect="a", value=2)
+
+        assert self._note_is_shown(editor)
+
+    def test_a_good_edit_clears_the_note_of_a_bad_edit(self) -> None:
+        editor = self._editor()
+        editor._update_config_aspect(aspect="a", value=-1)
+        assert self._note_is_shown(editor)
+
+        editor._update_config_aspect(aspect="a", value=2)
+
+        assert not self._note_is_shown(editor)

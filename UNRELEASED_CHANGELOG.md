@@ -11,5 +11,6 @@
   "Could not start" after a recorded session in another one.
 - A value typed next to a logarithmic slider is no longer changed to a nearby
   value.
+- A note under a setting no longer flickers while the setting is changed.
 
 ### Removed

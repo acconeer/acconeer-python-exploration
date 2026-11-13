@@ -211,8 +211,14 @@ class AttrsConfigEditor(DataEditor[T | None]):
             # this emit needs to be done to signal that "is_ready" has changed.
             self.sig_update.emit(self.get_data())
         else:
-            self._pidget_mapping[aspect].set_note_text(None)
-            self._erroneous_aspects.discard(aspect)
+            # Both
+            # - erroneous aspects (error from single field, e.g.: hwaas = -1) &
+            # - validation results (multi-field error e.g. start_m > end_m)
+            # are displayed in a pidget's note. Make sure a validation result
+            # isn't evicted here, where erroneous aspects are checked.
+            if aspect in self._erroneous_aspects:
+                self._pidget_mapping[aspect].set_note_text(None)
+                self._erroneous_aspects.discard(aspect)
 
             self.set_data(config)
             self.sig_update.emit(config)
