@@ -10,6 +10,12 @@ from acconeer.exptool.a2.algo._detection_geometry import (
     DetectionVolume,
     SensorInstallation,
 )
+from acconeer.exptool.a2.algo._mount_icons import (
+    custom_pan_icon,
+    room_top_view_icon,
+    sensor_front_icon,
+    wall_side_view_icon,
+)
 from acconeer.exptool.a2.algo._shared_config import MAX_RANGE_M, WallMountSessionAbstractionConfig
 from acconeer.exptool.app.new.ui import pidgets
 from acconeer.exptool.app.new.ui.components.types import PidgetGroupFactoryMapping
@@ -18,26 +24,52 @@ from acconeer.exptool.app.new.ui.components.types import PidgetGroupFactoryMappi
 def get_sensor_installation_pidget_mapping() -> PidgetGroupFactoryMapping:
     return {
         pidgets.FlatPidgetGroup(): {
-            "x_rotation": pidgets.FloatPidgetFactory(
-                name_label_text="X rotation (tilt):",
+            "x_rotation": pidgets.PicturedFloatPidgetFactory(
+                name_label_text="Tilt:",
                 name_label_tooltip=get_attribute_docstring(SensorInstallation, "x_rotation"),
                 limits=(-45.0, 45.0),
-                decimals=1,
+                decimals=0,
                 suffix="°",
+                value_icon=wall_side_view_icon,
+                value_icon_size=(48, 32),
+                value_icon_tooltip="Seen from the side: the sensor on the wall to the left, "
+                "its beam tilted up for a positive tilt.",
             ),
-            "y_rotation": pidgets.FloatPidgetFactory(
-                name_label_text="Y rotation (roll):",
+            "y_rotation": pidgets.ChoiceButtonsPidgetFactory(
+                name_label_text="Orientation:",
                 name_label_tooltip=get_attribute_docstring(SensorInstallation, "y_rotation"),
-                limits=(-180.0, 180.0),
-                decimals=1,
-                suffix="°",
+                items=[("0°", 0.0), ("180°", 180.0)],
+                icon=sensor_front_icon,
+                icon_size=(40, 20),
+                tooltip_mapping={
+                    0.0: "Upright (0°): seen from the front, the white pin 0 marker is "
+                    "bottom right.",
+                    180.0: "Upside down (180°): seen from the front, the white pin 0 marker "
+                    "is top left.",
+                },
             ),
-            "z_rotation": pidgets.FloatPidgetFactory(
-                name_label_text="Z rotation (pan):",
+            "z_rotation": pidgets.ChoiceButtonsPidgetFactory(
+                name_label_text="Mount location:",
                 name_label_tooltip=get_attribute_docstring(SensorInstallation, "z_rotation"),
-                limits=(-90.0, 90.0),
-                decimals=1,
-                suffix="°",
+                items=[("Wall", 0.0), ("Left corner", -45.0), ("Right corner", 45.0)],
+                icon=room_top_view_icon,
+                icon_size=(32, 32),
+                tooltip_mapping={
+                    0.0: "Wall (0°): on a wall, facing straight into the room.",
+                    -45.0: "Left corner (-45°): in the room's left corner, as seen from "
+                    "behind the sensor, facing diagonally across the room.",
+                    45.0: "Right corner (45°): in the room's right corner, as seen from "
+                    "behind the sensor, facing diagonally across the room.",
+                },
+                custom=pidgets.CustomChoice(
+                    limits=(-90.0, 90.0),
+                    init_value=20.0,
+                    tooltip="Custom: turned to the side by any other angle, entered below. "
+                    "Positive turns the sensor to its left, i.e. counterclockwise as seen "
+                    "from above.",
+                    suffix="°",
+                    icon=custom_pan_icon,
+                ),
             ),
             "mount_height_m": pidgets.FloatPidgetFactory(
                 name_label_text="Mount height:",

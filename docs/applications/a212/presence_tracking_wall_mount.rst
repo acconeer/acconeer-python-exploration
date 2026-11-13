@@ -37,9 +37,9 @@ Mount the sensor on a wall about 2 m above the floor, facing into the room. Tilt
 
 Mount the sensor rigidly. The sensor detects movements smaller than a millimeter, so a mount that vibrates, e.g. when a person walks across the floor, shows up as motion and causes false detections.
 
-If the sensor is mounted in a corner or turned to the side, note the angle by which it is turned; you enter it as the pan in the next step.
+Mount the sensor on a wall, facing straight into the room, or in a corner, facing diagonally across the room.
 
-Mount the board with the USB cable pointing down; the application expects this by default. If the USB cable points up, change the roll setting, see :ref:`a212_presence_tracking_wall_mount_sensor_installation`.
+Mount the board with the USB cable pointing down; the application expects this by default. If the USB cable points up, change *Orientation*, see :ref:`a212_presence_tracking_wall_mount_sensor_installation`.
 
 .. figure:: /images/applications/a212/presence_tracking_wall_mount/sensor_on_wall.svg
     :align: center
@@ -57,7 +57,7 @@ Starting the Measurement
 
 #. Mount the sensor as described in :ref:`a212_presence_tracking_wall_mount_mounting`, connect the Evaluation Kit to your computer and connect to it in the Exploration Tool, see :ref:`Getting started <setting_up_et>`.
 #. Select *Presence Tracking Wall Mount* in the left-hand menu. The first time, log in with your developer site account, accept the license and wait for the module to download.
-#. In the *Sensor Installation* panel, set *X rotation (tilt)* to the tilt as a negative angle, e.g. -20° for a sensor tilted 20° down, *Mount height* to the sensor's height above the floor, and *Z rotation (pan)* if the sensor is turned to the side (e.g. mounted in a corner).
+#. In the *Sensor Installation* panel, set the *Tilt* as a negative angle, e.g. -20° for a sensor tilted 20° down, and *Mount height* to the sensor's height above the floor. Under *Mount location*, keep *Wall*, the default, pick the sensor's corner, or pick *Custom* and enter its angle.
 #. In the *Detection Volume* panel, set *X bounds* and *Y bounds* to the floor area to cover, in meters from the sensor: *X bounds* to the side walls, e.g. (-2.5, 2.5) for a room 5 m wide with the sensor in the middle of a wall, and *Y bounds* from 0 to the opposite wall.
 #. Press *Start measurement*.
 
@@ -79,14 +79,14 @@ The default settings cover a room up to 6 m wide (:math:`\pm 3` m to the sides o
       - Setting
       - Default
     * - Sensor Installation
-      - X rotation (tilt)
+      - Tilt
       - 0°
     * - Sensor Installation
-      - Y rotation (roll)
+      - Orientation
       - 180°
     * - Sensor Installation
-      - Z rotation (pan)
-      - 0°
+      - Mount location
+      - Wall
     * - Sensor Installation
       - Mount height
       - 2.0 m
@@ -192,14 +192,14 @@ Sensor Installation
 ===================
 In this panel, enter how the sensor is mounted, see :ref:`a212_presence_tracking_wall_mount_mounting`.
 
-*X rotation (tilt)*
-    The angle by which the sensor is tilted, in degrees. Positive turns the sensor up, so a downward tilt is negative, e.g. -20°.
+*Tilt*
+    The angle by which the sensor is tilted, in whole degrees. Positive turns the sensor up, so a downward tilt is negative, e.g. -20°. The picture beside it shows the sensor on the wall from the side, at the tilt set.
 
-*Y rotation (roll)*
-    180°, the default, for a board with the USB cable pointing down; 0° for the USB cable pointing up. Other values are not supported.
+*Orientation*
+    Each button pictures the sensor as seen from the front. 180°, the default, for a board with the USB cable pointing down; 0° for the USB cable pointing up.
 
-*Z rotation (pan)*
-    The angle by which the sensor is turned to the side, in degrees. Positive turns the sensor to its left, i.e. counterclockwise as seen from above. Use it e.g. when the sensor is mounted in a corner pointing :math:`45^\circ` from the walls.
+*Mount location*
+    Where the sensor is mounted, each button picturing the room from above: *Wall*, the default, for a sensor on a wall facing straight into the room; *Left corner* or *Right corner* for a sensor in that corner of the room, as seen from behind the sensor, facing diagonally across it. *Custom* for a sensor turned by any other angle, entered below the buttons. Positive turns the sensor to its left, i.e. counterclockwise as seen from above.
 
 *Mount height*
     The height of the sensor above the floor.

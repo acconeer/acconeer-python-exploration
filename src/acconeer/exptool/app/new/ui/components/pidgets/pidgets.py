@@ -36,6 +36,8 @@ from PySide6.QtWidgets import (
     QSlider,
     QSpinBox,
     QStackedWidget,
+    QToolButton,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -367,7 +369,14 @@ class FloatPidgetFactory(PidgetFactory):
 
 
 class FloatPidget(Pidget):
-    def __init__(self, factory: FloatPidgetFactory, parent: QWidget) -> None:
+    def __init__(
+        self,
+        factory: FloatPidgetFactory,
+        parent: QWidget,
+        *,
+        before_spin_box: Sequence[QWidget] = (),
+    ) -> None:
+        """``before_spin_box`` go between the name and the spin box."""
         super().__init__(factory, parent)
 
         self._spin_box = _PidgetDoubleSpinBox(
@@ -380,7 +389,7 @@ class FloatPidget(Pidget):
 
         self.set_standard_layout(
             factory,
-            first_row_elements=["name_label", "extra_widget", self._spin_box],
+            first_row_elements=["name_label", "extra_widget", *before_spin_box, self._spin_box],
         )
 
     def set_data(self, value: Any) -> None:
@@ -394,6 +403,39 @@ class FloatPidget(Pidget):
 
     def __on_changed(self) -> None:
         self.sig_update.emit(self._spin_box.value())
+
+
+@attrs.frozen(kw_only=True, slots=False)
+class PicturedFloatPidgetFactory(FloatPidgetFactory):
+    """Like :class:`FloatPidgetFactory`, with a picture of the value left of
+    the spin box, redrawn as the value changes."""
+
+    value_icon: Callable[[float], QtGui.QIcon]
+    """Picture of a value, drawn once a ``QApplication`` runs."""
+    value_icon_size: tuple[int, int] = (24, 24)
+    value_icon_tooltip: str | None = None
+
+    def create(self, parent: QWidget) -> PicturedFloatPidget:
+        return PicturedFloatPidget(self, parent)
+
+
+class PicturedFloatPidget(FloatPidget):
+    def __init__(self, factory: PicturedFloatPidgetFactory, parent: QWidget) -> None:
+        # Parented by the layout it is put in.
+        picture = QLabel()
+        super().__init__(factory, parent, before_spin_box=[picture])
+        self._picture = picture
+
+        self._value_icon = factory.value_icon
+        self._value_icon_size = QtCore.QSize(*factory.value_icon_size)
+        if factory.value_icon_tooltip is not None:
+            self._picture.setToolTip(factory.value_icon_tooltip)
+        # Also when set_data sets it, as only the pidget's own signals are blocked.
+        self._spin_box.valueChanged.connect(self.__draw_picture)
+        self.__draw_picture()
+
+    def __draw_picture(self) -> None:
+        self._picture.setPixmap(self._value_icon(self.get_data()).pixmap(self._value_icon_size))
 
 
 @attrs.frozen(kw_only=True, slots=False)
@@ -1155,6 +1197,195 @@ class EnumPidget(ComboboxPidget[EnumT]):
                 tooltip = factory.tooltip_mapping.get(item_data)
                 if tooltip is not None:
                     self._combobox.setItemData(index, tooltip, QtCore.Qt.ItemDataRole.ToolTipRole)
+
+
+@attrs.frozen(kw_only=True, slots=False)
+class ChoiceButtonsPidgetFactory(PidgetFactory, Generic[T]):
+    """Like :class:`ComboboxPidgetFactory`, but with a checkable button per
+    choice, so that a few choices, optionally pictured, show side by side."""
+
+    items: list[tuple[str, T]]
+    icon: Callable[[T], QtGui.QIcon] | None = None
+    """Picture of a choice's value, drawn once a ``QApplication`` runs. A
+    button with an icon shows only the icon, so put the choice's text in its
+    tooltip too."""
+    icon_size: tuple[int, int] = (24, 24)
+    tooltip_mapping: dict[T, str] | None = None
+    custom: CustomChoice | None = None
+    """A last button, *Custom*, for any other value; for number choices only."""
+
+    def __attrs_post_init__(self) -> None:
+        values = {value for _, value in self.items}
+        if self.tooltip_mapping is not None and self.tooltip_mapping.keys() != values:
+            msg = "tooltip_mapping does not match items"
+            raise ValueError(msg)
+        if self.custom is not None and not all(isinstance(v, (int, float)) for v in values):
+            msg = "custom needs number choices"
+            raise ValueError(msg)
+
+    def create(self, parent: QWidget) -> ChoiceButtonsPidget[T]:
+        return ChoiceButtonsPidget(self, parent)
+
+
+@attrs.frozen(kw_only=True)
+class CustomChoice:
+    """The *Custom* button of a :class:`ChoiceButtonsPidgetFactory`. Checked,
+    it shows a spin box for the value below the buttons."""
+
+    limits: tuple[float, float]
+    init_value: float
+    """The spin box's value until one is entered or loaded."""
+    tooltip: str
+    decimals: int = 0
+    suffix: str | None = None
+    icon: Callable[[], QtGui.QIcon] | None = None
+    """The button's picture, drawn once a ``QApplication`` runs. Without one,
+    the button shows its text."""
+
+
+class _ChoiceButtons(QWidget):
+    """The buttons of a :class:`ChoiceButtonsPidgetFactory`, in a row, at most
+    one of them checked, and below them the spin box of a *Custom* button."""
+
+    sig_chosen = QtCore.Signal(object)
+
+    def __init__(self, factory: ChoiceButtonsPidgetFactory[Any], parent: QWidget) -> None:
+        super().__init__(parent)
+
+        self._values = [value for _, value in factory.items]
+        self._icon = factory.icon
+        self._icon_size = QtCore.QSize(*factory.icon_size)
+
+        self._button_group = QButtonGroup(self)
+        self._button_group.idClicked.connect(self.__on_clicked)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        row = QHBoxLayout()
+        layout.addLayout(row)
+
+        for index, (text, value) in enumerate(factory.items):
+            tooltip = None if factory.tooltip_mapping is None else factory.tooltip_mapping[value]
+            icon = None if self._icon is None else self._icon(value)
+            row.addWidget(self.__add_button(index, text, tooltip, icon))
+
+        self._custom_button: QToolButton | None = None
+        self._custom_spin_box: _PidgetDoubleSpinBox | None = None
+        if factory.custom is not None:
+            self._custom_spin_box = _PidgetDoubleSpinBox(
+                self,
+                limits=factory.custom.limits,
+                init_set_value=factory.custom.init_value,
+                decimals=factory.custom.decimals,
+                suffix=factory.custom.suffix,
+            )
+            self._custom_spin_box.hide()
+            self._custom_spin_box.valueChanged.connect(self.__on_custom_value_changed)
+            # In line with the other pidgets' spin boxes.
+            layout.addWidget(self._custom_spin_box, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
+            self._custom_button = self.__add_button(
+                len(self._values),
+                "Custom",
+                factory.custom.tooltip,
+                None if factory.custom.icon is None else factory.custom.icon(),
+            )
+            row.addWidget(self._custom_button)
+
+    def __add_button(
+        self,
+        index: int,
+        text: str,
+        tooltip: str | None,
+        icon: QtGui.QIcon | None,
+    ) -> QToolButton:
+        # A QToolButton shows only its icon, if it has one, else its text.
+        button = QToolButton(self)
+        button.setText(text)
+        button.setCheckable(True)
+        if icon is not None:
+            button.setIcon(icon)
+            button.setIconSize(self._icon_size)
+        if tooltip is not None:
+            button.setToolTip(tooltip)
+        # The id of the button is the index of its choice, Custom's one past the last.
+        self._button_group.addButton(button, id=index)
+        return button
+
+    def __on_clicked(self, index: int) -> None:
+        if index < len(self._values):
+            self.__show_custom_spin_box(False)
+            self.sig_chosen.emit(self._values[index])
+        else:
+            assert self._custom_spin_box is not None
+            self.__show_custom_spin_box(True)
+            self.sig_chosen.emit(self._custom_spin_box.value())
+
+    def __show_custom_spin_box(self, visible: bool) -> None:
+        if self._custom_spin_box is not None:
+            self._custom_spin_box.setVisible(visible)
+
+    def __on_custom_value_changed(self, value: float) -> None:
+        assert self._custom_button is not None
+        if self._custom_button.isChecked():
+            self.sig_chosen.emit(value)
+
+    def check(self, value: Any) -> None:
+        """Check the button of ``value``. A checked *Custom* stays checked while
+        its spin box shows ``value``, even if a choice has it. Without such a
+        choice, *Custom* takes ``value``, or, without *Custom*, none is
+        checked."""
+        custom_button, custom_spin_box = self._custom_button, self._custom_spin_box
+        if custom_button is not None and custom_spin_box is not None:
+            if custom_button.isChecked() and value == custom_spin_box.value():
+                return
+            if value not in self._values:
+                with QtCore.QSignalBlocker(custom_spin_box):
+                    custom_spin_box.setValue(value)
+                custom_button.setChecked(True)
+                self.__show_custom_spin_box(True)
+                return
+
+        self.__show_custom_spin_box(False)
+        if value in self._values:
+            self._button_group.button(self._values.index(value)).setChecked(True)
+        else:
+            # An exclusive group keeps one button checked.
+            self._button_group.setExclusive(False)
+            for button in self._button_group.buttons():
+                button.setChecked(False)
+            self._button_group.setExclusive(True)
+
+
+class ChoiceButtonsPidget(Pidget, Generic[T]):
+    def __init__(self, factory: ChoiceButtonsPidgetFactory[T], parent: QWidget) -> None:
+        super().__init__(factory, parent)
+
+        self._data: T | None = None
+
+        self._buttons = _ChoiceButtons(factory, self)
+        self._buttons.sig_chosen.connect(self.__on_chosen)
+        # As wide as the other pidgets' widgets, or wider where the buttons
+        # need it: a smaller minimum would let Qt squeeze them below theirs.
+        self._buttons.setMinimumWidth(max(WIDGET_WIDTH, self._buttons.minimumSizeHint().width()))
+
+        self.set_standard_layout(
+            factory,
+            first_row_elements=["name_label", "extra_widget", self._buttons],
+        )
+
+    def __on_chosen(self, value: T) -> None:
+        self._data = value
+        self.sig_update.emit(self._data)
+
+    def set_data(self, value: Any) -> None:
+        """Check the button of ``value``, or none, if no choice has it (such as
+        an unsupported value from a recording, which the config's validation
+        flags)."""
+        self._data = value
+        self._buttons.check(value)
+
+    def get_data(self) -> T:
+        return cast(T, self._data)
 
 
 @attrs.frozen(kw_only=True, slots=False)

@@ -15,21 +15,22 @@ from acconeer.exptool.app.new.ui import palette
 # Sensor box in the sensor frame (metres, before _SCALE): centred on the
 # origin in x and z, front face at y=0 facing the boresight (+y).
 _SCALE = 3.0
-_HALF_WIDTH_M = 0.05
+HALF_WIDTH_M = 0.05
 _DEPTH_M = 0.01
-_Z_BOTTOM_M = -0.025
-_Z_TOP_M = 0.025
+Z_BOTTOM_M = -0.025
+Z_TOP_M = 0.025
 
-_PIN_RADIUS_M = 0.006
+PIN_RADIUS_M = 0.006
 _PIN_INSET_M = 0.01
 _PIN_SEGMENTS = 24
 # Just in front of the front face, so the disk is not hidden by it.
 _PIN_Y_M = 0.0005
+PIN_CENTER_M = np.array([-HALF_WIDTH_M + _PIN_INSET_M, _PIN_Y_M, Z_BOTTOM_M + _PIN_INSET_M])
 
 
 def _body_mesh() -> gl.MeshData:
-    x, y = _HALF_WIDTH_M, -_DEPTH_M
-    top, bottom = _Z_TOP_M, _Z_BOTTOM_M
+    x, y = HALF_WIDTH_M, -_DEPTH_M
+    top, bottom = Z_TOP_M, Z_BOTTOM_M
     vertices = np.array(
         [
             [x, 0, top],
@@ -62,12 +63,11 @@ def _body_mesh() -> gl.MeshData:
 
 
 def _pin_mesh() -> gl.MeshData:
-    center = np.array([-_HALF_WIDTH_M + _PIN_INSET_M, _PIN_Y_M, _Z_BOTTOM_M + _PIN_INSET_M])
     angles = np.linspace(0.0, 2 * np.pi, _PIN_SEGMENTS, endpoint=False)
-    rim = center + _PIN_RADIUS_M * np.stack(
+    rim = PIN_CENTER_M + PIN_RADIUS_M * np.stack(
         (np.cos(angles), np.zeros_like(angles), np.sin(angles)), axis=-1
     )
-    vertices = np.vstack((center, rim))
+    vertices = np.vstack((PIN_CENTER_M, rim))
     faces = np.array([[0, 1 + i, 1 + (i + 1) % _PIN_SEGMENTS] for i in range(_PIN_SEGMENTS)])
     return gl.MeshData(vertexes=_SCALE * vertices, faces=faces)
 

@@ -77,9 +77,12 @@ class Palette:
     """The rest of a range slider."""
 
     sensor_body: Color
-    """The sensor in the 3D view."""
+    """The sensor in the 3D view and in the pictures of its mounting."""
     sensor_pin: Color
     """The sensor's pin 0 marker."""
+    picture_floor: Color
+    picture_wall: Color
+    """The room in the pictures of the sensor's mounting."""
 
 
 _WHITE = Color.from_hex("#ffffff")
@@ -96,6 +99,8 @@ LIGHT = Palette(
     slider_groove=Color.from_hex("#abc6f6"),
     sensor_body=_SENSOR_RED,
     sensor_pin=_WHITE,
+    picture_floor=Color(230, 230, 230),
+    picture_wall=Color(90, 90, 90),
 )
 
 

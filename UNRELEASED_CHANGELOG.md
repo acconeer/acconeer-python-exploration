@@ -7,6 +7,8 @@
   developer.acconeer.com.
 
 ### Changed
+- The A2 apps pick the sensor's roll and pan with picture buttons, and
+  show its tilt in a picture.
 
 ### Fixed
 - The version menu of the docs no longer appears on every page of a printed
