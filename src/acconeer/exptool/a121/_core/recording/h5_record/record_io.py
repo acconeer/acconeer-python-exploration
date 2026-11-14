@@ -1,11 +1,19 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
 from __future__ import annotations
 
+from typing import Optional
+
 from acconeer.exptool._core.recording.h5_record.utils import PathOrH5File, h5_file_factory
-from acconeer.exptool.a121._core.entities import PersistentRecord, Record
+from acconeer.exptool.a121._core.entities import (
+    PersistentRecord,
+    Record,
+    RecordException,
+    SensorCalibration,
+)
 from acconeer.exptool.a121._core.recording.im_record import InMemoryRecord
+from acconeer.exptool.a121._core.recording.im_record.im_record import InMemoryRecordException
 
 from .record import H5Record
 from .recorder import H5Recorder
@@ -81,11 +89,21 @@ def save_record_to_h5(path_or_file: PathOrH5File, record: Record) -> None:
             server_info=record.server_info,
         )
         for session in (record.session(i) for i in range(record.num_sessions)):
+            calibrations: Optional[dict[int, SensorCalibration]]
+            calibrations_provided: Optional[dict[int, bool]]
+            try:
+                calibrations = session.calibrations
+                calibrations_provided = session.calibrations_provided
+            except (RecordException, InMemoryRecordException):
+                # Sessions without calibrations are valid, e.g. in older records
+                calibrations = None
+                calibrations_provided = None
+
             r._start_session(
                 config=session.session_config,
                 metadata=session.extended_metadata,
-                calibrations=session.calibrations,
-                calibrations_provided=session.calibrations_provided,
+                calibrations=calibrations,
+                calibrations_provided=calibrations_provided,
             )
 
             for extended_result in session.extended_results:
