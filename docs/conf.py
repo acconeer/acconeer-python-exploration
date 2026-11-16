@@ -138,6 +138,9 @@ if tags.has("printable"):  # noqa: F821, Sphinx provides tags
     html_css_files.append("css/single_page.css")
 
 html_theme_options = {
+    "logo": {
+        "image_dark": "images/logo_dark.svg",
+    },
     "external_links": [
         {"name": "Developer site", "url": "https://developer.acconeer.com/"},
     ],
