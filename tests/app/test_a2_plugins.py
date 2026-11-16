@@ -39,6 +39,7 @@ from acconeer.exptool.app.new.backend import (
     GeneralMessage,
     LogMessage,
     Message,
+    StatusFileAccessMessage,
     StatusMessage,
 )
 from acconeer.exptool.app.new.plugin_loader import load_default_plugins
@@ -438,6 +439,27 @@ def test_a_failed_start_closes_the_recording(
 
     (recorder,) = recorders
     assert not recorder.file.id.valid
+
+
+def test_a_replay_announces_its_file_as_a121_does(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The status bar names the file replayed."""
+    messages: list[Message] = []
+    recording_plugin = _recording_plugin(SPARSE_IQ_PLUGIN, messages, tmp_path, monkeypatch)
+    recording_plugin.start_session()
+    recording_plugin.idle()
+    recording_plugin.stop_session()
+    (recording,) = _saveable_files(messages)
+
+    replay_messages: list[Message] = []
+    backend_plugin = _create_backend_plugin(SPARSE_IQ_PLUGIN, replay_messages)
+    backend_plugin.load_from_file(path=recording)
+    backend_plugin.stop_session()
+
+    assert [
+        (m.file_path, m.opened) for m in replay_messages if isinstance(m, StatusFileAccessMessage)
+    ] == [(recording.name, True), (recording.name, False)]
 
 
 def test_a_refused_replay_keeps_the_motion_detection_setup(

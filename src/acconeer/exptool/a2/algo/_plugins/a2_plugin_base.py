@@ -90,7 +90,7 @@ class A2BackendPluginBase(BackendPlugin[T]):
         else:
             self._replaying_client = ApplicationClient.wrap_a2(replaying_client, self.callback)
             self.start_session(with_recorder=False)
-            self.send_status_message(f"<b>Replaying from {path.name}</b>")
+            self.send_status_file_access_message(path.name, opened=True)
             self.broadcast()
 
     @abc.abstractmethod
@@ -238,6 +238,9 @@ class A2BackendPluginBase(BackendPlugin[T]):
             self.callback(PluginStateMessage(state=PluginState.LOADED_IDLE))
 
         if self._opened_record:
+            self.send_status_file_access_message(
+                Path(self._opened_record.file.filename).name, opened=False
+            )
             self._opened_record.close()
             self._opened_record = None
             self._replaying_client = None

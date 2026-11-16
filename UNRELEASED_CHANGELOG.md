@@ -9,6 +9,7 @@
   color, instead of bold text on an orange or red bar.
 - Input fields write numbers with a decimal point, as the rest of the app
   does, whatever the system's locale. A typed comma is taken as one too.
+- A2 apps name the replayed file in the status bar, as A121 apps do.
 - The Exploration Tool takes on Acconeer's look: its blue, grays, symbol
   and typeface, and outline icons.
 
