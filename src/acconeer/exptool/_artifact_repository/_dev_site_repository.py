@@ -275,7 +275,7 @@ class DevSiteRepository(ArtifactRepository):
             response = session.get(url=_sw_url(self.base_url, _DEVICE_SENSORS[device]))
 
             soup = bs4.BeautifulSoup(response.content, "html.parser")
-            link = soup.findAll("a", {"href": lambda l: l and page_device in l})
+            link = soup.find_all("a", {"href": lambda l: l and page_device in l})
 
             if not link:
                 msg = f"No download found for device '{device}'"
@@ -284,7 +284,7 @@ class DevSiteRepository(ArtifactRepository):
             response = session.get(url=link[0]["href"])
             soup = bs4.BeautifulSoup(response.content, "html.parser")
 
-            zip_url_tags = soup.findAll(
+            zip_url_tags = soup.find_all(
                 "a",
                 {
                     "href": lambda l: (
