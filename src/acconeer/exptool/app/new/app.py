@@ -15,8 +15,10 @@ import threading
 import time
 import traceback
 import typing as t
+from importlib.resources import files
 from pathlib import Path
 
+import acconeer.exptool.app.resources as et_app_resources
 from acconeer.exptool._processes.start_method import avoid_fork
 from acconeer.exptool.app.install_missing_app_extra import INSTALL_MISSING_APP_EXTRA_INSTRUCTIONS
 from acconeer.exptool.utils import config_logging
@@ -26,6 +28,7 @@ try:
     import qdarktheme
 
     from PySide6 import QtCore
+    from PySide6.QtGui import QFont, QFontDatabase
     from PySide6.QtWidgets import QApplication, QMessageBox
 
     import pyqtgraph as pg
@@ -82,6 +85,7 @@ _QUIT_MIN_GAP_S = 0.3
 def configure_application(app: QApplication) -> None:
     """Set ``app`` up as the Exploration Tool runs it, which its tests share."""
     apply_theme(app)
+    _use_interface_font(app)
     # Input fields write numbers with a decimal point, as the rest of the app,
     # its configs and the scripts do, not as the system's locale does.
     QtCore.QLocale.setDefault(QtCore.QLocale.c())
@@ -98,6 +102,19 @@ def apply_theme(app: QApplication) -> None:
     search_pattern = r"url\((.*?)\)"
     replace_pattern = r"url('\1')"
     app.setStyleSheet(re.sub(search_pattern, replace_pattern, stylesheet))
+
+
+def _use_interface_font(app: QApplication) -> None:
+    """Make Inter, Acconeer's typeface, the font of ``app``, at the size of
+    the platform's font. Inter runs wider than most, so this size suits it."""
+    font_data = (files(et_app_resources) / "fonts" / "InterVariable.ttf").read_bytes()
+    font_id = QFontDatabase.addApplicationFontFromData(QtCore.QByteArray(font_data))
+    if "Inter" not in QFontDatabase.applicationFontFamilies(font_id):
+        _LOG.warning("Could not load the Inter font; keeping the platform's font")
+        return
+    font = QFont("Inter")
+    font.setPointSizeF(app.font().pointSizeF())
+    app.setFont(font)
 
 
 def main() -> None:
