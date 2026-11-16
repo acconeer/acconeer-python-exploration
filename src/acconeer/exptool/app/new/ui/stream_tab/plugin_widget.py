@@ -553,7 +553,7 @@ class ControlPlaceholder(QWidget):
 
         layout = QGridLayout(self)
 
-        with as_file(files(resources) / "icon-black.svg") as path:
+        with as_file(files(resources) / "acconeer_logo.svg") as path:
             icon = QSvgWidget(str(path), self)
 
         icon.setMaximumSize(60, 60)
