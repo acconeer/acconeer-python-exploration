@@ -6,19 +6,108 @@
     }
 }
 
+/* Acconeer's Blue and Grey scales, from the Acconeer Design Guidelines' Colour
+   section. Grey does the heavy lifting, blue guides action. */
 :root {
-    --sd-color-primary: #2888a9 !important;                              /* Teal from header links on acconeer.com */
-    --sd-color-secondary: #57c9f4 !important;                            /* Teal from the logo*/
-    --sd-color-primary-highlight: var(--sd-color-secondary) !important;  /* Used when hovering buttons */
-    --sd-color-secondary-highlight: var(--sd-color-primary) !important;  /* Used when hovering buttons */
-    --pst-color-primary: var(--sd-color-primary) !important;
-    --pst-color-secondary: var(--sd-color-secondary) !important;
+    --acconeer-blue-200: #0b2e40;
+    --acconeer-blue-400: #12445c;  /* Deep Blue */
+    --acconeer-blue-500: #16506b;
+    --acconeer-blue-600: #1c7396;
+    --acconeer-blue-900: #57c9f4;
+    --acconeer-blue-950: #7ed5f7;
+
+    --acconeer-grey-100: #eceff5;
+    --acconeer-grey-200: #d9dee8;
+    --acconeer-grey-300: #bbc3d1;
+    --acconeer-grey-500: #7f899d;
+    --acconeer-grey-600: #586172;
+    --acconeer-grey-700: #2b313a;
+    --acconeer-grey-800: #171c22;
+    --acconeer-grey-900: #0c1015;
+    --acconeer-grey-950: #05080b;
+
     --pst-font-family-heading: "Spinnaker", var(--pst-font-family-base);
 }
 
+/* The theme's colors, set on its own per-mode selectors, so that
+   sphinx-design's buttons and cards, which the theme derives from them,
+   follow too. Semantic colors (warning, danger, success, target) stay. */
+
+/* The guidelines are dark-mode first. On a white page, Blue 900 links would
+   be unreadable (1.9:1), so light mode takes Blue 600 (5.3:1). A page without
+   data-theme, which JavaScript sets, is light too, as in the theme. */
+html:not([data-theme]),
+html[data-theme="light"] {
+    --pst-color-primary: var(--acconeer-blue-600);
+    --pst-color-primary-highlight: var(--acconeer-blue-500);
+    --pst-color-primary-text: #fff;
+    --pst-color-primary-highlight-text: #fff;
+    --pst-color-primary-bg: color-mix(in srgb, var(--acconeer-blue-600) 15%, #fff);
+    --sd-color-primary-bg: var(--pst-color-primary-bg);
+    --sd-color-primary-bg-text: var(--acconeer-grey-900);
+    --pst-color-secondary: var(--acconeer-blue-500);
+    --pst-color-secondary-highlight: var(--acconeer-blue-400);
+    --pst-color-secondary-text: #fff;
+    --pst-color-secondary-bg: var(--acconeer-grey-100);
+    --pst-color-accent: var(--acconeer-blue-600);
+    --pst-color-accent-bg: var(--pst-color-primary-bg);
+    --pst-color-link-higher-contrast: var(--acconeer-blue-500);
+
+    --pst-color-text-base: var(--acconeer-grey-900);
+    --pst-color-text-muted: var(--acconeer-grey-600);
+    --pst-color-inline-code: var(--acconeer-grey-700);
+    --pst-color-background: #fff;
+    --pst-color-on-background: #fff;
+    --pst-color-surface: var(--acconeer-grey-100);
+    --pst-color-on-surface: var(--acconeer-grey-900);
+    --pst-color-border: var(--acconeer-grey-200);
+    --pst-color-border-muted: var(--acconeer-grey-100);
+    --pst-color-blockquote-notch: var(--acconeer-grey-500);
+    --pst-color-table: var(--acconeer-grey-900);
+    --pst-color-table-row-hover-bg: var(--acconeer-grey-100);
+    --pst-color-table-inner-border: var(--acconeer-grey-200);
+}
+
+/* As the guidelines lay out: background Grey 950, sections Grey 900, panels
+   Grey 800, borders Grey 700, text Grey 100 and 300, links and primary
+   actions Blue 900. Their Blue 200 for secondary CTAs tints the primary and
+   accent backgrounds instead: the theme's secondary color is the link hover
+   color, which Blue 200 would hide on Grey 950, so it takes Blue 950. */
+html[data-theme="dark"] {
+    --pst-color-primary: var(--acconeer-blue-900);
+    --pst-color-primary-highlight: var(--acconeer-blue-950);
+    --pst-color-primary-text: var(--acconeer-grey-950);
+    --pst-color-primary-highlight-text: var(--acconeer-grey-950);
+    --pst-color-primary-bg: var(--acconeer-blue-200);
+    --sd-color-primary-bg: var(--pst-color-primary-bg);
+    --sd-color-primary-bg-text: var(--acconeer-grey-100);
+    --pst-color-secondary: var(--acconeer-blue-950);
+    --pst-color-secondary-highlight: var(--acconeer-blue-900);
+    --pst-color-secondary-highlight-text: var(--acconeer-grey-950);
+    --pst-color-secondary-text: var(--acconeer-grey-950);
+    --pst-color-secondary-bg: var(--acconeer-grey-800);
+    --pst-color-accent: var(--acconeer-blue-900);
+    --pst-color-accent-bg: var(--acconeer-blue-200);
+    --pst-color-link-higher-contrast: var(--acconeer-blue-950);
+
+    --pst-color-text-base: var(--acconeer-grey-100);
+    --pst-color-text-muted: var(--acconeer-grey-300);
+    --pst-color-inline-code: var(--acconeer-grey-200);
+    --pst-color-background: var(--acconeer-grey-950);
+    --pst-color-on-background: var(--acconeer-grey-900);
+    --pst-color-surface: var(--acconeer-grey-800);
+    --pst-color-on-surface: var(--acconeer-grey-100);
+    --pst-color-border: var(--acconeer-grey-700);
+    --pst-color-border-muted: var(--acconeer-grey-800);
+    --pst-color-blockquote-notch: var(--acconeer-grey-500);
+    --pst-color-table: var(--acconeer-grey-100);
+    --pst-color-table-row-hover-bg: var(--acconeer-grey-800);
+    --pst-color-table-inner-border: var(--acconeer-grey-700);
+}
+
+/* Headings take the text color: blue is for what can be acted on */
 h1, h2 {
     font-weight: bold;
-    color: #1b4d64;
 }
 
 .center {
@@ -36,7 +125,13 @@ caption > .caption-number::after {
 table.hw-figure-table,
 table.hw-figure-table td {
     background-color: white;
-    border: 2px solid lightblue;
+    border: 2px solid var(--pst-color-border);
+}
+
+/* The cells stay white in dark mode too, so the captions keep a muted grey
+   that reads on white (6.2:1) */
+table.hw-figure-table {
+    --pst-color-text-muted: var(--acconeer-grey-600);
 }
 
 .lightbox .lb-image {
