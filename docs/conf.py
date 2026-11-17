@@ -152,9 +152,9 @@ html_theme_options = {
             "type": "fontawesome",
         },
         {
-            "name": "Twitter",
-            "url": "https://twitter.com/acconeer_ab",
-            "icon": "fab fa-twitter",
+            "name": "X",
+            "url": "https://x.com/acconeer_ab",
+            "icon": "fab fa-x-twitter",
             "type": "fontawesome",
         },
         {
