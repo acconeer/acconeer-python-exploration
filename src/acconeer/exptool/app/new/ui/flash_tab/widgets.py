@@ -628,6 +628,13 @@ class FlashWizard(QWizard):
         super().__init__()
 
         self.setWindowTitle("Flash Wizard")
+        # The default Aero style (Windows) draws its own title bar, which breaks
+        # on a monitor with a different scale than the main one. Modern keeps
+        # Windows' own, as ET's other dialogs do.
+        self.setWizardStyle(QWizard.WizardStyle.ModernStyle)
+        self.setButtonText(QWizard.WizardButton.BackButton, "Back")
+        self.setButtonText(QWizard.WizardButton.NextButton, "Next")
+        self.setOption(QWizard.WizardOption.NoBackButtonOnStartPage)
 
         self.comm_device: CommDevice | None = None
         self.artifact_repository = create_artifact_repository()

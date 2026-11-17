@@ -18,5 +18,7 @@
 - A value typed next to a logarithmic slider is no longer changed to a nearby
   value.
 - A note under a setting no longer flickers while the setting is changed.
+- The flash wizard's title is no longer cut off on a monitor with a different
+  scale than the main one.
 
 ### Removed
