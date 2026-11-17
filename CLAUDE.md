@@ -136,6 +136,8 @@ users, in the docs and in the app's update dialog.
 
 - Only what differs from the last release: a bug introduced and fixed
   between two releases gets no entry.
+- No entry for what ET users never see, such as CI, tests, the docs build
+  and tooling.
 - Two lines at most, saying what the user notices. Longer only for a step the
   user must take, or for a new sensor, which may list its apps.
 - One entry per noticeable outcome; merge related commits.
