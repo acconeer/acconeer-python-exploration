@@ -141,7 +141,7 @@ class A2BackendPluginBase(BackendPlugin[T]):
             try:
                 self.stop_session()
             except Exception:
-                self._logger.exception(exc)
+                self._logger.exception("Could not stop the session")
 
             msg = "Failed to get_next"
             raise HandledException(msg) from exc

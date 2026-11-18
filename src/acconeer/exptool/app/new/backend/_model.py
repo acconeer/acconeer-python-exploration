@@ -126,8 +126,8 @@ class Model:
 
         try:
             self.client.close()
-        except Exception as e:
-            self._logger.exception(e)
+        except Exception:
+            self._logger.exception("Could not close the client")
 
         self.client = None
 

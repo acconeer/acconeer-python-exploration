@@ -34,12 +34,9 @@ class BackendLogger:
     def error(self, log_string: str) -> None:
         self._log("ERROR", log_string)
 
-    def exception(self, exception: BaseException) -> None:
-        tb = "\n".join(traceback.format_tb(exception.__traceback__))
-        self._log(
-            "ERROR",
-            f"An exception was raised:\n{tb}{type(exception).__name__}: {exception}",
-        )
+    def exception(self, log_string: str) -> None:
+        """Logs ``log_string`` and the exception being handled."""
+        self._log("ERROR", f"{log_string}\n{traceback.format_exc().rstrip()}")
 
     def warning(self, log_string: str) -> None:
         self._log("WARNING", log_string)

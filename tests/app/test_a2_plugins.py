@@ -98,12 +98,20 @@ def _has_errors(state: t.Any) -> bool:
     )
 
 
-def _warnings(backend_log: list[Message]) -> list[str]:
+def _logged(backend_log: list[Message], level: str) -> list[str]:
     return [
         message.log_string
         for message in backend_log
-        if isinstance(message, LogMessage) and message.log_level == "WARNING"
+        if isinstance(message, LogMessage) and message.log_level == level
     ]
+
+
+def _warnings(backend_log: list[Message]) -> list[str]:
+    return _logged(backend_log, "WARNING")
+
+
+def _errors(backend_log: list[Message]) -> list[str]:
+    return _logged(backend_log, "ERROR")
 
 
 def _connected_app_model(backend_plugin_state: object) -> Mock:
@@ -380,6 +388,30 @@ def test_what_was_recorded_before_a_failed_stop_can_be_saved(
     (saveable_file,) = _saveable_files(messages)
     with a2.open_record(saveable_file) as record:
         assert record.num_frames == 3
+
+
+def test_a_failed_stop_after_a_failed_frame_logs_why_the_stop_failed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, backend_log: list[Message]
+) -> None:
+    backend_plugin = _recording_plugin(SPARSE_IQ_PLUGIN, [], tmp_path, monkeypatch)
+    backend_plugin.start_session()
+
+    def lost_frame() -> None:
+        msg = "Lost a frame"
+        raise RuntimeError(msg)
+
+    def lost_link() -> None:
+        msg = "Lost the link"
+        raise a2.ClientError(msg)
+
+    monkeypatch.setattr(backend_plugin, "get_next", lost_frame)
+    monkeypatch.setattr(backend_plugin, "stop_session", lost_link)
+    with pytest.raises(HandledException):
+        backend_plugin.idle()
+
+    (error,) = _errors(backend_log)
+    assert error.startswith("Could not stop the session\n")
+    assert "Lost the link" in error
 
 
 def test_a_failed_start_closes_the_recording(
