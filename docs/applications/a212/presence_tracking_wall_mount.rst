@@ -178,7 +178,19 @@ The application detects motion in two ways at once. Fast motion, such as a perso
 
 A tracker follows each target over time, so a person who stops moving keeps their track. A new track counts as motion until it behaves like a person: a walking person is confirmed within a couple of seconds, a person who sits down without walking first only after several seconds of consistent observations. Only confirmed people are counted and drawn.
 
-A track that is no longer detected is kept for a while, so that a person sitting very still is not lost, and then removed: after about 2 s if the person was walking out of the detection volume, and after up to about 15 s if the person was standing or sitting still.
+A track stays as long as its person is detected. When the person is no longer detected, the track is removed after a delay that depends on what the person was doing when last detected:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Last detected while
+     - Track removed after no detection for
+   * - Walking
+     - about 2 s
+   * - Standing or sitting still
+     - up to about 15 s
+
+The longer delay keeps a person sitting very still, who can go undetected for a while, from losing their track.
 
 
 Adapting to Your Room
