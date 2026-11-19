@@ -7,6 +7,9 @@ and portable environment.
 To use this package 'update.bat' must be used first and after that
 'run_app.bat' can be used to run the Exploration Tool application.
 
+'update.bat' needs an internet connection, as it downloads the Exploration
+Tool. 'run_app.bat' does not: it starts what 'update.bat' downloaded.
+
 Executable files included:
  * update.bat      - Used installation and updates
  * run_app.bat     - Start up the application

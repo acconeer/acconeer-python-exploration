@@ -43,6 +43,29 @@ IF %ERRORLEVEL% NEQ 0 (
     exit 1
 )
 
+SET /P new_timestamp=<update_timestamp.tmp
+
+echo Downloading the Exploration Tool as of %new_timestamp% ...
+
+REM Keep these uv arguments the same as run_app.bat's, which runs offline
+uv run --refresh --python=3.12 --exclude-newer="%new_timestamp%" --with "acconeer-exptool[app]" python -c ""
+
+IF %ERRORLEVEL% NEQ 0 (
+    del update_timestamp.tmp
+    echo ERROR: Could not download the Exploration Tool, see above
+    echo INFO: #######################################################
+    echo INFO: #                                                     #
+    echo INFO: #  'update.bat' needs an internet connection.         #
+    echo INFO: #  In order to proceed:                               #
+    echo INFO: #                                                     #
+    echo INFO: #      1. connect to the internet                     #
+    echo INFO: #      2. run 'update.bat' again                      #
+    echo INFO: #                                                     #
+    echo INFO: #######################################################
+    pause
+    exit 1
+)
+
 move /Y update_timestamp.tmp update_timestamp.txt >nul
 
 echo INFO: #######################################################
