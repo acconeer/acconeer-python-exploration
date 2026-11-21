@@ -322,7 +322,6 @@ class Processor(ProcessorBase[ProcessorResult]):
 
         self.dv = (
             PERCEIVED_WAVELENGTH
-            / 2
             / self.sensor_config.sweeps_per_frame
             * self.sensor_config.sweep_rate
         )
