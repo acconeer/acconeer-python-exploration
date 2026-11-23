@@ -1,5 +1,14 @@
 # Changelog
 
+## v8.0.2
+
+### Changed
+- User interface updates & enhancements
+
+### Fixed
+- Starting an A2 application with recording enabled no longer fails with
+  "Could not start" after a recorded session in another one.
+
 ## v8.0.1
 
 ### Added

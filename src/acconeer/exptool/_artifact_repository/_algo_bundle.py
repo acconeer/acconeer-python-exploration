@@ -16,10 +16,10 @@ from pathlib import Path, PurePosixPath
 
 # SHA-256 of the algo bundle zips that this release accepts
 ACCEPTED_DIGESTS: frozenset[str] = frozenset(
-    {"16972fc33197ab4a3e0bd7c683b8e185731d13e7d13f5b6c65dfdb32bd22c8bf"}
+    {"77b224e7fd59f0a6f89adfc79d5a7af3b07eeb3306e2933cb5ce55471ebdf3c4"}
 )
 # The version of that algo bundle, as the developer site writes it next to its download
-ACCEPTED_VERSION = "8.0.1"
+ACCEPTED_VERSION = "8.0.2"
 
 _PACKAGES: list[str] = []
 _REQUIRED_PACKAGE = "acconeer.algo_bundle"
