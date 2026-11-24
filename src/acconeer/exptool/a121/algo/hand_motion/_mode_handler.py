@@ -147,7 +147,11 @@ class ModeHandler(Controller[ModeHandlerConfig, ModeHandlerResult]):
         if _algo_group is not None:
             _record_algo_data(_algo_group, self.sensor_id, self.config)
 
+        # Reset mode state, so that a restarted application begins in its initial mode.
+        self.hand_motion_timer = 0
+
         if self.use_presence_detection:
+            self.app_mode = AppMode.PRESENCE
             self.presence_detector = Detector(
                 client=self.client,
                 sensor_id=self.sensor_id,
@@ -156,6 +160,7 @@ class ModeHandler(Controller[ModeHandlerConfig, ModeHandlerResult]):
             )
             self.presence_detector.start()
         else:
+            self.app_mode = AppMode.HANDMOTION
             self.hand_motion_app = ExampleApp(
                 client=self.client,
                 sensor_id=self.sensor_id,
