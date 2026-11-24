@@ -209,3 +209,48 @@ def test_all_error_messages_are_visible_on_failed_migration() -> None:
         assert "dict->list" in str_e
     else:
         pytest.fail("'.migrate()' should've raised a MigrationErrorGroup.")
+
+
+def _raiser_of(err: Exception) -> t.Callable[..., t.Any]:
+    def inner(*_: t.Any) -> t.Any:
+        raise err
+
+    return inner
+
+
+def _timeline_failing_in(builder: str, err: Exception) -> tm.Node[t.Any, t.Any, t.Any]:
+    raiser = _raiser_of(err)
+    if builder == "load":
+        return tm.start(int).load(str, raiser, fail=[])
+    if builder == "contextual_load":
+        return tm.start(int).contextual_load(str, raiser, fail=[])
+
+    int_epoch = tm.start(int).load(str, int, fail=[]).nop()
+    if builder == "epoch":
+        return int_epoch.epoch(float, raiser, fail=[])
+    return int_epoch.contextual_epoch(float, raiser, fail=[])
+
+
+@pytest.mark.parametrize("depth", [0, 1, 2])
+@pytest.mark.parametrize("builder", ["load", "contextual_load", "epoch", "contextual_epoch"])
+def test_migrate_propagates_unlisted_errors_from_any_depth(builder: str, depth: int) -> None:
+    err = RuntimeError("unlisted")
+    graph = _timeline_failing_in(builder, err)
+    for head, f in [(list, lambda x: [x]), (tuple, tuple)][:depth]:
+        graph = graph.nop().epoch(head, f, fail=[])
+
+    with pytest.raises(RuntimeError) as exc_info:
+        graph.migrate("1")
+
+    assert exc_info.value is err
+
+
+def test_completer_error_propagates_from_below_top_epoch(needs_extra_context: _NC) -> None:
+    graph = needs_extra_context.nop().epoch(list, lambda x: [x], fail=[])
+
+    def completer(_: t.Any) -> float:
+        msg = "In completer!"
+        raise ValueError(msg)
+
+    with pytest.raises(ValueError, match="In completer!"):
+        graph.migrate('{"x": "10"}', completer=completer)
