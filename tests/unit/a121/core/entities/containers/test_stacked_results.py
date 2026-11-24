@@ -1,6 +1,7 @@
-# Copyright (c) Acconeer AB, 2022-2023
+# Copyright (c) Acconeer AB, 2022-2026
 # All rights reserved
 
+import attrs
 import numpy as np
 import pytest
 
@@ -140,6 +141,9 @@ class TestStackedResultWithASingleFrame:
     def test_reports_the_number_of_results_in_len(self, stacked_results: StackedResults) -> None:
         assert len(stacked_results) == 1
 
+    def test_equals_a_copy_with_an_equal_tick(self, stacked_results: StackedResults) -> None:
+        assert stacked_results == attrs.evolve(stacked_results, tick=np.array([0]))
+
 
 class TestStackedResultWithMultipleFrames:
     @pytest.fixture
@@ -248,3 +252,11 @@ class TestStackedResultWithMultipleFrames:
 
     def test_reports_the_number_of_results_in_len(self, stacked_results: StackedResults) -> None:
         assert len(stacked_results) == 2
+
+    def test_equals_a_copy_with_equal_ticks(self, stacked_results: StackedResults) -> None:
+        assert stacked_results == attrs.evolve(stacked_results, tick=np.array([0, 1]))
+
+    def test_differs_from_a_copy_with_different_ticks(
+        self, stacked_results: StackedResults
+    ) -> None:
+        assert stacked_results != attrs.evolve(stacked_results, tick=np.array([0, 2]))
